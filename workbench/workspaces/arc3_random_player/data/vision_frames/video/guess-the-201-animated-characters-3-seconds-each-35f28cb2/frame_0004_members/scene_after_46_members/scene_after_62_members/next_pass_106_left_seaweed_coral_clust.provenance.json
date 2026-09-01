@@ -1,0 +1,437 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004_members/scene_after_46_members/scene_after_62_members/next_pass_106_left_seaweed_coral_clust.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004_members/scene_after_46_members/scene_after_62_members/next_pass_106_left_seaweed_coral_clust.provenance.json",
+  "createdAt": "2026-09-01T19:45:00.367858Z",
+  "operation": "enlarge_object_for_analysis",
+  "dimensions": {
+    "width": 416,
+    "height": 760
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 33.9,
+    "sceneIndex": 14,
+    "videoFrameIndex": 1017
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004_members/scene_after_46_members/scene_after_62_members/cut_106_left_seaweed_coral_clust.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004_members/scene_after_46_members/scene_after_62_members/cut_106_left_seaweed_coral_clust.provenance.json"
+  },
+  "source": {
+    "objectName": "left_seaweed_coral_cluster"
+  },
+  "transform": {
+    "sourceDimensions": {
+      "width": 78,
+      "height": 164
+    },
+    "scale": 4,
+    "resizedDimensions": {
+      "width": 312,
+      "height": 656
+    },
+    "padding": {
+      "left": 52,
+      "top": 52,
+      "right": 52,
+      "bottom": 52
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:29.906006Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004_members/scene_after_46.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          245,
+          119,
+          636,
+          417
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Removing the bubble rims and highlights reveals uninterrupted underlying panel content at each bubble location: cyan/teal water gradients in upper areas, parts of the pineapple/sea region on the right, and pale sandy seafloor with subtle speckling in lower areas. No new object appears; each bubble hole should be filled by direct continuation of whatever scene pixels surround that bubble segment.",
+          "colors": [
+            "#22B9D6",
+            "#1FA7C8",
+            "#79D8E8",
+            "#DDE7CF",
+            "#C9D5B8",
+            "#F2EEDC"
+          ],
+          "continueEdges": [
+            "Continue local underwater gradients smoothly through each removed ring segment in the upper-left and right clusters",
+            "Preserve any nearby contour lines (pineapple edges, seabed horizon transitions, or soft background boundaries) straight through former bubble positions",
+            "Maintain sandy texture continuity in lower bubbles, including fine grain/speckle and soft shading variation",
+            "Blend edge anti-aliasing softly so no circular seam remains where bubble outlines were"
+          ],
+          "texture": "Match existing scene texture: soft cartoon gradients in water, gentle matte sand grain on seafloor, and clean illustrated edges."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:34:01.398690Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004_members/scene_after_46_members/scene_after_62.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004_members/scene_after_46.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          332,
+          104,
+          565,
+          405
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind SpongeBob is the central underwater scene: a blue-turquoise water field in the upper area, a pale sandy seabed in the lower area, and a gently curved seafloor boundary running behind where his torso and arms were. Small bubble rings and faint underwater haze continue through parts of the removed silhouette, with limited continuation of the pineapple-house edge/detail only where it intersects the upper-right overlap region.",
+          "colors": [
+            "#2CB7CF",
+            "#63D6E2",
+            "#CFE6D7",
+            "#E9E3BF",
+            "#F2E8C9",
+            "#D98A34"
+          ],
+          "continueEdges": [
+            "Continue the curved water-to-sand horizon line smoothly across the removed body area from left-mid toward right-upper-mid.",
+            "Extend sandy seabed grain/speckle texture through the legs and lower torso region with matching brightness falloff.",
+            "Continue subtle bubble-ring contours where they pass through the removed silhouette, preserving ring curvature and spacing.",
+            "Where the silhouette overlaps the pineapple region (upper-right overlap), continue local orange crosshatch/blue-window edge direction consistently without introducing new structures."
+          ],
+          "texture": "Soft cartoon underwater shading with mild gradient transitions, fine sand speckling in the lower half, and clean outlined decorative elements (bubbles/house details) where intersecting."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T19:24:01.069361Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004_members/scene_after_46_members/scene_after_62_members/cut_106_left_seaweed_coral_clust.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 78,
+        "height": 164
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004_members/scene_after_46_members/scene_after_62.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          224,
+          262,
+          302,
+          426
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              228,
+              422
+            ],
+            [
+              226,
+              406
+            ],
+            [
+              229,
+              388
+            ],
+            [
+              235,
+              370
+            ],
+            [
+              241,
+              352
+            ],
+            [
+              246,
+              333
+            ],
+            [
+              248,
+              314
+            ],
+            [
+              246,
+              296
+            ],
+            [
+              242,
+              280
+            ],
+            [
+              243,
+              269
+            ],
+            [
+              250,
+              264
+            ],
+            [
+              257,
+              270
+            ],
+            [
+              260,
+              286
+            ],
+            [
+              262,
+              306
+            ],
+            [
+              265,
+              326
+            ],
+            [
+              270,
+              346
+            ],
+            [
+              275,
+              364
+            ],
+            [
+              281,
+              382
+            ],
+            [
+              287,
+              399
+            ],
+            [
+              291,
+              415
+            ],
+            [
+              286,
+              423
+            ],
+            [
+              271,
+              423
+            ],
+            [
+              256,
+              422
+            ],
+            [
+              241,
+              422
+            ]
+          ],
+          [
+            [
+              266,
+              422
+            ],
+            [
+              264,
+              409
+            ],
+            [
+              266,
+              393
+            ],
+            [
+              271,
+              378
+            ],
+            [
+              278,
+              365
+            ],
+            [
+              286,
+              355
+            ],
+            [
+              293,
+              351
+            ],
+            [
+              298,
+              357
+            ],
+            [
+              299,
+              369
+            ],
+            [
+              296,
+              382
+            ],
+            [
+              291,
+              394
+            ],
+            [
+              286,
+              406
+            ],
+            [
+              287,
+              417
+            ],
+            [
+              280,
+              423
+            ]
+          ],
+          [
+            [
+              243,
+              423
+            ],
+            [
+              244,
+              412
+            ],
+            [
+              248,
+              400
+            ],
+            [
+              255,
+              390
+            ],
+            [
+              261,
+              382
+            ],
+            [
+              267,
+              376
+            ],
+            [
+              273,
+              374
+            ],
+            [
+              278,
+              379
+            ],
+            [
+              279,
+              389
+            ],
+            [
+              277,
+              399
+            ],
+            [
+              272,
+              408
+            ],
+            [
+              269,
+              416
+            ],
+            [
+              272,
+              423
+            ],
+            [
+              243,
+              423
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T19:45:00.338569Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004_members/scene_after_46_members/scene_after_62_members/next_pass_106_left_seaweed_coral_clust.png",
+      "operation": "enlarge_object_for_analysis",
+      "dimensions": {
+        "width": 416,
+        "height": 760
+      },
+      "transform": {
+        "sourceDimensions": {
+          "width": 78,
+          "height": 164
+        },
+        "scale": 4,
+        "resizedDimensions": {
+          "width": 312,
+          "height": 656
+        },
+        "padding": {
+          "left": 52,
+          "top": 52,
+          "right": 52,
+          "bottom": 52
+        }
+      },
+      "createdAt": "2026-09-01T19:45:00.367858Z"
+    }
+  ]
+}

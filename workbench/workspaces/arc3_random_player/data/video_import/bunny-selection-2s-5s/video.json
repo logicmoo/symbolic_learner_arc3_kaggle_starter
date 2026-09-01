@@ -1,0 +1,17 @@
+{
+  "title": "bunny-selection-2s-5s",
+  "source": "trim of data/video_import/big_buck_bunny_360_10s_1mb/video.mp4",
+  "duration": 3.0,
+  "segmentsFrom": null,
+  "imported_at": "2026-08-28T03:29:28.477092Z",
+  "scenes": [],
+  "lastScenes": {
+    "count": 0,
+    "newThisRun": 0,
+    "resumedFromSeconds": 0.0,
+    "elapsedSeconds": 0.3,
+    "secondsPerVideoSecond": 0.0876,
+    "threshold": 28.0,
+    "at": "2026-08-28T19:24:30.674996Z"
+  }
+}

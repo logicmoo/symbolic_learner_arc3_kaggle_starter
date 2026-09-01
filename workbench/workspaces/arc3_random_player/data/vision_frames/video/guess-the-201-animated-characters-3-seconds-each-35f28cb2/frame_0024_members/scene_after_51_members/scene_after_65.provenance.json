@@ -1,0 +1,204 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0024_members/scene_after_51_members/scene_after_65.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0024_members/scene_after_51_members/scene_after_65.provenance.json",
+  "createdAt": "2026-09-01T19:24:16.598576Z",
+  "operation": "remove_object_from_scene",
+  "dimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0024.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 188.6,
+    "sceneIndex": 74,
+    "videoFrameIndex": 5658
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0024_members/scene_after_51.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0024_members/scene_after_51.provenance.json"
+  },
+  "source": {
+    "objectName": "rapunzel_hair",
+    "cutout": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0024_members/scene_after_51_members/cut_65_rapunzel_hair.png",
+    "fillInstructions": {
+      "description": "Behind the removed long hair, the central card should reveal a mix of warm interior background and covered parts of Rapunzel’s body: soft brown-violet room tones around the outer hair area, plus the purple dress/shoulder and light skin at the neck/cheek-side where the hair crossed in front. The lower section should continue the warm floor/glow gradient behind the hair strand.",
+      "colors": [
+        "#6E4A4A",
+        "#8A5A58",
+        "#A56B66",
+        "#B07AC7",
+        "#8E59B0",
+        "#F2C3A3"
+      ],
+      "continueEdges": [
+        "Continue blurred vertical room-shadow bands through the outer/right side of the removed hair region",
+        "Extend Rapunzel’s purple dress contours and seam shading where the hair overlapped her upper torso",
+        "Preserve subtle skin-edge transitions at the jaw/neck boundary where hair previously occluded",
+        "Maintain lower warm pink-orange floor light gradient across the bottom part of the removed strand"
+      ],
+      "texture": "Soft, cinematic painted texture with gentle blur and smooth gradient transitions; no sharp new edges."
+    }
+  },
+  "transform": {
+    "fill": "median",
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0024_members/scene_after_51.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0024.png",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "verified": true
+    },
+    "removedBox": [
+      344,
+      102,
+      477,
+      428
+    ],
+    "maskScale": 4,
+    "fillInstructions": {
+      "description": "Behind the removed long hair, the central card should reveal a mix of warm interior background and covered parts of Rapunzel’s body: soft brown-violet room tones around the outer hair area, plus the purple dress/shoulder and light skin at the neck/cheek-side where the hair crossed in front. The lower section should continue the warm floor/glow gradient behind the hair strand.",
+      "colors": [
+        "#6E4A4A",
+        "#8A5A58",
+        "#A56B66",
+        "#B07AC7",
+        "#8E59B0",
+        "#F2C3A3"
+      ],
+      "continueEdges": [
+        "Continue blurred vertical room-shadow bands through the outer/right side of the removed hair region",
+        "Extend Rapunzel’s purple dress contours and seam shading where the hair overlapped her upper torso",
+        "Preserve subtle skin-edge transitions at the jaw/neck boundary where hair previously occluded",
+        "Maintain lower warm pink-orange floor light gradient across the bottom part of the removed strand"
+      ],
+      "texture": "Soft, cinematic painted texture with gentle blur and smooth gradient transitions; no sharp new edges."
+    },
+    "imageGeneration": {
+      "renderer": "median"
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0024.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:44.963711Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0024_members/scene_after_51.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0024.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0024.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          539,
+          318,
+          639,
+          374
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed frying pan is mostly the warm interior background of the card (soft brown-violet room tones with diffuse lighting), with a small section of Rapunzel’s forearm/hand edge continuing through the handle-grip area where the pan overlaps her.",
+          "colors": [
+            "#3E2D35",
+            "#5A3E4A",
+            "#7A555F",
+            "#9C6F72",
+            "#C18D82"
+          ],
+          "continueEdges": [
+            "Extend the blurred vertical room shading from upper-right toward lower-right behind the pan bowl.",
+            "Continue the gentle warm floor-to-wall tonal transition across the lower-right card area.",
+            "Where the pan crossed Rapunzel’s grip, continue adjacent skin-tone/arm-edge contour smoothly through the overlap zone.",
+            "Preserve soft shadow falloff around the former pan silhouette so no hard cutout edge remains."
+          ],
+          "texture": "Soft, cinematic, low-detail interior blur with warm gradient lighting and minimal fine texture; no sharp structural lines."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:34:03.355448Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0024_members/scene_after_51_members/scene_after_65.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0024_members/scene_after_51.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0024.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          344,
+          102,
+          477,
+          428
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed long hair, the central card should reveal a mix of warm interior background and covered parts of Rapunzel’s body: soft brown-violet room tones around the outer hair area, plus the purple dress/shoulder and light skin at the neck/cheek-side where the hair crossed in front. The lower section should continue the warm floor/glow gradient behind the hair strand.",
+          "colors": [
+            "#6E4A4A",
+            "#8A5A58",
+            "#A56B66",
+            "#B07AC7",
+            "#8E59B0",
+            "#F2C3A3"
+          ],
+          "continueEdges": [
+            "Continue blurred vertical room-shadow bands through the outer/right side of the removed hair region",
+            "Extend Rapunzel’s purple dress contours and seam shading where the hair overlapped her upper torso",
+            "Preserve subtle skin-edge transitions at the jaw/neck boundary where hair previously occluded",
+            "Maintain lower warm pink-orange floor light gradient across the bottom part of the removed strand"
+          ],
+          "texture": "Soft, cinematic painted texture with gentle blur and smooth gradient transitions; no sharp new edges."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T19:24:16.598576Z"
+    }
+  ]
+}

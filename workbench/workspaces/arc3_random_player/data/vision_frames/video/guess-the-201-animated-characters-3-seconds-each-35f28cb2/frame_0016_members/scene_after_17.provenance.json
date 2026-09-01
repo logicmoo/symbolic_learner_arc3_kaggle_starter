@@ -1,0 +1,156 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/scene_after_17.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/scene_after_17.provenance.json",
+  "createdAt": "2026-09-01T17:23:19.029394Z",
+  "operation": "remove_object_from_scene",
+  "dimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 126.7,
+    "sceneIndex": 50,
+    "videoFrameIndex": 3801
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016.provenance.json"
+  },
+  "source": {
+    "objectName": "tricycle",
+    "cutout": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/cut_17_tricycle.png",
+    "fillInstructions": {
+      "description": "Behind the removed tricycle, the central inset should continue with Stewie’s body where it is directly behind the bike (red overalls/torso area, small yellow sleeve/hand-adjacent regions, and a small light-blue shoe area), transitioning to the pink-red inset backdrop in exposed gaps around the character. The fill should preserve the original cartoon shading and black outline style.",
+      "colors": [
+        "#F83D73",
+        "#DB0A4F",
+        "#B1073B",
+        "#D73A2C",
+        "#F5D36A",
+        "#C8D8E8"
+      ],
+      "continueEdges": [
+        "Extend Stewie’s red overall contours and interior shading bands smoothly through the removed frame/fork and wheel regions",
+        "Continue nearby black character outline strokes with the same line weight where body edges pass behind the tricycle",
+        "Blend the inset background gradient from darker red (lower/right) to brighter pink (mid/upper) across open spaces revealed by wheel and frame removal",
+        "Preserve soft ground-shadow tint in the lower inset where visible adjacent to the rear-wheel area"
+      ],
+      "texture": "Flat 2D cartoon fill with clean inked outlines, smooth cel-style color regions, and gentle airbrushed background gradient."
+    }
+  },
+  "transform": {
+    "fill": "median",
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016.png",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "verified": true
+    },
+    "removedBox": [
+      283,
+      242,
+      516,
+      372
+    ],
+    "maskScale": 4,
+    "fillInstructions": {
+      "description": "Behind the removed tricycle, the central inset should continue with Stewie’s body where it is directly behind the bike (red overalls/torso area, small yellow sleeve/hand-adjacent regions, and a small light-blue shoe area), transitioning to the pink-red inset backdrop in exposed gaps around the character. The fill should preserve the original cartoon shading and black outline style.",
+      "colors": [
+        "#F83D73",
+        "#DB0A4F",
+        "#B1073B",
+        "#D73A2C",
+        "#F5D36A",
+        "#C8D8E8"
+      ],
+      "continueEdges": [
+        "Extend Stewie’s red overall contours and interior shading bands smoothly through the removed frame/fork and wheel regions",
+        "Continue nearby black character outline strokes with the same line weight where body edges pass behind the tricycle",
+        "Blend the inset background gradient from darker red (lower/right) to brighter pink (mid/upper) across open spaces revealed by wheel and frame removal",
+        "Preserve soft ground-shadow tint in the lower inset where visible adjacent to the rear-wheel area"
+      ],
+      "texture": "Flat 2D cartoon fill with clean inked outlines, smooth cel-style color regions, and gentle airbrushed background gradient."
+    },
+    "imageGeneration": {
+      "renderer": "median"
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:38.921502Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/scene_after_17.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          283,
+          242,
+          516,
+          372
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed tricycle, the central inset should continue with Stewie’s body where it is directly behind the bike (red overalls/torso area, small yellow sleeve/hand-adjacent regions, and a small light-blue shoe area), transitioning to the pink-red inset backdrop in exposed gaps around the character. The fill should preserve the original cartoon shading and black outline style.",
+          "colors": [
+            "#F83D73",
+            "#DB0A4F",
+            "#B1073B",
+            "#D73A2C",
+            "#F5D36A",
+            "#C8D8E8"
+          ],
+          "continueEdges": [
+            "Extend Stewie’s red overall contours and interior shading bands smoothly through the removed frame/fork and wheel regions",
+            "Continue nearby black character outline strokes with the same line weight where body edges pass behind the tricycle",
+            "Blend the inset background gradient from darker red (lower/right) to brighter pink (mid/upper) across open spaces revealed by wheel and frame removal",
+            "Preserve soft ground-shadow tint in the lower inset where visible adjacent to the rear-wheel area"
+          ],
+          "texture": "Flat 2D cartoon fill with clean inked outlines, smooth cel-style color regions, and gentle airbrushed background gradient."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:23:19.029394Z"
+    }
+  ]
+}

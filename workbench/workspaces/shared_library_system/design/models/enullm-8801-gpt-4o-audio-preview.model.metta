@@ -61,18 +61,48 @@
     (active_workers ([]
       worker-copilot-1
       worker-copilot-10
+      worker-copilot-11
+      worker-copilot-12
+      worker-copilot-13
+      worker-copilot-14
+      worker-copilot-15
+      worker-copilot-16
+      worker-copilot-17
+      worker-copilot-18
+      worker-copilot-19
       worker-copilot-2
+      worker-copilot-20
+      worker-copilot-21
       worker-copilot-3
       worker-copilot-4
       worker-copilot-5
+      worker-copilot-6
+      worker-copilot-7
+      worker-copilot-8
+      worker-copilot-9
     ))
     (backing_models (
-      (worker-copilot-1 gpt-5.4-mini)
+      (worker-copilot-1 claude-sonnet-4.6)
       (worker-copilot-10 auto)
-      (worker-copilot-2 grok-4.5)
+      (worker-copilot-11 auto)
+      (worker-copilot-12 gpt-5.3-codex)
+      (worker-copilot-13 gpt-5.3-codex)
+      (worker-copilot-14 gpt-5.3-codex)
+      (worker-copilot-15 gpt-5.3-codex)
+      (worker-copilot-16 gpt-5.3-codex)
+      (worker-copilot-17 gpt-5.3-codex)
+      (worker-copilot-18 gpt-5.3-codex)
+      (worker-copilot-19 auto)
+      (worker-copilot-2 claude-sonnet-4.5)
+      (worker-copilot-20 auto)
+      (worker-copilot-21 auto)
       (worker-copilot-3 claude-opus-4.8-fast)
-      (worker-copilot-4 gpt-5.5)
+      (worker-copilot-4 gpt-5.6-sol)
       (worker-copilot-5 gemini-3.7-flash)
+      (worker-copilot-6 gpt-5.3-codex)
+      (worker-copilot-7 gpt-5.3-codex)
+      (worker-copilot-8 gpt-5.3-codex)
+      (worker-copilot-9 gpt-5.3-codex)
     ))
     (ownedBy emullm)
   ))
@@ -98,18 +128,48 @@
     (active_workers ([]
       worker-copilot-1
       worker-copilot-10
+      worker-copilot-11
+      worker-copilot-12
+      worker-copilot-13
+      worker-copilot-14
+      worker-copilot-15
+      worker-copilot-16
+      worker-copilot-17
+      worker-copilot-18
+      worker-copilot-19
       worker-copilot-2
+      worker-copilot-20
+      worker-copilot-21
       worker-copilot-3
       worker-copilot-4
       worker-copilot-5
+      worker-copilot-6
+      worker-copilot-7
+      worker-copilot-8
+      worker-copilot-9
     ))
     (backing_models (
-      (worker-copilot-1 gpt-5.4-mini)
+      (worker-copilot-1 claude-sonnet-4.6)
       (worker-copilot-10 auto)
-      (worker-copilot-2 grok-4.5)
+      (worker-copilot-11 auto)
+      (worker-copilot-12 gpt-5.3-codex)
+      (worker-copilot-13 gpt-5.3-codex)
+      (worker-copilot-14 gpt-5.3-codex)
+      (worker-copilot-15 gpt-5.3-codex)
+      (worker-copilot-16 gpt-5.3-codex)
+      (worker-copilot-17 gpt-5.3-codex)
+      (worker-copilot-18 gpt-5.3-codex)
+      (worker-copilot-19 auto)
+      (worker-copilot-2 claude-sonnet-4.5)
+      (worker-copilot-20 auto)
+      (worker-copilot-21 auto)
       (worker-copilot-3 claude-opus-4.8-fast)
-      (worker-copilot-4 gpt-5.5)
+      (worker-copilot-4 gpt-5.6-sol)
       (worker-copilot-5 gemini-3.7-flash)
+      (worker-copilot-6 gpt-5.3-codex)
+      (worker-copilot-7 gpt-5.3-codex)
+      (worker-copilot-8 gpt-5.3-codex)
+      (worker-copilot-9 gpt-5.3-codex)
     ))
   ))
   (discovery (

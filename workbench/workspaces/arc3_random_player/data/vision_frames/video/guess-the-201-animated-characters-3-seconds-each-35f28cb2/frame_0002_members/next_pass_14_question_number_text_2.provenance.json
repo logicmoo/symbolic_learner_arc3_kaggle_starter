@@ -1,0 +1,231 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0002_members/next_pass_14_question_number_text_2.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0002_members/next_pass_14_question_number_text_2.provenance.json",
+  "createdAt": "2026-09-01T17:23:15.747755Z",
+  "operation": "enlarge_object_for_analysis",
+  "dimensions": {
+    "width": 600,
+    "height": 796
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0002.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 18.433,
+    "sceneIndex": 8,
+    "videoFrameIndex": 553
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0002_members/cut_14_question_number_text_2.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0002_members/cut_14_question_number_text_2.provenance.json"
+  },
+  "source": {
+    "objectName": "question_number_text_2"
+  },
+  "transform": {
+    "sourceDimensions": {
+      "width": 35,
+      "height": 49
+    },
+    "scale": 14,
+    "resizedDimensions": {
+      "width": 490,
+      "height": 686
+    },
+    "padding": {
+      "left": 55,
+      "top": 55,
+      "right": 55,
+      "bottom": 55
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0002.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:28.719383Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0002_members/cut_14_question_number_text_2.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 35,
+        "height": 49
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0002.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0002.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          31,
+          18,
+          66,
+          67
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              38,
+              24
+            ],
+            [
+              45,
+              20
+            ],
+            [
+              54,
+              20
+            ],
+            [
+              60,
+              24
+            ],
+            [
+              62,
+              31
+            ],
+            [
+              60,
+              37
+            ],
+            [
+              54,
+              41
+            ],
+            [
+              48,
+              45
+            ],
+            [
+              44,
+              49
+            ],
+            [
+              40,
+              54
+            ],
+            [
+              40,
+              58
+            ],
+            [
+              63,
+              58
+            ],
+            [
+              63,
+              64
+            ],
+            [
+              36,
+              64
+            ],
+            [
+              34,
+              57
+            ],
+            [
+              37,
+              49
+            ],
+            [
+              43,
+              42
+            ],
+            [
+              50,
+              37
+            ],
+            [
+              55,
+              33
+            ],
+            [
+              55,
+              29
+            ],
+            [
+              52,
+              26
+            ],
+            [
+              46,
+              26
+            ],
+            [
+              41,
+              29
+            ],
+            [
+              38,
+              33
+            ],
+            [
+              33,
+              31
+            ],
+            [
+              34,
+              27
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T17:23:15.672316Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0002_members/next_pass_14_question_number_text_2.png",
+      "operation": "enlarge_object_for_analysis",
+      "dimensions": {
+        "width": 600,
+        "height": 796
+      },
+      "transform": {
+        "sourceDimensions": {
+          "width": 35,
+          "height": 49
+        },
+        "scale": 14,
+        "resizedDimensions": {
+          "width": 490,
+          "height": 686
+        },
+        "padding": {
+          "left": 55,
+          "top": 55,
+          "right": 55,
+          "bottom": 55
+        }
+      },
+      "createdAt": "2026-09-01T17:23:15.747755Z"
+    }
+  ]
+}

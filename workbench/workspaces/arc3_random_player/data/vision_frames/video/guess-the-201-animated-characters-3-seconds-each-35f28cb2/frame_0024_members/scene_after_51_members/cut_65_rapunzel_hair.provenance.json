@@ -1,0 +1,335 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0024_members/scene_after_51_members/cut_65_rapunzel_hair.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0024_members/scene_after_51_members/cut_65_rapunzel_hair.provenance.json",
+  "createdAt": "2026-09-01T19:24:16.437604Z",
+  "operation": "extract_object_cutout",
+  "dimensions": {
+    "width": 133,
+    "height": 326
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0024.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 188.6,
+    "sceneIndex": 74,
+    "videoFrameIndex": 5658
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0024_members/scene_after_51.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0024_members/scene_after_51.provenance.json"
+  },
+  "source": {
+    "objectName": "rapunzel_hair"
+  },
+  "transform": {
+    "inputDimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0024_members/scene_after_51.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0024.png",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "verified": true
+    },
+    "cropBox": [
+      344,
+      102,
+      477,
+      428
+    ],
+    "maskScale": 4,
+    "polygons": [
+      [
+        [
+          430,
+          109
+        ],
+        [
+          471,
+          115
+        ],
+        [
+          474,
+          150
+        ],
+        [
+          468,
+          190
+        ],
+        [
+          463,
+          230
+        ],
+        [
+          460,
+          270
+        ],
+        [
+          458,
+          315
+        ],
+        [
+          456,
+          360
+        ],
+        [
+          454,
+          405
+        ],
+        [
+          452,
+          425
+        ],
+        [
+          414,
+          425
+        ],
+        [
+          402,
+          397
+        ],
+        [
+          392,
+          360
+        ],
+        [
+          383,
+          320
+        ],
+        [
+          374,
+          280
+        ],
+        [
+          366,
+          240
+        ],
+        [
+          358,
+          205
+        ],
+        [
+          350,
+          170
+        ],
+        [
+          346,
+          140
+        ],
+        [
+          350,
+          118
+        ],
+        [
+          368,
+          108
+        ],
+        [
+          392,
+          104
+        ]
+      ]
+    ],
+    "holes": []
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0024.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:44.963711Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0024_members/scene_after_51.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0024.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0024.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          539,
+          318,
+          639,
+          374
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed frying pan is mostly the warm interior background of the card (soft brown-violet room tones with diffuse lighting), with a small section of Rapunzel’s forearm/hand edge continuing through the handle-grip area where the pan overlaps her.",
+          "colors": [
+            "#3E2D35",
+            "#5A3E4A",
+            "#7A555F",
+            "#9C6F72",
+            "#C18D82"
+          ],
+          "continueEdges": [
+            "Extend the blurred vertical room shading from upper-right toward lower-right behind the pan bowl.",
+            "Continue the gentle warm floor-to-wall tonal transition across the lower-right card area.",
+            "Where the pan crossed Rapunzel’s grip, continue adjacent skin-tone/arm-edge contour smoothly through the overlap zone.",
+            "Preserve soft shadow falloff around the former pan silhouette so no hard cutout edge remains."
+          ],
+          "texture": "Soft, cinematic, low-detail interior blur with warm gradient lighting and minimal fine texture; no sharp structural lines."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:34:03.355448Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0024_members/scene_after_51_members/cut_65_rapunzel_hair.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 133,
+        "height": 326
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0024_members/scene_after_51.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0024.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          344,
+          102,
+          477,
+          428
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              430,
+              109
+            ],
+            [
+              471,
+              115
+            ],
+            [
+              474,
+              150
+            ],
+            [
+              468,
+              190
+            ],
+            [
+              463,
+              230
+            ],
+            [
+              460,
+              270
+            ],
+            [
+              458,
+              315
+            ],
+            [
+              456,
+              360
+            ],
+            [
+              454,
+              405
+            ],
+            [
+              452,
+              425
+            ],
+            [
+              414,
+              425
+            ],
+            [
+              402,
+              397
+            ],
+            [
+              392,
+              360
+            ],
+            [
+              383,
+              320
+            ],
+            [
+              374,
+              280
+            ],
+            [
+              366,
+              240
+            ],
+            [
+              358,
+              205
+            ],
+            [
+              350,
+              170
+            ],
+            [
+              346,
+              140
+            ],
+            [
+              350,
+              118
+            ],
+            [
+              368,
+              108
+            ],
+            [
+              392,
+              104
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T19:24:16.437604Z"
+    }
+  ]
+}

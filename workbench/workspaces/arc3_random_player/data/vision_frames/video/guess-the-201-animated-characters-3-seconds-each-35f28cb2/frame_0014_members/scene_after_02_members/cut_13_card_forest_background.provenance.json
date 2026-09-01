@@ -1,0 +1,889 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014_members/scene_after_02_members/cut_13_card_forest_background.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014_members/scene_after_02_members/cut_13_card_forest_background.provenance.json",
+  "createdAt": "2026-09-01T17:23:03.620860Z",
+  "operation": "extract_object_cutout",
+  "dimensions": {
+    "width": 421,
+    "height": 290
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 111.233,
+    "sceneIndex": 44,
+    "videoFrameIndex": 3337
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014_members/scene_after_02.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014_members/scene_after_02.provenance.json"
+  },
+  "source": {
+    "objectName": "card_forest_background"
+  },
+  "transform": {
+    "inputDimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014_members/scene_after_02.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014.png",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "verified": true
+    },
+    "cropBox": [
+      221,
+      102,
+      642,
+      392
+    ],
+    "maskScale": 4,
+    "polygons": [
+      [
+        [
+          251,
+          104
+        ],
+        [
+          611,
+          104
+        ],
+        [
+          624,
+          108
+        ],
+        [
+          633,
+          117
+        ],
+        [
+          639,
+          131
+        ],
+        [
+          639,
+          362
+        ],
+        [
+          633,
+          376
+        ],
+        [
+          624,
+          385
+        ],
+        [
+          611,
+          389
+        ],
+        [
+          251,
+          389
+        ],
+        [
+          238,
+          385
+        ],
+        [
+          229,
+          376
+        ],
+        [
+          223,
+          362
+        ],
+        [
+          223,
+          131
+        ],
+        [
+          229,
+          117
+        ],
+        [
+          238,
+          108
+        ]
+      ]
+    ],
+    "holes": [
+      [
+        [
+          419,
+          104
+        ],
+        [
+          409,
+          122
+        ],
+        [
+          398,
+          144
+        ],
+        [
+          389,
+          168
+        ],
+        [
+          387,
+          198
+        ],
+        [
+          382,
+          220
+        ],
+        [
+          365,
+          214
+        ],
+        [
+          354,
+          204
+        ],
+        [
+          344,
+          192
+        ],
+        [
+          333,
+          181
+        ],
+        [
+          320,
+          170
+        ],
+        [
+          304,
+          159
+        ],
+        [
+          291,
+          171
+        ],
+        [
+          292,
+          191
+        ],
+        [
+          305,
+          207
+        ],
+        [
+          321,
+          223
+        ],
+        [
+          341,
+          242
+        ],
+        [
+          360,
+          259
+        ],
+        [
+          380,
+          276
+        ],
+        [
+          403,
+          290
+        ],
+        [
+          425,
+          301
+        ],
+        [
+          451,
+          306
+        ],
+        [
+          476,
+          307
+        ],
+        [
+          499,
+          303
+        ],
+        [
+          520,
+          294
+        ],
+        [
+          538,
+          282
+        ],
+        [
+          552,
+          267
+        ],
+        [
+          564,
+          247
+        ],
+        [
+          573,
+          229
+        ],
+        [
+          580,
+          235
+        ],
+        [
+          587,
+          252
+        ],
+        [
+          586,
+          271
+        ],
+        [
+          576,
+          288
+        ],
+        [
+          562,
+          302
+        ],
+        [
+          547,
+          315
+        ],
+        [
+          538,
+          329
+        ],
+        [
+          533,
+          346
+        ],
+        [
+          525,
+          360
+        ],
+        [
+          512,
+          371
+        ],
+        [
+          495,
+          379
+        ],
+        [
+          475,
+          385
+        ],
+        [
+          454,
+          387
+        ],
+        [
+          433,
+          384
+        ],
+        [
+          413,
+          376
+        ],
+        [
+          397,
+          365
+        ],
+        [
+          385,
+          351
+        ],
+        [
+          375,
+          336
+        ],
+        [
+          361,
+          339
+        ],
+        [
+          347,
+          350
+        ],
+        [
+          332,
+          362
+        ],
+        [
+          320,
+          373
+        ],
+        [
+          305,
+          381
+        ],
+        [
+          293,
+          378
+        ],
+        [
+          286,
+          368
+        ],
+        [
+          287,
+          353
+        ],
+        [
+          298,
+          340
+        ],
+        [
+          314,
+          328
+        ],
+        [
+          333,
+          319
+        ],
+        [
+          350,
+          311
+        ],
+        [
+          363,
+          303
+        ],
+        [
+          352,
+          292
+        ],
+        [
+          338,
+          279
+        ],
+        [
+          321,
+          264
+        ],
+        [
+          304,
+          248
+        ],
+        [
+          287,
+          230
+        ],
+        [
+          273,
+          210
+        ],
+        [
+          269,
+          188
+        ],
+        [
+          278,
+          168
+        ],
+        [
+          294,
+          153
+        ],
+        [
+          311,
+          142
+        ],
+        [
+          330,
+          131
+        ],
+        [
+          350,
+          118
+        ],
+        [
+          369,
+          108
+        ],
+        [
+          392,
+          103
+        ]
+      ]
+    ]
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:37.381009Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014_members/scene_after_02.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          290,
+          100,
+          594,
+          365
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind Pikachu, continue the forest scene inside the central card: soft-focus green foliage, darker tree trunks, and teal-green atmospheric depth. Reconstruct the vertical trunk bands passing behind the head/ears and body, plus blurred leafy gradients across mid and lower areas where Pikachu was.",
+          "colors": [
+            "#0E5A45",
+            "#1D7A5C",
+            "#249A74",
+            "#2FB089",
+            "#3A6F45",
+            "#6F8B57",
+            "#98B07A",
+            "#1CC3A8"
+          ],
+          "continueEdges": [
+            "Extend the tall light-green trunk just left of center vertically through the removed silhouette.",
+            "Continue the darker diagonal trunk on the right side through the former right ear/arm region.",
+            "Preserve horizontal depth gradient: darker upper corners, brighter teal-green glow around center-lower area.",
+            "Carry soft leaf/bokeh patches smoothly across the belly/feet zone without introducing hard edges.",
+            "Keep all continuation constrained within the rounded card interior and aligned with existing blur direction."
+          ],
+          "texture": "Soft, painterly/blurred cartoon forest texture with gentle gradients, low-detail foliage blobs, and subtle trunk edge contrast."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:21:31.769049Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014_members/scene_after_02_members/cut_13_card_forest_background.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 421,
+        "height": 290
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014_members/scene_after_02.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          221,
+          102,
+          642,
+          392
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              251,
+              104
+            ],
+            [
+              611,
+              104
+            ],
+            [
+              624,
+              108
+            ],
+            [
+              633,
+              117
+            ],
+            [
+              639,
+              131
+            ],
+            [
+              639,
+              362
+            ],
+            [
+              633,
+              376
+            ],
+            [
+              624,
+              385
+            ],
+            [
+              611,
+              389
+            ],
+            [
+              251,
+              389
+            ],
+            [
+              238,
+              385
+            ],
+            [
+              229,
+              376
+            ],
+            [
+              223,
+              362
+            ],
+            [
+              223,
+              131
+            ],
+            [
+              229,
+              117
+            ],
+            [
+              238,
+              108
+            ]
+          ]
+        ],
+        "holes": [
+          [
+            [
+              419,
+              104
+            ],
+            [
+              409,
+              122
+            ],
+            [
+              398,
+              144
+            ],
+            [
+              389,
+              168
+            ],
+            [
+              387,
+              198
+            ],
+            [
+              382,
+              220
+            ],
+            [
+              365,
+              214
+            ],
+            [
+              354,
+              204
+            ],
+            [
+              344,
+              192
+            ],
+            [
+              333,
+              181
+            ],
+            [
+              320,
+              170
+            ],
+            [
+              304,
+              159
+            ],
+            [
+              291,
+              171
+            ],
+            [
+              292,
+              191
+            ],
+            [
+              305,
+              207
+            ],
+            [
+              321,
+              223
+            ],
+            [
+              341,
+              242
+            ],
+            [
+              360,
+              259
+            ],
+            [
+              380,
+              276
+            ],
+            [
+              403,
+              290
+            ],
+            [
+              425,
+              301
+            ],
+            [
+              451,
+              306
+            ],
+            [
+              476,
+              307
+            ],
+            [
+              499,
+              303
+            ],
+            [
+              520,
+              294
+            ],
+            [
+              538,
+              282
+            ],
+            [
+              552,
+              267
+            ],
+            [
+              564,
+              247
+            ],
+            [
+              573,
+              229
+            ],
+            [
+              580,
+              235
+            ],
+            [
+              587,
+              252
+            ],
+            [
+              586,
+              271
+            ],
+            [
+              576,
+              288
+            ],
+            [
+              562,
+              302
+            ],
+            [
+              547,
+              315
+            ],
+            [
+              538,
+              329
+            ],
+            [
+              533,
+              346
+            ],
+            [
+              525,
+              360
+            ],
+            [
+              512,
+              371
+            ],
+            [
+              495,
+              379
+            ],
+            [
+              475,
+              385
+            ],
+            [
+              454,
+              387
+            ],
+            [
+              433,
+              384
+            ],
+            [
+              413,
+              376
+            ],
+            [
+              397,
+              365
+            ],
+            [
+              385,
+              351
+            ],
+            [
+              375,
+              336
+            ],
+            [
+              361,
+              339
+            ],
+            [
+              347,
+              350
+            ],
+            [
+              332,
+              362
+            ],
+            [
+              320,
+              373
+            ],
+            [
+              305,
+              381
+            ],
+            [
+              293,
+              378
+            ],
+            [
+              286,
+              368
+            ],
+            [
+              287,
+              353
+            ],
+            [
+              298,
+              340
+            ],
+            [
+              314,
+              328
+            ],
+            [
+              333,
+              319
+            ],
+            [
+              350,
+              311
+            ],
+            [
+              363,
+              303
+            ],
+            [
+              352,
+              292
+            ],
+            [
+              338,
+              279
+            ],
+            [
+              321,
+              264
+            ],
+            [
+              304,
+              248
+            ],
+            [
+              287,
+              230
+            ],
+            [
+              273,
+              210
+            ],
+            [
+              269,
+              188
+            ],
+            [
+              278,
+              168
+            ],
+            [
+              294,
+              153
+            ],
+            [
+              311,
+              142
+            ],
+            [
+              330,
+              131
+            ],
+            [
+              350,
+              118
+            ],
+            [
+              369,
+              108
+            ],
+            [
+              392,
+              103
+            ]
+          ]
+        ]
+      },
+      "createdAt": "2026-09-01T17:23:03.620860Z"
+    }
+  ]
+}

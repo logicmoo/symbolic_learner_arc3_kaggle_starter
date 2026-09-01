@@ -1,0 +1,306 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/scene_after_08_members/scene_after_41_members/next_pass_85_main_character_card.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/scene_after_08_members/scene_after_41_members/next_pass_85_main_character_card.provenance.json",
+  "createdAt": "2026-09-01T19:27:48.947808Z",
+  "operation": "enlarge_object_for_analysis",
+  "dimensions": {
+    "width": 988,
+    "height": 734
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 149.9,
+    "sceneIndex": 59,
+    "videoFrameIndex": 4497
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/scene_after_08_members/scene_after_41_members/cut_85_main_character_card.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/scene_after_08_members/scene_after_41_members/cut_85_main_character_card.provenance.json"
+  },
+  "source": {
+    "objectName": "main_character_card"
+  },
+  "transform": {
+    "sourceDimensions": {
+      "width": 426,
+      "height": 299
+    },
+    "scale": 2,
+    "resizedDimensions": {
+      "width": 852,
+      "height": 598
+    },
+    "padding": {
+      "left": 68,
+      "top": 68,
+      "right": 68,
+      "bottom": 68
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:41.177136Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/scene_after_08.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          262,
+          167,
+          332,
+          235
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed cube, continue WALL-E’s raised left gripper/forearm assembly and a sliver of the dark industrial background. Most of the hole should be filled by off-white/gray metal hand surfaces with worn shading and thin dark seam lines; the rear edge blends into warm brown mechanical arm tones and deep navy-brown background.",
+          "colors": [
+            "#E9E5DA",
+            "#D4CEC0",
+            "#B9B19F",
+            "#8A7B66",
+            "#6B4D2E",
+            "#3B2C20",
+            "#1F2233"
+          ],
+          "continueEdges": [
+            "Extend the left gripper’s curved outer contour diagonally up-right through the cube area.",
+            "Continue finger/joint seam lines and small shadow boundaries across the center of the hole.",
+            "Blend forearm warm-brown metal from lower-left toward mid-right where visible around the cube edges.",
+            "Carry the dark industrial background gradient only at uncovered perimeter gaps behind the hand."
+          ],
+          "texture": "Worn metallic robot texture with soft grime, subtle scratches, and smooth cinematic shading; background remains low-detail, dark, and slightly blurred."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:23:01.428635Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/scene_after_08_members/scene_after_41.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/scene_after_08.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          224,
+          103,
+          642,
+          392
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Continue WALL-E’s dim industrial interior behind the removed regions: warm rusty-brown machinery and clutter on the left, a darker blue-gray shadowed bay across the upper-right, and muted structural depth behind the robot body. The fill should preserve low-key contrast with localized warm highlights and broad cool shadows.",
+          "colors": [
+            "#2A1E16",
+            "#4B3426",
+            "#6A4A33",
+            "#1F2436",
+            "#2E3550",
+            "#8A623F"
+          ],
+          "continueEdges": [
+            "Extend left-side diagonal/mechanical silhouette lines and shelf-like clutter inward behind WALL-E’s arm and torso.",
+            "Carry the upper-right dark blue shadow gradient smoothly from right border toward center-left.",
+            "Continue soft warm glow patches from lower-mid left into the center, fading under the robot silhouette area.",
+            "Preserve perspective depth by keeping background detail denser near left wall and more diffuse toward right/back."
+          ],
+          "texture": "Gritty cinematic industrial texture with soft blur in deep background, subtle film-like noise, rusted metal tones, and low-saturation shadow detail."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:29:22.021360Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/scene_after_08_members/scene_after_41_members/cut_85_main_character_card.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 426,
+        "height": 299
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/scene_after_08_members/scene_after_41.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          218,
+          99,
+          644,
+          398
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              252,
+              101
+            ],
+            [
+              608,
+              101
+            ],
+            [
+              620,
+              104
+            ],
+            [
+              630,
+              110
+            ],
+            [
+              637,
+              118
+            ],
+            [
+              641,
+              128
+            ],
+            [
+              641,
+              368
+            ],
+            [
+              637,
+              378
+            ],
+            [
+              630,
+              386
+            ],
+            [
+              620,
+              392
+            ],
+            [
+              608,
+              395
+            ],
+            [
+              252,
+              395
+            ],
+            [
+              240,
+              392
+            ],
+            [
+              230,
+              386
+            ],
+            [
+              223,
+              378
+            ],
+            [
+              220,
+              368
+            ],
+            [
+              220,
+              128
+            ],
+            [
+              223,
+              118
+            ],
+            [
+              230,
+              110
+            ],
+            [
+              240,
+              104
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T19:27:48.870645Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/scene_after_08_members/scene_after_41_members/next_pass_85_main_character_card.png",
+      "operation": "enlarge_object_for_analysis",
+      "dimensions": {
+        "width": 988,
+        "height": 734
+      },
+      "transform": {
+        "sourceDimensions": {
+          "width": 426,
+          "height": 299
+        },
+        "scale": 2,
+        "resizedDimensions": {
+          "width": 852,
+          "height": 598
+        },
+        "padding": {
+          "left": 68,
+          "top": 68,
+          "right": 68,
+          "bottom": 68
+        }
+      },
+      "createdAt": "2026-09-01T19:27:48.947808Z"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "sourceRecording": "data/arc3_games/recordings/ab01-v1/saved_001",
+  "frames": [
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ab01-v1-saved_001/frame_000000.png",
+      "index": 0,
+      "atSeconds": 0.0,
+      "scene": 1,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ab01-v1-saved_001/frame_000000.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ab01-v1-saved_001/frame_000001.png",
+      "index": 1,
+      "atSeconds": 1.0,
+      "scene": 2,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ab01-v1-saved_001/frame_000001.provenance.json"
+    }
+  ],
+  "importedAt": "2026-09-01T20:51:17.442304Z"
+}

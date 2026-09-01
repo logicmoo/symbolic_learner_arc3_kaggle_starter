@@ -1,0 +1,458 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007_members/scene_after_09_members/scene_after_24_members/scene_after_44_members/cut_60_rock_cluster.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007_members/scene_after_09_members/scene_after_24_members/scene_after_44_members/cut_60_rock_cluster.provenance.json",
+  "createdAt": "2026-09-01T19:22:53.070546Z",
+  "operation": "extract_object_cutout",
+  "dimensions": {
+    "width": 95,
+    "height": 79
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 57.1,
+    "sceneIndex": 23,
+    "videoFrameIndex": 1713
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007_members/scene_after_09_members/scene_after_24_members/scene_after_44.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007_members/scene_after_09_members/scene_after_24_members/scene_after_44.provenance.json"
+  },
+  "source": {
+    "objectName": "rock_cluster"
+  },
+  "transform": {
+    "inputDimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007_members/scene_after_09_members/scene_after_24_members/scene_after_44.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007.png",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "verified": true
+    },
+    "cropBox": [
+      549,
+      314,
+      644,
+      393
+    ],
+    "maskScale": 4,
+    "polygons": [
+      [
+        [
+          558,
+          322
+        ],
+        [
+          575,
+          316
+        ],
+        [
+          598,
+          317
+        ],
+        [
+          620,
+          324
+        ],
+        [
+          636,
+          337
+        ],
+        [
+          641,
+          353
+        ],
+        [
+          638,
+          368
+        ],
+        [
+          626,
+          380
+        ],
+        [
+          609,
+          386
+        ],
+        [
+          591,
+          388
+        ],
+        [
+          574,
+          385
+        ],
+        [
+          561,
+          377
+        ],
+        [
+          553,
+          365
+        ],
+        [
+          551,
+          349
+        ],
+        [
+          553,
+          336
+        ]
+      ],
+      [
+        [
+          610,
+          369
+        ],
+        [
+          623,
+          366
+        ],
+        [
+          634,
+          369
+        ],
+        [
+          640,
+          377
+        ],
+        [
+          638,
+          385
+        ],
+        [
+          629,
+          390
+        ],
+        [
+          616,
+          390
+        ],
+        [
+          607,
+          384
+        ],
+        [
+          605,
+          376
+        ]
+      ]
+    ],
+    "holes": []
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:31.986150Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007_members/scene_after_09.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          483,
+          255,
+          553,
+          437
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed backpack, the scene continues as Dora’s right-back body contour in front of green vegetation. The exposed area should mostly restore layered green bush/grass tones from the forest background, with a small continuation of Dora’s pink shirt edge where the backpack overlapped her side. No sky or rock texture is expected inside this hole.",
+          "colors": [
+            "#1E6B3A",
+            "#2F8C4A",
+            "#49A85A",
+            "#6CC06A",
+            "#0F4F2B",
+            "#D97BC5",
+            "#C963B4"
+          ],
+          "continueEdges": [
+            "Continue Dora’s torso side outline smoothly through the backpack area.",
+            "Reconnect the pink shirt boundary/hem shading where it was interrupted by the strap and bag edge.",
+            "Extend nearby leaf and bush contours from left/right background into the removed region with consistent curvature.",
+            "Maintain foreground-to-background layering: character edge in front, vegetation behind."
+          ],
+          "texture": "Cartoon-painted, soft-edged cel shading with simple gradient fills and lightly mottled foliage texture; smooth clean outlines rather than photoreal detail."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:23:02.881532Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007_members/scene_after_09_members/scene_after_24.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007_members/scene_after_09.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          267,
+          101,
+          611,
+          455
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind Dora is the inset’s outdoor landscape: layered green bushes and grassy hills across mid-height, darker foliage texture near the lower band, and right-side vegetation transitioning toward the rock area. The fill should reconstruct uninterrupted scenery inside the framed panel while preserving any separate non-Dora overlays already present.",
+          "colors": [
+            "#79C84A",
+            "#4FAE3E",
+            "#2F8F52",
+            "#2B6E3F",
+            "#2A9CC0",
+            "#6B8A6F",
+            "#8C8F8E",
+            "#C96A8B"
+          ],
+          "continueEdges": [
+            "Continue the light-green hill bands horizontally through the removed silhouette with smooth curvature matching left/right neighbors.",
+            "Extend bush/leaf clumps and dark-green texture from both sides through the torso and arm regions.",
+            "Maintain right-side transition from foliage to gray rock-edge tones where those contours intersect Dora’s former outline.",
+            "Carry lower foreground floral/grass rhythm across the bottom portion of the hole without creating hard seams.",
+            "Keep panel lighting consistent: soft, cartoon-like shading with no new outlines at the fill boundary."
+          ],
+          "texture": "Flat cartoon illustration with gentle airbrushed shading, clean color regions, and soft-edged foliage detail."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:28:01.593947Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007_members/scene_after_09_members/scene_after_24_members/scene_after_44.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007_members/scene_after_09_members/scene_after_24.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          264,
+          352,
+          592,
+          406
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed pink flower clusters is the lower forest-ground layer inside the inset: mostly green grass/leafy shrub texture with darker shadowed pockets, plus a gradual transition toward the gray rock area on the rightmost cluster.",
+          "colors": [
+            "#1F7A3A",
+            "#2E8E45",
+            "#3FAE5A",
+            "#58C06A",
+            "#6D8F62",
+            "#8A8D8B"
+          ],
+          "continueEdges": [
+            "Continue the horizontal leafy-grass bands from left and right through each flower hole.",
+            "Preserve soft dark-green shadow contours between grass clumps, especially in the lower middle.",
+            "At the far-right cluster, continue the grass-to-rock boundary so gray tones blend in from the nearby rock cluster.",
+            "Maintain any small stem/leaf directionality already implied by adjacent pixels without adding new object outlines."
+          ],
+          "texture": "Cartoon-painted foliage texture with soft shading and mottled leaf detail; low-noise, smooth color blending."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:33:34.379157Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007_members/scene_after_09_members/scene_after_24_members/scene_after_44_members/cut_60_rock_cluster.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 95,
+        "height": 79
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007_members/scene_after_09_members/scene_after_24_members/scene_after_44.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          549,
+          314,
+          644,
+          393
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              558,
+              322
+            ],
+            [
+              575,
+              316
+            ],
+            [
+              598,
+              317
+            ],
+            [
+              620,
+              324
+            ],
+            [
+              636,
+              337
+            ],
+            [
+              641,
+              353
+            ],
+            [
+              638,
+              368
+            ],
+            [
+              626,
+              380
+            ],
+            [
+              609,
+              386
+            ],
+            [
+              591,
+              388
+            ],
+            [
+              574,
+              385
+            ],
+            [
+              561,
+              377
+            ],
+            [
+              553,
+              365
+            ],
+            [
+              551,
+              349
+            ],
+            [
+              553,
+              336
+            ]
+          ],
+          [
+            [
+              610,
+              369
+            ],
+            [
+              623,
+              366
+            ],
+            [
+              634,
+              369
+            ],
+            [
+              640,
+              377
+            ],
+            [
+              638,
+              385
+            ],
+            [
+              629,
+              390
+            ],
+            [
+              616,
+              390
+            ],
+            [
+              607,
+              384
+            ],
+            [
+              605,
+              376
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T19:22:53.070546Z"
+    }
+  ]
+}

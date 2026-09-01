@@ -1,0 +1,321 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0020_planner/order_a0ab80c4b37a.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0020_planner/order_a0ab80c4b37a.provenance.json",
+  "createdAt": "2026-09-01T20:03:04.887399Z",
+  "operation": "visualize_planner_order",
+  "dimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0020.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 157.633,
+    "sceneIndex": 62,
+    "videoFrameIndex": 4729
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0020.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0020.provenance.json"
+  },
+  "source": {},
+  "transform": {
+    "labels": [
+      {
+        "object": "question_number_text_20",
+        "number": 1,
+        "point": [
+          34,
+          30
+        ]
+      },
+      {
+        "object": "quiz_logo_text",
+        "number": 2,
+        "point": [
+          809,
+          23
+        ]
+      },
+      {
+        "object": "white_glove_left",
+        "number": 3,
+        "point": [
+          348,
+          304
+        ]
+      },
+      {
+        "object": "white_glove_right",
+        "number": 4,
+        "point": [
+          498,
+          304
+        ]
+      },
+      {
+        "object": "villain_character",
+        "number": 5,
+        "point": [
+          430,
+          178
+        ]
+      },
+      {
+        "object": "dark_card_background",
+        "number": 6,
+        "point": [
+          266,
+          198
+        ]
+      },
+      {
+        "object": "question_badge_orange_circle",
+        "number": 7,
+        "point": [
+          39,
+          39
+        ]
+      },
+      {
+        "object": "quiz_logo_circle",
+        "number": 8,
+        "point": [
+          812,
+          28
+        ]
+      },
+      {
+        "object": "title_text_guess_the",
+        "number": 9,
+        "point": [
+          233,
+          34
+        ]
+      },
+      {
+        "object": "title_text_animated_character",
+        "number": 10,
+        "point": [
+          502,
+          34
+        ]
+      },
+      {
+        "object": "left_vertical_text_fun_quiz_questions",
+        "number": 11,
+        "point": [
+          22,
+          232
+        ]
+      },
+      {
+        "object": "right_vertical_text_fun_quiz_questions",
+        "number": 12,
+        "point": [
+          798,
+          232
+        ]
+      },
+      {
+        "object": "left_side_play_icon",
+        "number": 13,
+        "point": [
+          20,
+          386
+        ]
+      },
+      {
+        "object": "right_side_play_icon",
+        "number": 14,
+        "point": [
+          797,
+          386
+        ]
+      },
+      {
+        "object": "central_rounded_image_frame",
+        "number": 15,
+        "point": [
+          430,
+          101
+        ]
+      },
+      {
+        "object": "blue_gradient_background",
+        "number": 16,
+        "point": [
+          102,
+          458
+        ]
+      }
+    ],
+    "plannerHash": "a0ab80c4b37a8955f21a72ca4e3a5a737d74a3ba6e59f080fcd23c96aac3dce1"
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0020.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:41.928179Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0020_planner/order_a0ab80c4b37a.png",
+      "operation": "visualize_planner_order",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "labels": [
+          {
+            "object": "question_number_text_20",
+            "number": 1,
+            "point": [
+              34,
+              30
+            ]
+          },
+          {
+            "object": "quiz_logo_text",
+            "number": 2,
+            "point": [
+              809,
+              23
+            ]
+          },
+          {
+            "object": "white_glove_left",
+            "number": 3,
+            "point": [
+              348,
+              304
+            ]
+          },
+          {
+            "object": "white_glove_right",
+            "number": 4,
+            "point": [
+              498,
+              304
+            ]
+          },
+          {
+            "object": "villain_character",
+            "number": 5,
+            "point": [
+              430,
+              178
+            ]
+          },
+          {
+            "object": "dark_card_background",
+            "number": 6,
+            "point": [
+              266,
+              198
+            ]
+          },
+          {
+            "object": "question_badge_orange_circle",
+            "number": 7,
+            "point": [
+              39,
+              39
+            ]
+          },
+          {
+            "object": "quiz_logo_circle",
+            "number": 8,
+            "point": [
+              812,
+              28
+            ]
+          },
+          {
+            "object": "title_text_guess_the",
+            "number": 9,
+            "point": [
+              233,
+              34
+            ]
+          },
+          {
+            "object": "title_text_animated_character",
+            "number": 10,
+            "point": [
+              502,
+              34
+            ]
+          },
+          {
+            "object": "left_vertical_text_fun_quiz_questions",
+            "number": 11,
+            "point": [
+              22,
+              232
+            ]
+          },
+          {
+            "object": "right_vertical_text_fun_quiz_questions",
+            "number": 12,
+            "point": [
+              798,
+              232
+            ]
+          },
+          {
+            "object": "left_side_play_icon",
+            "number": 13,
+            "point": [
+              20,
+              386
+            ]
+          },
+          {
+            "object": "right_side_play_icon",
+            "number": 14,
+            "point": [
+              797,
+              386
+            ]
+          },
+          {
+            "object": "central_rounded_image_frame",
+            "number": 15,
+            "point": [
+              430,
+              101
+            ]
+          },
+          {
+            "object": "blue_gradient_background",
+            "number": 16,
+            "point": [
+              102,
+              458
+            ]
+          }
+        ],
+        "plannerHash": "a0ab80c4b37a8955f21a72ca4e3a5a737d74a3ba6e59f080fcd23c96aac3dce1"
+      },
+      "createdAt": "2026-09-01T20:03:04.887399Z"
+    }
+  ]
+}

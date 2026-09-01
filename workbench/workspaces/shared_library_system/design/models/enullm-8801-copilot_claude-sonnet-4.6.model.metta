@@ -120,9 +120,12 @@
     ))
     (owned_by github-copilot)
     (provider github-copilot)
+    (codex_supplier null)
     (backing_model claude-sonnet-4.6)
-    (connected false)
-    (active_workers ([]))
+    (connected true)
+    (active_workers ([]
+      worker-copilot-1
+    ))
     (route_targets ([]))
     (routing_mode on_demand)
     (on_demand true)
@@ -343,9 +346,12 @@
     ))
     (owned_by github-copilot)
     (provider github-copilot)
+    (codex_supplier null)
     (backing_model claude-sonnet-4.6)
-    (connected false)
-    (active_workers ([]))
+    (connected true)
+    (active_workers ([]
+      worker-copilot-1
+    ))
     (route_targets ([]))
     (routing_mode on_demand)
     (on_demand true)

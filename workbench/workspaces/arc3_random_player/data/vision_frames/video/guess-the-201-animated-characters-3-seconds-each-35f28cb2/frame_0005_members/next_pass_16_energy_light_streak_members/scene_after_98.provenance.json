@@ -1,0 +1,308 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/next_pass_16_energy_light_streak_members/scene_after_98.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/next_pass_16_energy_light_streak_members/scene_after_98.provenance.json",
+  "createdAt": "2026-09-01T19:43:19.970460Z",
+  "operation": "remove_object_from_scene",
+  "dimensions": {
+    "width": 976,
+    "height": 420
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 41.633,
+    "sceneIndex": 17,
+    "videoFrameIndex": 1249
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/next_pass_16_energy_light_streak.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/next_pass_16_energy_light_streak.provenance.json"
+  },
+  "source": {
+    "objectName": "small_cyan_glow_spot",
+    "cutout": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/next_pass_16_energy_light_streak_members/cut_98_small_cyan_glow_spot.png",
+    "fillInstructions": {
+      "description": "Behind the small cyan glow is the dark neon panel with a subtle purple-blue gradient, plus the nearby continuation of the broad cyan energy streak haze. The removed spot should reveal the underlying streak glow transition without a sharp point highlight.",
+      "colors": [
+        "#161733",
+        "#1E2150",
+        "#262C63",
+        "#46BDE0",
+        "#79E6F7"
+      ],
+      "continueEdges": [
+        "Continue the diagonal cyan energy streak softness passing beneath the spot, blending from brighter cyan on the lower-left side to dimmer blue toward upper-right.",
+        "Continue the dark purple-blue background gradient smoothly around the hole perimeter.",
+        "Preserve the local bloom falloff so surrounding cyan haze transitions remain continuous with no isolated bright diamond center."
+      ],
+      "texture": "Soft, blurred neon glow over a smooth low-noise gradient; no hard edges or granular detail."
+    }
+  },
+  "transform": {
+    "fill": "median",
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/next_pass_16_energy_light_streak.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/next_pass_16_energy_light_streak.png",
+      "dimensions": {
+        "width": 976,
+        "height": 420
+      },
+      "verified": true
+    },
+    "removedBox": [
+      642,
+      321,
+      673,
+      349
+    ],
+    "maskScale": 4,
+    "fillInstructions": {
+      "description": "Behind the small cyan glow is the dark neon panel with a subtle purple-blue gradient, plus the nearby continuation of the broad cyan energy streak haze. The removed spot should reveal the underlying streak glow transition without a sharp point highlight.",
+      "colors": [
+        "#161733",
+        "#1E2150",
+        "#262C63",
+        "#46BDE0",
+        "#79E6F7"
+      ],
+      "continueEdges": [
+        "Continue the diagonal cyan energy streak softness passing beneath the spot, blending from brighter cyan on the lower-left side to dimmer blue toward upper-right.",
+        "Continue the dark purple-blue background gradient smoothly around the hole perimeter.",
+        "Preserve the local bloom falloff so surrounding cyan haze transitions remain continuous with no isolated bright diamond center."
+      ],
+      "texture": "Soft, blurred neon glow over a smooth low-noise gradient; no hard edges or granular detail."
+    },
+    "imageGeneration": {
+      "renderer": "median"
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:30.576049Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/cut_16_energy_light_streak.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 421,
+        "height": 143
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          222,
+          244,
+          643,
+          387
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              223,
+              274
+            ],
+            [
+              245,
+              262
+            ],
+            [
+              280,
+              252
+            ],
+            [
+              325,
+              246
+            ],
+            [
+              372,
+              247
+            ],
+            [
+              420,
+              255
+            ],
+            [
+              468,
+              267
+            ],
+            [
+              514,
+              283
+            ],
+            [
+              557,
+              303
+            ],
+            [
+              593,
+              323
+            ],
+            [
+              624,
+              345
+            ],
+            [
+              641,
+              363
+            ],
+            [
+              633,
+              376
+            ],
+            [
+              606,
+              383
+            ],
+            [
+              566,
+              385
+            ],
+            [
+              520,
+              380
+            ],
+            [
+              474,
+              371
+            ],
+            [
+              430,
+              360
+            ],
+            [
+              386,
+              348
+            ],
+            [
+              343,
+              334
+            ],
+            [
+              301,
+              321
+            ],
+            [
+              265,
+              308
+            ],
+            [
+              239,
+              295
+            ],
+            [
+              223,
+              286
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T17:23:17.952362Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/next_pass_16_energy_light_streak.png",
+      "operation": "enlarge_object_for_analysis",
+      "dimensions": {
+        "width": 976,
+        "height": 420
+      },
+      "transform": {
+        "sourceDimensions": {
+          "width": 421,
+          "height": 143
+        },
+        "scale": 2,
+        "resizedDimensions": {
+          "width": 842,
+          "height": 286
+        },
+        "padding": {
+          "left": 67,
+          "top": 67,
+          "right": 67,
+          "bottom": 67
+        }
+      },
+      "createdAt": "2026-09-01T17:23:18.028847Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/next_pass_16_energy_light_streak_members/scene_after_98.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 976,
+        "height": 420
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/next_pass_16_energy_light_streak.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/next_pass_16_energy_light_streak.png",
+          "dimensions": {
+            "width": 976,
+            "height": 420
+          },
+          "verified": true
+        },
+        "removedBox": [
+          642,
+          321,
+          673,
+          349
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the small cyan glow is the dark neon panel with a subtle purple-blue gradient, plus the nearby continuation of the broad cyan energy streak haze. The removed spot should reveal the underlying streak glow transition without a sharp point highlight.",
+          "colors": [
+            "#161733",
+            "#1E2150",
+            "#262C63",
+            "#46BDE0",
+            "#79E6F7"
+          ],
+          "continueEdges": [
+            "Continue the diagonal cyan energy streak softness passing beneath the spot, blending from brighter cyan on the lower-left side to dimmer blue toward upper-right.",
+            "Continue the dark purple-blue background gradient smoothly around the hole perimeter.",
+            "Preserve the local bloom falloff so surrounding cyan haze transitions remain continuous with no isolated bright diamond center."
+          ],
+          "texture": "Soft, blurred neon glow over a smooth low-noise gradient; no hard edges or granular detail."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T19:43:19.970460Z"
+    }
+  ]
+}

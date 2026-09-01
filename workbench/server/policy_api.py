@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 from datetime import datetime, timezone
 from pathlib import Path
+from threading import RLock
+from time import monotonic
 from typing import Any
 from uuid import uuid4
 
@@ -18,12 +21,36 @@ from prompt_library import load_workspace_prompt_profile_records, resolve_prompt
 from model_discovery import discover_backend_models, import_discovered_models, reconcile_discovered_models, remove_missing_models
 from operation_resolution import _model_execution_parameters
 from workflow_providers import _llm_complete
-from workspace_api import _resolve_workspace, invalidate_workspace_discovery
+from workspace_api import (
+    _resolve_workspace,
+    _resolve_workspace_without_counts,
+    invalidate_workspace_discovery,
+)
 from resource_store import get_filesystem_provider
 from invocation_trace import list_invocation_traces, read_invocation_trace, write_invocation_trace
+from system_control_api import restart_pending_active
 
 router = APIRouter(prefix="/workspaces", tags=["model-policy"])
 WRITABLE_OBSERVATION_KINDS = {"model_health_observation", "model_ping_job", "model_ping_event", "benchmark_result"}
+_MODEL_RESOLUTION_CACHE_SECONDS = 300.0
+_model_resolution_cache: dict[str, tuple[float, list[dict[str, Any]]]] = {}
+_model_resolution_lock = RLock()
+
+
+def _resolved_model_records(root: Path) -> list[dict[str, Any]]:
+    key = str(root.resolve())
+    with _model_resolution_lock:
+        cached = _model_resolution_cache.get(key)
+        if cached and monotonic() - cached[0] < _MODEL_RESOLUTION_CACHE_SECONDS:
+            return cached[1]
+        records = resolve_model_records(root)
+        _model_resolution_cache[key] = (monotonic(), records)
+        return records
+
+
+def _invalidate_model_resolution_cache() -> None:
+    with _model_resolution_lock:
+        _model_resolution_cache.clear()
 
 
 def _effective_registry(root: Path, records: list[dict[str, Any]]) -> dict[str, Any]:
@@ -90,10 +117,22 @@ def model_policy_registry(workspace_id: str) -> dict[str, Any]:
 
 @router.post("/{workspace_id}/models/{model_id}/invoke")
 @router.post("/{workspace_id}/models/{model_id}/example-invoke")
-def invoke_model_example(workspace_id: str, model_id: str, request: dict[str, Any] = Body(...)) -> dict[str, Any]:
-    try: workspace = _resolve_workspace(workspace_id)
+async def invoke_model_example(workspace_id: str, model_id: str, request: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    if restart_pending_active():
+        raise HTTPException(
+            status_code=409,
+            detail="restart pending; new model invocations are paused",
+        )
+    request_started = monotonic()
+    try:
+        workspace = await asyncio.to_thread(
+            _resolve_workspace_without_counts,
+            workspace_id,
+        )
     except KeyError as error: raise HTTPException(status_code=404, detail=str(error)) from error
-    record = next((item for item in resolve_model_records(Path(workspace["root"])) if (item.get("document") or {}).get("id") == model_id), None)
+    root = Path(workspace["root"])
+    resolved_records = await asyncio.to_thread(_resolved_model_records, root)
+    record = next((item for item in resolved_records if (item.get("document") or {}).get("id") == model_id), None)
     if not record or not (record.get("resolved") or {}).get("enabled"): raise HTTPException(status_code=404, detail=f"enabled model/profile not found: {model_id}")
     prompt = str((request.get("arguments") or {}).get("prompt") or request.get("prompt") or "")
     if not prompt: raise HTTPException(status_code=400, detail="example argument prompt is required")
@@ -101,14 +140,21 @@ def invoke_model_example(workspace_id: str, model_id: str, request: dict[str, An
     if image and not image.startswith(("data:image/", "https://", "http://")): raise HTTPException(status_code=400, detail="image must be an image data URL or HTTP(S) URL")
     image_summary = None if not image else {"source": "data_url" if image.startswith("data:") else "url", "mediaType": image[5:].split(";", 1)[0] if image.startswith("data:") else None, "length": len(image)}
     trace = {"workspaceId": workspace_id, "modelId": model_id, "status": "running", "prompt": prompt, "image": image_summary, "timeoutSeconds": int(request.get("timeoutSeconds") or 120), "resource": record.get("document"), "resolved": record.get("resolved")}
-    parameters = _model_execution_parameters(Path(workspace["root"]), {"models": [model_id], "strategy": "single"})
+    parameters = await asyncio.to_thread(
+        _model_execution_parameters,
+        root,
+        {"models": [model_id], "strategy": "single"},
+        resolved_records,
+    )
     parameters["timeoutSeconds"] = trace["timeoutSeconds"]
     debug_execution: dict[str, Any] = {}
     parameters["_debugExecution"] = debug_execution
     inputs = {"prompt": prompt, **({"image": image} if image else {})}
     started = datetime.now(timezone.utc)
+    pre_dispatch_ms = round((monotonic() - request_started) * 1000, 2)
+    trace["preDispatchMs"] = pre_dispatch_ms
     try:
-        provider_result = _llm_complete(inputs, parameters)
+        provider_result = await asyncio.to_thread(_llm_complete, inputs, parameters)
         response_payload = provider_result.get("response") if isinstance(provider_result, dict) else None
         usage = response_payload.get("usage") if isinstance(response_payload, dict) and isinstance(response_payload.get("usage"), dict) else {}
         result = {
@@ -118,14 +164,30 @@ def invoke_model_example(workspace_id: str, model_id: str, request: dict[str, An
             "outputTokens": usage.get("completion_tokens", usage.get("output_tokens", 0)),
             "responseId": response_payload.get("id") if isinstance(response_payload, dict) else None,
             "backendId": parameters.get("backendId"),
+            "preDispatchMs": pre_dispatch_ms,
+            "totalLatencyMs": round((monotonic() - request_started) * 1000, 2),
             "response": response_payload,
             "debugExecution": parameters.get("_debugExecution"),
         }
     except Exception as error:
-        debug_log_path = write_invocation_trace(Path(workspace["root"]), "model", model_id, "model_invocation_trace", {**trace, "status": "failed", "error": str(error)})
+        debug_log_path = await asyncio.to_thread(
+            write_invocation_trace,
+            root,
+            "model",
+            model_id,
+            "model_invocation_trace",
+            {**trace, "status": "failed", "error": str(error)},
+        )
         raise HTTPException(status_code=400, detail={"message": str(error), "debugLogPath": debug_log_path}) from error
     response = {"modelId": model_id, **result}
-    response["debugLogPath"] = write_invocation_trace(Path(workspace["root"]), "model", model_id, "model_invocation_trace", {**trace, "status": "completed", "response": result})
+    response["debugLogPath"] = await asyncio.to_thread(
+        write_invocation_trace,
+        root,
+        "model",
+        model_id,
+        "model_invocation_trace",
+        {**trace, "status": "completed", "response": result},
+    )
     return response
 
 
@@ -169,6 +231,7 @@ def import_models(workspace_id: str, backend_id: str, request: dict[str, Any] = 
     if not isinstance(models, list): raise HTTPException(status_code=400, detail="models must be a list")
     if request.get("overwrite", True) is not True: raise HTTPException(status_code=400, detail="model imports require overwrite=true")
     imported = import_discovered_models(Path(shared_workspace["root"]), backend, models)
+    _invalidate_model_resolution_cache()
     invalidate_workspace_discovery()
     return {"workspace": workspace, "targetWorkspace": shared_workspace, "backendId": backend_id, "models": imported}
 
@@ -183,6 +246,7 @@ def remove_missing(workspace_id: str, backend_id: str, request: dict[str, Any] =
     resource_ids = request.get("resourceIds")
     if not isinstance(resource_ids, list): raise HTTPException(status_code=400, detail="resourceIds must be a list")
     removed = remove_missing_models(Path(shared_workspace["root"]), backend, [str(value) for value in resource_ids])
+    _invalidate_model_resolution_cache()
     invalidate_workspace_discovery()
     return {"workspace": workspace, "targetWorkspace": shared_workspace, "backendId": backend_id, "removed": removed}
 

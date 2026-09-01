@@ -1,6 +1,8 @@
 import { VideoImportPage, type VideoImportChainSummaryStep } from "./VideoImportPage";
 import { GenerationHost } from "./GenerationHost";
 import type { PageFamily } from "../lib/pageGenerations";
+import type { WorkflowPageDefinition } from "./WorkflowPageHost";
+import type { ModelChoice, WorkspaceFileRecord } from "./Arc3B1B2PipelinePage";
 
 /**
  * The Video Import page family ? the first page on the upgrade system.
@@ -38,16 +40,36 @@ const family: PageFamily = {
 
 export function VideoImportFamily({
   workspaceId,
+  workspaceLabel,
+  arc3PageDefinition,
+  arc3B1B2PageDefinition,
+  arc3B1B2Models,
+  arc3B1B2Files,
+  onArc3B1B2PageDefinitionSaved,
   onChainSummaryChange,
 }: {
   workspaceId: string;
+  workspaceLabel?: string;
+  arc3PageDefinition?: WorkflowPageDefinition;
+  arc3B1B2PageDefinition?: WorkflowPageDefinition;
+  arc3B1B2Models?: ModelChoice[];
+  arc3B1B2Files?: WorkspaceFileRecord[];
+  onArc3B1B2PageDefinitionSaved?: () => Promise<unknown> | unknown;
   onChainSummaryChange?: (steps: VideoImportChainSummaryStep[]) => void;
 }) {
   return (
     <GenerationHost
       family={family}
       workspaceId={workspaceId}
-      extraProps={onChainSummaryChange ? { onChainSummaryChange } : undefined}
+      extraProps={{
+        workspaceLabel,
+        arc3PageDefinition,
+        arc3B1B2PageDefinition,
+        arc3B1B2Models,
+        arc3B1B2Files,
+        onArc3B1B2PageDefinitionSaved,
+        onChainSummaryChange,
+      }}
     />
   );
 }

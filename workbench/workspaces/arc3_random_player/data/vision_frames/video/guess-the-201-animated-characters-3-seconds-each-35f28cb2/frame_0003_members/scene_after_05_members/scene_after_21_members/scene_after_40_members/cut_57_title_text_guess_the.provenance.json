@@ -1,0 +1,592 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0003_members/scene_after_05_members/scene_after_21_members/scene_after_40_members/cut_57_title_text_guess_the.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0003_members/scene_after_05_members/scene_after_21_members/scene_after_40_members/cut_57_title_text_guess_the.provenance.json",
+  "createdAt": "2026-09-01T17:37:17.353137Z",
+  "operation": "extract_object_cutout",
+  "dimensions": {
+    "width": 312,
+    "height": 74
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0003.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 26.2,
+    "sceneIndex": 11,
+    "videoFrameIndex": 786
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0003_members/scene_after_05_members/scene_after_21_members/scene_after_40.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0003_members/scene_after_05_members/scene_after_21_members/scene_after_40.provenance.json"
+  },
+  "source": {
+    "objectName": "title_text_guess_the"
+  },
+  "transform": {
+    "inputDimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0003_members/scene_after_05_members/scene_after_21_members/scene_after_40.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0003.png",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "verified": true
+    },
+    "cropBox": [
+      139,
+      14,
+      451,
+      88
+    ],
+    "maskScale": 4,
+    "polygons": [
+      [
+        [
+          150,
+          18
+        ],
+        [
+          185,
+          16
+        ],
+        [
+          180,
+          84
+        ],
+        [
+          145,
+          86
+        ],
+        [
+          141,
+          52
+        ]
+      ],
+      [
+        [
+          191,
+          18
+        ],
+        [
+          224,
+          16
+        ],
+        [
+          219,
+          84
+        ],
+        [
+          186,
+          86
+        ],
+        [
+          182,
+          52
+        ]
+      ],
+      [
+        [
+          229,
+          18
+        ],
+        [
+          261,
+          16
+        ],
+        [
+          256,
+          84
+        ],
+        [
+          224,
+          86
+        ],
+        [
+          220,
+          52
+        ]
+      ],
+      [
+        [
+          265,
+          18
+        ],
+        [
+          298,
+          16
+        ],
+        [
+          293,
+          84
+        ],
+        [
+          260,
+          86
+        ],
+        [
+          256,
+          52
+        ]
+      ],
+      [
+        [
+          302,
+          18
+        ],
+        [
+          335,
+          16
+        ],
+        [
+          330,
+          84
+        ],
+        [
+          297,
+          86
+        ],
+        [
+          293,
+          52
+        ]
+      ],
+      [
+        [
+          345,
+          18
+        ],
+        [
+          375,
+          16
+        ],
+        [
+          370,
+          84
+        ],
+        [
+          340,
+          86
+        ],
+        [
+          336,
+          52
+        ]
+      ],
+      [
+        [
+          378,
+          18
+        ],
+        [
+          412,
+          16
+        ],
+        [
+          407,
+          84
+        ],
+        [
+          374,
+          86
+        ],
+        [
+          370,
+          52
+        ]
+      ],
+      [
+        [
+          416,
+          18
+        ],
+        [
+          448,
+          16
+        ],
+        [
+          443,
+          84
+        ],
+        [
+          411,
+          86
+        ],
+        [
+          407,
+          52
+        ]
+      ]
+    ],
+    "holes": []
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0003.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:29.317196Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0003_members/scene_after_05.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0003.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0003.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          374,
+          105,
+          534,
+          425
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind Scooby-Doo is the interior of the central rounded white panel: a clean, nearly uniform white fill with very subtle compression noise and no scene details. The removed area should be inpainted as flat panel white so the center remains blank.",
+          "colors": [
+            "#FDFDFD",
+            "#FAFAFA",
+            "#F7F7F7"
+          ],
+          "continueEdges": [
+            "Continue the panel’s uniform white interior seamlessly through the entire hole.",
+            "At the lower clipped contour where the character meets the panel boundary, keep the fill aligned with the same interior white up to that edge; do not introduce new outlines or shadows."
+          ],
+          "texture": "Mostly flat solid fill; extremely light JPEG grain/compression mottling only."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:21:32.725506Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0003_members/scene_after_05_members/scene_after_21.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0003_members/scene_after_05.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0003.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          29,
+          15,
+          62,
+          63
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "The removed white '3' should be filled with the orange interior of the top-left badge, matching the badge’s smooth shading from brighter orange on the upper-left to slightly deeper orange on the lower-right.",
+          "colors": [
+            "#F9B11E",
+            "#F39A12",
+            "#EA8607"
+          ],
+          "continueEdges": [
+            "Continue the circular badge’s internal gradient seamlessly through the numeral cutout",
+            "Maintain the local highlight direction and soft falloff consistent with adjacent orange pixels"
+          ],
+          "texture": "Clean flat vector-style fill with subtle gradient, no noise or pattern."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:24:14.483993Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0003_members/scene_after_05_members/scene_after_21_members/scene_after_40.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0003_members/scene_after_05_members/scene_after_21.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0003.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          793,
+          2,
+          853,
+          44
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "The removed 'QUIZ' lettering and punctuation reveal the plain interior of the top-right white circular logo badge. Fill all removed glyph areas with the same clean white badge interior so the logo circle appears blank.",
+          "colors": [
+            "#FFFFFF",
+            "#F8F8F8",
+            "#EFEFEF"
+          ],
+          "continueEdges": [
+            "Continue the uniform white fill seamlessly through every removed letter and punctuation contour.",
+            "Preserve subtle anti-aliased edge softness where glyph borders met the white badge background.",
+            "Keep the outer circular badge boundary unchanged; only interior text pixels are replaced."
+          ],
+          "texture": "Flat, smooth white vector-like surface with very slight compression noise consistent with the existing logo interior."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:29:16.605694Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0003_members/scene_after_05_members/scene_after_21_members/scene_after_40_members/cut_57_title_text_guess_the.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 312,
+        "height": 74
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0003_members/scene_after_05_members/scene_after_21_members/scene_after_40.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0003.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          139,
+          14,
+          451,
+          88
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              150,
+              18
+            ],
+            [
+              185,
+              16
+            ],
+            [
+              180,
+              84
+            ],
+            [
+              145,
+              86
+            ],
+            [
+              141,
+              52
+            ]
+          ],
+          [
+            [
+              191,
+              18
+            ],
+            [
+              224,
+              16
+            ],
+            [
+              219,
+              84
+            ],
+            [
+              186,
+              86
+            ],
+            [
+              182,
+              52
+            ]
+          ],
+          [
+            [
+              229,
+              18
+            ],
+            [
+              261,
+              16
+            ],
+            [
+              256,
+              84
+            ],
+            [
+              224,
+              86
+            ],
+            [
+              220,
+              52
+            ]
+          ],
+          [
+            [
+              265,
+              18
+            ],
+            [
+              298,
+              16
+            ],
+            [
+              293,
+              84
+            ],
+            [
+              260,
+              86
+            ],
+            [
+              256,
+              52
+            ]
+          ],
+          [
+            [
+              302,
+              18
+            ],
+            [
+              335,
+              16
+            ],
+            [
+              330,
+              84
+            ],
+            [
+              297,
+              86
+            ],
+            [
+              293,
+              52
+            ]
+          ],
+          [
+            [
+              345,
+              18
+            ],
+            [
+              375,
+              16
+            ],
+            [
+              370,
+              84
+            ],
+            [
+              340,
+              86
+            ],
+            [
+              336,
+              52
+            ]
+          ],
+          [
+            [
+              378,
+              18
+            ],
+            [
+              412,
+              16
+            ],
+            [
+              407,
+              84
+            ],
+            [
+              374,
+              86
+            ],
+            [
+              370,
+              52
+            ]
+          ],
+          [
+            [
+              416,
+              18
+            ],
+            [
+              448,
+              16
+            ],
+            [
+              443,
+              84
+            ],
+            [
+              411,
+              86
+            ],
+            [
+              407,
+              52
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T17:37:17.353137Z"
+    }
+  ]
+}

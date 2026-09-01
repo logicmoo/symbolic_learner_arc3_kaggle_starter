@@ -64,10 +64,15 @@
     ))
     (owned_by github-copilot)
     (provider github-copilot)
+    (codex_supplier null)
     (backing_model auto)
     (connected true)
     (active_workers ([]
       worker-copilot-10
+      worker-copilot-11
+      worker-copilot-19
+      worker-copilot-20
+      worker-copilot-21
     ))
     (route_targets ([]))
     (routing_mode on_demand)
@@ -172,10 +177,15 @@
     ))
     (owned_by github-copilot)
     (provider github-copilot)
+    (codex_supplier null)
     (backing_model auto)
     (connected true)
     (active_workers ([]
       worker-copilot-10
+      worker-copilot-11
+      worker-copilot-19
+      worker-copilot-20
+      worker-copilot-21
     ))
     (route_targets ([]))
     (routing_mode on_demand)

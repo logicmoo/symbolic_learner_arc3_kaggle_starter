@@ -12,6 +12,7 @@ type Props = {
   b1b2Models?: ModelChoice[];
   b1b2Files?: WorkspaceFileRecord[];
   onB1B2PageDefinitionSaved?: () => Promise<unknown> | unknown;
+  onRecordingChanged?: () => Promise<unknown> | unknown;
 };
 
 type GameInfo = {
@@ -131,6 +132,7 @@ export function Arc3PlayPage({
   b1b2Models,
   b1b2Files,
   onB1B2PageDefinitionSaved,
+  onRecordingChanged,
 }: Props) {
   const [games, setGames] = useState<GameInfo[]>([]);
   const [gamesLoading, setGamesLoading] = useState(false);
@@ -333,7 +335,7 @@ export function Arc3PlayPage({
 
   // Keep the editable recordings-path field synced with the current
   // session's effective path (server-authoritative; blank when it's on
-  // the default data/Recordings/<game>/ location, so "Set" only submits
+  // the default data/arc3_games/recordings/<game>/ location, so "Set" only submits
   // an explicit override).
   useEffect(() => {
     setRecordingsPathDraft(session && !session.recordingsPathIsDefault ? session.recordingsPath || "" : "");
@@ -592,6 +594,7 @@ export function Arc3PlayPage({
       setReplayPlaying(false);
       const updated = payload.session as PlaySessionSnapshot;
       setSession(updated);
+      await onRecordingChanged?.();
       return `${actionId}${x !== undefined ? ` (${x},${y})` : ""} · move ${updated.moveCount} · ${updated.state ?? "?"}`;
     }, `Action ${actionId}`);
 
@@ -604,6 +607,7 @@ export function Arc3PlayPage({
       setReplayPlaying(false);
       const updated = payload.session as PlaySessionSnapshot;
       setSession(updated);
+      await onRecordingChanged?.();
       return `restarted level ${updated.level ?? "?"} · ${updated.levelDir}`;
     }, "Restart level");
 
@@ -1164,7 +1168,7 @@ export function Arc3PlayPage({
         <div>
           <h2>{pageDefinition.label || "Play & Record"}</h2>
           <small>
-            {workspaceLabel} · every move is recorded to data/Recordings/&lt;game&gt;/saved_&lt;NNN&gt;/0..k for B1 -&gt; B2 setups
+            {workspaceLabel} · every move is recorded to data/arc3_games/recordings/&lt;game&gt;/saved_&lt;NNN&gt;/0..k for B1 -&gt; B2 setups
           </small>
         </div>
         <div className="arc3-play-game-picker">
@@ -1683,13 +1687,13 @@ export function Arc3PlayPage({
                     {session.forkedFrom && <small>resumed from save-point {session.forkedFrom}</small>}
                   </div>
                   <div className="arc3-play-target arc3-play-recordings-path">
-                    <small title="Where future level dirs + savepoints.json for this session are written. Blank = default data/Recordings/<game>/. Applies to the next attempt/level, not files already on disk.">
+                    <small title="Where future level dirs + savepoints.json for this session are written. Blank = default data/arc3_games/recordings/<game>/. Applies to the next attempt/level, not files already on disk.">
                       RECORDINGS PATH (workspace-relative)
                     </small>
                     <input
                       type="text"
                       value={recordingsPathDraft}
-                      placeholder={`data/Recordings/${session.gameDirectory} (default)`}
+                      placeholder={`data/arc3_games/recordings/${session.gameDirectory} (default)`}
                       disabled={busy}
                       onChange={(event) => setRecordingsPathDraft(event.target.value)}
                     />
@@ -1974,14 +1978,14 @@ export function Arc3PlayPage({
           </div>
           <div className="arc3-play-savepoints arc3-play-recordings">
             <small>
-              IMPORTABLES (official ARC-AGI-3 JSONL play logs / release-run logs in data/importables/)
+              IMPORTABLES (official ARC-AGI-3 JSONL play logs / release-run logs in data/arc3_games/importables/)
               <button className="arc3-play-collapse-toggle" onClick={() => toggleSection("importables")}>
                 {collapsedSections.importables ? "▸ Expand" : "▾ Collapse"}
               </button>
               <button
                 className="arc3-play-rescan"
                 disabled={busy}
-                title="Rescan data/importables/ for recordings"
+                title="Rescan data/arc3_games/importables/ for recordings"
                 onClick={() => void perform(async () => { await loadRecordings(); return "importables list rescanned"; }, "Rescan importables")}
               >
                 Rescan
@@ -2041,7 +2045,7 @@ export function Arc3PlayPage({
                   <div className="arc3-play-empty">
                     No importable recordings found.{" "}
                     <button className="arc3-play-rescan" disabled={busy} onClick={() => void loadRecordings()}>
-                      Scan data/importables/
+                      Scan data/arc3_games/importables/
                     </button>
                   </div>
                 )}

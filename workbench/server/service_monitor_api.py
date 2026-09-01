@@ -599,11 +599,13 @@ def schedule_startup_reconciliation(api_port: int = 8000, delay_seconds: float =
     def run() -> None:
         time.sleep(delay_seconds)
         results = reconcile_startup_services(api_port)
-        get_filesystem_provider().make_directory(LOG_ROOT)
-        get_filesystem_provider().write_text(
-            LOG_ROOT / "startup-reconciliation.json",
-            json.dumps({"reconciledAtEpoch": time.time(), "results": results}, indent=2) + "\n",
-        )
+        provider = get_filesystem_provider()
+        provider.make_directory(LOG_ROOT)
+        payload = json.dumps(
+            {"reconciledAtEpoch": time.time(), "results": results},
+            indent=2,
+        ) + "\n"
+        provider.write_bytes(LOG_ROOT / "startup-reconciliation.json", payload.encode("utf-8"))
     Thread(target=run, name="workbench-startup-reconciler", daemon=True).start()
 
 

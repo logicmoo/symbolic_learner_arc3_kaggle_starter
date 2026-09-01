@@ -1,0 +1,567 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/next_pass_17_tricycle_members/cut_99_upper_tan_red_fragment.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/next_pass_17_tricycle_members/cut_99_upper_tan_red_fragment.provenance.json",
+  "createdAt": "2026-09-01T19:43:29.339555Z",
+  "operation": "extract_object_cutout",
+  "dimensions": {
+    "width": 162,
+    "height": 132
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 126.7,
+    "sceneIndex": 50,
+    "videoFrameIndex": 3801
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/next_pass_17_tricycle.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/next_pass_17_tricycle.provenance.json"
+  },
+  "source": {
+    "objectName": "upper_tan_red_fragment"
+  },
+  "transform": {
+    "inputDimensions": {
+      "width": 811,
+      "height": 502
+    },
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/next_pass_17_tricycle.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/next_pass_17_tricycle.png",
+      "dimensions": {
+        "width": 811,
+        "height": 502
+      },
+      "verified": true
+    },
+    "cropBox": [
+      316,
+      47,
+      478,
+      179
+    ],
+    "maskScale": 4,
+    "polygons": [
+      [
+        [
+          320,
+          90
+        ],
+        [
+          336,
+          73
+        ],
+        [
+          360,
+          56
+        ],
+        [
+          392,
+          49
+        ],
+        [
+          425,
+          49
+        ],
+        [
+          451,
+          59
+        ],
+        [
+          469,
+          76
+        ],
+        [
+          475,
+          99
+        ],
+        [
+          470,
+          121
+        ],
+        [
+          456,
+          139
+        ],
+        [
+          437,
+          154
+        ],
+        [
+          414,
+          168
+        ],
+        [
+          392,
+          176
+        ],
+        [
+          370,
+          176
+        ],
+        [
+          350,
+          169
+        ],
+        [
+          335,
+          155
+        ],
+        [
+          324,
+          136
+        ],
+        [
+          318,
+          116
+        ]
+      ]
+    ],
+    "holes": []
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:38.921502Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/cut_17_tricycle.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 233,
+        "height": 130
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          283,
+          242,
+          516,
+          372
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              285,
+              317
+            ],
+            [
+              288,
+              298
+            ],
+            [
+              298,
+              282
+            ],
+            [
+              315,
+              272
+            ],
+            [
+              335,
+              270
+            ],
+            [
+              354,
+              275
+            ],
+            [
+              368,
+              288
+            ],
+            [
+              377,
+              306
+            ],
+            [
+              379,
+              326
+            ],
+            [
+              373,
+              345
+            ],
+            [
+              360,
+              360
+            ],
+            [
+              342,
+              369
+            ],
+            [
+              322,
+              369
+            ],
+            [
+              304,
+              362
+            ],
+            [
+              291,
+              349
+            ],
+            [
+              285,
+              333
+            ]
+          ],
+          [
+            [
+              350,
+              357
+            ],
+            [
+              358,
+              340
+            ],
+            [
+              363,
+              321
+            ],
+            [
+              367,
+              301
+            ],
+            [
+              373,
+              282
+            ],
+            [
+              381,
+              267
+            ],
+            [
+              392,
+              258
+            ],
+            [
+              405,
+              259
+            ],
+            [
+              408,
+              269
+            ],
+            [
+              402,
+              282
+            ],
+            [
+              392,
+              296
+            ],
+            [
+              383,
+              312
+            ],
+            [
+              375,
+              329
+            ],
+            [
+              369,
+              347
+            ],
+            [
+              361,
+              361
+            ],
+            [
+              353,
+              365
+            ]
+          ],
+          [
+            [
+              386,
+              262
+            ],
+            [
+              392,
+              249
+            ],
+            [
+              403,
+              244
+            ],
+            [
+              414,
+              246
+            ],
+            [
+              418,
+              255
+            ],
+            [
+              414,
+              267
+            ],
+            [
+              404,
+              272
+            ],
+            [
+              393,
+              270
+            ]
+          ],
+          [
+            [
+              426,
+              271
+            ],
+            [
+              432,
+              271
+            ],
+            [
+              433,
+              317
+            ],
+            [
+              427,
+              317
+            ]
+          ],
+          [
+            [
+              419,
+              279
+            ],
+            [
+              423,
+              279
+            ],
+            [
+              424,
+              314
+            ],
+            [
+              420,
+              314
+            ]
+          ],
+          [
+            [
+              470,
+              343
+            ],
+            [
+              472,
+              330
+            ],
+            [
+              481,
+              322
+            ],
+            [
+              493,
+              320
+            ],
+            [
+              504,
+              324
+            ],
+            [
+              511,
+              333
+            ],
+            [
+              513,
+              345
+            ],
+            [
+              509,
+              357
+            ],
+            [
+              500,
+              365
+            ],
+            [
+              488,
+              367
+            ],
+            [
+              477,
+              363
+            ],
+            [
+              471,
+              354
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T17:23:18.750047Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/next_pass_17_tricycle.png",
+      "operation": "enlarge_object_for_analysis",
+      "dimensions": {
+        "width": 811,
+        "height": 502
+      },
+      "transform": {
+        "sourceDimensions": {
+          "width": 233,
+          "height": 130
+        },
+        "scale": 3,
+        "resizedDimensions": {
+          "width": 699,
+          "height": 390
+        },
+        "padding": {
+          "left": 56,
+          "top": 56,
+          "right": 56,
+          "bottom": 56
+        }
+      },
+      "createdAt": "2026-09-01T17:23:18.898691Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/next_pass_17_tricycle_members/cut_99_upper_tan_red_fragment.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 162,
+        "height": 132
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 811,
+          "height": 502
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/next_pass_17_tricycle.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/next_pass_17_tricycle.png",
+          "dimensions": {
+            "width": 811,
+            "height": 502
+          },
+          "verified": true
+        },
+        "cropBox": [
+          316,
+          47,
+          478,
+          179
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              320,
+              90
+            ],
+            [
+              336,
+              73
+            ],
+            [
+              360,
+              56
+            ],
+            [
+              392,
+              49
+            ],
+            [
+              425,
+              49
+            ],
+            [
+              451,
+              59
+            ],
+            [
+              469,
+              76
+            ],
+            [
+              475,
+              99
+            ],
+            [
+              470,
+              121
+            ],
+            [
+              456,
+              139
+            ],
+            [
+              437,
+              154
+            ],
+            [
+              414,
+              168
+            ],
+            [
+              392,
+              176
+            ],
+            [
+              370,
+              176
+            ],
+            [
+              350,
+              169
+            ],
+            [
+              335,
+              155
+            ],
+            [
+              324,
+              136
+            ],
+            [
+              318,
+              116
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T19:43:29.339555Z"
+    }
+  ]
+}

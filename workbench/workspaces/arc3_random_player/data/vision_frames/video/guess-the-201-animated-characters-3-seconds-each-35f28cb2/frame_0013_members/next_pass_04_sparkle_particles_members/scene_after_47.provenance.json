@@ -1,0 +1,456 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/next_pass_04_sparkle_particles_members/scene_after_47.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/next_pass_04_sparkle_particles_members/scene_after_47.provenance.json",
+  "createdAt": "2026-09-01T17:34:01.966220Z",
+  "operation": "remove_object_from_scene",
+  "dimensions": {
+    "width": 1027,
+    "height": 682
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 103.5,
+    "sceneIndex": 41,
+    "videoFrameIndex": 3105
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/next_pass_04_sparkle_particles.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/next_pass_04_sparkle_particles.provenance.json"
+  },
+  "source": {
+    "objectName": "upper_left_faint_dots",
+    "cutout": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/next_pass_04_sparkle_particles_members/cut_47_upper_left_faint_dots.png",
+    "fillInstructions": {
+      "description": "Each removed faint dot reveals uninterrupted near-black background with no underlying structure; the area is uniformly dark between the nearby upper-left bright fragment and the rest of the frame.",
+      "colors": [
+        "#000000",
+        "#010101",
+        "#020202"
+      ],
+      "continueEdges": [
+        "Continue the flat black field seamlessly through all three tiny dot holes",
+        "Do not extend the diagonal dotted trail through these holes; those dots are the removed foreground marks",
+        "Keep the nearby upper-left bright fragment edge unchanged and unexpanded"
+      ],
+      "texture": "Essentially textureless solid black with minimal compression noise."
+    }
+  },
+  "transform": {
+    "fill": "median",
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/next_pass_04_sparkle_particles.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/next_pass_04_sparkle_particles.png",
+      "dimensions": {
+        "width": 1027,
+        "height": 682
+      },
+      "verified": true
+    },
+    "removedBox": [
+      245,
+      247,
+      326,
+      333
+    ],
+    "maskScale": 4,
+    "fillInstructions": {
+      "description": "Each removed faint dot reveals uninterrupted near-black background with no underlying structure; the area is uniformly dark between the nearby upper-left bright fragment and the rest of the frame.",
+      "colors": [
+        "#000000",
+        "#010101",
+        "#020202"
+      ],
+      "continueEdges": [
+        "Continue the flat black field seamlessly through all three tiny dot holes",
+        "Do not extend the diagonal dotted trail through these holes; those dots are the removed foreground marks",
+        "Keep the nearby upper-left bright fragment edge unchanged and unexpanded"
+      ],
+      "texture": "Essentially textureless solid black with minimal compression noise."
+    },
+    "imageGeneration": {
+      "renderer": "median"
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:36.611064Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/cut_04_sparkle_particles.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 295,
+        "height": 180
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          284,
+          117,
+          579,
+          297
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              288,
+              119
+            ],
+            [
+              290,
+              121
+            ],
+            [
+              288,
+              123
+            ],
+            [
+              286,
+              121
+            ]
+          ],
+          [
+            [
+              301,
+              132
+            ],
+            [
+              303,
+              134
+            ],
+            [
+              301,
+              136
+            ],
+            [
+              299,
+              134
+            ]
+          ],
+          [
+            [
+              315,
+              147
+            ],
+            [
+              317,
+              149
+            ],
+            [
+              315,
+              151
+            ],
+            [
+              313,
+              149
+            ]
+          ],
+          [
+            [
+              329,
+              160
+            ],
+            [
+              331,
+              162
+            ],
+            [
+              329,
+              164
+            ],
+            [
+              327,
+              162
+            ]
+          ],
+          [
+            [
+              343,
+              174
+            ],
+            [
+              345,
+              176
+            ],
+            [
+              343,
+              178
+            ],
+            [
+              341,
+              176
+            ]
+          ],
+          [
+            [
+              357,
+              188
+            ],
+            [
+              359,
+              190
+            ],
+            [
+              357,
+              192
+            ],
+            [
+              355,
+              190
+            ]
+          ],
+          [
+            [
+              370,
+              202
+            ],
+            [
+              372,
+              204
+            ],
+            [
+              370,
+              206
+            ],
+            [
+              368,
+              204
+            ]
+          ],
+          [
+            [
+              515,
+              238
+            ],
+            [
+              517,
+              240
+            ],
+            [
+              515,
+              242
+            ],
+            [
+              513,
+              240
+            ]
+          ],
+          [
+            [
+              523,
+              246
+            ],
+            [
+              525,
+              248
+            ],
+            [
+              523,
+              250
+            ],
+            [
+              521,
+              248
+            ]
+          ],
+          [
+            [
+              531,
+              254
+            ],
+            [
+              533,
+              256
+            ],
+            [
+              531,
+              258
+            ],
+            [
+              529,
+              256
+            ]
+          ],
+          [
+            [
+              540,
+              262
+            ],
+            [
+              542,
+              264
+            ],
+            [
+              540,
+              266
+            ],
+            [
+              538,
+              264
+            ]
+          ],
+          [
+            [
+              550,
+              271
+            ],
+            [
+              552,
+              273
+            ],
+            [
+              550,
+              275
+            ],
+            [
+              548,
+              273
+            ]
+          ],
+          [
+            [
+              562,
+              281
+            ],
+            [
+              564,
+              283
+            ],
+            [
+              562,
+              285
+            ],
+            [
+              560,
+              283
+            ]
+          ],
+          [
+            [
+              575,
+              292
+            ],
+            [
+              577,
+              294
+            ],
+            [
+              575,
+              296
+            ],
+            [
+              573,
+              294
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T17:21:32.306718Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/next_pass_04_sparkle_particles.png",
+      "operation": "enlarge_object_for_analysis",
+      "dimensions": {
+        "width": 1027,
+        "height": 682
+      },
+      "transform": {
+        "sourceDimensions": {
+          "width": 295,
+          "height": 180
+        },
+        "scale": 3,
+        "resizedDimensions": {
+          "width": 885,
+          "height": 540
+        },
+        "padding": {
+          "left": 71,
+          "top": 71,
+          "right": 71,
+          "bottom": 71
+        }
+      },
+      "createdAt": "2026-09-01T17:21:32.376622Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/next_pass_04_sparkle_particles_members/scene_after_47.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 1027,
+        "height": 682
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/next_pass_04_sparkle_particles.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/next_pass_04_sparkle_particles.png",
+          "dimensions": {
+            "width": 1027,
+            "height": 682
+          },
+          "verified": true
+        },
+        "removedBox": [
+          245,
+          247,
+          326,
+          333
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Each removed faint dot reveals uninterrupted near-black background with no underlying structure; the area is uniformly dark between the nearby upper-left bright fragment and the rest of the frame.",
+          "colors": [
+            "#000000",
+            "#010101",
+            "#020202"
+          ],
+          "continueEdges": [
+            "Continue the flat black field seamlessly through all three tiny dot holes",
+            "Do not extend the diagonal dotted trail through these holes; those dots are the removed foreground marks",
+            "Keep the nearby upper-left bright fragment edge unchanged and unexpanded"
+          ],
+          "texture": "Essentially textureless solid black with minimal compression noise."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:34:01.966220Z"
+    }
+  ]
+}

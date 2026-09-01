@@ -1,0 +1,240 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011_members/scene_after_03_members/scene_after_08_members/scene_after_26.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011_members/scene_after_03_members/scene_after_08_members/scene_after_26.provenance.json",
+  "createdAt": "2026-09-01T17:27:31.278807Z",
+  "operation": "remove_object_from_scene",
+  "dimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 88.033,
+    "sceneIndex": 35,
+    "videoFrameIndex": 2641
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011_members/scene_after_03_members/scene_after_08.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011_members/scene_after_03_members/scene_after_08.provenance.json"
+  },
+  "source": {
+    "objectName": "left_vertical_text_fun_quiz_questions",
+    "cutout": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011_members/scene_after_03_members/scene_after_08_members/cut_26_left_vertical_text_fun_q.png",
+    "fillInstructions": {
+      "description": "Behind the removed left vertical text is the plain blue frame background with a smooth gradient, slightly darker toward the far left edge and gradually brighter toward the inner center area. No independent object passes through this strip.",
+      "colors": [
+        "#1B80E6",
+        "#238CEC",
+        "#2A96F2",
+        "#31A0F6"
+      ],
+      "continueEdges": [
+        "Continue the vertical blue gradient transition from the surrounding left-edge pixels through the removed text area",
+        "Preserve the subtle left-to-right brightening toward the center of the frame",
+        "Keep anti-aliased edge softness consistent with adjacent background to avoid hard seams"
+      ],
+      "texture": "Clean, flat digital gradient with no grain, pattern, or line detail."
+    }
+  },
+  "transform": {
+    "fill": "median",
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011_members/scene_after_03_members/scene_after_08.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011.png",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "verified": true
+    },
+    "removedBox": [
+      14,
+      145,
+      34,
+      399
+    ],
+    "maskScale": 4,
+    "fillInstructions": {
+      "description": "Behind the removed left vertical text is the plain blue frame background with a smooth gradient, slightly darker toward the far left edge and gradually brighter toward the inner center area. No independent object passes through this strip.",
+      "colors": [
+        "#1B80E6",
+        "#238CEC",
+        "#2A96F2",
+        "#31A0F6"
+      ],
+      "continueEdges": [
+        "Continue the vertical blue gradient transition from the surrounding left-edge pixels through the removed text area",
+        "Preserve the subtle left-to-right brightening toward the center of the frame",
+        "Keep anti-aliased edge softness consistent with adjacent background to avoid hard seams"
+      ],
+      "texture": "Clean, flat digital gradient with no grain, pattern, or line detail."
+    },
+    "imageGeneration": {
+      "renderer": "median"
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:34.916556Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011_members/scene_after_03.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          26,
+          21,
+          69,
+          65
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed white '11' digits is the interior of the orange question badge: a smooth warm orange fill with a slight radial highlight toward the upper-left/center and slightly deeper orange toward the lower-right edge.",
+          "colors": [
+            "#F39A1E",
+            "#F5A623",
+            "#E98612",
+            "#D97706"
+          ],
+          "continueEdges": [
+            "Continue the badge’s orange gradient seamlessly across both numeral holes.",
+            "Preserve the gentle highlight falloff so tone matches adjacent orange around each removed '1'.",
+            "Do not introduce new outlines; keep transitions soft and uniform within the badge interior."
+          ],
+          "texture": "Clean flat graphic gradient with no grain; subtle glossy-style shading only."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:21:14.875003Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011_members/scene_after_03_members/scene_after_08.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011_members/scene_after_03.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          9,
+          9,
+          93,
+          93
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the orange question badge is the base blue quiz background with a smooth corner-to-center gradient; in this top-left area it appears as medium-to-bright azure blue with no text or decorative elements crossing the badge interior region.",
+          "colors": [
+            "#1E88F5",
+            "#238EF7",
+            "#2A95F8",
+            "#2F9BF9",
+            "#197FEF"
+          ],
+          "continueEdges": [
+            "Continue the surrounding blue gradient seamlessly through the circular hole, matching the local top-left shading.",
+            "Preserve the gentle brightening trend toward the center/right of the frame and slightly deeper blue toward the outer corner.",
+            "Do not introduce outlines, glyph remnants, or ring artifacts from the removed badge."
+          ],
+          "texture": "Clean digital gradient with very subtle compression smoothing and no distinct pattern."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:22:38.579773Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011_members/scene_after_03_members/scene_after_08_members/scene_after_26.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011_members/scene_after_03_members/scene_after_08.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          14,
+          145,
+          34,
+          399
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed left vertical text is the plain blue frame background with a smooth gradient, slightly darker toward the far left edge and gradually brighter toward the inner center area. No independent object passes through this strip.",
+          "colors": [
+            "#1B80E6",
+            "#238CEC",
+            "#2A96F2",
+            "#31A0F6"
+          ],
+          "continueEdges": [
+            "Continue the vertical blue gradient transition from the surrounding left-edge pixels through the removed text area",
+            "Preserve the subtle left-to-right brightening toward the center of the frame",
+            "Keep anti-aliased edge softness consistent with adjacent background to avoid hard seams"
+          ],
+          "texture": "Clean, flat digital gradient with no grain, pattern, or line detail."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:27:31.278807Z"
+    }
+  ]
+}

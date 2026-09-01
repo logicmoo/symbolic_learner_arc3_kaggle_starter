@@ -1,0 +1,512 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004_members/scene_after_46_members/next_pass_62_spongebob_character.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004_members/scene_after_46_members/next_pass_62_spongebob_character.provenance.json",
+  "createdAt": "2026-09-01T19:24:00.966870Z",
+  "operation": "enlarge_object_for_analysis",
+  "dimensions": {
+    "width": 843,
+    "height": 1047
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 33.9,
+    "sceneIndex": 14,
+    "videoFrameIndex": 1017
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004_members/scene_after_46_members/cut_62_spongebob_character.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004_members/scene_after_46_members/cut_62_spongebob_character.provenance.json"
+  },
+  "source": {
+    "objectName": "spongebob_character"
+  },
+  "transform": {
+    "sourceDimensions": {
+      "width": 233,
+      "height": 301
+    },
+    "scale": 3,
+    "resizedDimensions": {
+      "width": 699,
+      "height": 903
+    },
+    "padding": {
+      "left": 72,
+      "top": 72,
+      "right": 72,
+      "bottom": 72
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:29.906006Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004_members/scene_after_46.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          245,
+          119,
+          636,
+          417
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Removing the bubble rims and highlights reveals uninterrupted underlying panel content at each bubble location: cyan/teal water gradients in upper areas, parts of the pineapple/sea region on the right, and pale sandy seafloor with subtle speckling in lower areas. No new object appears; each bubble hole should be filled by direct continuation of whatever scene pixels surround that bubble segment.",
+          "colors": [
+            "#22B9D6",
+            "#1FA7C8",
+            "#79D8E8",
+            "#DDE7CF",
+            "#C9D5B8",
+            "#F2EEDC"
+          ],
+          "continueEdges": [
+            "Continue local underwater gradients smoothly through each removed ring segment in the upper-left and right clusters",
+            "Preserve any nearby contour lines (pineapple edges, seabed horizon transitions, or soft background boundaries) straight through former bubble positions",
+            "Maintain sandy texture continuity in lower bubbles, including fine grain/speckle and soft shading variation",
+            "Blend edge anti-aliasing softly so no circular seam remains where bubble outlines were"
+          ],
+          "texture": "Match existing scene texture: soft cartoon gradients in water, gentle matte sand grain on seafloor, and clean illustrated edges."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:34:01.398690Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004_members/scene_after_46_members/cut_62_spongebob_character.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 233,
+        "height": 301
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004_members/scene_after_46.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          332,
+          104,
+          565,
+          405
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              361,
+              106
+            ],
+            [
+              352,
+              108
+            ],
+            [
+              347,
+              116
+            ],
+            [
+              349,
+              124
+            ],
+            [
+              356,
+              130
+            ],
+            [
+              356,
+              147
+            ],
+            [
+              355,
+              168
+            ],
+            [
+              352,
+              186
+            ],
+            [
+              356,
+              198
+            ],
+            [
+              370,
+              210
+            ],
+            [
+              382,
+              217
+            ],
+            [
+              389,
+              225
+            ],
+            [
+              391,
+              236
+            ],
+            [
+              384,
+              245
+            ],
+            [
+              373,
+              252
+            ],
+            [
+              367,
+              262
+            ],
+            [
+              364,
+              274
+            ],
+            [
+              367,
+              286
+            ],
+            [
+              375,
+              296
+            ],
+            [
+              388,
+              304
+            ],
+            [
+              403,
+              309
+            ],
+            [
+              419,
+              311
+            ],
+            [
+              435,
+              311
+            ],
+            [
+              449,
+              307
+            ],
+            [
+              462,
+              299
+            ],
+            [
+              473,
+              289
+            ],
+            [
+              481,
+              277
+            ],
+            [
+              486,
+              263
+            ],
+            [
+              498,
+              253
+            ],
+            [
+              515,
+              248
+            ],
+            [
+              533,
+              249
+            ],
+            [
+              549,
+              255
+            ],
+            [
+              558,
+              266
+            ],
+            [
+              562,
+              279
+            ],
+            [
+              558,
+              291
+            ],
+            [
+              548,
+              300
+            ],
+            [
+              533,
+              305
+            ],
+            [
+              516,
+              305
+            ],
+            [
+              501,
+              301
+            ],
+            [
+              490,
+              293
+            ],
+            [
+              483,
+              295
+            ],
+            [
+              480,
+              309
+            ],
+            [
+              482,
+              328
+            ],
+            [
+              488,
+              345
+            ],
+            [
+              499,
+              359
+            ],
+            [
+              503,
+              373
+            ],
+            [
+              498,
+              384
+            ],
+            [
+              486,
+              392
+            ],
+            [
+              470,
+              395
+            ],
+            [
+              456,
+              392
+            ],
+            [
+              444,
+              384
+            ],
+            [
+              437,
+              373
+            ],
+            [
+              431,
+              360
+            ],
+            [
+              426,
+              352
+            ],
+            [
+              414,
+              353
+            ],
+            [
+              403,
+              359
+            ],
+            [
+              392,
+              370
+            ],
+            [
+              385,
+              383
+            ],
+            [
+              378,
+              394
+            ],
+            [
+              366,
+              402
+            ],
+            [
+              352,
+              403
+            ],
+            [
+              341,
+              396
+            ],
+            [
+              337,
+              383
+            ],
+            [
+              339,
+              367
+            ],
+            [
+              347,
+              351
+            ],
+            [
+              359,
+              336
+            ],
+            [
+              372,
+              324
+            ],
+            [
+              378,
+              314
+            ],
+            [
+              373,
+              306
+            ],
+            [
+              359,
+              299
+            ],
+            [
+              346,
+              289
+            ],
+            [
+              337,
+              275
+            ],
+            [
+              334,
+              259
+            ],
+            [
+              338,
+              242
+            ],
+            [
+              347,
+              229
+            ],
+            [
+              358,
+              220
+            ],
+            [
+              364,
+              210
+            ],
+            [
+              363,
+              197
+            ],
+            [
+              359,
+              181
+            ],
+            [
+              358,
+              163
+            ],
+            [
+              360,
+              145
+            ],
+            [
+              366,
+              128
+            ],
+            [
+              368,
+              115
+            ],
+            [
+              361,
+              106
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T19:24:00.755339Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004_members/scene_after_46_members/next_pass_62_spongebob_character.png",
+      "operation": "enlarge_object_for_analysis",
+      "dimensions": {
+        "width": 843,
+        "height": 1047
+      },
+      "transform": {
+        "sourceDimensions": {
+          "width": 233,
+          "height": 301
+        },
+        "scale": 3,
+        "resizedDimensions": {
+          "width": 699,
+          "height": 903
+        },
+        "padding": {
+          "left": 72,
+          "top": 72,
+          "right": 72,
+          "bottom": 72
+        }
+      },
+      "createdAt": "2026-09-01T19:24:00.966870Z"
+    }
+  ]
+}

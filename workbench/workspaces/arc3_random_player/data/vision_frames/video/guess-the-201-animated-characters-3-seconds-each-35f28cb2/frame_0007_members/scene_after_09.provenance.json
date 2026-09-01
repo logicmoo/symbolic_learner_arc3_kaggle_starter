@@ -1,0 +1,159 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007_members/scene_after_09.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007_members/scene_after_09.provenance.json",
+  "createdAt": "2026-09-01T17:23:02.881532Z",
+  "operation": "remove_object_from_scene",
+  "dimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 57.1,
+    "sceneIndex": 23,
+    "videoFrameIndex": 1713
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007.provenance.json"
+  },
+  "source": {
+    "objectName": "dora_backpack",
+    "cutout": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007_members/cut_09_dora_backpack.png",
+    "fillInstructions": {
+      "description": "Behind the removed backpack, the scene continues as Dora’s right-back body contour in front of green vegetation. The exposed area should mostly restore layered green bush/grass tones from the forest background, with a small continuation of Dora’s pink shirt edge where the backpack overlapped her side. No sky or rock texture is expected inside this hole.",
+      "colors": [
+        "#1E6B3A",
+        "#2F8C4A",
+        "#49A85A",
+        "#6CC06A",
+        "#0F4F2B",
+        "#D97BC5",
+        "#C963B4"
+      ],
+      "continueEdges": [
+        "Continue Dora’s torso side outline smoothly through the backpack area.",
+        "Reconnect the pink shirt boundary/hem shading where it was interrupted by the strap and bag edge.",
+        "Extend nearby leaf and bush contours from left/right background into the removed region with consistent curvature.",
+        "Maintain foreground-to-background layering: character edge in front, vegetation behind."
+      ],
+      "texture": "Cartoon-painted, soft-edged cel shading with simple gradient fills and lightly mottled foliage texture; smooth clean outlines rather than photoreal detail."
+    }
+  },
+  "transform": {
+    "fill": "median",
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007.png",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "verified": true
+    },
+    "removedBox": [
+      483,
+      255,
+      553,
+      437
+    ],
+    "maskScale": 4,
+    "fillInstructions": {
+      "description": "Behind the removed backpack, the scene continues as Dora’s right-back body contour in front of green vegetation. The exposed area should mostly restore layered green bush/grass tones from the forest background, with a small continuation of Dora’s pink shirt edge where the backpack overlapped her side. No sky or rock texture is expected inside this hole.",
+      "colors": [
+        "#1E6B3A",
+        "#2F8C4A",
+        "#49A85A",
+        "#6CC06A",
+        "#0F4F2B",
+        "#D97BC5",
+        "#C963B4"
+      ],
+      "continueEdges": [
+        "Continue Dora’s torso side outline smoothly through the backpack area.",
+        "Reconnect the pink shirt boundary/hem shading where it was interrupted by the strap and bag edge.",
+        "Extend nearby leaf and bush contours from left/right background into the removed region with consistent curvature.",
+        "Maintain foreground-to-background layering: character edge in front, vegetation behind."
+      ],
+      "texture": "Cartoon-painted, soft-edged cel shading with simple gradient fills and lightly mottled foliage texture; smooth clean outlines rather than photoreal detail."
+    },
+    "imageGeneration": {
+      "renderer": "median"
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:31.986150Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007_members/scene_after_09.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          483,
+          255,
+          553,
+          437
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed backpack, the scene continues as Dora’s right-back body contour in front of green vegetation. The exposed area should mostly restore layered green bush/grass tones from the forest background, with a small continuation of Dora’s pink shirt edge where the backpack overlapped her side. No sky or rock texture is expected inside this hole.",
+          "colors": [
+            "#1E6B3A",
+            "#2F8C4A",
+            "#49A85A",
+            "#6CC06A",
+            "#0F4F2B",
+            "#D97BC5",
+            "#C963B4"
+          ],
+          "continueEdges": [
+            "Continue Dora’s torso side outline smoothly through the backpack area.",
+            "Reconnect the pink shirt boundary/hem shading where it was interrupted by the strap and bag edge.",
+            "Extend nearby leaf and bush contours from left/right background into the removed region with consistent curvature.",
+            "Maintain foreground-to-background layering: character edge in front, vegetation behind."
+          ],
+          "texture": "Cartoon-painted, soft-edged cel shading with simple gradient fills and lightly mottled foliage texture; smooth clean outlines rather than photoreal detail."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:23:02.881532Z"
+    }
+  ]
+}

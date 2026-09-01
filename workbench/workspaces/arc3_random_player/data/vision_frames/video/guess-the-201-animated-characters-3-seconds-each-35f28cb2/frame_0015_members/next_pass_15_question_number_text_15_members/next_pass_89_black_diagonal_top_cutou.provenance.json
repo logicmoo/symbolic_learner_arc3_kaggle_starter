@@ -1,0 +1,463 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0015_members/next_pass_15_question_number_text_15_members/next_pass_89_black_diagonal_top_cutou.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0015_members/next_pass_15_question_number_text_15_members/next_pass_89_black_diagonal_top_cutou.provenance.json",
+  "createdAt": "2026-09-01T19:41:53.260507Z",
+  "operation": "enlarge_object_for_analysis",
+  "dimensions": {
+    "width": 810,
+    "height": 909
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0015.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 119.0,
+    "sceneIndex": 47,
+    "videoFrameIndex": 3570
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0015_members/next_pass_15_question_number_text_15_members/cut_89_black_diagonal_top_cutou.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0015_members/next_pass_15_question_number_text_15_members/cut_89_black_diagonal_top_cutou.provenance.json"
+  },
+  "source": {
+    "objectName": "black_diagonal_top_cutout"
+  },
+  "transform": {
+    "sourceDimensions": {
+      "width": 228,
+      "height": 261
+    },
+    "scale": 3,
+    "resizedDimensions": {
+      "width": 684,
+      "height": 783
+    },
+    "padding": {
+      "left": 63,
+      "top": 63,
+      "right": 63,
+      "bottom": 63
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0015.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:38.133785Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0015_members/cut_15_question_number_text_15.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 51,
+        "height": 53
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0015.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0015.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          27,
+          16,
+          78,
+          69
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              29,
+              21
+            ],
+            [
+              40,
+              18
+            ],
+            [
+              46,
+              22
+            ],
+            [
+              46,
+              63
+            ],
+            [
+              39,
+              67
+            ],
+            [
+              30,
+              63
+            ],
+            [
+              29,
+              21
+            ]
+          ],
+          [
+            [
+              50,
+              19
+            ],
+            [
+              66,
+              18
+            ],
+            [
+              74,
+              23
+            ],
+            [
+              75,
+              31
+            ],
+            [
+              71,
+              36
+            ],
+            [
+              63,
+              38
+            ],
+            [
+              56,
+              39
+            ],
+            [
+              63,
+              40
+            ],
+            [
+              70,
+              43
+            ],
+            [
+              74,
+              49
+            ],
+            [
+              74,
+              57
+            ],
+            [
+              69,
+              63
+            ],
+            [
+              60,
+              67
+            ],
+            [
+              50,
+              66
+            ],
+            [
+              43,
+              62
+            ],
+            [
+              41,
+              56
+            ],
+            [
+              44,
+              52
+            ],
+            [
+              50,
+              51
+            ],
+            [
+              56,
+              52
+            ],
+            [
+              60,
+              55
+            ],
+            [
+              59,
+              58
+            ],
+            [
+              55,
+              60
+            ],
+            [
+              49,
+              59
+            ],
+            [
+              45,
+              56
+            ],
+            [
+              42,
+              50
+            ],
+            [
+              42,
+              44
+            ],
+            [
+              47,
+              39
+            ],
+            [
+              54,
+              36
+            ],
+            [
+              61,
+              34
+            ],
+            [
+              66,
+              31
+            ],
+            [
+              66,
+              27
+            ],
+            [
+              62,
+              25
+            ],
+            [
+              55,
+              25
+            ],
+            [
+              50,
+              19
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T17:23:16.135804Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0015_members/next_pass_15_question_number_text_15.png",
+      "operation": "enlarge_object_for_analysis",
+      "dimensions": {
+        "width": 773,
+        "height": 799
+      },
+      "transform": {
+        "sourceDimensions": {
+          "width": 51,
+          "height": 53
+        },
+        "scale": 13,
+        "resizedDimensions": {
+          "width": 663,
+          "height": 689
+        },
+        "padding": {
+          "left": 55,
+          "top": 55,
+          "right": 55,
+          "bottom": 55
+        }
+      },
+      "createdAt": "2026-09-01T17:23:16.248565Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0015_members/next_pass_15_question_number_text_15_members/cut_89_black_diagonal_top_cutou.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 228,
+        "height": 261
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 773,
+          "height": 799
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0015_members/next_pass_15_question_number_text_15.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0015_members/next_pass_15_question_number_text_15.png",
+          "dimensions": {
+            "width": 773,
+            "height": 799
+          },
+          "verified": true
+        },
+        "cropBox": [
+          330,
+          84,
+          558,
+          345
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              334,
+              86
+            ],
+            [
+              361,
+              86
+            ],
+            [
+              389,
+              99
+            ],
+            [
+              418,
+              121
+            ],
+            [
+              447,
+              146
+            ],
+            [
+              475,
+              172
+            ],
+            [
+              501,
+              197
+            ],
+            [
+              524,
+              220
+            ],
+            [
+              544,
+              235
+            ],
+            [
+              555,
+              247
+            ],
+            [
+              553,
+              260
+            ],
+            [
+              539,
+              271
+            ],
+            [
+              515,
+              281
+            ],
+            [
+              488,
+              291
+            ],
+            [
+              457,
+              301
+            ],
+            [
+              427,
+              311
+            ],
+            [
+              398,
+              321
+            ],
+            [
+              371,
+              330
+            ],
+            [
+              348,
+              338
+            ],
+            [
+              334,
+              343
+            ],
+            [
+              332,
+              333
+            ],
+            [
+              332,
+              300
+            ],
+            [
+              332,
+              260
+            ],
+            [
+              332,
+              220
+            ],
+            [
+              332,
+              180
+            ],
+            [
+              333,
+              140
+            ],
+            [
+              334,
+              105
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T19:41:53.216553Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0015_members/next_pass_15_question_number_text_15_members/next_pass_89_black_diagonal_top_cutou.png",
+      "operation": "enlarge_object_for_analysis",
+      "dimensions": {
+        "width": 810,
+        "height": 909
+      },
+      "transform": {
+        "sourceDimensions": {
+          "width": 228,
+          "height": 261
+        },
+        "scale": 3,
+        "resizedDimensions": {
+          "width": 684,
+          "height": 783
+        },
+        "padding": {
+          "left": 63,
+          "top": 63,
+          "right": 63,
+          "bottom": 63
+        }
+      },
+      "createdAt": "2026-09-01T19:41:53.260507Z"
+    }
+  ]
+}

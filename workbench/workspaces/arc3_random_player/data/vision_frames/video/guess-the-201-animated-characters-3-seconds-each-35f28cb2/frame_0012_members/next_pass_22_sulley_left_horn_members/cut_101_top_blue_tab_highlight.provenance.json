@@ -1,0 +1,289 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012_members/next_pass_22_sulley_left_horn_members/cut_101_top_blue_tab_highlight.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012_members/next_pass_22_sulley_left_horn_members/cut_101_top_blue_tab_highlight.provenance.json",
+  "createdAt": "2026-09-01T19:43:44.106630Z",
+  "operation": "extract_object_cutout",
+  "dimensions": {
+    "width": 158,
+    "height": 20
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 95.8,
+    "sceneIndex": 38,
+    "videoFrameIndex": 2874
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012_members/next_pass_22_sulley_left_horn.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012_members/next_pass_22_sulley_left_horn.provenance.json"
+  },
+  "source": {
+    "objectName": "top_blue_tab_highlight"
+  },
+  "transform": {
+    "inputDimensions": {
+      "width": 784,
+      "height": 602
+    },
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012_members/next_pass_22_sulley_left_horn.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012_members/next_pass_22_sulley_left_horn.png",
+      "dimensions": {
+        "width": 784,
+        "height": 602
+      },
+      "verified": true
+    },
+    "cropBox": [
+      285,
+      52,
+      443,
+      72
+    ],
+    "maskScale": 4,
+    "polygons": [
+      [
+        [
+          289,
+          53
+        ],
+        [
+          438,
+          53
+        ],
+        [
+          440,
+          56
+        ],
+        [
+          440,
+          66
+        ],
+        [
+          438,
+          69
+        ],
+        [
+          289,
+          69
+        ],
+        [
+          287,
+          66
+        ],
+        [
+          287,
+          56
+        ]
+      ]
+    ],
+    "holes": []
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:35.629254Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012_members/cut_22_sulley_left_horn.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 52,
+        "height": 38
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          329,
+          99,
+          381,
+          137
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              332,
+              108
+            ],
+            [
+              341,
+              103
+            ],
+            [
+              353,
+              101
+            ],
+            [
+              365,
+              103
+            ],
+            [
+              374,
+              109
+            ],
+            [
+              378,
+              118
+            ],
+            [
+              376,
+              126
+            ],
+            [
+              369,
+              132
+            ],
+            [
+              360,
+              135
+            ],
+            [
+              349,
+              134
+            ],
+            [
+              340,
+              130
+            ],
+            [
+              334,
+              123
+            ],
+            [
+              331,
+              115
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T17:27:50.973990Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012_members/next_pass_22_sulley_left_horn.png",
+      "operation": "enlarge_object_for_analysis",
+      "dimensions": {
+        "width": 784,
+        "height": 602
+      },
+      "transform": {
+        "sourceDimensions": {
+          "width": 52,
+          "height": 38
+        },
+        "scale": 13,
+        "resizedDimensions": {
+          "width": 676,
+          "height": 494
+        },
+        "padding": {
+          "left": 54,
+          "top": 54,
+          "right": 54,
+          "bottom": 54
+        }
+      },
+      "createdAt": "2026-09-01T17:27:51.053809Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012_members/next_pass_22_sulley_left_horn_members/cut_101_top_blue_tab_highlight.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 158,
+        "height": 20
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 784,
+          "height": 602
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012_members/next_pass_22_sulley_left_horn.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012_members/next_pass_22_sulley_left_horn.png",
+          "dimensions": {
+            "width": 784,
+            "height": 602
+          },
+          "verified": true
+        },
+        "cropBox": [
+          285,
+          52,
+          443,
+          72
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              289,
+              53
+            ],
+            [
+              438,
+              53
+            ],
+            [
+              440,
+              56
+            ],
+            [
+              440,
+              66
+            ],
+            [
+              438,
+              69
+            ],
+            [
+              289,
+              69
+            ],
+            [
+              287,
+              66
+            ],
+            [
+              287,
+              56
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T19:43:44.106630Z"
+    }
+  ]
+}

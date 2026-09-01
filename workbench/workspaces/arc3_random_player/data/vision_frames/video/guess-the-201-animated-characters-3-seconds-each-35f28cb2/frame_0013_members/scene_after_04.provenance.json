@@ -1,0 +1,153 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/scene_after_04.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/scene_after_04.provenance.json",
+  "createdAt": "2026-09-01T17:21:32.471319Z",
+  "operation": "remove_object_from_scene",
+  "dimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 103.5,
+    "sceneIndex": 41,
+    "videoFrameIndex": 3105
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013.provenance.json"
+  },
+  "source": {
+    "objectName": "sparkle_particles",
+    "cutout": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/cut_04_sparkle_particles.png",
+    "fillInstructions": {
+      "description": "Each removed sparkle should be replaced by the local stage backdrop behind it: mostly very dark navy/black with subtle blue-violet glow gradients, varying by cluster position. Left-side sparkles sit over deep blue-black wing/stage haze; right-side sparkles sit over darker purple-violet airglow near the fairy’s right side.",
+      "colors": [
+        "#05050C",
+        "#0A0E1F",
+        "#111635",
+        "#1B1A3D",
+        "#2A2453"
+      ],
+      "continueEdges": [
+        "Continue the smooth dark-to-violet gradient flow through each tiny hole with no hard boundary.",
+        "Where sparkles cross faint atmospheric glow streaks, extend those soft streak directions continuously across the removed points.",
+        "Preserve nearby wing/stage shading transitions so adjacent contour tones blend seamlessly through each sparkle location.",
+        "Do not introduce new highlights; maintain surrounding luminance and color falloff only."
+      ],
+      "texture": "Soft, low-noise, airbrushed cinematic gradient with faint misty glow; no sharp texture or grain."
+    }
+  },
+  "transform": {
+    "fill": "median",
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013.png",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "verified": true
+    },
+    "removedBox": [
+      284,
+      117,
+      579,
+      297
+    ],
+    "maskScale": 4,
+    "fillInstructions": {
+      "description": "Each removed sparkle should be replaced by the local stage backdrop behind it: mostly very dark navy/black with subtle blue-violet glow gradients, varying by cluster position. Left-side sparkles sit over deep blue-black wing/stage haze; right-side sparkles sit over darker purple-violet airglow near the fairy’s right side.",
+      "colors": [
+        "#05050C",
+        "#0A0E1F",
+        "#111635",
+        "#1B1A3D",
+        "#2A2453"
+      ],
+      "continueEdges": [
+        "Continue the smooth dark-to-violet gradient flow through each tiny hole with no hard boundary.",
+        "Where sparkles cross faint atmospheric glow streaks, extend those soft streak directions continuously across the removed points.",
+        "Preserve nearby wing/stage shading transitions so adjacent contour tones blend seamlessly through each sparkle location.",
+        "Do not introduce new highlights; maintain surrounding luminance and color falloff only."
+      ],
+      "texture": "Soft, low-noise, airbrushed cinematic gradient with faint misty glow; no sharp texture or grain."
+    },
+    "imageGeneration": {
+      "renderer": "median"
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:36.611064Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/scene_after_04.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          284,
+          117,
+          579,
+          297
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Each removed sparkle should be replaced by the local stage backdrop behind it: mostly very dark navy/black with subtle blue-violet glow gradients, varying by cluster position. Left-side sparkles sit over deep blue-black wing/stage haze; right-side sparkles sit over darker purple-violet airglow near the fairy’s right side.",
+          "colors": [
+            "#05050C",
+            "#0A0E1F",
+            "#111635",
+            "#1B1A3D",
+            "#2A2453"
+          ],
+          "continueEdges": [
+            "Continue the smooth dark-to-violet gradient flow through each tiny hole with no hard boundary.",
+            "Where sparkles cross faint atmospheric glow streaks, extend those soft streak directions continuously across the removed points.",
+            "Preserve nearby wing/stage shading transitions so adjacent contour tones blend seamlessly through each sparkle location.",
+            "Do not introduce new highlights; maintain surrounding luminance and color falloff only."
+          ],
+          "texture": "Soft, low-noise, airbrushed cinematic gradient with faint misty glow; no sharp texture or grain."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:21:32.471319Z"
+    }
+  ]
+}

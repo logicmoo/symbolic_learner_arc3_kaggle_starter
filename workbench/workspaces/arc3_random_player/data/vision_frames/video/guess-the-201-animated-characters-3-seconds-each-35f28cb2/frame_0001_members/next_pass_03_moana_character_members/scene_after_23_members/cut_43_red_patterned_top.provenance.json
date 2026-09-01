@@ -1,0 +1,574 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/next_pass_03_moana_character_members/scene_after_23_members/cut_43_red_patterned_top.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/next_pass_03_moana_character_members/scene_after_23_members/cut_43_red_patterned_top.provenance.json",
+  "createdAt": "2026-09-01T17:33:33.944264Z",
+  "operation": "extract_object_cutout",
+  "dimensions": {
+    "width": 298,
+    "height": 160
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 10.7,
+    "sceneIndex": 5,
+    "videoFrameIndex": 321
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/next_pass_03_moana_character_members/scene_after_23.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/next_pass_03_moana_character_members/scene_after_23.provenance.json"
+  },
+  "source": {
+    "objectName": "red_patterned_top"
+  },
+  "transform": {
+    "inputDimensions": {
+      "width": 880,
+      "height": 796
+    },
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/next_pass_03_moana_character_members/scene_after_23.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/next_pass_03_moana_character.png",
+      "dimensions": {
+        "width": 880,
+        "height": 796
+      },
+      "verified": true
+    },
+    "cropBox": [
+      255,
+      536,
+      553,
+      696
+    ],
+    "maskScale": 4,
+    "polygons": [
+      [
+        [
+          260,
+          551
+        ],
+        [
+          286,
+          544
+        ],
+        [
+          324,
+          539
+        ],
+        [
+          367,
+          538
+        ],
+        [
+          412,
+          541
+        ],
+        [
+          455,
+          547
+        ],
+        [
+          494,
+          555
+        ],
+        [
+          525,
+          567
+        ],
+        [
+          544,
+          584
+        ],
+        [
+          550,
+          608
+        ],
+        [
+          546,
+          633
+        ],
+        [
+          535,
+          654
+        ],
+        [
+          518,
+          671
+        ],
+        [
+          495,
+          682
+        ],
+        [
+          468,
+          689
+        ],
+        [
+          436,
+          693
+        ],
+        [
+          401,
+          693
+        ],
+        [
+          366,
+          688
+        ],
+        [
+          334,
+          678
+        ],
+        [
+          307,
+          665
+        ],
+        [
+          286,
+          648
+        ],
+        [
+          272,
+          628
+        ],
+        [
+          262,
+          605
+        ],
+        [
+          257,
+          582
+        ]
+      ]
+    ],
+    "holes": []
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:28.116745Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/cut_03_moana_character.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 379,
+        "height": 337
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          256,
+          97,
+          635,
+          434
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              353,
+              101
+            ],
+            [
+              392,
+              99
+            ],
+            [
+              438,
+              101
+            ],
+            [
+              486,
+              108
+            ],
+            [
+              533,
+              122
+            ],
+            [
+              571,
+              144
+            ],
+            [
+              601,
+              175
+            ],
+            [
+              621,
+              214
+            ],
+            [
+              632,
+              255
+            ],
+            [
+              629,
+              291
+            ],
+            [
+              615,
+              324
+            ],
+            [
+              590,
+              351
+            ],
+            [
+              561,
+              371
+            ],
+            [
+              570,
+              387
+            ],
+            [
+              555,
+              401
+            ],
+            [
+              526,
+              415
+            ],
+            [
+              492,
+              426
+            ],
+            [
+              454,
+              431
+            ],
+            [
+              416,
+              432
+            ],
+            [
+              383,
+              428
+            ],
+            [
+              355,
+              420
+            ],
+            [
+              332,
+              407
+            ],
+            [
+              313,
+              389
+            ],
+            [
+              300,
+              367
+            ],
+            [
+              291,
+              344
+            ],
+            [
+              287,
+              324
+            ],
+            [
+              279,
+              332
+            ],
+            [
+              267,
+              337
+            ],
+            [
+              258,
+              330
+            ],
+            [
+              259,
+              317
+            ],
+            [
+              270,
+              307
+            ],
+            [
+              284,
+              301
+            ],
+            [
+              300,
+              291
+            ],
+            [
+              310,
+              272
+            ],
+            [
+              308,
+              249
+            ],
+            [
+              301,
+              223
+            ],
+            [
+              295,
+              194
+            ],
+            [
+              296,
+              166
+            ],
+            [
+              307,
+              140
+            ],
+            [
+              325,
+              120
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T17:21:31.907960Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/next_pass_03_moana_character.png",
+      "operation": "enlarge_object_for_analysis",
+      "dimensions": {
+        "width": 880,
+        "height": 796
+      },
+      "transform": {
+        "sourceDimensions": {
+          "width": 379,
+          "height": 337
+        },
+        "scale": 2,
+        "resizedDimensions": {
+          "width": 758,
+          "height": 674
+        },
+        "padding": {
+          "left": 61,
+          "top": 61,
+          "right": 61,
+          "bottom": 61
+        }
+      },
+      "createdAt": "2026-09-01T17:21:32.080864Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/next_pass_03_moana_character_members/scene_after_23.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 880,
+        "height": 796
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/next_pass_03_moana_character.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/next_pass_03_moana_character.png",
+          "dimensions": {
+            "width": 880,
+            "height": 796
+          },
+          "verified": true
+        },
+        "removedBox": [
+          283,
+          403,
+          526,
+          538
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the necklace strands and pendant is Moana’s skin-toned upper chest/neck area with smooth warm shading. Around the lower pendant edge, the top border of the red patterned garment continues, including a thin light decorative trim crossing horizontally.",
+          "colors": [
+            "#D88A66",
+            "#C97A57",
+            "#E39B77",
+            "#A94F40",
+            "#D55D46",
+            "#E6E1D6"
+          ],
+          "continueEdges": [
+            "Continue the gentle chest gradient from left to right under both necklace strands.",
+            "Reconnect the neckline contour arc where the pendant overlaps the chest center.",
+            "Extend the red top’s upper edge and its light trim line continuously behind the pendant’s lower portion.",
+            "Maintain local shading transitions near collarbone highlights and avoid creating new hard boundaries."
+          ],
+          "texture": "Soft painted skin gradients with subtle fabric pattern/trim line continuity at the garment top edge."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:27:59.094502Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/next_pass_03_moana_character_members/scene_after_23_members/cut_43_red_patterned_top.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 298,
+        "height": 160
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 880,
+          "height": 796
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/next_pass_03_moana_character_members/scene_after_23.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/next_pass_03_moana_character.png",
+          "dimensions": {
+            "width": 880,
+            "height": 796
+          },
+          "verified": true
+        },
+        "cropBox": [
+          255,
+          536,
+          553,
+          696
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              260,
+              551
+            ],
+            [
+              286,
+              544
+            ],
+            [
+              324,
+              539
+            ],
+            [
+              367,
+              538
+            ],
+            [
+              412,
+              541
+            ],
+            [
+              455,
+              547
+            ],
+            [
+              494,
+              555
+            ],
+            [
+              525,
+              567
+            ],
+            [
+              544,
+              584
+            ],
+            [
+              550,
+              608
+            ],
+            [
+              546,
+              633
+            ],
+            [
+              535,
+              654
+            ],
+            [
+              518,
+              671
+            ],
+            [
+              495,
+              682
+            ],
+            [
+              468,
+              689
+            ],
+            [
+              436,
+              693
+            ],
+            [
+              401,
+              693
+            ],
+            [
+              366,
+              688
+            ],
+            [
+              334,
+              678
+            ],
+            [
+              307,
+              665
+            ],
+            [
+              286,
+              648
+            ],
+            [
+              272,
+              628
+            ],
+            [
+              262,
+              605
+            ],
+            [
+              257,
+              582
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T17:33:33.944264Z"
+    }
+  ]
+}

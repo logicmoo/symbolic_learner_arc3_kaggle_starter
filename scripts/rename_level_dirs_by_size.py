@@ -1,5 +1,5 @@
 """One-time housekeeping: rename data/<game>/level_<n>_<stamp>_<ns>/ (or
-data/Recordings/<game>/level_<n>_<stamp>_<ns>/, whichever actually holds the
+data/arc3_games/recordings/<game>/level_<n>_<stamp>_<ns>/, whichever holds the
 game dirs) to level_<n>_<NNN>/, ranked by on-disk size within each
 (game, level) group -- the biggest gets _001.
 
@@ -37,10 +37,12 @@ def dir_size(path: Path) -> int:
 
 
 def _games_container(data_root: Path) -> Path:
-    """Where the per-game directories actually live: data/Recordings/ if
-    present (post-reorg), else data/ directly."""
-    recordings = data_root / "Recordings"
-    return recordings if recordings.is_dir() else data_root
+    """Resolve canonical recordings first, then each legacy layout."""
+    canonical = data_root / "arc3_games" / "recordings"
+    legacy = data_root / "Recordings"
+    if canonical.is_dir():
+        return canonical
+    return legacy if legacy.is_dir() else data_root
 
 
 def build_plan(data_root: Path) -> dict[str, str]:
@@ -54,7 +56,7 @@ def build_plan(data_root: Path) -> dict[str, str]:
     """
     workspace_root = data_root.parent
     games_root = _games_container(data_root)
-    games_rel = games_root.relative_to(workspace_root).as_posix()  # "data" or "data/Recordings"
+    games_rel = games_root.relative_to(workspace_root).as_posix()
     plan: dict[str, str] = {}
     for game_dir in sorted(p for p in games_root.iterdir() if p.is_dir()):
         groups: dict[str, list[Path]] = {}

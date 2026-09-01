@@ -1,0 +1,247 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/next_pass_08_rubiks_cube_members/scene_after_83.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/next_pass_08_rubiks_cube_members/scene_after_83.provenance.json",
+  "createdAt": "2026-09-01T19:41:34.464843Z",
+  "operation": "remove_object_from_scene",
+  "dimensions": {
+    "width": 812,
+    "height": 792
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 149.9,
+    "sceneIndex": 59,
+    "videoFrameIndex": 4497
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/next_pass_08_rubiks_cube.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/next_pass_08_rubiks_cube.provenance.json"
+  },
+  "source": {
+    "objectName": "cutout_edge_halo",
+    "cutout": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/next_pass_08_rubiks_cube_members/cut_83_cutout_edge_halo.png",
+    "fillInstructions": {
+      "description": "The removed halo is a thin anti-aliased fringe between the outer black canvas and the inner cutout content. Behind it, the solid black background on the outside and the true subject-edge pixels on the inside (dark brown patch, skin tones, and Rubik’s cube edge colors) continue directly to a clean boundary.",
+      "colors": [
+        "#000000",
+        "#2A1C16",
+        "#E9D2AE",
+        "#D86D56",
+        "#CFCFD0",
+        "#5E6F84"
+      ],
+      "continueEdges": [
+        "Extend the outer black background inward to the former halo’s outer boundary.",
+        "Extend the inner cutout silhouette outward from the subject edge so the object boundary remains continuous without a bright fringe.",
+        "Preserve local edge direction around the perimeter (top arc, right slope, bottom curve, left curve) while removing glow/feather artifacts."
+      ],
+      "texture": "Outside stays flat solid black; inside keeps the existing soft, low-resolution image texture and compression blur at the object boundary."
+    }
+  },
+  "transform": {
+    "fill": "median",
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/next_pass_08_rubiks_cube.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/next_pass_08_rubiks_cube.png",
+      "dimensions": {
+        "width": 812,
+        "height": 792
+      },
+      "verified": true
+    },
+    "removedBox": [
+      66,
+      62,
+      773,
+      781
+    ],
+    "maskScale": 4,
+    "fillInstructions": {
+      "description": "The removed halo is a thin anti-aliased fringe between the outer black canvas and the inner cutout content. Behind it, the solid black background on the outside and the true subject-edge pixels on the inside (dark brown patch, skin tones, and Rubik’s cube edge colors) continue directly to a clean boundary.",
+      "colors": [
+        "#000000",
+        "#2A1C16",
+        "#E9D2AE",
+        "#D86D56",
+        "#CFCFD0",
+        "#5E6F84"
+      ],
+      "continueEdges": [
+        "Extend the outer black background inward to the former halo’s outer boundary.",
+        "Extend the inner cutout silhouette outward from the subject edge so the object boundary remains continuous without a bright fringe.",
+        "Preserve local edge direction around the perimeter (top arc, right slope, bottom curve, left curve) while removing glow/feather artifacts."
+      ],
+      "texture": "Outside stays flat solid black; inside keeps the existing soft, low-resolution image texture and compression blur at the object boundary."
+    },
+    "imageGeneration": {
+      "renderer": "median"
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:41.177136Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/cut_08_rubiks_cube.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 70,
+        "height": 68
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          262,
+          167,
+          332,
+          235
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              278,
+              169
+            ],
+            [
+              312,
+              171
+            ],
+            [
+              329,
+              188
+            ],
+            [
+              328,
+              220
+            ],
+            [
+              306,
+              233
+            ],
+            [
+              275,
+              227
+            ],
+            [
+              264,
+              208
+            ],
+            [
+              266,
+              182
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T17:23:01.200494Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/next_pass_08_rubiks_cube.png",
+      "operation": "enlarge_object_for_analysis",
+      "dimensions": {
+        "width": 812,
+        "height": 792
+      },
+      "transform": {
+        "sourceDimensions": {
+          "width": 70,
+          "height": 68
+        },
+        "scale": 10,
+        "resizedDimensions": {
+          "width": 700,
+          "height": 680
+        },
+        "padding": {
+          "left": 56,
+          "top": 56,
+          "right": 56,
+          "bottom": 56
+        }
+      },
+      "createdAt": "2026-09-01T17:23:01.351554Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/next_pass_08_rubiks_cube_members/scene_after_83.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 812,
+        "height": 792
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/next_pass_08_rubiks_cube.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/next_pass_08_rubiks_cube.png",
+          "dimensions": {
+            "width": 812,
+            "height": 792
+          },
+          "verified": true
+        },
+        "removedBox": [
+          66,
+          62,
+          773,
+          781
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "The removed halo is a thin anti-aliased fringe between the outer black canvas and the inner cutout content. Behind it, the solid black background on the outside and the true subject-edge pixels on the inside (dark brown patch, skin tones, and Rubik’s cube edge colors) continue directly to a clean boundary.",
+          "colors": [
+            "#000000",
+            "#2A1C16",
+            "#E9D2AE",
+            "#D86D56",
+            "#CFCFD0",
+            "#5E6F84"
+          ],
+          "continueEdges": [
+            "Extend the outer black background inward to the former halo’s outer boundary.",
+            "Extend the inner cutout silhouette outward from the subject edge so the object boundary remains continuous without a bright fringe.",
+            "Preserve local edge direction around the perimeter (top arc, right slope, bottom curve, left curve) while removing glow/feather artifacts."
+          ],
+          "texture": "Outside stays flat solid black; inside keeps the existing soft, low-resolution image texture and compression blur at the object boundary."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T19:41:34.464843Z"
+    }
+  ]
+}

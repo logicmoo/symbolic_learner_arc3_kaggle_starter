@@ -1,0 +1,215 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012_members/cut_22_sulley_left_horn.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012_members/cut_22_sulley_left_horn.provenance.json",
+  "createdAt": "2026-09-01T17:27:50.973990Z",
+  "operation": "extract_object_cutout",
+  "dimensions": {
+    "width": 52,
+    "height": 38
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 95.8,
+    "sceneIndex": 38,
+    "videoFrameIndex": 2874
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012.provenance.json"
+  },
+  "source": {
+    "objectName": "sulley_left_horn"
+  },
+  "transform": {
+    "inputDimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012.png",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "verified": true
+    },
+    "cropBox": [
+      329,
+      99,
+      381,
+      137
+    ],
+    "maskScale": 4,
+    "polygons": [
+      [
+        [
+          332,
+          108
+        ],
+        [
+          341,
+          103
+        ],
+        [
+          353,
+          101
+        ],
+        [
+          365,
+          103
+        ],
+        [
+          374,
+          109
+        ],
+        [
+          378,
+          118
+        ],
+        [
+          376,
+          126
+        ],
+        [
+          369,
+          132
+        ],
+        [
+          360,
+          135
+        ],
+        [
+          349,
+          134
+        ],
+        [
+          340,
+          130
+        ],
+        [
+          334,
+          123
+        ],
+        [
+          331,
+          115
+        ]
+      ]
+    ],
+    "holes": []
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:35.629254Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012_members/cut_22_sulley_left_horn.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 52,
+        "height": 38
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          329,
+          99,
+          381,
+          137
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              332,
+              108
+            ],
+            [
+              341,
+              103
+            ],
+            [
+              353,
+              101
+            ],
+            [
+              365,
+              103
+            ],
+            [
+              374,
+              109
+            ],
+            [
+              378,
+              118
+            ],
+            [
+              376,
+              126
+            ],
+            [
+              369,
+              132
+            ],
+            [
+              360,
+              135
+            ],
+            [
+              349,
+              134
+            ],
+            [
+              340,
+              130
+            ],
+            [
+              334,
+              123
+            ],
+            [
+              331,
+              115
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T17:27:50.973990Z"
+    }
+  ]
+}

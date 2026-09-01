@@ -1,11 +1,17 @@
-import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { pushGlobalStatus } from "../lib/globalStatus";
 import { ColoredTagCombobox, type ColoredTagDescription } from "./ColoredTagCombobox";
 import { SuperControl } from "./UniversalArtifactEditor";
+import type { WorkflowPageDefinition } from "./WorkflowPageHost";
+import type { ModelChoice as Arc3ModelChoice, WorkspaceFileRecord } from "./Arc3B1B2PipelinePage";
 import { modelCapabilityTags } from "./modelOptionDisplay";
 import { RESTART_PENDING_CLEARED_EVENT, RESTART_PENDING_REQUEST_EVENT, usePageProcessActivity } from "../lib/pageProcessActivity";
 import "../styles/video_import.css";
 import "../styles/video_import_page.css";
+
+const EmbeddedArc3PlayPage = lazy(() =>
+  import("./Arc3PlayPage").then((module) => ({ default: module.Arc3PlayPage })),
+);
 
 /**
  * Video Import v2 — rebuilt from the build prompt in
@@ -24,6 +30,12 @@ type Video = {
   captionSource?: string;
 };
 type Frame = { path: string; index: number; atSeconds?: number; sceneIndex?: number; provenance?: string; characters: string[]; anonymous: number };
+type ExtractedImageSource = {
+  id: string;
+  label: string;
+  kind: "video" | "stream" | "arc" | "curated" | "archive" | "restored";
+  frames: Frame[];
+};
 type FilterEntry = {
   id: string; title: string; filter: string; description?: string;
   params?: Record<string, unknown>; paramChoices?: Record<string, string[]>;
@@ -87,6 +99,11 @@ type MemberInventoryThing = {
   outlinePolygons?: number[][][];
   outlineHoles?: number[][][];
   outlineBox?: number[];
+  outlineTraceTurtle?: Array<{ op: string; x: number; y: number }>;
+  outlineVerificationImage?: string;
+  outlineGeometryHash?: string;
+  outlineTraceAgreement?: number;
+  outlineBoundaryCoverage?: number;
   outlineError?: string;
   outlineRetryAfter?: number;
   outlineAttempts?: number;
@@ -108,6 +125,25 @@ type MemberObjectTreeNode = {
   subObjects: MemberObjectTree;
 };
 type MemberObjectTree = Record<string, MemberObjectTreeNode>;
+type PlannerTouchingRelation = {
+  objects: [string, string];
+  contact?: string;
+};
+type PlannerOcclusionRelation = {
+  occluder: string;
+  occluded: string;
+  region?: string;
+};
+type PlannerContainmentRelation = {
+  container: string;
+  contained: string;
+  evidence?: string;
+};
+type PlannerLabel = {
+  object: string;
+  number: number;
+  point: [number, number];
+};
 type MemberInventory = {
   id: string;
   framePath: string;
@@ -132,6 +168,11 @@ type MemberInventory = {
   orderPrompt?: string;
   orderOutput?: string;
   extractionOrder?: string[];
+  plannerTouching?: PlannerTouchingRelation[];
+  plannerOcclusions?: PlannerOcclusionRelation[];
+  plannerContainments?: PlannerContainmentRelation[];
+  plannerLabels?: PlannerLabel[];
+  plannerVisualizationImage?: string;
   orderError?: string;
   retryAfter?: number;
   attempts?: number;
@@ -148,6 +189,19 @@ type CachedModelResponse = {
   cachedAt: string;
   payload: Record<string, any>;
 };
+const compactCachedModelPayload = (payload: Record<string, any>): Record<string, any> =>
+  Object.fromEntries(
+    ["modelId", "text", "latencyMs", "inputTokens", "outputTokens", "responseId", "backendId"]
+      .filter((key) => payload[key] !== undefined)
+      .map((key) => [key, payload[key]]),
+  );
+const compactModelResponseCache = (cache: Record<string, CachedModelResponse>): Record<string, CachedModelResponse> =>
+  Object.fromEntries(
+    Object.entries(cache).map(([key, entry]) => [
+      key,
+      { ...entry, payload: compactCachedModelPayload(entry.payload || {}) },
+    ]),
+  );
 type TurtleArtifact = {
  sourceImage: string;
  subjectName: string;
@@ -220,15 +274,36 @@ type LlmCallConcurrency = {
 };
 type LlmCallMetric = { completed: number; totalDurationMs: number };
 type LlmCallMetrics = Record<keyof LlmCallConcurrency, LlmCallMetric>;
+const LLM_STAGE_RESERVE_MIN = 5;
+const LLM_STAGE_RESERVE_FRACTION = 0.30;
+const LLM_STAGE_ORDER: Array<keyof LlmCallConcurrency> = [
+  "describer",
+  "planner",
+  "outliner",
+  "extractor",
+  "turtle",
+  "turtlePng",
+];
 type PromptSelection = "workspace" | "default";
 const hasAlignedOutline = (thing: MemberInventoryThing) => Boolean(
   (thing.outlinePolygons?.length || thing.outlineBox?.length === 4)
   && thing.outlineImage
   && thing.outlineDimensions?.width
   && thing.outlineDimensions?.height
+  && thing.outlineVerificationImage
+  && thing.outlineGeometryHash
+  && thing.outlineTraceAgreement !== undefined
+  && thing.outlineBoundaryCoverage !== undefined
+);
+const hasVisualizedPlan = (inventory: MemberInventory) => Boolean(
+  inventory.extractionOrder?.length
+  && inventory.plannerLabels?.length === inventory.extractionOrder.length
+  && inventory.plannerVisualizationImage
 );
 
 const API = "/workbench/video-import";
+const streamSlug = (value: string) =>
+  value.toLowerCase().replace(/[^a-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "workbench";
 const MAX_RECURSIVE_OBJECT_DEPTH = 9;
 const LLM_RETRY_DELAY_MS = 1000;
 const DEFAULT_RECURSIVE_AUTOMATION: RecursiveAutomation = {
@@ -353,17 +428,33 @@ const DEFAULT_MEMBER_DECOMPOSITION_PROMPT = [
 ].join("\n");
 const DEFAULT_MEMBER_ORDER_PROMPT = [
   "OBJECT EXTRACTION PLANNER.",
-  "Use the textual description and attached image to order extraction of every listed direct child object.",
+  "Use the textual description and attached image to declare the visible relationships among every listed direct child object, then order their extraction.",
   "Always remove every sub-object before its parent object so removing a whole does not erase parts that still need extraction.",
-  "Remove foreground objects that cover or overlap other objects first. Remove the farthest background objects last.",
+  "Declare every pair of listed objects whose visible boundaries physically touch. Touching is symmetric; do not report objects that are merely near each other.",
+  "Declare every directed occlusion where one listed object visibly covers any part of another. Name the foreground object as occluder and the covered object as occluded.",
+  "Declare every directed containment where the complete visible extent of one listed object is spatially inside another listed object's boundary. Name the enclosing object as container and the inner object as contained. Do not call partial overlap or ordinary touching containment.",
+  "Order every occluder before the object it occludes, and every contained object before its container. Remove foreground objects first and the farthest background objects last.",
   "Use every object name exactly once.",
   "Do not outline objects and do not return polygons, coordinates, masks, or cutout instructions. Outliner handles that separately, one object at a time.",
   "TEXTUAL DESCRIPTION:",
   "{{textualDescription}}",
   "OBJECTS:",
   "{{objects}}",
-  "Answer ONLY with JSON: {\"order\":[\"exact object name\",...],\"reasoning\":[\"why this order\",...]}",
+  "NUMBER LABEL COORDINATE SPACE: width={{imageWidth}}, height={{imageHeight}}. Give one point [x,y] visibly inside each exact object so the workbench can draw its extraction-order number on the object.",
+  "Always include touching, occlusions, containments, and labels as arrays, using [] only when that relationship type has no entries.",
+  "Answer ONLY with JSON: {\"touching\":[{\"objects\":[\"exact object name\",\"exact object name\"],\"contact\":\"what visibly touches where\"}],\"occlusions\":[{\"occluder\":\"foreground exact object name\",\"occluded\":\"covered exact object name\",\"region\":\"what part is covered\"}],\"containments\":[{\"container\":\"enclosing exact object name\",\"contained\":\"fully inner exact object name\",\"evidence\":\"how its complete visible extent is inside\"}],\"order\":[\"exact object name\",...],\"labels\":[{\"object\":\"exact object name\",\"number\":1,\"point\":[x,y]}],\"reasoning\":[\"why this relationship-aware order\",...]}",
 ].join("\n");
+const migratePlannerPrompt = (value: string) => (
+  value.startsWith("OBJECT EXTRACTION PLANNER.")
+  && (
+    !value.includes('"touching"')
+    || !value.includes('"occlusions"')
+    || !value.includes('"containments"')
+    || !value.includes('"labels"')
+  )
+    ? DEFAULT_MEMBER_ORDER_PROMPT
+    : value
+);
 const DEFAULT_MEMBER_OUTLINER_PROMPT = [
   "OBJECT OUTLINER.",
   "Outline exactly ONE object in the attached current scene. Planner has already selected its order position.",
@@ -373,6 +464,8 @@ const DEFAULT_MEMBER_OUTLINER_PROMPT = [
   "PLANNER-SELECTED OBJECT: {{nextObjectName}}",
   "Object description: {{nextObjectDescription}}",
   "Planner position: {{plannerPosition}} of {{plannerTotal}}",
+  "PLANNER-DECLARED CONTACT AND OCCLUSION RELATIONSHIPS FOR THIS OBJECT:",
+  "{{plannerRelationships}}",
   "OUTLINE SOURCE IMAGE: {{outlineImage}}",
   "PIXEL COORDINATE SPACE: width={{imageWidth}}, height={{imageHeight}}. Use x=0..{{maxX}} and y=0..{{maxY}} only.",
   "Trace the named object's visible silhouette at pixel-edge precision in THIS current image.",
@@ -479,19 +572,172 @@ const renderObjectPromptWriter = (template: string, textualDescription: string, 
 const renderMemberDecompositionPrompt = (template: string, textualDescription: string, things: MemberInventoryThing[]) => template
   .replaceAll("{{textualDescription}}", textualDescription)
   .replaceAll("{{objects}}", things.map((thing) => `- ${thing.name}: ${thing.description}`).join("\n"));
-const renderMemberOrderPrompt = (template: string, textualDescription: string, things: MemberInventoryThing[]) => template
+const renderMemberOrderPrompt = (
+  template: string,
+  textualDescription: string,
+  things: MemberInventoryThing[],
+  dimensions: { width: number; height: number } = { width: 0, height: 0 },
+) => template
   .replaceAll("{{textualDescription}}", textualDescription)
+  .replaceAll("{{imageWidth}}", String(dimensions.width))
+  .replaceAll("{{imageHeight}}", String(dimensions.height))
   .replaceAll("{{objects}}", things.map((thing) => {
     const relation = thing.parentName ? ` [part of ${thing.parentName}]` : " [root object]";
     const count = thing.countTotal ? ` [${thing.countIndex || "?"} of ${thing.countTotal}]` : "";
     return `- ${thing.name}${relation}${count}: ${thing.description}`;
   }).join("\n"));
+const parsePlannerRelationships = (
+  parsed: Record<string, unknown>,
+  things: MemberInventoryThing[],
+): {
+  touching: PlannerTouchingRelation[];
+  occlusions: PlannerOcclusionRelation[];
+  containments: PlannerContainmentRelation[];
+  warnings: string[];
+} => {
+  const byName = new Map(things.map((thing) => [thing.name.toLowerCase(), thing.name]));
+  const canonical = (value: unknown) => byName.get(String(value || "").trim().toLowerCase());
+  const warnings: string[] = [];
+  const touching: PlannerTouchingRelation[] = [];
+  const seenTouching = new Set<string>();
+  if (!Array.isArray(parsed.touching)) {
+    warnings.push("Planner did not declare touching relationships.");
+  } else {
+    for (const value of parsed.touching) {
+      const record = value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+      const rawObjects = Array.isArray(value) ? value : record.objects;
+      const first = Array.isArray(rawObjects) ? canonical(rawObjects[0]) : undefined;
+      const second = Array.isArray(rawObjects) ? canonical(rawObjects[1]) : undefined;
+      if (!first || !second || first === second) {
+        warnings.push("Ignored a touching relation with missing, unknown, or duplicate object names.");
+        continue;
+      }
+      const key = [first.toLowerCase(), second.toLowerCase()].sort().join("\u0000");
+      if (seenTouching.has(key)) continue;
+      seenTouching.add(key);
+      touching.push({
+        objects: [first, second],
+        contact: String(record.contact || record.where || "").trim() || undefined,
+      });
+    }
+  }
+  const occlusions: PlannerOcclusionRelation[] = [];
+  const seenOcclusions = new Set<string>();
+  if (!Array.isArray(parsed.occlusions)) {
+    warnings.push("Planner did not declare occlusion relationships.");
+  } else {
+    for (const value of parsed.occlusions) {
+      const record = value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+      const occluder = canonical(record.occluder);
+      const occluded = canonical(record.occluded);
+      if (!occluder || !occluded || occluder === occluded) {
+        warnings.push("Ignored an occlusion relation with missing, unknown, or duplicate object names.");
+        continue;
+      }
+      const key = `${occluder.toLowerCase()}\u0000${occluded.toLowerCase()}`;
+      if (seenOcclusions.has(key)) continue;
+      seenOcclusions.add(key);
+      occlusions.push({
+        occluder,
+        occluded,
+        region: String(record.region || record.where || "").trim() || undefined,
+      });
+    }
+  }
+  const containments: PlannerContainmentRelation[] = [];
+  const seenContainments = new Set<string>();
+  if (!Array.isArray(parsed.containments)) {
+    warnings.push("Planner did not declare containment relationships.");
+  } else {
+    for (const value of parsed.containments) {
+      const record = value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+      const container = canonical(record.container);
+      const contained = canonical(record.contained);
+      if (!container || !contained || container === contained) {
+        warnings.push("Ignored a containment relation with missing, unknown, or duplicate object names.");
+        continue;
+      }
+      const key = `${container.toLowerCase()}\u0000${contained.toLowerCase()}`;
+      if (seenContainments.has(key)) continue;
+      seenContainments.add(key);
+      containments.push({
+        container,
+        contained,
+        evidence: String(record.evidence || record.where || "").trim() || undefined,
+      });
+    }
+  }
+  return { touching, occlusions, containments, warnings };
+};
+const parsePlannerLabels = (
+  parsed: Record<string, unknown>,
+  things: MemberInventoryThing[],
+  order: string[],
+  dimensions: { width: number; height: number },
+): { labels: PlannerLabel[]; warnings: string[] } => {
+  const byName = new Map(things.map((thing) => [thing.name.toLowerCase(), thing.name]));
+  const warnings: string[] = [];
+  const byObject = new Map<string, PlannerLabel>();
+  if (!Array.isArray(parsed.labels)) {
+    return { labels: [], warnings: ["Planner did not return number-label points."] };
+  }
+  for (const value of parsed.labels) {
+    const record = value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+    const object = byName.get(String(record.object || "").trim().toLowerCase());
+    const point = record.point;
+    if (!object || !Array.isArray(point) || point.length !== 2) {
+      warnings.push("Ignored a Planner label with an unknown object or missing point.");
+      continue;
+    }
+    const x = Number(point[0]);
+    const y = Number(point[1]);
+    if (!Number.isFinite(x) || !Number.isFinite(y) || x < 0 || y < 0 || x >= dimensions.width || y >= dimensions.height) {
+      warnings.push(`Ignored the out-of-bounds Planner label for ${object}.`);
+      continue;
+    }
+    const expectedNumber = order.indexOf(object) + 1;
+    if (!expectedNumber) continue;
+    if (Number(record.number) !== expectedNumber) {
+      warnings.push(`Corrected the Planner label number for ${object} to ${expectedNumber}.`);
+    }
+    byObject.set(object, {
+      object,
+      number: expectedNumber,
+      point: [Math.round(x), Math.round(y)],
+    });
+  }
+  return {
+    labels: order.flatMap((object) => byObject.get(object) ? [byObject.get(object)!] : []),
+    warnings,
+  };
+};
+const plannerRelationshipsForThing = (inventory: MemberInventory, name: string) => ({
+  touching: (inventory.plannerTouching || [])
+    .filter((relation) => relation.objects.includes(name))
+    .map((relation) => ({
+      object: relation.objects.find((candidate) => candidate !== name),
+      contact: relation.contact,
+    })),
+  occludes: (inventory.plannerOcclusions || [])
+    .filter((relation) => relation.occluder === name)
+    .map((relation) => ({ object: relation.occluded, region: relation.region })),
+  occludedBy: (inventory.plannerOcclusions || [])
+    .filter((relation) => relation.occluded === name)
+    .map((relation) => ({ object: relation.occluder, region: relation.region })),
+  contains: (inventory.plannerContainments || [])
+    .filter((relation) => relation.container === name)
+    .map((relation) => ({ object: relation.contained, evidence: relation.evidence })),
+  containedBy: (inventory.plannerContainments || [])
+    .filter((relation) => relation.contained === name)
+    .map((relation) => ({ object: relation.container, evidence: relation.evidence })),
+});
 const renderMemberOutlinerPrompt = (
   template: string,
   textualDescription: string,
   thing: MemberInventoryThing,
   position: number,
   total: number,
+  plannerRelationships: ReturnType<typeof plannerRelationshipsForThing>,
   outlineImage: string,
   dimensions: { width: number; height: number },
 ) => template
@@ -500,6 +746,7 @@ const renderMemberOutlinerPrompt = (
   .replaceAll("{{nextObjectDescription}}", thing.description)
   .replaceAll("{{plannerPosition}}", String(position))
   .replaceAll("{{plannerTotal}}", String(total))
+  .replaceAll("{{plannerRelationships}}", JSON.stringify(plannerRelationships, null, 2))
   .replaceAll("{{outlineImage}}", outlineImage)
   .replaceAll("{{imageWidth}}", String(dimensions.width))
   .replaceAll("{{imageHeight}}", String(dimensions.height))
@@ -858,9 +1105,21 @@ export type VideoImportChainSummaryStep = { index: number; label: string; detail
 
 export function VideoImportPage({
   workspaceId,
+  workspaceLabel,
+  arc3PageDefinition,
+  arc3B1B2PageDefinition,
+  arc3B1B2Models,
+  arc3B1B2Files,
+  onArc3B1B2PageDefinitionSaved,
   onChainSummaryChange,
 }: {
   workspaceId: string;
+  workspaceLabel?: string;
+  arc3PageDefinition?: WorkflowPageDefinition;
+  arc3B1B2PageDefinition?: WorkflowPageDefinition;
+  arc3B1B2Models?: Arc3ModelChoice[];
+  arc3B1B2Files?: WorkspaceFileRecord[];
+  onArc3B1B2PageDefinitionSaved?: () => Promise<unknown> | unknown;
   /** Fires whenever the built-up chain changes, so a host page can render a
    * live "what we've built so far" summary elsewhere (e.g. the right-side
    * panel) without needing to lift the whole chain/filters state up. */
@@ -1136,6 +1395,29 @@ export function VideoImportPage({
   }, [workspaceId]);
   const [catalog, setCatalog] = useState<Array<{ title: string; url: string }>>([]);
   const [importables, setImportables] = useState<Array<{ path: string; name: string }>>([]);
+  const [arcRecordings, setArcRecordings] = useState<Array<{ path: string; gameId: string; level?: number; frames: number; preview: string }>>([]);
+  const [curatedSources, setCuratedSources] = useState<Array<{ path: string; label: string; frames: number; preview: string }>>([]);
+  const [streamId, setStreamId] = useState("workbench");
+  const [streamPublicHost, setStreamPublicHost] = useState(() => window.location.hostname || "127.0.0.1");
+  const [externalStreamUrl, setExternalStreamUrl] = useState("");
+  const [streamMaxSeconds, setStreamMaxSeconds] = useState("");
+  const [streamMaxScenes, setStreamMaxScenes] = useState("");
+  const [streamRouterRunning, setStreamRouterRunning] = useState(false);
+  const safeStreamId = streamSlug(streamId);
+  const streamUrls = {
+    publishWhip: `http://${streamPublicHost || window.location.hostname}:8889/${safeStreamId}/whip`,
+    publishRtmp: `rtmp://${streamPublicHost || window.location.hostname}:1935/${safeStreamId}`,
+    watchWhep: `http://${streamPublicHost || window.location.hostname}:8889/${safeStreamId}/whep`,
+    watchHls: `http://${streamPublicHost || window.location.hostname}:8888/${safeStreamId}/index.m3u8`,
+  };
+  const refreshStreamRouter = useCallback(async () => {
+    const payload = await api(`stream-router?streamId=${encodeURIComponent(safeStreamId)}&publicHost=${encodeURIComponent(streamPublicHost)}`);
+    setStreamRouterRunning(payload.running === true);
+  }, [safeStreamId, streamPublicHost]);
+  const refreshArcRecordings = useCallback(async () => {
+    const payload = await api(`arc-recordings?workspaceId=${encodeURIComponent(workspaceId)}`);
+    setArcRecordings((payload.recordings as typeof arcRecordings) || []);
+  }, [workspaceId]);
   useEffect(() => {
     void loadVideos();
     void api(`catalog?workspaceId=${encodeURIComponent(workspaceId)}`).then((payload) => setCatalog((payload.entries as Array<{ title: string; url: string }>) || [])).catch(() => undefined);
@@ -1143,9 +1425,16 @@ export function VideoImportPage({
       const files = ((payload.files as Array<{ path: string; name?: string }>) || []).map((entry) => ({ path: String(entry.path), name: String(entry.name || entry.path) }));
       setImportables(files);
     }).catch(() => undefined);
+    void refreshArcRecordings().catch(() => undefined);
+    void api(`curated-image-sources?workspaceId=${encodeURIComponent(workspaceId)}`)
+      .then((payload) => setCuratedSources((payload.sources as typeof curatedSources) || []))
+      .catch(() => undefined);
     void api(`filters?workspaceId=${encodeURIComponent(workspaceId)}`).then((payload) => { setFilters((payload.filters as FilterEntry[]) || []); setLedger((payload.votes as Record<string, number>) || {}); }).catch(() => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceId]);
+  useEffect(() => {
+    void refreshStreamRouter().catch(() => undefined);
+  }, [refreshStreamRouter]);
 
   // ---- intake -------------------------------------------------------------
   const [source, setSource] = useState("");
@@ -1166,13 +1455,22 @@ export function VideoImportPage({
     });
   const upload = (file: File | null) => {
     if (!file) return;
-    void run("Uploading", async () => {
+    const imageArchive = file.name.toLowerCase().endsWith(".zip");
+    void run(imageArchive ? "Uploading image ZIP" : "Uploading movie", async () => {
       const form = new FormData();
       form.append("workspaceId", workspaceId);
       form.append("file", file, file.name);
-      const response = await fetch(`${API}/upload`, { method: "POST", body: form });
+      const response = await fetch(`${API}/${imageArchive ? "image-archive/upload" : "upload"}`, { method: "POST", body: form });
       const payload = await response.json();
-      if (!response.ok) throw new Error(String(payload.detail || response.statusText));
+      if (!response.ok) throw new Error(String(payload.detail || payload.error || response.statusText));
+      if (imageArchive) {
+        acceptFrames(payload.frames, {
+          id: `archive:${file.name}:${Date.now()}`,
+          label: `Image ZIP · ${file.name}`,
+          kind: "archive",
+        });
+        return `imported ${(payload.frames as Frame[] | undefined)?.length || 0} image(s) from ${file.name}`;
+      }
       await loadVideos(String(payload.path || ""));
       return `uploaded: ${payload.title}`;
     });
@@ -1232,7 +1530,15 @@ export function VideoImportPage({
     run("Detecting scenes", async () => {
       // Resume where the last run stopped: start at the last detected marker.
       const resumeAt = markers.length ? Math.max(...markers.map((marker) => marker.atSeconds)) : 0;
-      const payload = await api("scenes", { workspaceId, video: selectedPath, startSeconds: resumeAt });
+      const payload = await api("scenes", {
+        workspaceId,
+        video: selectedPath,
+        startSeconds: resumeAt,
+        threshold: Number(sceneThreshold) || 28,
+        samplesPerSecond: Number(sceneSamplesPerSecond) || 4,
+        minSceneGapSeconds: Math.max(0, Number(sceneMinGapSeconds) || 0),
+        maxMarkers: sceneMaxMarkers.trim() ? Number(sceneMaxMarkers) : undefined,
+      });
       watchConcurrentJob(String(payload.jobId), "scenes", setSceneJob, (final) => { setMarkers(final.markers || []); say(`scenes: ${(final.markers || []).length} marker(s) (${resumeAt ? `resumed @ ${resumeAt.toFixed(1)}s` : "from the top"})`); });
       return resumeAt ? `scanning for scene changes from ${resumeAt.toFixed(1)}s…` : "scanning for scene changes…";
     });
@@ -1244,6 +1550,12 @@ export function VideoImportPage({
     setSceneJob(null);
     persistMarkers([]);
     say("scene detection cleared; next scan starts from the beginning");
+  };
+  const stopSceneDetection = () => {
+    if (sceneJob?.state !== "running") return;
+    void api("extract/cancel", { jobId: sceneJob.id })
+      .then(() => say("scene scan stop requested; detected markers will be preserved"))
+      .catch((reason) => setError(reason instanceof Error ? reason.message : String(reason)));
   };
   const generateCaptions = () =>
     run("Generating video captions", async () => {
@@ -1281,6 +1593,8 @@ export function VideoImportPage({
 
   // ---- frames (input images) -----------------------------------------------
   const [frames, setFrames] = useState<Frame[]>([]);
+  const [frameSources, setFrameSources] = useState<ExtractedImageSource[]>([]);
+  const [selectedFrameSourceId, setSelectedFrameSourceId] = useState("");
   const [picked, setPicked] = useState<string | null>(null);
   const [kept, setKept] = useState<Set<string> | null>(null);
   const [memberInputPaths, setMemberInputPaths] = useState<Set<string>>(new Set());
@@ -1293,6 +1607,10 @@ export function VideoImportPage({
     });
   };
   const [mode, setMode] = useState<"interval" | "scenes">("scenes");
+  const [sceneThreshold, setSceneThreshold] = useState("28");
+  const [sceneSamplesPerSecond, setSceneSamplesPerSecond] = useState("4");
+  const [sceneMinGapSeconds, setSceneMinGapSeconds] = useState("0.5");
+  const [sceneMaxMarkers, setSceneMaxMarkers] = useState("");
   const [everySeconds, setEverySeconds] = useState("2");
   const [perScene, setPerScene] = useState("1");
   const [sceneOffset, setSceneOffset] = useState("0.3");
@@ -1315,8 +1633,20 @@ export function VideoImportPage({
     mode === "scenes"
       ? `scene ${startScene || 1}–${endScene || "end"} · skip ${skipScenes || 0} · ×${perScene} +${sceneOffset}s · ${rangeStart || 0}–${rangeEnd || "end"}s · max ${maxFrames}`
       : `every ${everySeconds}s · ${rangeStart || 0}–${rangeEnd || "end"}s · max ${maxFrames}`;
-  const acceptFrames = (list: JobState["frames"]) => {
+  const acceptFrames = (
+    list: JobState["frames"],
+    source: Omit<ExtractedImageSource, "frames"> = {
+      id: "video-extraction",
+      label: "Video frame extraction",
+      kind: "video",
+    },
+  ) => {
     const next = (list || []).map((frame) => ({ ...frame, characters: [], anonymous: 0 }));
+    setFrameSources((current) => [
+      ...current.filter((candidate) => candidate.id !== source.id),
+      { ...source, frames: next },
+    ]);
+    setSelectedFrameSourceId(source.id);
     setFrames(next);
     // The freshly extracted images are the first named gallery in the flow.
     setCollapsedMap((current) => ({ ...current, inputs: false }));
@@ -1335,6 +1665,92 @@ export function VideoImportPage({
       say("stale results cleared (fresh extraction) — turn off auto-clear stale data to keep them");
     }
   };
+  useEffect(() => {
+    if (!selectedFrameSourceId) return;
+    setFrameSources((current) => current.map((source) =>
+      source.id === selectedFrameSourceId ? { ...source, frames } : source));
+  }, [frames, selectedFrameSourceId]);
+  const selectFrameSource = (sourceId: string) => {
+    const source = frameSources.find((candidate) => candidate.id === sourceId);
+    if (!source) return;
+    setSelectedFrameSourceId(sourceId);
+    setFrames(source.frames);
+    setMemberInputPaths((current) => new Set([...current].filter((path) => source.frames.some((frame) => frame.path === path))));
+    setSelectedWorkflowGalleryPaths(new Set());
+    say(`Extracted Images source: ${source.label}`);
+  };
+  const selectExtractedImageSource = (sourceId: string) => {
+    if (!sourceId.startsWith("curated:")) {
+      selectFrameSource(sourceId);
+      return;
+    }
+    const sourcePath = sourceId.slice("curated:".length);
+    const source = curatedSources.find((candidate) => candidate.path === sourcePath);
+    void run("Importing curated game images", async () => {
+      const payload = await api("curated-image-sources/import", {
+        workspaceId,
+        source: sourcePath,
+      });
+      acceptFrames(payload.frames, {
+        id: sourceId,
+        label: `Curated data · ${source?.label || sourcePath}`,
+        kind: "curated",
+      });
+      return `loaded ${(payload.frames as Frame[] | undefined)?.length || 0} curated image(s) from ${sourcePath}`;
+    });
+  };
+  const copyStreamUrl = (value: string, label: string) => {
+    void navigator.clipboard.writeText(value)
+      .then(() => say(`${label} URL copied`))
+      .catch((reason) => setError(reason instanceof Error ? reason.message : String(reason)));
+  };
+  const startStreamRouter = () =>
+    run("Starting standard stream router", async () => {
+      await api("stream-router/start", {});
+      await refreshStreamRouter();
+      return "MediaMTX ready for WHIP/RTMP publishing and WHEP/HLS playback";
+    });
+  const stopStreamRouter = () =>
+    run("Stopping standard stream router", async () => {
+      await api("stream-router/stop", {});
+      await refreshStreamRouter();
+      return "MediaMTX stopped";
+    });
+  const consumeExternalStream = (sourceOverride?: string) =>
+    run("Consuming external video stream", async () => {
+      const streamSource = (sourceOverride ?? externalStreamUrl).trim();
+      if (!streamSource) return "paste a YouTube, HLS, RTSP, RTMP, SRT, or HTTP video endpoint first";
+      const payload = await api("stream-scenes", {
+        workspaceId,
+        sourceUrl: streamSource,
+        streamId: safeStreamId,
+        threshold: Number(sceneThreshold) || 28,
+        samplesPerSecond: Number(sceneSamplesPerSecond) || 4,
+        minSceneGapSeconds: Math.max(0, Number(sceneMinGapSeconds) || 0),
+        maxScenes: streamMaxScenes.trim() ? Number(streamMaxScenes) : undefined,
+        maxSeconds: streamMaxSeconds.trim() ? Number(streamMaxSeconds) : undefined,
+      });
+      watchConcurrentJob(String(payload.jobId), "scenes", setSceneJob, (final) => {
+        setMarkers(final.markers || []);
+        acceptFrames(final.frames, {
+          id: `stream:${safeStreamId}`,
+          label: `Stream · ${safeStreamId}`,
+          kind: "stream",
+        });
+        say(`external stream: ${(final.frames || []).length} scene frame(s)${final.interrupted ? " (interrupted)" : ""}`);
+      });
+      return `consuming ${streamSource} until end or Stop scene scan`;
+    });
+  const importArcRecording = (recording: string) =>
+    run("Importing ARC playback image sequence", async () => {
+      const payload = await api("arc-recordings/import", { workspaceId, recording });
+      acceptFrames(payload.frames, {
+        id: `arc:${recording}`,
+        label: `ARC playback · ${recording}`,
+        kind: "arc",
+      });
+      return `imported ${(payload.frames as Frame[] | undefined)?.length || 0} ARC playback frame(s) with move-list provenance`;
+    });
   const clearExtractedFrames = () => {
     setFrames([]);
     setPicked(null);
@@ -1352,11 +1768,24 @@ export function VideoImportPage({
   };
   const extract = () =>
     run("Extracting frames", async () => {
+      if (mode === "scenes" && !markers.length && sceneJob?.state === "running") {
+        return "frame extraction stopped: scene detection is still scanning to the end of the video";
+      }
       const payload = await api("extract", extractBody());
       watchConcurrentJob(String(payload.jobId), "extract", setFrameExtractionJob, (final) => { acceptFrames(final.frames); say(`Extracted Frame Gallery: ${(final.frames || []).length} image(s)${final.interrupted ? " (interrupted)" : ""}`); });
       return `extracting ≈${payload.estimatedFrames} frame(s)…`;
     });
+  const stopFrameExtraction = () => {
+    if (frameExtractionJob?.state !== "running") return;
+    void api("extract/cancel", { jobId: frameExtractionJob.id })
+      .then(() => say("frame extraction stop requested; completed frames will be preserved"))
+      .catch((reason) => setError(reason instanceof Error ? reason.message : String(reason)));
+  };
   const extractAndWait = async (): Promise<Frame[]> => {
+    if (mode === "scenes" && !markers.length && sceneJob?.state === "running") {
+      say("frame extraction stopped: no completed scene list yet; scene detection continues to the end");
+      return [];
+    }
     const started = await api("extract", extractBody());
     const final = await awaitJob(String(started.jobId), "extract", (state) => say(`extract (top of stack): ${state.done}/${state.total}`));
     const fresh: Frame[] = (final.frames || []).map((frame) => ({ ...frame, characters: [], anonymous: 0 }));
@@ -1561,6 +1990,9 @@ export function VideoImportPage({
     let sourceFrames = frames;
     if (!sourceFrames.length) {
       if (!selectedPath) return "pick a video first";
+      if (mode === "scenes" && !markers.length && sceneJob?.state === "running") {
+        return "stopped: frame extraction is starved while scene detection continues to the end";
+      }
       say(`top of stack: extract (${criteriaLabel()})`);
       sourceFrames = await extractAndWait();
       if (!sourceFrames.length) return "extraction produced no frames";
@@ -1802,19 +2234,34 @@ export function VideoImportPage({
   const setCallConcurrency = (type: keyof LlmCallConcurrency, value: number | null) => {
     setLlmCallConcurrency((current) => ({ ...current, [type]: value === null ? null : Math.max(1, Math.min(50, Math.round(value) || 1)) }));
   };
+  const llmStageReserve = Math.min(
+    Math.max(0, totalLlmConcurrency - 1),
+    Math.max(LLM_STAGE_RESERVE_MIN, Math.ceil(totalLlmConcurrency * LLM_STAGE_RESERVE_FRACTION)),
+  );
+  const llmPerStageCeiling = Math.max(1, totalLlmConcurrency - llmStageReserve);
   const effectiveCallConcurrency = (type: keyof LlmCallConcurrency) => {
-    return Math.min(totalLlmConcurrency, llmCallConcurrency[type] ?? totalLlmConcurrency);
+    return Math.min(llmPerStageCeiling, llmCallConcurrency[type] ?? llmPerStageCeiling);
   };
-  const llmSchedulerLimitsRef = useRef({ total: totalLlmConcurrency, byType: llmCallConcurrency });
-  llmSchedulerLimitsRef.current = { total: totalLlmConcurrency, byType: llmCallConcurrency };
+  const schedulerTypeLimits: Record<keyof LlmCallConcurrency, number> = {
+    describer: effectiveCallConcurrency("describer"),
+    planner: effectiveCallConcurrency("planner"),
+    outliner: effectiveCallConcurrency("outliner"),
+    extractor: effectiveCallConcurrency("extractor"),
+    turtle: effectiveCallConcurrency("turtle"),
+    turtlePng: effectiveCallConcurrency("turtlePng"),
+  };
+  const llmSchedulerLimitsRef = useRef({ total: totalLlmConcurrency, byType: schedulerTypeLimits });
+  llmSchedulerLimitsRef.current = { total: totalLlmConcurrency, byType: schedulerTypeLimits };
   const llmSchedulerRef = useRef<{
     active: number;
     byType: Record<keyof LlmCallConcurrency, number>;
     waiters: Array<{ type: keyof LlmCallConcurrency; resolve: (release: () => void) => void }>;
+    lastGrantedIndex: number;
   }>({
     active: 0,
     byType: { describer: 0, planner: 0, outliner: 0, extractor: 0, turtle: 0, turtlePng: 0 },
     waiters: [],
+    lastGrantedIndex: -1,
   });
   const [llmSchedulerVersion, setLlmSchedulerVersion] = useState(0);
   const pumpLlmScheduler = () => {
@@ -1824,18 +2271,27 @@ export function VideoImportPage({
     while (scheduler.active < limits.total && scheduler.waiters.length) {
       let waiterIndex = -1;
       let bestUtilization = Number.POSITIVE_INFINITY;
+      let bestRoundRobinDistance = Number.POSITIVE_INFINITY;
       scheduler.waiters.forEach((waiter, index) => {
-        const configured = limits.byType[waiter.type];
-        const typeLimit = Math.min(limits.total, configured ?? limits.total);
+        const typeLimit = Math.min(limits.total, limits.byType[waiter.type]);
         if (scheduler.byType[waiter.type] >= typeLimit) return;
         const utilization = scheduler.byType[waiter.type] / typeLimit;
-        if (utilization < bestUtilization) {
+        const stageIndex = LLM_STAGE_ORDER.indexOf(waiter.type);
+        const roundRobinDistance = (
+          stageIndex - scheduler.lastGrantedIndex + LLM_STAGE_ORDER.length
+        ) % LLM_STAGE_ORDER.length || LLM_STAGE_ORDER.length;
+        if (
+          utilization < bestUtilization
+          || (utilization === bestUtilization && roundRobinDistance < bestRoundRobinDistance)
+        ) {
           waiterIndex = index;
           bestUtilization = utilization;
+          bestRoundRobinDistance = roundRobinDistance;
         }
       });
       if (waiterIndex < 0) break;
       const [waiter] = scheduler.waiters.splice(waiterIndex, 1);
+      scheduler.lastGrantedIndex = LLM_STAGE_ORDER.indexOf(waiter.type);
       scheduler.active += 1;
       scheduler.byType[waiter.type] += 1;
       setLlmSchedulerVersion((version) => version + 1);
@@ -1985,8 +2441,8 @@ export function VideoImportPage({
   const buildSnapshot = () => ({
     v: 1,
     at: new Date().toISOString(),
-    selectedPath, playerTime, markers, captions, captionSource, segments, mode, everySeconds, perScene, sceneOffset, startScene, endScene, skipScenes, rangeStart, rangeEnd, maxFrames,
-    frames, picked, kept: kept ? [...kept] : null, memberInputPaths: [...memberInputPaths], selectedWorkflowGalleryPaths: [...selectedWorkflowGalleryPaths], previewSource, galleryScope,
+    selectedPath, playerTime, markers, captions, captionSource, segments, mode, sceneThreshold, sceneSamplesPerSecond, sceneMinGapSeconds, sceneMaxMarkers, streamId, streamPublicHost, externalStreamUrl, streamMaxSeconds, streamMaxScenes, everySeconds, perScene, sceneOffset, startScene, endScene, skipScenes, rangeStart, rangeEnd, maxFrames,
+    frames, frameSources, selectedFrameSourceId, picked, kept: kept ? [...kept] : null, memberInputPaths: [...memberInputPaths], selectedWorkflowGalleryPaths: [...selectedWorkflowGalleryPaths], previewSource, galleryScope,
     filterId, filterParams, chain, candidateCount, fullSelectors,
     gallery, output, outputMode, outputLabel, appliedIds, trail, probes,
     members, memberInventories, memberScenes, memberDescriptionPrompt, objectPromptWriter, memberDecompositionPrompt, memberOrderPrompt, memberOutlinerPrompt, memberExtractorPrompt, turtlePrompt, turtlePngPrompt, turtleArtifacts, memberGoal, memberFill,
@@ -2008,6 +2464,15 @@ export function VideoImportPage({
     if (typeof s.captionSource === "string") setCaptionSource(s.captionSource);
     if (Array.isArray(s.segments)) setSegments(s.segments);
     if (s.mode === "interval" || s.mode === "scenes") setMode(s.mode);
+    if (typeof s.sceneThreshold === "string") setSceneThreshold(s.sceneThreshold);
+    if (typeof s.sceneSamplesPerSecond === "string") setSceneSamplesPerSecond(s.sceneSamplesPerSecond);
+    if (typeof s.sceneMinGapSeconds === "string") setSceneMinGapSeconds(s.sceneMinGapSeconds);
+    if (typeof s.sceneMaxMarkers === "string") setSceneMaxMarkers(s.sceneMaxMarkers);
+    if (typeof s.streamId === "string") setStreamId(s.streamId);
+    if (typeof s.streamPublicHost === "string") setStreamPublicHost(s.streamPublicHost);
+    if (typeof s.externalStreamUrl === "string") setExternalStreamUrl(s.externalStreamUrl);
+    if (typeof s.streamMaxSeconds === "string") setStreamMaxSeconds(s.streamMaxSeconds);
+    if (typeof s.streamMaxScenes === "string") setStreamMaxScenes(s.streamMaxScenes);
     if (typeof s.everySeconds === "string") setEverySeconds(s.everySeconds);
     if (typeof s.perScene === "string") setPerScene(s.perScene);
     if (typeof s.sceneOffset === "string") setSceneOffset(s.sceneOffset);
@@ -2018,6 +2483,10 @@ export function VideoImportPage({
     if (typeof s.rangeEnd === "string") setRangeEnd(s.rangeEnd);
     if (typeof s.maxFrames === "string") setMaxFrames(s.maxFrames);
     if (Array.isArray(s.frames)) setFrames(s.frames);
+    if (Array.isArray(s.frameSources)) setFrameSources(s.frameSources);
+    else if (Array.isArray(s.frames) && s.frames.length) setFrameSources([{ id: "restored", label: "Restored extracted images", kind: "restored", frames: s.frames }]);
+    if (typeof s.selectedFrameSourceId === "string") setSelectedFrameSourceId(s.selectedFrameSourceId);
+    else if (Array.isArray(s.frames) && s.frames.length) setSelectedFrameSourceId("restored");
     if (typeof s.picked === "string") setPicked(s.picked);
     if (Array.isArray(s.kept) && s.kept.length) setKept(new Set(s.kept.map(String)));
     if (Array.isArray(s.memberInputPaths)) {
@@ -2075,7 +2544,7 @@ export function VideoImportPage({
     if (typeof s.objectPromptWriter === "string") setObjectPromptWriter(s.objectPromptWriter);
     else if (typeof s.topLevelPromptWriter === "string") setObjectPromptWriter(s.topLevelPromptWriter);
     if (typeof s.memberDecompositionPrompt === "string") setMemberDecompositionPrompt(s.memberDecompositionPrompt);
-    if (typeof s.memberOrderPrompt === "string" && !s.memberOrderPrompt.includes("cutoutInstructions")) setMemberOrderPrompt(s.memberOrderPrompt);
+    if (typeof s.memberOrderPrompt === "string" && !s.memberOrderPrompt.includes("cutoutInstructions")) setMemberOrderPrompt(migratePlannerPrompt(s.memberOrderPrompt));
     else if (typeof s.memberOrderPrompt === "string") setMemberOrderPrompt(DEFAULT_MEMBER_ORDER_PROMPT);
     if (typeof s.memberOutlinerPrompt === "string" && s.memberOutlinerPrompt.includes("{{nextObjectName}}")) setMemberOutlinerPrompt(s.memberOutlinerPrompt);
     if (typeof s.memberExtractorPrompt === "string") {
@@ -2161,7 +2630,9 @@ export function VideoImportPage({
     if (s.extractorPromptSelection === "workspace" || s.extractorPromptSelection === "default") setExtractorPromptSelection(s.extractorPromptSelection);
     if (s.turtlePromptSelection === "workspace" || s.turtlePromptSelection === "default") setTurtlePromptSelection(s.turtlePromptSelection);
     if (s.turtlePngPromptSelection === "workspace" || s.turtlePngPromptSelection === "default") setTurtlePngPromptSelection(s.turtlePngPromptSelection);
-    const restoredModelCache = s.modelResponseCache && typeof s.modelResponseCache === "object" ? s.modelResponseCache : {};
+    const restoredModelCache = compactModelResponseCache(
+      s.modelResponseCache && typeof s.modelResponseCache === "object" ? s.modelResponseCache : {},
+    );
     modelResponseCacheRef.current = restoredModelCache;
     setModelResponseCache(restoredModelCache);
     if (typeof s.autoClearData === "boolean") setAutoClearData(s.autoClearData);
@@ -2250,7 +2721,7 @@ export function VideoImportPage({
         setMemberDescriptionPrompt(typeof state.memberDescriptionPrompt === "string" ? state.memberDescriptionPrompt : DEFAULT_MEMBER_DESCRIPTION_PROMPT);
         setDescriberPromptSelection(state.describerPromptSelection === "default" ? "default" : "workspace");
       } else if (expandedCallPrompt === "planner") {
-        setMemberOrderPrompt(typeof state.memberOrderPrompt === "string" ? state.memberOrderPrompt : DEFAULT_MEMBER_ORDER_PROMPT);
+        setMemberOrderPrompt(typeof state.memberOrderPrompt === "string" ? migratePlannerPrompt(state.memberOrderPrompt) : DEFAULT_MEMBER_ORDER_PROMPT);
         setPlannerPromptSelection(state.plannerPromptSelection === "default" ? "default" : "workspace");
       } else if (expandedCallPrompt === "outliner") {
         setMemberOutlinerPrompt(typeof state.memberOutlinerPrompt === "string" ? state.memberOutlinerPrompt : DEFAULT_MEMBER_OUTLINER_PROMPT);
@@ -2483,7 +2954,7 @@ export function VideoImportPage({
       imagePath,
       imageHash,
       cachedAt: new Date().toISOString(),
-      payload,
+      payload: compactCachedModelPayload(payload),
     };
     const next = { ...modelResponseCacheRef.current, [key]: entry };
     modelResponseCacheRef.current = next;
@@ -2692,6 +3163,11 @@ export function VideoImportPage({
               outlinePolygons: previous.outlinePolygons,
               outlineHoles: previous.outlineHoles,
               outlineBox: previous.outlineBox,
+              outlineTraceTurtle: previous.outlineTraceTurtle,
+              outlineVerificationImage: previous.outlineVerificationImage,
+              outlineGeometryHash: previous.outlineGeometryHash,
+              outlineTraceAgreement: previous.outlineTraceAgreement,
+              outlineBoundaryCoverage: previous.outlineBoundaryCoverage,
               outlineError: previous.outlineError,
               outlineRetryAfter: previous.outlineRetryAfter,
               outlineAttempts: previous.outlineAttempts,
@@ -2750,10 +3226,9 @@ export function VideoImportPage({
   };
   const planRecursiveInventory = async (inventory: MemberInventory, force = false): Promise<MemberInventory | null> => {
     if (!inventory.things.length) return { ...inventory, status: "done" };
-    if (!force && inventory.extractionOrder?.length) return inventory;
+    if (!force && hasVisualizedPlan(inventory)) return inventory;
     if (!force && inventory.status === "failed" && !retryReady(inventory.retryAfter)) return null;
-    const orderPrompt = renderMemberOrderPrompt(selectedPlannerPrompt, inventory.descriptionOutput || inventory.sceneDescription, inventory.things);
-    const planning = { ...inventory, orderPrompt, status: "ordering" as const };
+    const planning = { ...inventory, status: "ordering" as const };
     storeMemberInventory(planning);
     const image = await asDataUrl(inventory.sourceImage);
     if (!image) {
@@ -2762,7 +3237,16 @@ export function VideoImportPage({
      scheduleRetry();
      return null;
     }
+    let orderPrompt = "";
     try {
+     const plannerDimensions = await imageDataDimensions(image);
+     orderPrompt = renderMemberOrderPrompt(
+       selectedPlannerPrompt,
+       inventory.descriptionOutput || inventory.sceneDescription,
+       inventory.things,
+       plannerDimensions,
+     );
+     storeMemberInventory({ ...planning, orderPrompt });
      const payload = await invokeCachedModel(effectivePlannerModel, orderPrompt, inventory.sourceImage, image, 120, inventory.status === "failed", "planner");
      const orderOutput = typeof payload.text === "string" ? payload.text.trim() : "";
      const formatted = formatDetectedJson(orderOutput);
@@ -2780,11 +3264,31 @@ export function VideoImportPage({
      }
      const omitted = inventory.things.map((thing) => thing.name).filter((name) => !orderedNames.includes(name));
      const extractionOrder = [...orderedNames, ...omitted];
+     const relationships = parsePlannerRelationships(parsed, inventory.things);
+     const labelResult = parsePlannerLabels(parsed, inventory.things, extractionOrder, plannerDimensions);
+     if (labelResult.labels.length !== extractionOrder.length) {
+       throw new Error(`Planner returned ${labelResult.labels.length}/${extractionOrder.length} valid object label points.`);
+     }
+     const visualization = await api("planner-visualization", {
+       workspaceId,
+       image: inventory.sourceImage,
+       labels: labelResult.labels,
+     });
+     const orderWarnings = [
+       omitted.length ? `Planner omitted ${omitted.length} object(s) from order; appended last.` : "",
+       ...relationships.warnings,
+       ...labelResult.warnings,
+     ].filter(Boolean);
      const completed: MemberInventory = {
        ...planning,
        orderOutput,
        extractionOrder,
-       orderError: omitted.length ? `Planner omitted ${omitted.length} object(s) from order; appended last.` : undefined,
+       plannerTouching: relationships.touching,
+       plannerOcclusions: relationships.occlusions,
+       plannerContainments: relationships.containments,
+       plannerLabels: labelResult.labels,
+       plannerVisualizationImage: String(visualization.visualizationImage || ""),
+       orderError: orderWarnings.length ? orderWarnings.join(" ") : undefined,
        status: "done",
      };
      storeMemberInventory(completed);
@@ -2792,7 +3296,7 @@ export function VideoImportPage({
      return completed;
     } catch (reason) {
      const message = reason instanceof Error ? reason.message : String(reason);
-     const failed = { ...planning, orderError: message, status: "failed" as const, retryAfter: Date.now() + LLM_RETRY_DELAY_MS, attempts: (inventory.attempts || 0) + 1 };
+     const failed = { ...planning, orderPrompt: orderPrompt || planning.orderPrompt, orderError: message, status: "failed" as const, retryAfter: Date.now() + LLM_RETRY_DELAY_MS, attempts: (inventory.attempts || 0) + 1 };
      storeMemberInventory(failed);
      scheduleRetry();
      say(`✗ planner ${inventory.subjectName || "input"}: ${message}`);
@@ -2804,7 +3308,7 @@ export function VideoImportPage({
      if (!isRunnableVisionModel(effectivePlannerModel)) return "pick an enabled Planner vision model first";
      const inventories = memberInventories.filter((inventory) =>
        inventory.things.length > 0
-       && (!onlyMissing || (!inventory.extractionOrder?.length && (inventory.status !== "failed" || retryReady(inventory.retryAfter))))
+       && (!onlyMissing || (!hasVisualizedPlan(inventory) && (inventory.status !== "failed" || retryReady(inventory.retryAfter))))
      );
      if (!inventories.length) return "call the Describer on input images first";
      let planned = 0;
@@ -2857,6 +3361,7 @@ export function VideoImportPage({
        thing,
        position + 1,
        inventory.extractionOrder?.length || inventory.things.length,
+       plannerRelationshipsForThing(inventory, thing.name),
        scenePath,
        outlineDimensions,
      );
@@ -2886,8 +3391,12 @@ export function VideoImportPage({
      let polygons: number[][][] = [];
      let holes: number[][][] = [];
      let box: number[] | undefined;
+     let traceTurtle: Array<{ op: string; x: number; y: number }> = [];
      if (geometry) {
        const parsed = JSON.parse(geometry[0]) as Record<string, unknown>;
+       if (parsed.name && String(parsed.name).trim().toLowerCase() !== thing.name.trim().toLowerCase()) {
+         throw new Error(`Outliner returned geometry for ${String(parsed.name)} instead of ${thing.name}.`);
+       }
        polygons = Array.isArray(parsed.polygons)
          ? parsed.polygons.filter((candidate: unknown) => Array.isArray(candidate) && candidate.length >= 3) as number[][][]
          : [];
@@ -2896,8 +3405,29 @@ export function VideoImportPage({
          : [];
        if (!polygons.length && Array.isArray(parsed.polygon) && parsed.polygon.length >= 3) polygons = [parsed.polygon as number[][]];
        if (Array.isArray(parsed.box) && parsed.box.length === 4) box = parsed.box.map(Number);
+       traceTurtle = Array.isArray(parsed.traceTurtle)
+         ? parsed.traceTurtle.map((command) => ({
+           op: String((command as Record<string, unknown>)?.op || ""),
+           x: Number((command as Record<string, unknown>)?.x),
+           y: Number((command as Record<string, unknown>)?.y),
+         }))
+         : [];
      }
      if (!polygons.length && !box) throw new Error("Outliner returned no usable precise polygons or box.");
+     if (!traceTurtle.length) throw new Error("Outliner returned no Turtle trace to verify.");
+     const verification = await api("outline-verification", {
+       workspaceId,
+       image: scenePath,
+       name: thing.name,
+       polygons,
+       holes,
+       box,
+       traceTurtle,
+       plannerNumber: position + 1,
+     });
+     if (verification.verified !== true || !verification.verificationImage || !verification.geometryHash) {
+       throw new Error("Outliner verification did not produce a verified trace preview.");
+     }
      updateInventoryThing(inventory.id, thingIndex, {
        status: "outlined",
        outlinePrompt,
@@ -2907,6 +3437,11 @@ export function VideoImportPage({
        outlinePolygons: polygons,
        outlineHoles: holes,
        outlineBox: box,
+       outlineTraceTurtle: traceTurtle,
+       outlineVerificationImage: String(verification.verificationImage),
+       outlineGeometryHash: String(verification.geometryHash),
+       outlineTraceAgreement: Number(verification.traceAgreement),
+       outlineBoundaryCoverage: Number(verification.boundaryCoverage),
        cutoutInstructions: outlineOutput,
        outlineError: undefined,
        outlineRetryAfter: undefined,
@@ -2929,7 +3464,7 @@ export function VideoImportPage({
   const runRecursiveOutliner = (onlyMissing = false) =>
     run("Outlining planned objects independently", async () => {
      if (!isRunnableVisionModel(effectiveOutlinerModel)) return "pick an enabled Outliner vision model first";
-     const candidates = memberInventories.flatMap((inventory) => inventory.extractionOrder?.length
+     const candidates = memberInventories.flatMap((inventory) => hasVisualizedPlan(inventory)
        ? inventory.things.map((thing, thingIndex) => ({ inventory, thing, thingIndex })).filter(({ thing }) => {
          if (thing.outputImages?.length) return false;
          const ready = hasAlignedOutline(thing);
@@ -2959,13 +3494,13 @@ export function VideoImportPage({
      const queue = automatic
        ? cooperativeRetryOrder(
          memberInventories.filter((inventory) => {
-           return Boolean(inventory.extractionOrder?.length && inventoryOutlinesReady(inventory));
+           return Boolean(hasVisualizedPlan(inventory) && inventoryOutlinesReady(inventory));
          }),
          effectiveCallConcurrency("extractor"),
          (inventory) => inventory.things.some((thing) => (thing.status === "failed" || thing.status === "not_found") && retryReady(thing.retryAfter)),
        )
        : roots.filter((inventory) => {
-         return Boolean(inventory.extractionOrder?.length && inventoryOutlinesReady(inventory));
+         return Boolean(hasVisualizedPlan(inventory) && inventoryOutlinesReady(inventory));
        });
      const queuedInventoryIds = new Set(queue.map((inventory) => inventory.id));
      const scenes = { ...memberScenes };
@@ -3050,6 +3585,8 @@ export function VideoImportPage({
              polygons: thing.outlinePolygons || [],
              holes: thing.outlineHoles || [],
              box: thing.outlineBox,
+             outlineVerificationImage: thing.outlineVerificationImage,
+             outlineGeometryHash: thing.outlineGeometryHash,
              name: thing.name,
              step: currentStep,
              fill: memberFill,
@@ -3320,12 +3857,18 @@ export function VideoImportPage({
           say(`◫ [${inventory.probeLabel}] no visible objects remain to extract`);
           continue;
         }
-        const orderPrompt = renderMemberOrderPrompt(memberOrderPrompt, textualDescription, extractionCandidates.map(({ thing }) => thing));
         const orderImage = await asDataUrl(scenePath);
         if (!orderImage) {
-          updateMemberInventory(inventory.id, (current) => ({ ...current, status: "failed", orderPrompt, orderError: "Could not load the input image for extraction ordering." }));
+          updateMemberInventory(inventory.id, (current) => ({ ...current, status: "failed", orderError: "Could not load the input image for extraction ordering." }));
           continue;
         }
+        const plannerDimensions = await imageDataDimensions(orderImage);
+        const orderPrompt = renderMemberOrderPrompt(
+          memberOrderPrompt,
+          textualDescription,
+          extractionCandidates.map(({ thing }) => thing),
+          plannerDimensions,
+        );
         let orderPayload: Record<string, any>;
         try {
           orderPayload = await invokeCachedModel(memberModel, orderPrompt, scenePath, orderImage, 120);
@@ -3339,9 +3882,11 @@ export function VideoImportPage({
         const formattedOrder = formatDetectedJson(orderOutput);
         let requestedOrder: unknown[] = [];
         let requestedMethods: Record<string, unknown> = {};
+        let parsedOrder: Record<string, unknown> = {};
         if (formattedOrder.detected) {
           try {
             const parsed = JSON.parse(formattedOrder.text);
+            parsedOrder = parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
             requestedOrder = Array.isArray(parsed.order) ? parsed.order : [];
             requestedMethods = parsed.methods && typeof parsed.methods === "object" && !Array.isArray(parsed.methods) ? parsed.methods : {};
           } catch { /* handled as an invalid order below */ }
@@ -3386,7 +3931,34 @@ export function VideoImportPage({
           omittedIndices.length ? `Ordering omitted ${omittedIndices.length} object(s); appended them last.` : "",
           correctedParentOrder ? "Corrected the returned order so every sub-object is extracted before its parent." : "",
         ].filter(Boolean);
+        const relationships = parsePlannerRelationships(
+          parsedOrder,
+          extractionCandidates.map(({ thing }) => thing),
+        );
+        orderWarnings.push(...relationships.warnings);
         const extractionOrder = extractionIndices.map((index) => workingThings[index].name);
+        const labelResult = parsePlannerLabels(
+          parsedOrder,
+          extractionCandidates.map(({ thing }) => thing),
+          extractionOrder,
+          plannerDimensions,
+        );
+        if (labelResult.labels.length !== extractionOrder.length) {
+          updateMemberInventory(inventory.id, (current) => ({
+            ...current,
+            status: "failed",
+            orderPrompt,
+            orderOutput,
+            orderError: `Planner returned ${labelResult.labels.length}/${extractionOrder.length} valid object label points.`,
+          }));
+          continue;
+        }
+        const visualization = await api("planner-visualization", {
+          workspaceId,
+          image: scenePath,
+          labels: labelResult.labels,
+        });
+        orderWarnings.push(...labelResult.warnings);
         const requestedMethodsByName = new Map(Object.entries(requestedMethods).map(([name, methods]) => [name.toLowerCase(), methods]));
         workingThings = workingThings.map((thing) => {
           if (thing.visibility === "hidden") return { ...thing, extractionRoutes: [] };
@@ -3407,7 +3979,20 @@ export function VideoImportPage({
         });
         recordPipeFork("routes", `${inventory.probeLabel}: ${extractionCandidates.length} object(s) entered ${PIPE_FORK_OPTIONS.routes.find((option) => option.value === activePipeForks.routes)?.label || activePipeForks.routes}`);
         const orderError = orderWarnings.length ? orderWarnings.join(" ") : undefined;
-        updateMemberInventory(inventory.id, (current) => ({ ...current, status: "extracting", orderPrompt, orderOutput, extractionOrder, orderError, things: workingThings }));
+        updateMemberInventory(inventory.id, (current) => ({
+          ...current,
+          status: "extracting",
+          orderPrompt,
+          orderOutput,
+          extractionOrder,
+          plannerTouching: relationships.touching,
+          plannerOcclusions: relationships.occlusions,
+          plannerContainments: relationships.containments,
+          plannerLabels: labelResult.labels,
+          plannerVisualizationImage: String(visualization.visualizationImage || ""),
+          orderError,
+          things: workingThings,
+        }));
         say(`↕ [${inventory.probeLabel}] extraction order: ${extractionOrder.join(" → ")}`);
         if (through === "routes") {
           updateMemberInventory(inventory.id, (current) => ({ ...current, status: "done" }));
@@ -3842,10 +4427,10 @@ export function VideoImportPage({
     const inventoryNeedsPlan = memberInventories.some((inventory) =>
      (inventory.status === "done" || (inventory.status === "failed" && retryReady(inventory.retryAfter)))
      && inventory.things.length > 0
-     && !inventory.extractionOrder?.length
+     && !hasVisualizedPlan(inventory)
     );
     const inventoryNeedsOutline = memberInventories.some((inventory) =>
-     Boolean(inventory.extractionOrder?.length)
+     hasVisualizedPlan(inventory)
      && inventory.things.some((thing) =>
        !thing.outputImages?.length
        && !hasAlignedOutline(thing)
@@ -3853,7 +4438,7 @@ export function VideoImportPage({
      )
     );
     const inventoryNeedsExtraction = memberInventories.some((inventory) =>
-     Boolean(inventory.extractionOrder?.length)
+     hasVisualizedPlan(inventory)
      && inventoryOutlinesReady(inventory)
      && Boolean(nextUnextractedThing(inventory) && retryReady(nextUnextractedThing(inventory)?.thing.retryAfter))
     );
@@ -3934,7 +4519,6 @@ export function VideoImportPage({
     .filter((frame) => memberInputPaths.has(frame.path))
     .map((frame) => memberInventories.find((inventory) => inventory.id === `input:${frame.path}`));
   const undiscoveredSelectedRoots = selectedRootInventories.filter((inventory) => !inventory).length;
-  const futureImageObligations = memberInventories.filter((inventory) => !inventory.descriptionOutput).length + undiscoveredSelectedRoots;
   const schedulerPending = (type: keyof LlmCallConcurrency) =>
     llmSchedulerRef.current.waiters.filter((waiter) => waiter.type === type).length;
   const llmStageProgress: Record<keyof LlmCallConcurrency, { pending: number; completed: number }> = {
@@ -3947,32 +4531,33 @@ export function VideoImportPage({
       ).length,
     },
     planner: {
-      pending: schedulerPending("planner") + futureImageObligations + memberInventories.filter((inventory) =>
+      pending: schedulerPending("planner") + memberInventories.filter((inventory) =>
         Boolean(inventory.descriptionOutput)
         && inventory.things.length > 0
-        && !inventory.extractionOrder?.length
+        && !hasVisualizedPlan(inventory)
         && inventory.status !== "ordering"
       ).length,
       completed: memberInventories.filter((inventory) => Boolean(inventory.orderOutput)).length,
     },
     outliner: {
-      pending: schedulerPending("outliner") + futureImageObligations + memberInventories.reduce((count, inventory) => {
-        if (!inventory.descriptionOutput || inventory.things.length === 0) return count;
-        if (!inventory.extractionOrder?.length) return count + 1;
+      pending: schedulerPending("outliner") + memberInventories.reduce((count, inventory) => {
+        if (!hasVisualizedPlan(inventory)) return count;
         return count + inventory.things.filter((thing) =>
-          !thing.outputImages?.length && !hasAlignedOutline(thing) && thing.status !== "outlining"
+          !thing.outputImages?.length
+          && !hasAlignedOutline(thing)
+          && thing.status !== "outlining"
+          && retryReady(thing.outlineRetryAfter)
         ).length;
       }, 0),
       completed: memberInventories.reduce((count, inventory) =>
         count + inventory.things.filter(hasAlignedOutline).length, 0),
     },
     extractor: {
-      pending: schedulerPending("extractor") + futureImageObligations + memberInventories.reduce((count, inventory) => {
-        if (!inventory.descriptionOutput || inventory.things.length === 0) return count;
-        return count + inventory.things.filter((thing) =>
-          !thing.outputImages?.length && thing.status !== "extracting"
-        ).length;
-      }, 0),
+      pending: schedulerPending("extractor") + memberInventories.filter((inventory) => {
+        if (!hasVisualizedPlan(inventory) || !inventoryOutlinesReady(inventory)) return false;
+        const next = nextUnextractedThing(inventory)?.thing;
+        return Boolean(next && next.status !== "extracting" && retryReady(next.retryAfter));
+      }).length,
       completed: memberInventories.reduce((count, inventory) =>
         count + inventory.things.filter((thing) => Boolean(thing.outputImages?.length)).length, 0),
     },
@@ -4089,7 +4674,7 @@ export function VideoImportPage({
     ];
   };
   const selectedRecursiveInventory = memberInventories.find((inventory) => inventory.id === selectedRecursiveInventoryId) || recursiveRootInventories[0] || null;
-  const revealRecursiveOutput = (inventoryId: string, sectionId: "memberDescription" | "members", targetPrefix: string) => {
+  const revealRecursiveOutput = (inventoryId: string, sectionId: "members", targetPrefix: string) => {
     setCollapsedMap((current) => ({ ...current, [sectionId]: false }));
     const reveal = () => document.getElementById(`${targetPrefix}-${responseCacheHash(inventoryId)}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
     window.setTimeout(reveal, 100);
@@ -4224,46 +4809,6 @@ export function VideoImportPage({
         })}
       </section>}
 
-      <Section {...section("config", "JSON CONFIG", `the page's exact state as editable JSON${configDraft === null ? " · live" : configValid ? " · editing (applies live)" : " · INVALID JSON — keep typing"}`,
-        <>
-          <button disabled={busy || configDraft === null} title="Force-apply now and resume tracking the live config" onClick={applyConfigDraft}>⏎ Apply</button>
-          <button disabled={configDraft === null} title="Discard edits and track the live config again" onClick={() => setConfigDraft(null)}>↻ live</button>
-          <button title="Copy the config JSON" onClick={copyStateJson}>⤓ copy</button>
-        </>)}>
-        <div className="vi2-body video-import-config-super">
-          <SuperControl
-            appearance="embedded"
-            className="video-import-config-editor-super"
-            control={{
-              kind: "standard",
-              workspaceId,
-              source: configDraft ?? JSON.stringify(buildSnapshot(), null, 2),
-              sourceScope: "runtime",
-              path: `runtime/videoImport/${workspaceId}.config.json`,
-              title: "Video Import — page config",
-              dirty: configDraft !== null,
-              secondary: false,
-              busy,
-              resource: (() => {
-                let doc: Record<string, unknown> = {};
-                if (configDraft === null) doc = buildSnapshot() as unknown as Record<string, unknown>;
-                else { try { doc = JSON.parse(configDraft) as Record<string, unknown>; } catch { doc = {}; } }
-                return { ...doc, kind: "video_import_config", id: `videoImport.${workspaceId}` } as { kind: string; id: string };
-              })(),
-              initialControlId: "file",
-              onChange: (value) => setConfigDraft(value),
-              onSave: applyConfigDraft,
-              saveLabel: configValid ? "⏎ Apply to flow" : "… invalid JSON",
-              actions: [
-                { id: "live", label: "↻ track live", disabled: configDraft === null, onInvoke: () => setConfigDraft(null) },
-                { id: "copy", label: "⤓ copy", onInvoke: copyStateJson },
-                { id: "forget", label: "⟲ forget saved", onInvoke: forgetState },
-              ],
-            }}
-          />
-        </div>
-      </Section>
-
       <Section {...section("intake", "INTAKE", `${videos.length} video(s) in the library`)}>
         <div className="vi2-body">
           <div className="video-import-row">
@@ -4275,7 +4820,11 @@ export function VideoImportPage({
               <option value="">importables… ({importables.length})</option>
               {importables.map((file) => (<option key={file.path} value={file.path}>{file.name}</option>))}
             </select>
-            <input value={source} placeholder="https://… or a movie path you have the rights to" disabled={busy} onChange={(event) => setSource(event.target.value)} />
+            <select className="video-import-catalog" value="" disabled={busy} onChange={(event) => { if (event.target.value) void importArcRecording(event.target.value); }}>
+              <option value="">ARC playbacks… ({arcRecordings.length})</option>
+              {arcRecordings.map((recording) => (<option key={recording.path} value={recording.path}>{recording.gameId} · {recording.frames} frames · {recording.path}</option>))}
+            </select>
+            <input value={source} placeholder="YouTube / HLS / RTSP / RTMP / SRT / video URL or local movie path" disabled={busy} onChange={(event) => setSource(event.target.value)} />
             <input className="video-import-name" value={nameDraft} placeholder="name (optional)" disabled={busy} onChange={(event) => setNameDraft(event.target.value)} />
             <select value={quality} disabled={busy} onChange={(event) => setQuality(event.target.value)}>
               <option value="480p">480p lo-fi</option>
@@ -4285,8 +4834,32 @@ export function VideoImportPage({
               <option value="python-direct">🛠 python direct</option>
             </select>
             <button disabled={busy || !source.trim()} onClick={() => void importSource()}>Download / Import</button>
-            <input ref={fileInput} type="file" accept="video/*" style={{ display: "none" }} onChange={(event) => { upload(event.target.files?.[0] || null); event.target.value = ""; }} />
-            <button disabled={busy} onClick={() => fileInput.current?.click()}>⇪ Upload…</button>
+            <button disabled={sceneJob?.state === "running" || !source.trim()} onClick={() => { setExternalStreamUrl(source); void consumeExternalStream(source); }}>Consume URL + detect scenes</button>
+            <input ref={fileInput} type="file" accept="video/*,.zip,application/zip" style={{ display: "none" }} onChange={(event) => { upload(event.target.files?.[0] || null); event.target.value = ""; }} />
+            <button disabled={busy} onClick={() => fileInput.current?.click()}>⇪ Upload movie / image ZIP…</button>
+          </div>
+          <div className="video-import-stream-panel">
+            <header><b>LIVE / EXTERNAL VIDEO STREAMS</b><small>{streamRouterRunning ? "MediaMTX running" : "MediaMTX stopped"}</small></header>
+            <div className="video-import-row">
+              <label>stream name <input value={streamId} disabled={busy} onChange={(event) => setStreamId(event.target.value)} /></label>
+              <label>public host <input value={streamPublicHost} disabled={busy} onChange={(event) => setStreamPublicHost(event.target.value)} /></label>
+              <button disabled={busy || streamRouterRunning} onClick={() => void startStreamRouter()}>▶ Start stream router</button>
+              <button disabled={busy || !streamRouterRunning} onClick={() => void stopStreamRouter()}>■ Stop stream router</button>
+              <button disabled={busy} onClick={() => void refreshStreamRouter()}>↻ Stream status</button>
+            </div>
+            <div className="video-import-stream-urls">
+              <label>Publish (WHIP)<input value={streamUrls.publishWhip} readOnly /><button onClick={() => copyStreamUrl(streamUrls.publishWhip, "WHIP publish")}>Copy</button></label>
+              <label>Watch (HLS)<input value={streamUrls.watchHls} readOnly /><button onClick={() => copyStreamUrl(streamUrls.watchHls, "HLS watch")}>Copy</button></label>
+              <details><summary>Alternative standard URLs</summary><code>RTMP publish: {streamUrls.publishRtmp}</code><code>WHEP watch: {streamUrls.watchWhep}</code></details>
+            </div>
+            <div className="video-import-row">
+              <input value={externalStreamUrl} placeholder="Paste HLS, RTSP, RTMP, SRT, or HTTP video/podcast stream URL" disabled={sceneJob?.state === "running"} onChange={(event) => setExternalStreamUrl(event.target.value)} />
+              <button disabled={sceneJob?.state === "running"} onClick={() => setExternalStreamUrl(streamUrls.watchHls)}>Use our HLS watch URL</button>
+              <label>max seconds <input type="number" min={0} max={86400} placeholder="until end" value={streamMaxSeconds} disabled={sceneJob?.state === "running"} onChange={(event) => setStreamMaxSeconds(event.target.value)} /></label>
+              <label>max scenes <input type="number" min={1} max={10000} placeholder="until stopped" value={streamMaxScenes} disabled={sceneJob?.state === "running"} onChange={(event) => setStreamMaxScenes(event.target.value)} /></label>
+              <button disabled={sceneJob?.state === "running" || !externalStreamUrl.trim()} onClick={() => void consumeExternalStream()}>Consume stream + detect scenes</button>
+              <button disabled={sceneJob?.state !== "running"} onClick={stopSceneDetection}>■ Stop stream scan</button>
+            </div>
           </div>
           <div className="video-import-list" role="list">
             {videos.map((video) => (
@@ -4299,6 +4872,25 @@ export function VideoImportPage({
           </div>
         </div>
       </Section>
+
+      {arc3PageDefinition && (
+        <Section {...section("arc3Player", "ARC3 PLAYER / RECORDING SOURCE", `${arcRecordings.length} recording source(s)`)}>
+          <div className="vi2-body video-import-embedded-arc3-player">
+            <Suspense fallback={<div className="studio-empty">Loading ARC3 player…</div>}>
+              <EmbeddedArc3PlayPage
+                pageDefinition={arc3PageDefinition}
+                workspaceId={workspaceId}
+                workspaceLabel={workspaceLabel || workspaceId}
+                b1b2PageDefinition={arc3B1B2PageDefinition}
+                b1b2Models={arc3B1B2Models}
+                b1b2Files={arc3B1B2Files}
+                onB1B2PageDefinitionSaved={onArc3B1B2PageDefinitionSaved}
+                onRecordingChanged={refreshArcRecordings}
+              />
+            </Suspense>
+          </div>
+        </Section>
+      )}
 
       {selected && (
         <Section {...section("player", "PLAYER / TIMELINE", `${selected.title} · ${seconds(duration)}`)}>
@@ -4359,7 +4951,12 @@ export function VideoImportPage({
               <small>t = {playerTime.toFixed(1)}s</small>
               <button disabled={busy || !duration} onClick={() => persistMarkers([...markers, { atSeconds: Math.round(playerTime * 100) / 100 }].sort((a, b) => a.atSeconds - b.atSeconds))}>◈ Mark</button>
               <button disabled={busy || !duration} onClick={() => void grabAtCursor()}>⤵ Frame at cursor</button>
+              <label>scene threshold <input type="number" min={0.1} max={255} step={0.5} value={sceneThreshold} disabled={sceneJob?.state === "running"} onChange={(event) => setSceneThreshold(event.target.value)} /></label>
+              <label>samples/s <input type="number" min={0.25} max={30} step={0.25} value={sceneSamplesPerSecond} disabled={sceneJob?.state === "running"} onChange={(event) => setSceneSamplesPerSecond(event.target.value)} /></label>
+              <label>min gap <input type="number" min={0} max={60} step={0.1} value={sceneMinGapSeconds} disabled={sceneJob?.state === "running"} onChange={(event) => setSceneMinGapSeconds(event.target.value)} /> s</label>
+              <label>max markers <input type="number" min={1} max={10000} step={1} value={sceneMaxMarkers} placeholder="until end" disabled={sceneJob?.state === "running"} onChange={(event) => setSceneMaxMarkers(event.target.value)} /></label>
               <button disabled={!selectedPath || sceneJob?.state === "running" || job?.state === "running"} onClick={() => void detectScenes()}>✨ Detect scenes</button>
+              <button disabled={sceneJob?.state !== "running"} onClick={stopSceneDetection}>■ Stop scene scan</button>
               <button disabled={!markers.length && sceneJob?.state !== "running"} onClick={clearSceneDetection}>× Clear scenes</button>
               <label>captions model
                 <ColoredTagCombobox value={effectiveCaptionModel} ids={videoModelIds} ariaLabel="Video captions model" describe={describeAudioModel} disabled={captionJob?.state === "running"} onChange={setCaptionModel} />
@@ -4391,6 +4988,7 @@ export function VideoImportPage({
               <label>end time <input type="number" min={0} step={0.1} value={rangeEnd} placeholder="end" disabled={busy} onChange={(event) => setRangeEnd(event.target.value)} /> s</label>
               <label>max <input type="number" min={1} max={600} value={maxFrames} disabled={busy} onChange={(event) => setMaxFrames(event.target.value)} /></label>
               <button disabled={frameExtractionJob?.state === "running" || job?.state === "running" || (mode === "scenes" && !markers.length)} onClick={() => void extract()}>Extract frames</button>
+              <button disabled={frameExtractionJob?.state !== "running"} onClick={stopFrameExtraction}>■ Stop frame extraction</button>
             </div>
           </div>
         </Section>
@@ -4751,65 +5349,10 @@ export function VideoImportPage({
         </Section>
       )}
 
-      {selected && (
-        <Section {...section("memberDescription", "SCENE OBJECTS TEXTUAL DESCRIPTION", `${memberInventories.length} scene description(s) · ${memberInventories.reduce((count, inventory) => count + (inventory.describedThings || inventory.things).length, 0)} thing(s) listed`)}>
-          <div className="vi2-body">
-                <div className="video-import-timeline video-import-members">
-                  <select value={memberGoal} disabled={busy} onChange={(event) => setMemberGoal(event.target.value as typeof memberGoal)}>
-                    <option value="any">find any members</option>
-                    <option value="faces">find faces</option>
-                    <option value="characters">find characters</option>
-                    <option value="objects">find objects</option>
-                    <option value="text">find text/signs</option>
-                  </select>
-                </div>
-                <label className="video-import-member-model-selector">
-                  <span>DESCRIBER MODEL</span>
-                  <ColoredTagCombobox value={describerModel} ids={videoModelIds} ariaLabel="Scene objects description model" allowNone noneLabel={`<use global · ${allCallsModel || "none"}>`} describe={describeVideoModel} disabled={busy} onChange={(value) => { describerModelTouchedRef.current = true; setDescriberModel(value); }} />
-                </label>
-                {models.length > 0 && !models.some((model) => model.enabled) && <div className="demo-notice"><b>No enabled vision-capable model</b><span>{models.length} inherited vision model(s) were found but are unavailable. Enable their backend in Models before sending input images.</span></div>}
-                <details className="video-import-member-prompt-disclosure">
-                  <summary>DESCRIPTION PROMPT</summary>
-                  <label className="video-import-member-prompt-editor">
-                    <span>EDIT PROMPT</span>
-                    <textarea value={memberDescriptionPrompt} disabled={busy} onChange={(event) => { setDescriberPromptSelection("workspace"); setMemberDescriptionPrompt(event.target.value); }} spellCheck={false} />
-                    <small>Available placeholders: {"{{goal}}"} and {"{{alreadyExtracted}}"}</small>
-                  </label>
-                </details>
-                <div className="video-import-member-prompt-actions">
-                  <button className="primary" disabled={busy || !isRunnableVisionModel(effectiveDescriberModel) || !memberInputPaths.size} onClick={() => void describeMemberScenes()}>Call LLM · Describe selected input images</button>
-                </div>
-              <div className="video-import-member-runner">
-                <header className="video-import-member-runner-heading">
-                  <span>PROMPT + TEXT OUTPUT</span>
-                  <b>{effectiveDescriberModel || "No model selected"}</b>
-                  <small>Creates textual scene descriptions and inventories only. It never starts image extraction.</small>
-                </header>
-                {!memberInventories.length && <div className="studio-empty">Run the textual description to inspect each exact prompt and raw model output here.</div>}
-                {orderedMemberInventories.map((inventory) => (
-                  <article id={`recursive-inventory-${responseCacheHash(inventory.id)}`} className={`video-import-member-run ${inventory.status}`} key={inventory.id}>
-                    <header><b>input image · frame #{inventory.frameIndex}</b><span>{inventory.probeLabel}</span><em>{inventory.status}</em></header>
-                    <section>
-                      {inventory.sourceImage && <figure className="video-import-member-input-image"><img src={asset(inventory.sourceImage)} alt={`Input image ${inventory.frameIndex}`} loading="lazy" /><figcaption>INPUT IMAGE SENT TO MODEL · {inventory.sourceImage}</figcaption></figure>}
-                      <p>{inventory.sceneDescription || "Waiting for the scene description…"}</p>
-                      <details><summary>Exact textual-description prompt</summary><pre>{normalizeMemberPromptLabels(inventory.descriptionPrompt || renderMemberDescriptionPrompt(selectedDescriptionPrompt, inventory.goal || memberGoal, []))}</pre></details>
-                      <details open>
-                        <summary>{formatDetectedJson(inventory.descriptionOutput).detected ? "Textual-description output · JSON formatted" : "Exact textual-description output"}</summary>
-                        <pre>{formatDetectedJson(inventory.descriptionOutput).text || "Waiting for the model response…"}</pre>
-                        {formatDetectedJson(inventory.descriptionOutput).detected && <details><summary>Raw model output</summary><pre>{inventory.descriptionOutput}</pre></details>}
-                      </details>
-                    </section>
-                  </article>
-                ))}
-              </div>
-          </div>
-        </Section>
-      )}
-
       <div className="video-import-scene-object-workspace">
       <div className="video-import-recursive-automation" role="toolbar" aria-label="Recursive extraction automation">
         <div className="video-import-llm-global-row">
-          <b>ALL LLM CALLS <small key={llmSchedulerVersion}>{llmSchedulerRef.current.active}/{totalLlmConcurrency} active · {llmSchedulerRef.current.waiters.length} queued</small><small>Warm workers fan out ready jobs across the configured capacity.</small>{restartPendingSignal && <em>RESTART PENDING · DRAINING</em>}</b>
+          <b>ALL LLM CALLS <small key={llmSchedulerVersion}>{llmSchedulerRef.current.active}/{totalLlmConcurrency} active · {llmSchedulerRef.current.waiters.length} queued</small><small>Each stage may use {llmPerStageCeiling}; {llmStageReserve} slots stay available for other stages in either direction.</small>{restartPendingSignal && <em>RESTART PENDING · DRAINING</em>}</b>
           <label>model
             <ColoredTagCombobox
               value={allCallsModel}
@@ -4842,6 +5385,7 @@ export function VideoImportPage({
             {workersHeld ? "▶ WORKERS HELD / DRAINING" : "■ HOLD / DRAIN WORKERS"}
           </button>
         </div>
+        {models.length > 0 && !models.some((model) => model.enabled) && <div className="demo-notice"><b>No enabled vision-capable model</b><span>{models.length} inherited vision model(s) were found but are unavailable. Enable their backend in Models before sending input images.</span></div>}
         <div className="video-import-llm-call-rows">
           {([
             ["describer", "D · DESCRIBER", recursiveAutomation.describer, describerModel, setDescriberModel, describerModelTouchedRef, llmCallConcurrency.describer, describerPromptSelection, setDescriberPromptSelection],
@@ -4868,7 +5412,7 @@ export function VideoImportPage({
                 <em>{llmSchedulerRef.current.byType[type]} ACTIVE WORKER{llmSchedulerRef.current.byType[type] === 1 ? "" : "S"}</em>
               </button>
               <div className="video-import-llm-call-metrics" aria-label={`${label} job metrics`}>
-                <span title="All known pipeline obligations waiting for this stage, including work not yet admitted to a worker."><b>{progress.pending}</b><small>PENDING</small></span>
+                <span title="Jobs whose dependencies are satisfied and which are ready, but still waiting for a worker."><b>{progress.pending}</b><small>PENDING</small></span>
                 <span><b>{completed}</b><small>COMPLETED</small></span>
                 <span title={metric.completed ? `${Math.round(averageMs)}ms average across ${metric.completed} completed job(s)` : "No completed jobs yet"}><b>{formatJobDuration(averageMs)}</b><small>AVG / JOB</small></span>
               </div>
@@ -4886,7 +5430,7 @@ export function VideoImportPage({
               </label>
               <label>max processes
                 <select value={concurrency ?? ""} onFocus={() => setExpandedCallPrompt(type)} onPointerDown={() => setExpandedCallPrompt(type)} onChange={(event) => { setCallConcurrency(type, event.target.value ? Number(event.target.value) : null); setExpandedCallPrompt(type); }}>
-                  <option value="">&lt;use full global capacity&gt;</option>
+                  <option value="">&lt;auto · reserve cross-stage capacity&gt;</option>
                   {Array.from({ length: 50 }, (_, index) => index + 1).map((value) => <option key={value} value={value}>{value}</option>)}
                 </select>
               </label>
@@ -4906,6 +5450,16 @@ export function VideoImportPage({
           })}
         </div>
         <div className="video-import-automation-options">
+          <label>Describer goal
+            <select value={memberGoal} disabled={busy} onChange={(event) => setMemberGoal(event.target.value as typeof memberGoal)}>
+              <option value="any">find any members</option>
+              <option value="faces">find faces</option>
+              <option value="characters">find characters</option>
+              <option value="objects">find objects</option>
+              <option value="text">find text/signs</option>
+            </select>
+          </label>
+          <button className="primary" disabled={busy || !isRunnableVisionModel(effectiveDescriberModel) || !memberInputPaths.size} onClick={() => void describeMemberScenes()}>Call LLM · Describe selected input images</button>
           <button type="button" className={recursiveAutomation.advanceLevels ? "is-on" : ""} aria-pressed={recursiveAutomation.advanceLevels} onClick={() => toggleRecursiveAutomation("advanceLevels")}>Next recursion levels {recursiveAutomation.advanceLevels ? "ON" : "OFF"}</button>
           <button type="button" className={recursiveAutomation.enlargeSubobjects ? "is-on" : ""} aria-pressed={recursiveAutomation.enlargeSubobjects} onClick={() => toggleRecursiveAutomation("enlargeSubobjects")}>Enlarge subobjects {recursiveAutomation.enlargeSubobjects ? "ON" : "OFF"}</button>
           <button type="button" disabled={!selectedRecursiveInventory} onClick={() => selectedRecursiveInventory && revealRecursiveOutput(selectedRecursiveInventory.id, "members", "recursive-output")}>↓ Planner output</button>
@@ -4930,6 +5484,14 @@ export function VideoImportPage({
             <span>WORKFLOW GALLERIES</span>
             <b>Selected inputs and extracted objects</b>
             <small>Only explicitly checked input images enter the workflow.</small>
+            <label>Extracted Images source
+              <select value={selectedFrameSourceId} disabled={!frameSources.length && !curatedSources.length} onChange={(event) => selectExtractedImageSource(event.target.value)}>
+                {!selectedFrameSourceId && <option value="">Choose an image source…</option>}
+                <option value="video-extraction" disabled={!frameSources.some((source) => source.id === "video-extraction")}>Current video above · {frameSources.find((source) => source.id === "video-extraction")?.frames.length || 0} images</option>
+                {curatedSources.map((source) => <option key={`curated:${source.path}`} value={`curated:${source.path}`}>Curated data · {source.label} · {source.frames} images</option>)}
+                {frameSources.filter((source) => source.id !== "video-extraction" && source.kind !== "curated").map((source) => <option key={source.id} value={source.id}>{source.label} · {source.frames.length} images</option>)}
+              </select>
+            </label>
           </header>
           <div className="video-import-workflow-galleries">
             <WorkflowGalleryPanel title={`EXTRACTED IMAGES · ${frames.length}`} open={!collapsedLeftGalleries.extractedImages} onOpenChange={(open) => setLeftGalleryOpen("extractedImages", open)} onClear={clearExtractedFrames}>
@@ -4997,7 +5559,7 @@ export function VideoImportPage({
             <>
               <figure className="video-import-member-input-image"><img src={asset(selectedRecursiveInventory.sourceImage)} alt={selectedRecursiveInventory.subjectName || "input image"} /><figcaption>depth {selectedRecursiveInventory.depth || 0} · {selectedRecursiveInventory.things.length} direct child object(s)</figcaption></figure>
               <div className="video-import-recursive-cycle-status">
-                <button type="button" onClick={() => revealRecursiveOutput(selectedRecursiveInventory.id, "memberDescription", "recursive-inventory")}><i>D</i><span><b>DESCRIBER</b><small>{selectedRecursiveInventory.descriptionOutput ? "complete" : "waiting"}</small></span></button>
+                <button type="button" onClick={() => revealRecursiveOutput(selectedRecursiveInventory.id, "members", "recursive-output")}><i>D</i><span><b>DESCRIBER</b><small>{selectedRecursiveInventory.descriptionOutput ? "complete" : "waiting"}</small></span></button>
                 <button type="button" onClick={() => revealRecursiveOutput(selectedRecursiveInventory.id, "members", "recursive-output")}><i>P</i><span><b>PLANNER</b><small>{selectedRecursiveInventory.orderOutput ? "complete" : selectedRecursiveInventory.orderError ? "retrying after error" : selectedRecursiveInventory.descriptionOutput ? "queued" : "waiting for Describer"}</small></span></button>
                 <button type="button" onClick={() => revealRecursiveOutput(selectedRecursiveInventory.id, "members", "recursive-output")}><i>O</i><span><b>OUTLINER</b><small>{selectedRecursiveInventory.things.filter(hasAlignedOutline).length}/{selectedRecursiveInventory.things.length} outlined</small></span></button>
                 <button type="button" onClick={() => revealRecursiveOutput(selectedRecursiveInventory.id, "members", "recursive-output")}><i>E</i><span><b>EXTRACTOR</b><small>{selectedRecursiveInventory.things.filter((thing) => thing.outputImages?.length).length}/{selectedRecursiveInventory.things.length} extracted</small></span></button>
@@ -5049,7 +5611,7 @@ export function VideoImportPage({
                   </label>
                 </details>
                 <div className="video-import-member-prompt-actions">
-                  <button disabled={busy || !isRunnableVisionModel(effectiveOutlinerModel) || !memberInventories.some((inventory) => inventory.extractionOrder?.length)} onClick={() => void runRecursiveOutliner()}>Call LLM · Outliner</button>
+                  <button disabled={busy || !isRunnableVisionModel(effectiveOutlinerModel) || !memberInventories.some(hasVisualizedPlan)} onClick={() => void runRecursiveOutliner()}>Call LLM · Outliner</button>
                 </div>
                 <details className="video-import-member-prompt-disclosure">
                   <summary>EXTRACTOR PROMPT</summary>
@@ -5092,6 +5654,10 @@ export function VideoImportPage({
                         {inventory.orderOutput && formatDetectedJson(inventory.orderOutput).detected && <details><summary>Raw ordering output</summary><pre>{inventory.orderOutput}</pre></details>}
                       </details>
                       {inventory.extractionOrder?.length ? <p>Planned extraction order: {inventory.extractionOrder.join(" → ")}</p> : null}
+                      {inventory.plannerTouching?.length ? <p>Touching: {inventory.plannerTouching.map((relation) => `${relation.objects[0]} ↔ ${relation.objects[1]}${relation.contact ? ` (${relation.contact})` : ""}`).join("; ")}</p> : inventory.orderOutput ? <p>Touching: none declared.</p> : null}
+                      {inventory.plannerOcclusions?.length ? <p>Occlusions: {inventory.plannerOcclusions.map((relation) => `${relation.occluder} → ${relation.occluded}${relation.region ? ` (${relation.region})` : ""}`).join("; ")}</p> : inventory.orderOutput ? <p>Occlusions: none declared.</p> : null}
+                      {inventory.plannerContainments?.length ? <p>Containments: {inventory.plannerContainments.map((relation) => `${relation.container} contains ${relation.contained}${relation.evidence ? ` (${relation.evidence})` : ""}`).join("; ")}</p> : inventory.orderOutput ? <p>Containments: none declared.</p> : null}
+                      {inventory.plannerVisualizationImage && <div className="video-import-verification-gallery"><figure><img src={asset(inventory.plannerVisualizationImage)} alt="Planner numbered object order" loading="lazy" /><figcaption>PLANNER NUMBERED ORDER PREVIEW</figcaption></figure></div>}
                       {inventory.orderError && <small>{inventory.orderError}</small>}
                     </section>
                     <section>
@@ -5103,6 +5669,7 @@ export function VideoImportPage({
                           <p>{thing.description}</p>
                           {thing.outlinePrompt && <details><summary>Exact Outliner prompt</summary><pre>{thing.outlinePrompt}</pre></details>}
                           {thing.outlineOutput && <details open><summary>Exact Outliner output</summary><pre>{formatDetectedJson(thing.outlineOutput).text}</pre></details>}
+                          {thing.outlineVerificationImage && <div className="video-import-verification-gallery"><figure><img src={asset(thing.outlineVerificationImage)} alt={`${thing.name} verified outline trace`} loading="lazy" /><figcaption>VERIFIED TRACE · agreement {Math.round((thing.outlineTraceAgreement || 0) * 100)}% · boundary {Math.round((thing.outlineBoundaryCoverage || 0) * 100)}%</figcaption></figure></div>}
                           {thing.outlineError && <small>{thing.outlineError}</small>}
                         </details>
                       ))}
@@ -5114,7 +5681,7 @@ export function VideoImportPage({
                         <details className={`video-import-member-call is-${thing.status}`} key={`${thing.name}:${thingIndex}`}>
                           <summary><b>{thingIndex + 1}. {thing.name}</b><em>{thing.status.replace("_", " ")}</em></summary>
                           <p>{thing.description}</p>
-                          <details><summary>Planner-selected next-object data</summary><pre>{JSON.stringify({ name: thing.name, description: thing.description, plannerPosition: (inventory.extractionOrder?.indexOf(thing.name) ?? -1) + 1, plannerTotal: inventory.extractionOrder?.length || inventory.things.length }, null, 2)}</pre></details>
+                          <details><summary>Planner-selected next-object data</summary><pre>{JSON.stringify({ name: thing.name, description: thing.description, plannerPosition: (inventory.extractionOrder?.indexOf(thing.name) ?? -1) + 1, plannerTotal: inventory.extractionOrder?.length || inventory.things.length, relationships: plannerRelationshipsForThing(inventory, thing.name) }, null, 2)}</pre></details>
                           {thing.extractionAttempts?.map((attempt, attemptIndex) => (
                             <details key={`${attempt.route}:${attempt.inputImage}:${attemptIndex}`}>
                               <summary>{attempt.route.replaceAll("_", " ")} · {(attempt.promptSource || "legacy prompt").replaceAll("_", " ")} · {attempt.status.replaceAll("_", " ")}</summary>
@@ -5192,6 +5759,45 @@ export function VideoImportPage({
         </Section>
       )}
       </div>
+      <Section {...section("config", "JSON CONFIG", `the page's exact state as editable JSON${configDraft === null ? " · live" : configValid ? " · editing (applies live)" : " · INVALID JSON — keep typing"}`,
+        <>
+          <button disabled={busy || configDraft === null} title="Force-apply now and resume tracking the live config" onClick={applyConfigDraft}>⏎ Apply</button>
+          <button disabled={configDraft === null} title="Discard edits and track the live config again" onClick={() => setConfigDraft(null)}>↻ live</button>
+          <button title="Copy the config JSON" onClick={copyStateJson}>⤓ copy</button>
+        </>)}>
+        <div className="vi2-body video-import-config-super">
+          <SuperControl
+            appearance="embedded"
+            className="video-import-config-editor-super"
+            control={{
+              kind: "standard",
+              workspaceId,
+              source: configDraft ?? JSON.stringify(buildSnapshot(), null, 2),
+              sourceScope: "runtime",
+              path: `runtime/videoImport/${workspaceId}.config.json`,
+              title: "Video Import — page config",
+              dirty: configDraft !== null,
+              secondary: false,
+              busy,
+              resource: (() => {
+                let doc: Record<string, unknown> = {};
+                if (configDraft === null) doc = buildSnapshot() as unknown as Record<string, unknown>;
+                else { try { doc = JSON.parse(configDraft) as Record<string, unknown>; } catch { doc = {}; } }
+                return { ...doc, kind: "video_import_config", id: `videoImport.${workspaceId}` } as { kind: string; id: string };
+              })(),
+              initialControlId: "file",
+              onChange: (value) => setConfigDraft(value),
+              onSave: applyConfigDraft,
+              saveLabel: configValid ? "⏎ Apply to flow" : "… invalid JSON",
+              actions: [
+                { id: "live", label: "↻ track live", disabled: configDraft === null, onInvoke: () => setConfigDraft(null) },
+                { id: "copy", label: "⤓ copy", onInvoke: copyStateJson },
+                { id: "forget", label: "⟲ forget saved", onInvoke: forgetState },
+              ],
+            }}
+          />
+        </div>
+      </Section>
       {visibleAltImageZoom && (
         <div
           className={`video-import-alt-image-zoom${pinnedAltImageZoom ? " is-pinned" : ""}`}

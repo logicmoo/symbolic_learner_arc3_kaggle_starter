@@ -1,6 +1,12 @@
 # Repo / Project specific
 .Git4*/
 workbench/workspaces/*/policies/
+workbench/workspaces/*/data/video_import/**/*.mp4
+workbench/workspaces/*/data/video_import/**/*.webm
+workbench/workspaces/*/data/video_import/**/*.mkv
+workbench/workspaces/*/data/video_import/**/*.mov
+workbench/workspaces/*/data/video_import/**/*.avi
+workbench/workspaces/*/data/video_import/**/*.m4v
 
 .tmp_pytest_*/
 # Python-generated files

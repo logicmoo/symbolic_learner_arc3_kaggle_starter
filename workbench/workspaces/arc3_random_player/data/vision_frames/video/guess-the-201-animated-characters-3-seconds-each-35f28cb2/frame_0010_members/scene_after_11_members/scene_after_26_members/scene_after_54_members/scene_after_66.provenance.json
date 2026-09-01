@@ -1,0 +1,285 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010_members/scene_after_11_members/scene_after_26_members/scene_after_54_members/scene_after_66.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010_members/scene_after_11_members/scene_after_26_members/scene_after_54_members/scene_after_66.provenance.json",
+  "createdAt": "2026-09-01T19:24:24.189279Z",
+  "operation": "remove_object_from_scene",
+  "dimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 80.3,
+    "sceneIndex": 32,
+    "videoFrameIndex": 2409
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010_members/scene_after_11_members/scene_after_26_members/scene_after_54.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010_members/scene_after_11_members/scene_after_26_members/scene_after_54.provenance.json"
+  },
+  "source": {
+    "objectName": "top_right_quiz_logo_circle",
+    "cutout": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010_members/scene_after_11_members/scene_after_26_members/scene_after_54_members/cut_66_top_right_quiz_logo_circ.png",
+    "fillInstructions": {
+      "description": "Continue the quiz-frame blue background behind the removed top-right logo: a smooth medium-to-deeper blue gradient matching the surrounding top band, with slightly darker tone toward the extreme top-right corner and slightly lighter tone toward the inner left/down direction.",
+      "colors": [
+        "#1F7EEA",
+        "#2086EF",
+        "#2A90F3",
+        "#1976E2"
+      ],
+      "continueEdges": [
+        "Extend the horizontal top-edge blue gradient seamlessly through the removed area.",
+        "Continue the right-edge vertical blue falloff so the corner remains subtly darker.",
+        "Blend left and lower boundary colors into a smooth diagonal/radial transition consistent with the existing background vignette."
+      ],
+      "texture": "Clean flat digital gradient with no grain; very subtle soft vignette only."
+    }
+  },
+  "transform": {
+    "fill": "median",
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010_members/scene_after_11_members/scene_after_26_members/scene_after_54.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010.png",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "verified": true
+    },
+    "removedBox": [
+      750,
+      0,
+      852,
+      86
+    ],
+    "maskScale": 4,
+    "fillInstructions": {
+      "description": "Continue the quiz-frame blue background behind the removed top-right logo: a smooth medium-to-deeper blue gradient matching the surrounding top band, with slightly darker tone toward the extreme top-right corner and slightly lighter tone toward the inner left/down direction.",
+      "colors": [
+        "#1F7EEA",
+        "#2086EF",
+        "#2A90F3",
+        "#1976E2"
+      ],
+      "continueEdges": [
+        "Extend the horizontal top-edge blue gradient seamlessly through the removed area.",
+        "Continue the right-edge vertical blue falloff so the corner remains subtly darker.",
+        "Blend left and lower boundary colors into a smooth diagonal/radial transition consistent with the existing background vignette."
+      ],
+      "texture": "Clean flat digital gradient with no grain; very subtle soft vignette only."
+    },
+    "imageGeneration": {
+      "renderer": "median"
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:34.187676Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010_members/scene_after_11.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          27,
+          15,
+          79,
+          69
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Fill the removed '10' with the same orange badge interior so the circle reads as continuous: a smooth orange gradient with a lighter yellow-orange highlight toward the upper-left and slightly deeper orange toward the lower-right.",
+          "colors": [
+            "#F4A11A",
+            "#F29A10",
+            "#EE8E06",
+            "#E78300"
+          ],
+          "continueEdges": [
+            "Continue the badge’s radial/diagonal orange gradient seamlessly through both digit shapes and the inner hole of the '0'.",
+            "Preserve local luminance flow from surrounding orange pixels at each digit boundary (no hard seams or outlines).",
+            "Do not introduce new edges; only the existing smooth badge shading should pass through the removed text area."
+          ],
+          "texture": "Clean, flat vector-like fill with very subtle soft gradient; no grain or pattern."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:23:03.492842Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010_members/scene_after_11_members/scene_after_26.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010_members/scene_after_11.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          5,
+          6,
+          96,
+          94
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed top-left badge is only the base quiz background: a smooth bright-blue gradient field with slightly lighter cyan-blue toward the center-right and darker royal-blue toward the upper-left corner. No independent object sits directly behind this badge area.",
+          "colors": [
+            "#1978E8",
+            "#1E86F3",
+            "#2A97FB",
+            "#166AD8"
+          ],
+          "continueEdges": [
+            "Continue the global blue gradient seamlessly from the surrounding top and left margins through the circular hole",
+            "Preserve the soft luminance transition that brightens gradually toward the middle of the frame",
+            "Do not introduce text or border edges inside the fill; side vertical text remains well below and outside this region"
+          ],
+          "texture": "Mostly flat digital gradient with very subtle soft glow/banding, no distinct pattern or grain."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:28:02.168764Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010_members/scene_after_11_members/scene_after_26_members/scene_after_54.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010_members/scene_after_11_members/scene_after_26.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          792,
+          6,
+          854,
+          53
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed 'QUIZ' lettering and punctuation is the plain interior of the top-right logo circle: mostly white with a faint cool gray/lavender tint near parts of the rim. Filling should restore a clean, uninterrupted circular badge interior.",
+          "colors": [
+            "#FFFFFF",
+            "#F7F8FC",
+            "#EEEAFB",
+            "#E5E1F6"
+          ],
+          "continueEdges": [
+            "Continue the smooth white interior tone across all removed glyph regions",
+            "Preserve the subtle radial/edge shading that gets slightly cooler near the circle boundary",
+            "Keep the existing circular border edge crisp and unchanged while filling only inside text cutout areas"
+          ],
+          "texture": "Flat vector-like logo fill with very soft gradient, no grain or pattern."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:36:03.446517Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010_members/scene_after_11_members/scene_after_26_members/scene_after_54_members/scene_after_66.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010_members/scene_after_11_members/scene_after_26_members/scene_after_54.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          750,
+          0,
+          852,
+          86
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Continue the quiz-frame blue background behind the removed top-right logo: a smooth medium-to-deeper blue gradient matching the surrounding top band, with slightly darker tone toward the extreme top-right corner and slightly lighter tone toward the inner left/down direction.",
+          "colors": [
+            "#1F7EEA",
+            "#2086EF",
+            "#2A90F3",
+            "#1976E2"
+          ],
+          "continueEdges": [
+            "Extend the horizontal top-edge blue gradient seamlessly through the removed area.",
+            "Continue the right-edge vertical blue falloff so the corner remains subtly darker.",
+            "Blend left and lower boundary colors into a smooth diagonal/radial transition consistent with the existing background vignette."
+          ],
+          "texture": "Clean flat digital gradient with no grain; very subtle soft vignette only."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T19:24:24.189279Z"
+    }
+  ]
+}

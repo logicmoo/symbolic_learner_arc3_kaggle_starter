@@ -1,0 +1,197 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0006_members/scene_after_28_members/scene_after_89.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0006_members/scene_after_28_members/scene_after_89.provenance.json",
+  "createdAt": "2026-09-01T19:28:49.476326Z",
+  "operation": "remove_object_from_scene",
+  "dimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0006.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 49.4,
+    "sceneIndex": 20,
+    "videoFrameIndex": 1482
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0006_members/scene_after_28.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0006_members/scene_after_28.provenance.json"
+  },
+  "source": {
+    "objectName": "buzz_lightyear_character",
+    "cutout": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0006_members/scene_after_28_members/cut_89_buzz_lightyear_character.png",
+    "fillInstructions": {
+      "description": "Behind the removed Buzz silhouette, continue the central card’s smooth light gray-blue backdrop as a clean studio-like gradient with no strong texture. The fill should transition gently from slightly darker cool gray-blue near the top to brighter pale blue/white toward the lower-middle and bottom, matching the existing card background.",
+      "colors": [
+        "#C7D1E2",
+        "#D4DEEE",
+        "#DEE6F2",
+        "#E8EEF7",
+        "#F1F5FB"
+      ],
+      "continueEdges": [
+        "Extend the top-to-bottom gradient continuously through the entire removed character area.",
+        "Carry subtle left-to-right brightness variation so tones align with surrounding pixels at the character boundary.",
+        "Preserve the rounded-card border and interior anti-aliased edge exactly; only interior background behind Buzz is reconstructed.",
+        "Do not introduce new lines or shadows; maintain the same clean backdrop continuity."
+      ],
+      "texture": "Very smooth, low-noise, soft gradient with minimal texture and no visible pattern."
+    }
+  },
+  "transform": {
+    "fill": "median",
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0006_members/scene_after_28.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0006.png",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "verified": true
+    },
+    "removedBox": [
+      270,
+      110,
+      616,
+      427
+    ],
+    "maskScale": 4,
+    "fillInstructions": {
+      "description": "Behind the removed Buzz silhouette, continue the central card’s smooth light gray-blue backdrop as a clean studio-like gradient with no strong texture. The fill should transition gently from slightly darker cool gray-blue near the top to brighter pale blue/white toward the lower-middle and bottom, matching the existing card background.",
+      "colors": [
+        "#C7D1E2",
+        "#D4DEEE",
+        "#DEE6F2",
+        "#E8EEF7",
+        "#F1F5FB"
+      ],
+      "continueEdges": [
+        "Extend the top-to-bottom gradient continuously through the entire removed character area.",
+        "Carry subtle left-to-right brightness variation so tones align with surrounding pixels at the character boundary.",
+        "Preserve the rounded-card border and interior anti-aliased edge exactly; only interior background behind Buzz is reconstructed.",
+        "Do not introduce new lines or shadows; maintain the same clean backdrop continuity."
+      ],
+      "texture": "Very smooth, low-noise, soft gradient with minimal texture and no visible pattern."
+    },
+    "imageGeneration": {
+      "renderer": "median"
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0006.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:31.292987Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0006_members/scene_after_28.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0006.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0006.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          27,
+          16,
+          63,
+          55
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "The removed white '6' should be filled by the same orange badge interior, continuing a smooth radial/diagonal orange gradient that is slightly lighter toward the upper-left and slightly deeper toward the lower-right, with no new shapes introduced.",
+          "colors": [
+            "#F7A11A",
+            "#F39A12",
+            "#ED8E08"
+          ],
+          "continueEdges": [
+            "Continue the badge’s internal orange gradient seamlessly through both the outer digit stroke area and the inner hole of the '6'",
+            "Preserve the uninterrupted circular shading flow centered within the badge; no hard edges or outlines should pass through the fill"
+          ],
+          "texture": "Clean, flat graphic fill with very subtle compression softness; no distinct texture or pattern."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:28:12.731606Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0006_members/scene_after_28_members/scene_after_89.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0006_members/scene_after_28.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0006.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          270,
+          110,
+          616,
+          427
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed Buzz silhouette, continue the central card’s smooth light gray-blue backdrop as a clean studio-like gradient with no strong texture. The fill should transition gently from slightly darker cool gray-blue near the top to brighter pale blue/white toward the lower-middle and bottom, matching the existing card background.",
+          "colors": [
+            "#C7D1E2",
+            "#D4DEEE",
+            "#DEE6F2",
+            "#E8EEF7",
+            "#F1F5FB"
+          ],
+          "continueEdges": [
+            "Extend the top-to-bottom gradient continuously through the entire removed character area.",
+            "Carry subtle left-to-right brightness variation so tones align with surrounding pixels at the character boundary.",
+            "Preserve the rounded-card border and interior anti-aliased edge exactly; only interior background behind Buzz is reconstructed.",
+            "Do not introduce new lines or shadows; maintain the same clean backdrop continuity."
+          ],
+          "texture": "Very smooth, low-noise, soft gradient with minimal texture and no visible pattern."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T19:28:49.476326Z"
+    }
+  ]
+}

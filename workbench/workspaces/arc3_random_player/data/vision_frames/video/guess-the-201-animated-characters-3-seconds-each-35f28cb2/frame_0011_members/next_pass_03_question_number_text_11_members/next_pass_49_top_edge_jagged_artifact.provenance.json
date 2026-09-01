@@ -1,0 +1,494 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011_members/next_pass_03_question_number_text_11_members/next_pass_49_top_edge_jagged_artifact.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011_members/next_pass_03_question_number_text_11_members/next_pass_49_top_edge_jagged_artifact.provenance.json",
+  "createdAt": "2026-09-01T17:34:03.075885Z",
+  "operation": "enlarge_object_for_analysis",
+  "dimensions": {
+    "width": 884,
+    "height": 250
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 88.033,
+    "sceneIndex": 35,
+    "videoFrameIndex": 2641
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011_members/next_pass_03_question_number_text_11_members/cut_49_top_edge_jagged_artifact.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011_members/next_pass_03_question_number_text_11_members/cut_49_top_edge_jagged_artifact.provenance.json"
+  },
+  "source": {
+    "objectName": "top_edge_jagged_artifacts"
+  },
+  "transform": {
+    "sourceDimensions": {
+      "width": 381,
+      "height": 64
+    },
+    "scale": 2,
+    "resizedDimensions": {
+      "width": 762,
+      "height": 128
+    },
+    "padding": {
+      "left": 61,
+      "top": 61,
+      "right": 61,
+      "bottom": 61
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:34.916556Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011_members/cut_03_question_number_text_11.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 43,
+        "height": 44
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          26,
+          21,
+          69,
+          65
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              35,
+              22
+            ],
+            [
+              42,
+              22
+            ],
+            [
+              42,
+              55
+            ],
+            [
+              46,
+              55
+            ],
+            [
+              46,
+              62
+            ],
+            [
+              30,
+              62
+            ],
+            [
+              30,
+              55
+            ],
+            [
+              35,
+              55
+            ],
+            [
+              35,
+              34
+            ],
+            [
+              31,
+              36
+            ],
+            [
+              28,
+              30
+            ],
+            [
+              35,
+              26
+            ]
+          ],
+          [
+            [
+              54,
+              22
+            ],
+            [
+              61,
+              22
+            ],
+            [
+              61,
+              55
+            ],
+            [
+              66,
+              55
+            ],
+            [
+              66,
+              62
+            ],
+            [
+              50,
+              62
+            ],
+            [
+              50,
+              55
+            ],
+            [
+              54,
+              55
+            ],
+            [
+              54,
+              34
+            ],
+            [
+              51,
+              35
+            ],
+            [
+              48,
+              30
+            ],
+            [
+              54,
+              26
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T17:21:14.710270Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011_members/next_pass_03_question_number_text_11.png",
+      "operation": "enlarge_object_for_analysis",
+      "dimensions": {
+        "width": 751,
+        "height": 766
+      },
+      "transform": {
+        "sourceDimensions": {
+          "width": 43,
+          "height": 44
+        },
+        "scale": 15,
+        "resizedDimensions": {
+          "width": 645,
+          "height": 660
+        },
+        "padding": {
+          "left": 53,
+          "top": 53,
+          "right": 53,
+          "bottom": 53
+        }
+      },
+      "createdAt": "2026-09-01T17:21:14.793184Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011_members/next_pass_03_question_number_text_11_members/cut_49_top_edge_jagged_artifact.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 381,
+        "height": 64
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 751,
+          "height": 766
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011_members/next_pass_03_question_number_text_11.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011_members/next_pass_03_question_number_text_11.png",
+          "dimensions": {
+            "width": 751,
+            "height": 766
+          },
+          "verified": true
+        },
+        "cropBox": [
+          52,
+          160,
+          433,
+          224
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              53,
+              206
+            ],
+            [
+              61,
+              202
+            ],
+            [
+              72,
+              202
+            ],
+            [
+              79,
+              207
+            ],
+            [
+              79,
+              216
+            ],
+            [
+              71,
+              221
+            ],
+            [
+              60,
+              221
+            ],
+            [
+              53,
+              216
+            ]
+          ],
+          [
+            [
+              82,
+              187
+            ],
+            [
+              92,
+              181
+            ],
+            [
+              105,
+              181
+            ],
+            [
+              114,
+              188
+            ],
+            [
+              114,
+              197
+            ],
+            [
+              104,
+              204
+            ],
+            [
+              91,
+              204
+            ],
+            [
+              82,
+              197
+            ]
+          ],
+          [
+            [
+              111,
+              169
+            ],
+            [
+              123,
+              162
+            ],
+            [
+              137,
+              162
+            ],
+            [
+              147,
+              170
+            ],
+            [
+              147,
+              180
+            ],
+            [
+              136,
+              188
+            ],
+            [
+              122,
+              188
+            ],
+            [
+              111,
+              180
+            ]
+          ],
+          [
+            [
+              336,
+              206
+            ],
+            [
+              344,
+              202
+            ],
+            [
+              355,
+              202
+            ],
+            [
+              362,
+              207
+            ],
+            [
+              362,
+              216
+            ],
+            [
+              354,
+              221
+            ],
+            [
+              343,
+              221
+            ],
+            [
+              336,
+              216
+            ]
+          ],
+          [
+            [
+              365,
+              187
+            ],
+            [
+              375,
+              181
+            ],
+            [
+              388,
+              181
+            ],
+            [
+              397,
+              188
+            ],
+            [
+              397,
+              197
+            ],
+            [
+              387,
+              204
+            ],
+            [
+              374,
+              204
+            ],
+            [
+              365,
+              197
+            ]
+          ],
+          [
+            [
+              394,
+              169
+            ],
+            [
+              406,
+              162
+            ],
+            [
+              420,
+              162
+            ],
+            [
+              430,
+              170
+            ],
+            [
+              430,
+              180
+            ],
+            [
+              419,
+              188
+            ],
+            [
+              405,
+              188
+            ],
+            [
+              394,
+              180
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T17:34:03.044319Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011_members/next_pass_03_question_number_text_11_members/next_pass_49_top_edge_jagged_artifact.png",
+      "operation": "enlarge_object_for_analysis",
+      "dimensions": {
+        "width": 884,
+        "height": 250
+      },
+      "transform": {
+        "sourceDimensions": {
+          "width": 381,
+          "height": 64
+        },
+        "scale": 2,
+        "resizedDimensions": {
+          "width": 762,
+          "height": 128
+        },
+        "padding": {
+          "left": 61,
+          "top": 61,
+          "right": 61,
+          "bottom": 61
+        }
+      },
+      "createdAt": "2026-09-01T17:34:03.075885Z"
+    }
+  ],
+  "terminal": {
+    "turtleProgram": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011_members/next_pass_03_question_number_text_11_members/next_pass_49_top_edge_jagged_artifact.turtle.json",
+    "renderedImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011_members/next_pass_03_question_number_text_11_members/next_pass_49_top_edge_jagged_artifact.turtle.png",
+    "renderedProvenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011_members/next_pass_03_question_number_text_11_members/next_pass_49_top_edge_jagged_artifact.turtle.provenance.json"
+  }
+}

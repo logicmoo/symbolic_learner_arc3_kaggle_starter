@@ -1,0 +1,175 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/cut_08_rubiks_cube.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/cut_08_rubiks_cube.provenance.json",
+  "createdAt": "2026-09-01T17:23:01.200494Z",
+  "operation": "extract_object_cutout",
+  "dimensions": {
+    "width": 70,
+    "height": 68
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 149.9,
+    "sceneIndex": 59,
+    "videoFrameIndex": 4497
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019.provenance.json"
+  },
+  "source": {
+    "objectName": "rubiks_cube"
+  },
+  "transform": {
+    "inputDimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019.png",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "verified": true
+    },
+    "cropBox": [
+      262,
+      167,
+      332,
+      235
+    ],
+    "maskScale": 4,
+    "polygons": [
+      [
+        [
+          278,
+          169
+        ],
+        [
+          312,
+          171
+        ],
+        [
+          329,
+          188
+        ],
+        [
+          328,
+          220
+        ],
+        [
+          306,
+          233
+        ],
+        [
+          275,
+          227
+        ],
+        [
+          264,
+          208
+        ],
+        [
+          266,
+          182
+        ]
+      ]
+    ],
+    "holes": []
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:41.177136Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/cut_08_rubiks_cube.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 70,
+        "height": 68
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          262,
+          167,
+          332,
+          235
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              278,
+              169
+            ],
+            [
+              312,
+              171
+            ],
+            [
+              329,
+              188
+            ],
+            [
+              328,
+              220
+            ],
+            [
+              306,
+              233
+            ],
+            [
+              275,
+              227
+            ],
+            [
+              264,
+              208
+            ],
+            [
+              266,
+              182
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T17:23:01.200494Z"
+    }
+  ]
+}

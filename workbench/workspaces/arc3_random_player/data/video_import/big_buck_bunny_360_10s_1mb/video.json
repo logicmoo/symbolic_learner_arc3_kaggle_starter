@@ -1,0 +1,50 @@
+{
+  "title": "Big_Buck_Bunny_360_10s_1MB",
+  "source": "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4",
+  "duration": 10.0,
+  "uploader": null,
+  "downloaded_at": "2026-08-28T02:56:29.484159Z",
+  "scenes": [
+    {
+      "atSeconds": 6.93,
+      "score": 10.7
+    },
+    {
+      "atSeconds": 7.73,
+      "score": 10.6
+    },
+    {
+      "atSeconds": 8.27,
+      "score": 10.6
+    },
+    {
+      "atSeconds": 8.53,
+      "score": 11.2
+    },
+    {
+      "atSeconds": 9.07,
+      "score": 10.8
+    },
+    {
+      "atSeconds": 9.33,
+      "score": 10.8
+    },
+    {
+      "atSeconds": 9.87,
+      "score": 10.9
+    }
+  ],
+  "lastScenes": {
+    "count": 7,
+    "elapsedSeconds": 0.3,
+    "secondsPerVideoSecond": 0.0294,
+    "threshold": 10.5,
+    "at": "2026-08-28T03:29:07.661057Z"
+  },
+  "lastExtract": {
+    "count": 5,
+    "elapsedSeconds": 1.0,
+    "secondsPerFrame": 0.203,
+    "at": "2026-08-28T20:43:05.613698Z"
+  }
+}

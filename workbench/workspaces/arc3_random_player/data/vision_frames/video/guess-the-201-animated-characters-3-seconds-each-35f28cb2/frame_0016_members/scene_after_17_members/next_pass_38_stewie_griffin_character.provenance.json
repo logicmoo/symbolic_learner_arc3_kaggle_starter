@@ -1,0 +1,376 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/scene_after_17_members/next_pass_38_stewie_griffin_character.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/scene_after_17_members/next_pass_38_stewie_griffin_character.provenance.json",
+  "createdAt": "2026-09-01T17:28:38.948680Z",
+  "operation": "enlarge_object_for_analysis",
+  "dimensions": {
+    "width": 795,
+    "height": 912
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 126.7,
+    "sceneIndex": 50,
+    "videoFrameIndex": 3801
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/scene_after_17_members/cut_38_stewie_griffin_character.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/scene_after_17_members/cut_38_stewie_griffin_character.provenance.json"
+  },
+  "source": {
+    "objectName": "stewie_griffin_character"
+  },
+  "transform": {
+    "sourceDimensions": {
+      "width": 223,
+      "height": 262
+    },
+    "scale": 3,
+    "resizedDimensions": {
+      "width": 669,
+      "height": 786
+    },
+    "padding": {
+      "left": 63,
+      "top": 63,
+      "right": 63,
+      "bottom": 63
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:38.921502Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/scene_after_17.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          283,
+          242,
+          516,
+          372
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed tricycle, the central inset should continue with Stewie’s body where it is directly behind the bike (red overalls/torso area, small yellow sleeve/hand-adjacent regions, and a small light-blue shoe area), transitioning to the pink-red inset backdrop in exposed gaps around the character. The fill should preserve the original cartoon shading and black outline style.",
+          "colors": [
+            "#F83D73",
+            "#DB0A4F",
+            "#B1073B",
+            "#D73A2C",
+            "#F5D36A",
+            "#C8D8E8"
+          ],
+          "continueEdges": [
+            "Extend Stewie’s red overall contours and interior shading bands smoothly through the removed frame/fork and wheel regions",
+            "Continue nearby black character outline strokes with the same line weight where body edges pass behind the tricycle",
+            "Blend the inset background gradient from darker red (lower/right) to brighter pink (mid/upper) across open spaces revealed by wheel and frame removal",
+            "Preserve soft ground-shadow tint in the lower inset where visible adjacent to the rear-wheel area"
+          ],
+          "texture": "Flat 2D cartoon fill with clean inked outlines, smooth cel-style color regions, and gentle airbrushed background gradient."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:23:19.029394Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/scene_after_17_members/cut_38_stewie_griffin_character.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 223,
+        "height": 262
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/scene_after_17.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          339,
+          109,
+          562,
+          371
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              425,
+              111
+            ],
+            [
+              455,
+              113
+            ],
+            [
+              485,
+              118
+            ],
+            [
+              513,
+              128
+            ],
+            [
+              536,
+              145
+            ],
+            [
+              551,
+              165
+            ],
+            [
+              559,
+              185
+            ],
+            [
+              559,
+              205
+            ],
+            [
+              551,
+              221
+            ],
+            [
+              535,
+              236
+            ],
+            [
+              516,
+              246
+            ],
+            [
+              496,
+              252
+            ],
+            [
+              500,
+              266
+            ],
+            [
+              501,
+              283
+            ],
+            [
+              486,
+              287
+            ],
+            [
+              472,
+              279
+            ],
+            [
+              474,
+              308
+            ],
+            [
+              475,
+              336
+            ],
+            [
+              468,
+              357
+            ],
+            [
+              451,
+              368
+            ],
+            [
+              430,
+              368
+            ],
+            [
+              414,
+              362
+            ],
+            [
+              406,
+              349
+            ],
+            [
+              404,
+              330
+            ],
+            [
+              391,
+              356
+            ],
+            [
+              373,
+              365
+            ],
+            [
+              352,
+              365
+            ],
+            [
+              341,
+              356
+            ],
+            [
+              341,
+              346
+            ],
+            [
+              350,
+              335
+            ],
+            [
+              367,
+              329
+            ],
+            [
+              387,
+              324
+            ],
+            [
+              380,
+              309
+            ],
+            [
+              369,
+              299
+            ],
+            [
+              356,
+              290
+            ],
+            [
+              355,
+              275
+            ],
+            [
+              366,
+              261
+            ],
+            [
+              381,
+              255
+            ],
+            [
+              396,
+              258
+            ],
+            [
+              404,
+              268
+            ],
+            [
+              398,
+              249
+            ],
+            [
+              385,
+              238
+            ],
+            [
+              373,
+              221
+            ],
+            [
+              367,
+              203
+            ],
+            [
+              367,
+              182
+            ],
+            [
+              375,
+              162
+            ],
+            [
+              391,
+              145
+            ],
+            [
+              413,
+              131
+            ],
+            [
+              392,
+              121
+            ],
+            [
+              406,
+              115
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T17:28:38.849051Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/scene_after_17_members/next_pass_38_stewie_griffin_character.png",
+      "operation": "enlarge_object_for_analysis",
+      "dimensions": {
+        "width": 795,
+        "height": 912
+      },
+      "transform": {
+        "sourceDimensions": {
+          "width": 223,
+          "height": 262
+        },
+        "scale": 3,
+        "resizedDimensions": {
+          "width": 669,
+          "height": 786
+        },
+        "padding": {
+          "left": 63,
+          "top": 63,
+          "right": 63,
+          "bottom": 63
+        }
+      },
+      "createdAt": "2026-09-01T17:28:38.948680Z"
+    }
+  ]
+}

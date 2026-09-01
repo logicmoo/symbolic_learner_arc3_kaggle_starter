@@ -1,0 +1,705 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0018_members/cut_07_sadness_glasses.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0018_members/cut_07_sadness_glasses.provenance.json",
+  "createdAt": "2026-09-01T17:22:47.727199Z",
+  "operation": "extract_object_cutout",
+  "dimensions": {
+    "width": 270,
+    "height": 127
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0018.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 142.2,
+    "sceneIndex": 56,
+    "videoFrameIndex": 4266
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0018.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0018.provenance.json"
+  },
+  "source": {
+    "objectName": "sadness_glasses"
+  },
+  "transform": {
+    "inputDimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0018.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0018.png",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "verified": true
+    },
+    "cropBox": [
+      546,
+      204,
+      816,
+      331
+    ],
+    "maskScale": 4,
+    "polygons": [
+      [
+        [
+          548,
+          247
+        ],
+        [
+          560,
+          227
+        ],
+        [
+          579,
+          213
+        ],
+        [
+          604,
+          206
+        ],
+        [
+          630,
+          207
+        ],
+        [
+          653,
+          216
+        ],
+        [
+          670,
+          233
+        ],
+        [
+          679,
+          256
+        ],
+        [
+          678,
+          281
+        ],
+        [
+          667,
+          304
+        ],
+        [
+          648,
+          321
+        ],
+        [
+          623,
+          329
+        ],
+        [
+          597,
+          328
+        ],
+        [
+          574,
+          319
+        ],
+        [
+          557,
+          302
+        ],
+        [
+          548,
+          278
+        ]
+      ],
+      [
+        [
+          682,
+          246
+        ],
+        [
+          694,
+          227
+        ],
+        [
+          713,
+          213
+        ],
+        [
+          737,
+          206
+        ],
+        [
+          764,
+          207
+        ],
+        [
+          787,
+          216
+        ],
+        [
+          804,
+          233
+        ],
+        [
+          813,
+          256
+        ],
+        [
+          812,
+          281
+        ],
+        [
+          801,
+          304
+        ],
+        [
+          782,
+          321
+        ],
+        [
+          757,
+          329
+        ],
+        [
+          731,
+          328
+        ],
+        [
+          708,
+          319
+        ],
+        [
+          691,
+          302
+        ],
+        [
+          682,
+          279
+        ]
+      ],
+      [
+        [
+          668,
+          256
+        ],
+        [
+          678,
+          252
+        ],
+        [
+          689,
+          252
+        ],
+        [
+          699,
+          256
+        ],
+        [
+          699,
+          268
+        ],
+        [
+          689,
+          272
+        ],
+        [
+          678,
+          272
+        ],
+        [
+          668,
+          268
+        ]
+      ]
+    ],
+    "holes": [
+      [
+        [
+          570,
+          248
+        ],
+        [
+          579,
+          234
+        ],
+        [
+          593,
+          224
+        ],
+        [
+          611,
+          220
+        ],
+        [
+          630,
+          220
+        ],
+        [
+          647,
+          226
+        ],
+        [
+          659,
+          238
+        ],
+        [
+          665,
+          256
+        ],
+        [
+          664,
+          275
+        ],
+        [
+          656,
+          292
+        ],
+        [
+          642,
+          304
+        ],
+        [
+          624,
+          310
+        ],
+        [
+          605,
+          309
+        ],
+        [
+          588,
+          303
+        ],
+        [
+          575,
+          291
+        ],
+        [
+          569,
+          274
+        ]
+      ],
+      [
+        [
+          704,
+          248
+        ],
+        [
+          713,
+          234
+        ],
+        [
+          727,
+          224
+        ],
+        [
+          745,
+          220
+        ],
+        [
+          764,
+          220
+        ],
+        [
+          781,
+          226
+        ],
+        [
+          793,
+          238
+        ],
+        [
+          799,
+          256
+        ],
+        [
+          798,
+          275
+        ],
+        [
+          790,
+          292
+        ],
+        [
+          776,
+          304
+        ],
+        [
+          758,
+          310
+        ],
+        [
+          739,
+          309
+        ],
+        [
+          722,
+          303
+        ],
+        [
+          709,
+          291
+        ],
+        [
+          703,
+          274
+        ]
+      ]
+    ]
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0018.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:40.485480Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0018_members/cut_07_sadness_glasses.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 270,
+        "height": 127
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0018.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0018.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          546,
+          204,
+          816,
+          331
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              548,
+              247
+            ],
+            [
+              560,
+              227
+            ],
+            [
+              579,
+              213
+            ],
+            [
+              604,
+              206
+            ],
+            [
+              630,
+              207
+            ],
+            [
+              653,
+              216
+            ],
+            [
+              670,
+              233
+            ],
+            [
+              679,
+              256
+            ],
+            [
+              678,
+              281
+            ],
+            [
+              667,
+              304
+            ],
+            [
+              648,
+              321
+            ],
+            [
+              623,
+              329
+            ],
+            [
+              597,
+              328
+            ],
+            [
+              574,
+              319
+            ],
+            [
+              557,
+              302
+            ],
+            [
+              548,
+              278
+            ]
+          ],
+          [
+            [
+              682,
+              246
+            ],
+            [
+              694,
+              227
+            ],
+            [
+              713,
+              213
+            ],
+            [
+              737,
+              206
+            ],
+            [
+              764,
+              207
+            ],
+            [
+              787,
+              216
+            ],
+            [
+              804,
+              233
+            ],
+            [
+              813,
+              256
+            ],
+            [
+              812,
+              281
+            ],
+            [
+              801,
+              304
+            ],
+            [
+              782,
+              321
+            ],
+            [
+              757,
+              329
+            ],
+            [
+              731,
+              328
+            ],
+            [
+              708,
+              319
+            ],
+            [
+              691,
+              302
+            ],
+            [
+              682,
+              279
+            ]
+          ],
+          [
+            [
+              668,
+              256
+            ],
+            [
+              678,
+              252
+            ],
+            [
+              689,
+              252
+            ],
+            [
+              699,
+              256
+            ],
+            [
+              699,
+              268
+            ],
+            [
+              689,
+              272
+            ],
+            [
+              678,
+              272
+            ],
+            [
+              668,
+              268
+            ]
+          ]
+        ],
+        "holes": [
+          [
+            [
+              570,
+              248
+            ],
+            [
+              579,
+              234
+            ],
+            [
+              593,
+              224
+            ],
+            [
+              611,
+              220
+            ],
+            [
+              630,
+              220
+            ],
+            [
+              647,
+              226
+            ],
+            [
+              659,
+              238
+            ],
+            [
+              665,
+              256
+            ],
+            [
+              664,
+              275
+            ],
+            [
+              656,
+              292
+            ],
+            [
+              642,
+              304
+            ],
+            [
+              624,
+              310
+            ],
+            [
+              605,
+              309
+            ],
+            [
+              588,
+              303
+            ],
+            [
+              575,
+              291
+            ],
+            [
+              569,
+              274
+            ]
+          ],
+          [
+            [
+              704,
+              248
+            ],
+            [
+              713,
+              234
+            ],
+            [
+              727,
+              224
+            ],
+            [
+              745,
+              220
+            ],
+            [
+              764,
+              220
+            ],
+            [
+              781,
+              226
+            ],
+            [
+              793,
+              238
+            ],
+            [
+              799,
+              256
+            ],
+            [
+              798,
+              275
+            ],
+            [
+              790,
+              292
+            ],
+            [
+              776,
+              304
+            ],
+            [
+              758,
+              310
+            ],
+            [
+              739,
+              309
+            ],
+            [
+              722,
+              303
+            ],
+            [
+              709,
+              291
+            ],
+            [
+              703,
+              274
+            ]
+          ]
+        ]
+      },
+      "createdAt": "2026-09-01T17:22:47.727199Z"
+    }
+  ]
+}

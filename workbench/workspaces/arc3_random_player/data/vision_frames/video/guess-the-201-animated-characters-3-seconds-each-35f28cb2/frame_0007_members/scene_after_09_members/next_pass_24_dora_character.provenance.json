@@ -1,0 +1,481 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007_members/scene_after_09_members/next_pass_24_dora_character.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007_members/scene_after_09_members/next_pass_24_dora_character.provenance.json",
+  "createdAt": "2026-09-01T17:28:01.525952Z",
+  "operation": "enlarge_object_for_analysis",
+  "dimensions": {
+    "width": 802,
+    "height": 822
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 57.1,
+    "sceneIndex": 23,
+    "videoFrameIndex": 1713
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007_members/scene_after_09_members/cut_24_dora_character.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007_members/scene_after_09_members/cut_24_dora_character.provenance.json"
+  },
+  "source": {
+    "objectName": "dora_character"
+  },
+  "transform": {
+    "sourceDimensions": {
+      "width": 344,
+      "height": 354
+    },
+    "scale": 2,
+    "resizedDimensions": {
+      "width": 688,
+      "height": 708
+    },
+    "padding": {
+      "left": 57,
+      "top": 57,
+      "right": 57,
+      "bottom": 57
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:31.986150Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007_members/scene_after_09.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          483,
+          255,
+          553,
+          437
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed backpack, the scene continues as Dora’s right-back body contour in front of green vegetation. The exposed area should mostly restore layered green bush/grass tones from the forest background, with a small continuation of Dora’s pink shirt edge where the backpack overlapped her side. No sky or rock texture is expected inside this hole.",
+          "colors": [
+            "#1E6B3A",
+            "#2F8C4A",
+            "#49A85A",
+            "#6CC06A",
+            "#0F4F2B",
+            "#D97BC5",
+            "#C963B4"
+          ],
+          "continueEdges": [
+            "Continue Dora’s torso side outline smoothly through the backpack area.",
+            "Reconnect the pink shirt boundary/hem shading where it was interrupted by the strap and bag edge.",
+            "Extend nearby leaf and bush contours from left/right background into the removed region with consistent curvature.",
+            "Maintain foreground-to-background layering: character edge in front, vegetation behind."
+          ],
+          "texture": "Cartoon-painted, soft-edged cel shading with simple gradient fills and lightly mottled foliage texture; smooth clean outlines rather than photoreal detail."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:23:02.881532Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007_members/scene_after_09_members/cut_24_dora_character.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 344,
+        "height": 354
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007_members/scene_after_09.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          267,
+          101,
+          611,
+          455
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              445,
+              103
+            ],
+            [
+              470,
+              108
+            ],
+            [
+              495,
+              118
+            ],
+            [
+              515,
+              132
+            ],
+            [
+              532,
+              150
+            ],
+            [
+              545,
+              174
+            ],
+            [
+              548,
+              198
+            ],
+            [
+              542,
+              216
+            ],
+            [
+              527,
+              230
+            ],
+            [
+              509,
+              239
+            ],
+            [
+              493,
+              260
+            ],
+            [
+              522,
+              282
+            ],
+            [
+              548,
+              278
+            ],
+            [
+              570,
+              268
+            ],
+            [
+              590,
+              267
+            ],
+            [
+              606,
+              274
+            ],
+            [
+              608,
+              282
+            ],
+            [
+              598,
+              289
+            ],
+            [
+              578,
+              292
+            ],
+            [
+              555,
+              294
+            ],
+            [
+              534,
+              300
+            ],
+            [
+              519,
+              311
+            ],
+            [
+              510,
+              327
+            ],
+            [
+              506,
+              352
+            ],
+            [
+              506,
+              382
+            ],
+            [
+              506,
+              412
+            ],
+            [
+              502,
+              435
+            ],
+            [
+              487,
+              447
+            ],
+            [
+              455,
+              452
+            ],
+            [
+              422,
+              452
+            ],
+            [
+              390,
+              451
+            ],
+            [
+              358,
+              449
+            ],
+            [
+              336,
+              438
+            ],
+            [
+              324,
+              420
+            ],
+            [
+              321,
+              398
+            ],
+            [
+              320,
+              376
+            ],
+            [
+              304,
+              374
+            ],
+            [
+              287,
+              371
+            ],
+            [
+              273,
+              363
+            ],
+            [
+              269,
+              353
+            ],
+            [
+              274,
+              344
+            ],
+            [
+              288,
+              340
+            ],
+            [
+              307,
+              341
+            ],
+            [
+              325,
+              346
+            ],
+            [
+              341,
+              355
+            ],
+            [
+              352,
+              366
+            ],
+            [
+              360,
+              347
+            ],
+            [
+              353,
+              329
+            ],
+            [
+              338,
+              316
+            ],
+            [
+              322,
+              307
+            ],
+            [
+              302,
+              304
+            ],
+            [
+              283,
+              307
+            ],
+            [
+              272,
+              303
+            ],
+            [
+              269,
+              294
+            ],
+            [
+              276,
+              286
+            ],
+            [
+              292,
+              282
+            ],
+            [
+              310,
+              282
+            ],
+            [
+              330,
+              288
+            ],
+            [
+              347,
+              300
+            ],
+            [
+              360,
+              316
+            ],
+            [
+              369,
+              332
+            ],
+            [
+              374,
+              316
+            ],
+            [
+              380,
+              292
+            ],
+            [
+              383,
+              270
+            ],
+            [
+              377,
+              245
+            ],
+            [
+              366,
+              223
+            ],
+            [
+              347,
+              209
+            ],
+            [
+              323,
+              201
+            ],
+            [
+              308,
+              186
+            ],
+            [
+              302,
+              166
+            ],
+            [
+              309,
+              147
+            ],
+            [
+              325,
+              132
+            ],
+            [
+              347,
+              121
+            ],
+            [
+              371,
+              113
+            ],
+            [
+              397,
+              107
+            ],
+            [
+              423,
+              104
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T17:28:01.434631Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007_members/scene_after_09_members/next_pass_24_dora_character.png",
+      "operation": "enlarge_object_for_analysis",
+      "dimensions": {
+        "width": 802,
+        "height": 822
+      },
+      "transform": {
+        "sourceDimensions": {
+          "width": 344,
+          "height": 354
+        },
+        "scale": 2,
+        "resizedDimensions": {
+          "width": 688,
+          "height": 708
+        },
+        "padding": {
+          "left": 57,
+          "top": 57,
+          "right": 57,
+          "bottom": 57
+        }
+      },
+      "createdAt": "2026-09-01T17:28:01.525952Z"
+    }
+  ]
+}

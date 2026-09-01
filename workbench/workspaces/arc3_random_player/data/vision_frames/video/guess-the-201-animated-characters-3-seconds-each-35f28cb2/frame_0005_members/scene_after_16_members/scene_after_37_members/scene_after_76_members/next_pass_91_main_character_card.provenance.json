@@ -1,0 +1,367 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16_members/scene_after_37_members/scene_after_76_members/next_pass_91_main_character_card.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16_members/scene_after_37_members/scene_after_76_members/next_pass_91_main_character_card.provenance.json",
+  "createdAt": "2026-09-01T19:42:01.042129Z",
+  "operation": "enlarge_object_for_analysis",
+  "dimensions": {
+    "width": 996,
+    "height": 804
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 41.633,
+    "sceneIndex": 17,
+    "videoFrameIndex": 1249
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16_members/scene_after_37_members/scene_after_76_members/cut_91_main_character_card.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16_members/scene_after_37_members/scene_after_76_members/cut_91_main_character_card.provenance.json"
+  },
+  "source": {
+    "objectName": "main_character_card"
+  },
+  "transform": {
+    "sourceDimensions": {
+      "width": 429,
+      "height": 333
+    },
+    "scale": 2,
+    "resizedDimensions": {
+      "width": 858,
+      "height": 666
+    },
+    "padding": {
+      "left": 69,
+      "top": 69,
+      "right": 69,
+      "bottom": 69
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:30.576049Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          222,
+          244,
+          643,
+          387
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed cyan/white glow, the central card continues as a dark neon scene: deep blue-violet background with soft magenta/cyan bloom, plus the fighter’s underlying lower-arm/jacket area where the streak crosses her body. Reconstruct a smooth continuation of the character’s muted skin/jacket shading and the card’s ambient purple-blue lighting so no bright streak remains.",
+          "colors": [
+            "#0A0F2A",
+            "#1A1F4A",
+            "#2C2B6E",
+            "#4C3F8E",
+            "#6E5FA8",
+            "#2E7FAE"
+          ],
+          "continueEdges": [
+            "Extend the dark purple-blue background gradient from above and below straight through the removed band.",
+            "Continue small soft bokeh/light specks visible near the streak boundaries across the gap with similar blur and spacing.",
+            "Carry the character edge transitions (arm/jacket contour and shadow boundaries) across the removed area to keep limb and clothing shapes coherent.",
+            "Preserve the card’s lower atmospheric haze as subtle, low-contrast cyan-violet tint, but without any concentrated bright beam core."
+          ],
+          "texture": "Soft cinematic neon haze with gentle grain/bokeh and smooth gradient blending; semi-gloss character shading where the streak crossed the arm/jacket."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:23:18.101179Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16_members/scene_after_37.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          218,
+          102,
+          606,
+          340
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed fighter, the central card continues as a dark neon scene: deep navy-to-purple backdrop with scattered soft magenta/cyan light orbs and subtle diagonal glow streaks. In upper/mid areas, keep low-contrast atmospheric gradients; near the lower region, preserve the existing cyan energy-light environment and bloom transitions already present around the character edges.",
+          "colors": [
+            "#0B0D24",
+            "#141739",
+            "#1E1B4A",
+            "#2A1F5E",
+            "#00CFEA",
+            "#C43BFF"
+          ],
+          "continueEdges": [
+            "Continue the dark purple-blue gradient smoothly through the removed silhouette from left to right",
+            "Extend small blurred magenta/cyan bokeh dots and faint light flecks across the filled region with matching softness",
+            "Preserve neon rim-glow direction around nearby edges so lighting stays consistent with the surrounding card",
+            "Maintain lower-area cyan glow falloff and haze transitions where the scene brightens near the foreground light streak"
+          ],
+          "texture": "Soft cinematic neon texture with gentle bloom, subtle haze, and low-noise digital gradient blending."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:28:38.751424Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16_members/scene_after_37_members/scene_after_76.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16_members/scene_after_37.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          223,
+          102,
+          642,
+          390
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed dark-neon card background is the base interior of the image panel: a near-black to deep-indigo underlayer with subtle purple cast, without foreground subject detail. The female character and cyan streak remain as separate foreground elements and should not be propagated into this fill.",
+          "colors": [
+            "#080A1A",
+            "#10142A",
+            "#1A1D38",
+            "#2A1F46"
+          ],
+          "continueEdges": [
+            "Continue the rounded card interior boundary shading smoothly along the left/right/top/bottom inner edges.",
+            "Preserve soft low-contrast vignette falloff from edges toward center across cleared regions.",
+            "Do not continue character outlines, braid contours, or cyan streak geometry through the removed background holes."
+          ],
+          "texture": "Very soft cinematic gradient with faint neon haze and minimal grain/compression noise; no hard patterns."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T19:26:03.425425Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16_members/scene_after_37_members/scene_after_76_members/cut_91_main_character_card.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 429,
+        "height": 333
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16_members/scene_after_37_members/scene_after_76.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          217,
+          98,
+          646,
+          431
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              251,
+              100
+            ],
+            [
+              611,
+              100
+            ],
+            [
+              622,
+              102
+            ],
+            [
+              631,
+              107
+            ],
+            [
+              638,
+              114
+            ],
+            [
+              642,
+              124
+            ],
+            [
+              643,
+              135
+            ],
+            [
+              643,
+              393
+            ],
+            [
+              642,
+              404
+            ],
+            [
+              638,
+              414
+            ],
+            [
+              631,
+              421
+            ],
+            [
+              622,
+              426
+            ],
+            [
+              611,
+              428
+            ],
+            [
+              251,
+              428
+            ],
+            [
+              240,
+              426
+            ],
+            [
+              231,
+              421
+            ],
+            [
+              224,
+              414
+            ],
+            [
+              220,
+              404
+            ],
+            [
+              219,
+              393
+            ],
+            [
+              219,
+              135
+            ],
+            [
+              220,
+              124
+            ],
+            [
+              224,
+              114
+            ],
+            [
+              231,
+              107
+            ],
+            [
+              240,
+              102
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T19:42:00.996183Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16_members/scene_after_37_members/scene_after_76_members/next_pass_91_main_character_card.png",
+      "operation": "enlarge_object_for_analysis",
+      "dimensions": {
+        "width": 996,
+        "height": 804
+      },
+      "transform": {
+        "sourceDimensions": {
+          "width": 429,
+          "height": 333
+        },
+        "scale": 2,
+        "resizedDimensions": {
+          "width": 858,
+          "height": 666
+        },
+        "padding": {
+          "left": 69,
+          "top": 69,
+          "right": 69,
+          "bottom": 69
+        }
+      },
+      "createdAt": "2026-09-01T19:42:01.042129Z"
+    }
+  ]
+}

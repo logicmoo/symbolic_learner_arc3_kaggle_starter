@@ -250,9 +250,10 @@ values here.
   otherwise transcribe 30-second audio chunks concurrently through an enabled
   audio model; persist `captions.vtt` plus timed `video.json` cues and render
   the active cue over playback.
-  The LLM controller stage rows expose the full pending pipeline backlog,
-  durable completed counts, and persisted observed average call duration; do
-  not regress Pending to semaphore waiters only.
+  The LLM controller stage rows expose ready-but-waiting Pending jobs, durable
+  completed counts, and persisted observed average call duration. Each stage
+  leaves at least five or 30% of global slots available to other stages in
+  either direction; equal-utilization dispatch rotates across the stage order.
   Keep automatic LLM scheduling blocked until page-state restoration completes;
   otherwise a persisted worker hold leaks fresh calls during reload.
   Alt rollover gives the image a full half-width/half-height pane beside the
@@ -420,6 +421,79 @@ values here.
   shows a 28px left inset and 52px minimum right-edge control clearance.
   Focused integration tests: 10 passed; frontend build and live UI inspection
   passed on 2026-08-31.
+- The Video Import model pipeline was stabilized against the live 21-worker
+  EmuLLM fleet. EmuLLM now reserves the greater of five workers or 30% of
+  connected capacity for other clients (14-client ceiling, 7-worker reserve at
+  current capacity), immediately skips a request-local not-ready worker, rejects
+  duplicate worker IDs, reports active-request age/stuck workers and disconnect
+  diagnostics, and persists an immediate anti-idle checkbox that is currently
+  OFF. Workbench model invocation is asynchronous, caches resolved model
+  context for 300 seconds, and uses a lightweight workspace lookup that does
+  not recursively count resources. Video Import state strips base64 debug
+  payloads and shards member inventories and the model-response cache beside
+  `page_state.json`, reducing the live state from about 74 MB to about 2.4 MB.
+  The model resources were synchronized to the live 65-model catalog with zero
+  relationship errors. Final validation sent three simultaneous Workbench
+  Outliner calls through EmuLLM: all returned valid bounded polygons in 16.9
+  seconds wall time, with 0.84-second pre-dispatch latency instead of the prior
+  96–134-second stalls. A second bottleneck was found in EmuLLM administration:
+  every three-second dashboard poll deserialized complete mailbox JSONL
+  histories, while bulk servant restart processed all workers sequentially.
+  Mailbox summaries now count JSONL records without full deserialization,
+  `/emullm/admin/health` is a filesystem-free readiness probe, and full admin
+  snapshots fell from 19–22 seconds to 39–145 ms. Bulk restart now uses
+  reconnect-aware rolling batches of seven; a live 21-worker rollout completed
+  in 94.46 seconds with all 21 ready, instead of more than 20 minutes.
+  Admin/status dashboards pause when hidden, optionally poll hidden pages every
+  two minutes, and persist visible polling windows of continuous, one, two, or
+  five minutes with an explicit Wake/Refresh control. Startup reconciliation
+  writes its operational JSON as raw bytes rather than routing it through the
+  MeTTa resource codec.
+  The recursive Planner contract now separately declares symmetric touching
+  pairs, directed foreground-to-occluded relationships, directed
+  container-to-fully-contained relationships, and a relationship-aware
+  extraction order. Parsed relations persist with each inventory, render beside
+  Planner output, and provide per-object context to Outliner. Legacy persisted
+  order-only default prompts migrate to the expanded contract without replacing
+  unrelated custom Planner templates.
+  Planner now also returns one in-object pixel label point per ordered object;
+  the workbench persists a numbered order preview. Every Outliner result must
+  include a normalized Turtle trace, which the backend draws with its
+  polygons/holes over the exact source image and checks against the mask
+  boundary before marking it extraction-ready. The preview, agreement,
+  boundary coverage, and geometry hash persist in a small gallery, and
+  Extractor verifies the matching artifact/hash before cutting. Scene detection
+  now exposes threshold, sampling rate, minimum gap, and an optional marker cap;
+  blank means scan to the video end. A scene-starved frame extractor stops
+  without cancelling a scene detector that is still running.
+  Video Import can start a pinned MediaMTX 1.20.1 container and displays
+  standard WHIP/RTMP publish and WHEP/HLS playback URLs. It can also consume an
+  external HLS/RTSP/RTMP/SRT/HTTP video or podcast endpoint in a background
+  scene job, saving scene frames until end/limit/interrupt. Existing ARC
+  playback image sequences are listed from real recording directories and
+  imported directly; every frame's provenance embeds the cumulative move list,
+  incoming action/state, and source node that produced it.
+  The top source field resolves YouTube URLs through yt-dlp for direct scene
+  consumption, while the upload control accepts movies and bounded image ZIP
+  sequences. ZIP entries are decoded without path extraction and retain
+  archive-entry provenance. A persisted left-column Extracted Images source
+  dropdown switches between video, stream, ARC, archive, and restored frame
+  collections.
+  The duplicate top-level Scene Objects Textual Description section was
+  removed without removing Describer controls or recursive prompt/output
+  inspection, and JSON CONFIG is now the final page section. The full existing
+  ARC3 player (including B1/B2 support) is embedded as a recording source and
+  refreshes the source catalog after moves. Workspace media now uses
+  `data/arc3_games/{recordings,importables,curated}`, `data/video_import`, and
+  `data/vision_frames`; legacy roots are migrated with persisted JSON path
+  rewrites while readers keep compatibility fallbacks.
+  The live ARC3 workspace migration completed with 3,236 files under
+  `arc3_games`, 119 under `video_import`, and 1,208 initial `vision_frames`;
+  the remaining legacy importables tree was conflict-safely merged to 2,071
+  canonical files and all three legacy roots were removed. Live acceptance
+  found 12 recordings, two curated sources, nine videos, a running MediaMTX
+  router, a two-frame ARC import whose second provenance contains its one-move
+  prefix, no duplicate top Describer section, and JSON CONFIG last.
 - The App Menu now has a persisted top minimize/restore button, retaining every
   destination as its original icon-only button at 36px, plus a persisted
   `[ - / + ]` density control for zero-gap tight or comfortable spacing. Every

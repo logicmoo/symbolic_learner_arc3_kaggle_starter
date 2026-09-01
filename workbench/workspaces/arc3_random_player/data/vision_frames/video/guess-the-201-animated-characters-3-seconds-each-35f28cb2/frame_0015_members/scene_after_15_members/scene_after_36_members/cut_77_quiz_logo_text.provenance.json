@@ -1,0 +1,702 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0015_members/scene_after_15_members/scene_after_36_members/cut_77_quiz_logo_text.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0015_members/scene_after_15_members/scene_after_36_members/cut_77_quiz_logo_text.provenance.json",
+  "createdAt": "2026-09-01T19:26:03.863742Z",
+  "operation": "extract_object_cutout",
+  "dimensions": {
+    "width": 66,
+    "height": 48
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0015.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 119.0,
+    "sceneIndex": 47,
+    "videoFrameIndex": 3570
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0015_members/scene_after_15_members/scene_after_36.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0015_members/scene_after_15_members/scene_after_36.provenance.json"
+  },
+  "source": {
+    "objectName": "quiz_logo_text"
+  },
+  "transform": {
+    "inputDimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0015_members/scene_after_15_members/scene_after_36.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0015.png",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "verified": true
+    },
+    "cropBox": [
+      788,
+      3,
+      854,
+      51
+    ],
+    "maskScale": 4,
+    "polygons": [
+      [
+        [
+          794,
+          9
+        ],
+        [
+          804,
+          7
+        ],
+        [
+          815,
+          9
+        ],
+        [
+          821,
+          15
+        ],
+        [
+          821,
+          24
+        ],
+        [
+          817,
+          31
+        ],
+        [
+          810,
+          35
+        ],
+        [
+          801,
+          35
+        ],
+        [
+          794,
+          31
+        ],
+        [
+          790,
+          23
+        ],
+        [
+          791,
+          15
+        ]
+      ],
+      [
+        [
+          802,
+          18
+        ],
+        [
+          807,
+          18
+        ],
+        [
+          809,
+          22
+        ],
+        [
+          807,
+          26
+        ],
+        [
+          802,
+          26
+        ],
+        [
+          800,
+          22
+        ]
+      ],
+      [
+        [
+          813,
+          19
+        ],
+        [
+          821,
+          13
+        ],
+        [
+          830,
+          12
+        ],
+        [
+          835,
+          16
+        ],
+        [
+          835,
+          25
+        ],
+        [
+          831,
+          32
+        ],
+        [
+          823,
+          34
+        ],
+        [
+          816,
+          31
+        ],
+        [
+          812,
+          24
+        ]
+      ],
+      [
+        [
+          833,
+          10
+        ],
+        [
+          840,
+          10
+        ],
+        [
+          843,
+          14
+        ],
+        [
+          842,
+          21
+        ],
+        [
+          837,
+          24
+        ],
+        [
+          831,
+          22
+        ],
+        [
+          830,
+          15
+        ]
+      ],
+      [
+        [
+          840,
+          33
+        ],
+        [
+          848,
+          33
+        ],
+        [
+          851,
+          38
+        ],
+        [
+          850,
+          45
+        ],
+        [
+          844,
+          49
+        ],
+        [
+          836,
+          48
+        ],
+        [
+          833,
+          43
+        ],
+        [
+          835,
+          37
+        ]
+      ],
+      [
+        [
+          846,
+          6
+        ],
+        [
+          850,
+          5
+        ],
+        [
+          852,
+          8
+        ],
+        [
+          851,
+          12
+        ],
+        [
+          847,
+          13
+        ],
+        [
+          845,
+          10
+        ]
+      ],
+      [
+        [
+          842,
+          16
+        ],
+        [
+          846,
+          15
+        ],
+        [
+          848,
+          18
+        ],
+        [
+          847,
+          22
+        ],
+        [
+          843,
+          23
+        ],
+        [
+          841,
+          20
+        ]
+      ],
+      [
+        [
+          842,
+          25
+        ],
+        [
+          846,
+          24
+        ],
+        [
+          848,
+          27
+        ],
+        [
+          847,
+          31
+        ],
+        [
+          843,
+          32
+        ],
+        [
+          841,
+          29
+        ]
+      ]
+    ],
+    "holes": []
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0015.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:38.133785Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0015_members/scene_after_15.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0015.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0015.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          27,
+          16,
+          78,
+          69
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the white '15' is the badge’s orange interior fill, a smooth radial-like orange gradient inside the circular badge.",
+          "colors": [
+            "#F6A21F",
+            "#F39A16",
+            "#EA8E10"
+          ],
+          "continueEdges": [
+            "Continue the orange gradient seamlessly through both digit holes and strokes.",
+            "Preserve the badge’s subtle center-bright to edge-darker shading without adding outlines.",
+            "Keep curvature-consistent tonal flow matching the circular badge interior."
+          ],
+          "texture": "Clean flat graphic fill with very slight compression softness; no distinct pattern."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:23:16.319900Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0015_members/scene_after_15_members/scene_after_36.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0015_members/scene_after_15.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0015.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          7,
+          6,
+          90,
+          88
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed top-left badge is only the base quiz backdrop: a smooth blue gradient field with darker blue toward the upper-left edge and brighter cyan-blue toward the center of the frame.",
+          "colors": [
+            "#1B74E6",
+            "#2284F1",
+            "#2E96FB",
+            "#3AA8FF"
+          ],
+          "continueEdges": [
+            "Continue the surrounding blue gradient seamlessly through the circular badge area",
+            "Preserve the gentle dark-to-light transition from top-left toward center",
+            "Do not introduce any text, border, or icon remnants inside the fill"
+          ],
+          "texture": "Clean digital gradient with soft glow/falloff and no distinct pattern."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:28:38.464350Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0015_members/scene_after_15_members/scene_after_36_members/cut_77_quiz_logo_text.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 66,
+        "height": 48
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0015_members/scene_after_15_members/scene_after_36.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0015.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          788,
+          3,
+          854,
+          51
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              794,
+              9
+            ],
+            [
+              804,
+              7
+            ],
+            [
+              815,
+              9
+            ],
+            [
+              821,
+              15
+            ],
+            [
+              821,
+              24
+            ],
+            [
+              817,
+              31
+            ],
+            [
+              810,
+              35
+            ],
+            [
+              801,
+              35
+            ],
+            [
+              794,
+              31
+            ],
+            [
+              790,
+              23
+            ],
+            [
+              791,
+              15
+            ]
+          ],
+          [
+            [
+              802,
+              18
+            ],
+            [
+              807,
+              18
+            ],
+            [
+              809,
+              22
+            ],
+            [
+              807,
+              26
+            ],
+            [
+              802,
+              26
+            ],
+            [
+              800,
+              22
+            ]
+          ],
+          [
+            [
+              813,
+              19
+            ],
+            [
+              821,
+              13
+            ],
+            [
+              830,
+              12
+            ],
+            [
+              835,
+              16
+            ],
+            [
+              835,
+              25
+            ],
+            [
+              831,
+              32
+            ],
+            [
+              823,
+              34
+            ],
+            [
+              816,
+              31
+            ],
+            [
+              812,
+              24
+            ]
+          ],
+          [
+            [
+              833,
+              10
+            ],
+            [
+              840,
+              10
+            ],
+            [
+              843,
+              14
+            ],
+            [
+              842,
+              21
+            ],
+            [
+              837,
+              24
+            ],
+            [
+              831,
+              22
+            ],
+            [
+              830,
+              15
+            ]
+          ],
+          [
+            [
+              840,
+              33
+            ],
+            [
+              848,
+              33
+            ],
+            [
+              851,
+              38
+            ],
+            [
+              850,
+              45
+            ],
+            [
+              844,
+              49
+            ],
+            [
+              836,
+              48
+            ],
+            [
+              833,
+              43
+            ],
+            [
+              835,
+              37
+            ]
+          ],
+          [
+            [
+              846,
+              6
+            ],
+            [
+              850,
+              5
+            ],
+            [
+              852,
+              8
+            ],
+            [
+              851,
+              12
+            ],
+            [
+              847,
+              13
+            ],
+            [
+              845,
+              10
+            ]
+          ],
+          [
+            [
+              842,
+              16
+            ],
+            [
+              846,
+              15
+            ],
+            [
+              848,
+              18
+            ],
+            [
+              847,
+              22
+            ],
+            [
+              843,
+              23
+            ],
+            [
+              841,
+              20
+            ]
+          ],
+          [
+            [
+              842,
+              25
+            ],
+            [
+              846,
+              24
+            ],
+            [
+              848,
+              27
+            ],
+            [
+              847,
+              31
+            ],
+            [
+              843,
+              32
+            ],
+            [
+              841,
+              29
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T19:26:03.863742Z"
+    }
+  ]
+}

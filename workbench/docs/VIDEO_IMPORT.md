@@ -25,7 +25,7 @@ leaving the image, or blurring the window closes it immediately.
   each remembering what has been downloaded and extracted from it. `☆ Add to
   catalog` saves the current URL.
 - **Importables combo** — loose files dropped by hand into
-  `data/VideoImports/importables/`; picking one imports it.
+  `data/video_import/importables/`; picking one imports it.
 - **URL / path box + Download / Import** — URLs download via yt-dlp, paths
   import a movie file from disk. You are responsible for having the rights
   to what you name here.
@@ -142,8 +142,8 @@ There is **no default filter**: start with the gallery.
   settings.
 - **Filter registry (246+)** — built-ins (cartoon, pixelate, downscale),
   published presets (`⭑ Publish` → `filter_catalog.json`), `.cube` LUTs in
-  `data/VideoImports/luts/`, and Python **skills** in
-  `data/VideoImports/filter_skills/` (pilgram's 26 styles, ~70 Pillow
+  `data/video_import/luts/`, and Python **skills** in
+  `data/video_import/filter_skills/` (pilgram's 26 styles, ~70 Pillow
   effects, ~50 scikit-image transforms, ~85 matplotlib colormap gradient
   maps…). Drop a `.py` exporting `SKILL` + `apply(image, params)` and it
   appears — the workbench calls it directly, no LLM.
@@ -202,10 +202,13 @@ object visuals, and turtle generation, and reports each reuse as a
 
 ## 8. SCENE OBJECT VISUALS
 
-All intake, player, frame-selection, filter, output, trail, and initial
-description steps stay full-width above the split. The split begins at the
-Extracted Images gallery. Its full-width top border is a persisted automation
-strip with independent **Describer**, **Planner**, **Outliner**, **Extractor**, **Turtle Gen**,
+All intake, player, frame-selection, filter, output, and trail steps stay
+full-width above the split. The former duplicate full-width Scene Objects
+Textual Description view is removed; Describer controls live in the automation
+strip and its exact prompt/output remains in each recursive-cycle inspector.
+The split begins at the Extracted Images gallery. Its full-width top border is a
+persisted automation strip with independent **Describer**, **Planner**,
+**Outliner**, **Extractor**, **Turtle Gen**,
 **Turtle PNG**, **Next recursion levels**, and **Enlarge subobjects** toggles. The left column contains
 the hideable galleries; the right column contains the recursive tree, selected
 cycle inspector, and visual-extraction/Turtle stack.
@@ -218,22 +221,24 @@ The automation strip starts with a global **model for all calls** and a total
 Turtle PNG row then
 selects its model, maximum concurrent processes, and workspace-edited or
 built-in prompt. Per-call models default to **use global**; per-call process
-caps default to **keep below global limit**. Independent images run concurrently
+caps default to an automatic ceiling that reserves at least five slots or 30%
+of global capacity for other stages in either pipeline direction. Independent images run concurrently
 up to both caps, while removals from one changing leftover scene remain ordered.
 There is no hidden six-image ceiling: each ready queue uses as many workers as
 the selected cap permits. Root and recursive-child Describer work share one work-conserving pool. Every
-stage inherits the full global capacity unless the user sets an explicit
+stage can use up to the fairness ceiling unless the user sets a lower explicit
 per-stage limit. Fair lowest-utilization dispatch distributes available slots
-when several stage queues are ready; no stage has a reserved one-third share.
+when several stage queues are ready, and equal-utilization ties rotate across
+the stage order so neither upstream nor downstream work can be starved.
 
 All enabled call types cooperate through one global semaphore and may run at
 the same time. The scheduler enforces the total cap and every per-call cap,
 prefers the runnable type with the lowest current utilization, and immediately
 fills released slots from the shared queue. The controller reports global
 active/queued counts. Every stage row reports active workers plus **Pending**,
-**Completed**, and **Avg / Job**. Pending is the full known pipeline backlog,
-including selected-image placeholders and known object obligations that have
-not reached the worker semaphore yet; it is not limited to semaphore waiters.
+**Completed**, and **Avg / Job**. Pending counts only jobs whose dependencies
+are satisfied and which are ready to run but still waiting for a worker,
+including scheduler waiters and ready items not yet admitted.
 Completed is reconstructed from the persisted image/object artifacts, while
 average duration is accumulated from timed model calls and persisted with the
 page snapshot.
@@ -285,22 +290,37 @@ Each input image follows one cycle:
 1. **Describer** — describe the current image and list only its direct visually
    separable child objects. When the image is already an extracted object, do
    not relist that parent object.
-2. **Planner** — choose the foreground-first extraction order. It never writes
-   or rewrites another prompt.
-3. **Extractor** — use one persisted user-authored precision template for every
-   call. Substitute only the single next object selected by Planner (name,
-   description, position, and total), call the model, and request a pixel-edge silhouette with
+2. **Planner** — declare which visible object boundaries physically touch,
+   every directed foreground-object → occluded-object relationship, and every
+   directed container → fully-contained-object relationship. It then chooses a
+   foreground-first extraction order consistent with those relations, placing
+   contained objects before their containers. For every ordered object it also
+   returns one in-object pixel coordinate; the workbench draws the corresponding
+   order number there and persists a small numbered preview. It never writes or
+   rewrites another prompt.
+3. **Outliner** — run one independent call for each object in Planner order.
+   The persisted user-authored prompt requests a pixel-edge silhouette with
    separate polygons for disconnected visible parts and hole polygons for
-   enclosed gaps. The backend rasterizes at 4× resolution, downsamples an
-   anti-aliased alpha mask, and saves a full-alpha PNG before precisely removing
-   the same mask from the background. It separately enlarges each cutout to at
-   least 640px on its longest side and adds transparent padding; this analysis
-   image, not the small gallery cutout, feeds the next Describer pass.
-   Planner supplies per-object surgical include/exclude/occlusion instructions,
-   a clockwise landmark contour, and a normalized Turtle-style move/line
-   boundary walk. Extractor treats that walk as a guide and refines it into the
-   final pixel-edge polygons and holes.
-   Extractor also returns an LLM-authored `backgroundFill` plan describing the
+   enclosed gaps, plus clockwise contour landmarks and a normalized
+   Turtle-style move/line boundary walk. Each result records the exact source
+   image and decoded dimensions. Outline calls may fan out across the shared
+   worker pool; they do not depend on one another.
+   Before an outline becomes extraction-ready, the backend rasterizes its
+   polygons, holes, and normalized Turtle trace over that exact source image.
+   The trace must agree with the extraction-mask boundary. The resulting
+   numbered trace overlay, agreement score, boundary-coverage score, and
+   geometry hash persist in a small verification gallery. Extractor receives
+   only geometry whose verification artifact and hash still match.
+4. **Extractor** — verify that the selected cut source matches the Outliner
+   coordinate space and is either the same image or a proven provenance
+   descendant. Reject mismatched dimensions, unrelated lineage, and out-of-range
+   coordinates instead of silently clamping them. The backend rasterizes the
+   accepted Outliner geometry at 4× resolution, downsamples an anti-aliased
+   alpha mask, and saves a full-alpha PNG before precisely removing the same
+   mask from the background. It separately enlarges each cutout to at least
+   640px on its longest side and adds transparent padding; this analysis image,
+   not the small gallery cutout, feeds the next Describer pass.
+   Extractor also requests an LLM-authored `backgroundFill` plan describing the
    colors, gradients, continuing edges, and texture expected behind the removed
    object. The selected Extractor model is used when it advertises image
    output; otherwise the workbench prefers the enabled GPT-5.3-Codex
@@ -315,7 +335,7 @@ Each input image follows one cycle:
    transparent-hole modes remain explicit alternatives.
 
 Every successful cutout may be enqueued as a new image and run through the same
-Describer → Planner → Extractor cycle. Each automatic worker processes only its
+Describer → Planner → Outliner → Extractor cycle. Each automatic worker processes only its
 own ready queue and never retries failed or `NONE` objects. Turning **Next
 recursion levels** off stops new child inventories without discarding cutouts;
 turning it back on makes prior cutouts eligible again. **Enlarge subobjects**
@@ -351,6 +371,56 @@ this avoids the prior WatchFiles high-CPU orphan/no-listener state.
 The Vite development server also runs with HMR disabled and no surgical
 file-change reload hook. UI edits become visible only after an explicit browser
 reload, allowing the user/operator to batch changes first.
+
+Scene detection exposes difference threshold, samples per second, minimum scene
+gap, and an optional maximum-marker limit. A blank limit scans through the end
+of the video. **Stop scene scan** interrupts at the next sampled frame and
+preserves markers found so far; **Clear scenes** remains the destructive reset.
+If frame extraction is invoked in scene mode before a completed scene list
+exists, that frame-extraction attempt stops without cancelling the still-running
+scene detector. Scene detection has independent Detect, Stop, and Clear buttons;
+frame extraction has independent Extract and Stop buttons. Both Stop actions
+preserve partial results completed before cancellation.
+
+The intake panel can start a pinned MediaMTX container and exposes standard,
+copyable WHIP/RTMP publish plus WHEP/HLS playback URLs for a named stream. An
+external-source field accepts HLS, RTSP, RTMP, SRT, or ordinary HTTP video
+endpoints (including video podcast outputs). The top source field also accepts
+YouTube links; yt-dlp resolves those to a playable video endpoint before the
+same background scene sampler captures scene-change frames until source end, an
+optional duration/scene limit, or **Stop stream scan**.
+
+Existing ARC playback recordings are another filesystem-backed intake source.
+Selecting one copies its ordered `image.png` sequence into the Video Import
+frame area without video encoding. Every copied frame receives provenance with
+the recording path, source node, incoming action/state, and the complete
+cumulative move-list prefix that produced that exact image.
+The full existing ARC3 player is embedded in Video Import with its B1/B2,
+session, action, rewind, savepoint, and recording controls. Playing a move
+writes the normal recording node and refreshes the available playback sources.
+
+Movie uploads and bounded image ZIP uploads share the top intake control.
+ZIP entries are decoded without filesystem extraction, ordered by archive path,
+and protected by count, entry-size, total-size, and compression-ratio limits.
+Each decoded image receives archive/entry provenance. The top of the workflow's
+left column has a persisted **Extracted Images source** selector that switches
+among video extraction, external stream scenes, ARC playback sequences, image
+archives, and restored sources without mixing their galleries.
+The existing raw **JSON CONFIG** SuperControl is the final normal-flow section
+at the very bottom of the page.
+
+Workspace media uses snake_case family roots:
+
+- `data/arc3_games/recordings/`, `importables/`, and `curated/` hold ARC game
+  playback/runtime, incoming official logs, and curated game image trees.
+- `data/video_import/` holds imported videos, page state, filters, and source
+  metadata.
+- `data/vision_frames/` holds extracted video frames plus stream, ARC, curated,
+  and ZIP image sequences consumed by the vision pipeline.
+
+Legacy `data/Recordings`, `data/importables`, loose curated image trees, and
+`data/VideoImports` are migrated with persisted path rewriting; readers retain
+legacy fallbacks during the transition.
 
 All workbench pages can report active work and restart-relevant changes through
 the global title-frame process channel. Requesting Restart while work is active
@@ -439,9 +509,11 @@ All editable prompts and per-object call details start collapsed. Describer,
 Planner, Outliner, recursive Extractor, and Turtle each have an explicit **Call LLM**
 button. Initial Describer, Planner, Outliner, Extractor, and Turtle templates are supplied
 by this implementation, but the running system never generates or rewrites
-them; users edit and persist the templates directly. Planner returns order only:
-it never returns contours, polygons, or cutout instructions. Outliner receives
-one Planner-selected object per request and returns that object's polygons,
+them; users edit and persist the templates directly. Planner returns object
+contacts, directed occlusions, directed full containments, and order only: it
+never returns contours, polygons, or cutout instructions. Outliner receives one
+Planner-selected object plus its relevant contact/occlusion/containment context
+per request and returns that object's polygons,
 holes, clockwise contour description, and normalized Turtle trace. Independent
 one-object Outliner jobs do not wait for extraction and run under their own
 process cap; the warm shared workers keep taking jobs while releasing the fair
@@ -495,7 +567,7 @@ this tool from scratch:
 Build a **Video Import** page (KNOWLEDGE → Video Import) for the workbench:
 a FastAPI router (`workbench/server/video_import_api.py`, mounted under
 `/workbench/video-import`) plus a React page, storing everything under the
-workspace's `data/VideoImports/`.
+workspace's `data/video_import/`.
 
 **Import**: download URLs with yt-dlp (quality ceiling combo: 480p lo-fi /
 720p / 1080p / best, plus a plain-Python direct fetch for `.mp4` URLs),
@@ -621,7 +693,7 @@ ENTIRE state (video, player time, markers/segments, extraction criteria,
 frames, picks, chain, gallery, outputs, trail, probes, members, toggles,
 section collapse map — everything path-based against real files), and
 persists it BESIDE THE IMAGE REPOSITORY as
-`data/VideoImports/page_state.json` (GET/POST `/page-state`), with a
+`data/video_import/page_state.json` (GET/POST `/page-state`), with a
 debounced localStorage mirror as fast fallback; on mount the NEWEST copy
 wins (timestamped), a click the user makes while restore is in flight
 always beats the restore, the video list never steals a valid selection,

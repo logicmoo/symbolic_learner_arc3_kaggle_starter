@@ -1,0 +1,52 @@
+{
+  "kind": "turtle_program",
+  "version": 1,
+  "sourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/next_pass_04_sparkle_particles_members/next_pass_47_upper_left_faint_dots.png",
+  "subjectName": "upper_left_faint_dots",
+  "modelId": "enullm-8801-copilot_gpt-5.3-codex",
+  "prompt": "TURTLE PNG DRAW STEP.\nThe attached image is terminal object upper_left_faint_dots.\nObject description: Bad Request\nReview the draft Turtle program below and return the final drawing program that should be rendered to PNG.\nPreserve accurate silhouette, colors, holes, and visible internal details. Coordinates are normalized from 0 to 1000 with top-left origin.\nAllowed commands: pen, move, line, polyline, polygon, rectangle, ellipse, dot. Use at most 200 commands.\nDRAFT TURTLE PROGRAM:\n{\"version\":1,\"background\":\"transparent\",\"penColor\":\"#0A0F38\",\"penWidth\":4,\"commands\":[{\"op\":\"dot\",\"x\":102,\"y\":78,\"r\":8},{\"op\":\"dot\",\"x\":92,\"y\":74,\"r\":5},{\"op\":\"dot\",\"x\":112,\"y\":82,\"r\":4},{\"op\":\"dot\",\"x\":531,\"y\":522,\"r\":9},{\"op\":\"dot\",\"x\":523,\"y\":516,\"r\":5}]}\nAnswer ONLY with the final JSON object. Do not include Markdown or Python.",
+  "rawModelOutput": "{\"version\":1,\"background\":\"transparent\",\"penColor\":\"#060B2F\",\"penWidth\":2,\"commands\":[{\"op\":\"pen\",\"color\":\"#060B2F\",\"width\":2},{\"op\":\"dot\",\"x\":102,\"y\":78,\"r\":7},{\"op\":\"dot\",\"x\":94,\"y\":74,\"r\":4},{\"op\":\"dot\",\"x\":110,\"y\":82,\"r\":3},{\"op\":\"pen\",\"color\":\"#0A1242\",\"width\":1},{\"op\":\"dot\",\"x\":100,\"y\":79,\"r\":3}]}",
+  "program": {
+    "version": 1,
+    "background": "transparent",
+    "penColor": "#060B2F",
+    "penWidth": 2,
+    "commands": [
+      {
+        "op": "pen",
+        "color": "#060B2F",
+        "width": 2
+      },
+      {
+        "op": "dot",
+        "x": 102,
+        "y": 78,
+        "r": 7
+      },
+      {
+        "op": "dot",
+        "x": 94,
+        "y": 74,
+        "r": 4
+      },
+      {
+        "op": "dot",
+        "x": 110,
+        "y": 82,
+        "r": 3
+      },
+      {
+        "op": "pen",
+        "color": "#0A1242",
+        "width": 1
+      },
+      {
+        "op": "dot",
+        "x": 100,
+        "y": 79,
+        "r": 3
+      }
+    ]
+  },
+  "createdAt": "2026-09-01T19:27:49.990733Z"
+}

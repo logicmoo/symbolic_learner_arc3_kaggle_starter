@@ -1,0 +1,293 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012_members/scene_after_22_members/scene_after_42_members/scene_after_57_members/scene_after_102.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012_members/scene_after_22_members/scene_after_42_members/scene_after_57_members/scene_after_102.provenance.json",
+  "createdAt": "2026-09-01T19:43:49.646779Z",
+  "operation": "remove_object_from_scene",
+  "dimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 95.8,
+    "sceneIndex": 38,
+    "videoFrameIndex": 2874
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012_members/scene_after_22_members/scene_after_42_members/scene_after_57.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012_members/scene_after_22_members/scene_after_42_members/scene_after_57.provenance.json"
+  },
+  "source": {
+    "objectName": "ceiling_light_reflection",
+    "cutout": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012_members/scene_after_22_members/scene_after_42_members/scene_after_57_members/cut_102_ceiling_light_reflection.png",
+    "fillInstructions": {
+      "description": "Dark interior ceiling area inside the card should continue through this region, with a near-black to charcoal gradient and very subtle cool-gray sheen. The bright oval highlight is removed and replaced by the underlying dim ceiling tone.",
+      "colors": [
+        "#0E0F16",
+        "#171A22",
+        "#232733",
+        "#313645"
+      ],
+      "continueEdges": [
+        "top interior dark band continues horizontally across the removed area",
+        "subtle ceiling shading transition from darker upper edge to slightly lighter lower edge continues smoothly",
+        "faint soft horizontal glow/streaks on the ceiling continue through without a hard boundary"
+      ],
+      "texture": "Smooth, low-contrast cinematic gradient with slight soft blur; no sharp lines or high-frequency detail."
+    }
+  },
+  "transform": {
+    "fill": "median",
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012_members/scene_after_22_members/scene_after_42_members/scene_after_57.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012.png",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "verified": true
+    },
+    "removedBox": [
+      514,
+      98,
+      624,
+      127
+    ],
+    "maskScale": 4,
+    "fillInstructions": {
+      "description": "Dark interior ceiling area inside the card should continue through this region, with a near-black to charcoal gradient and very subtle cool-gray sheen. The bright oval highlight is removed and replaced by the underlying dim ceiling tone.",
+      "colors": [
+        "#0E0F16",
+        "#171A22",
+        "#232733",
+        "#313645"
+      ],
+      "continueEdges": [
+        "top interior dark band continues horizontally across the removed area",
+        "subtle ceiling shading transition from darker upper edge to slightly lighter lower edge continues smoothly",
+        "faint soft horizontal glow/streaks on the ceiling continue through without a hard boundary"
+      ],
+      "texture": "Smooth, low-contrast cinematic gradient with slight soft blur; no sharp lines or high-frequency detail."
+    },
+    "imageGeneration": {
+      "renderer": "median"
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:35.629254Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012_members/scene_after_22.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          329,
+          99,
+          381,
+          137
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed left horn, reconstruct mostly the dark interior background at the top of the inset with a subtle horizontal banded gradient, and at the horn base blend into Sulley’s teal head-fur region where the horn emerged.",
+          "colors": [
+            "#0B0C14",
+            "#151925",
+            "#232A38",
+            "#3BAE9F",
+            "#5FC8B5"
+          ],
+          "continueEdges": [
+            "Continue the dark ceiling band left-to-right across the horn area with the same slight horizontal curvature.",
+            "Preserve the soft vignette falloff from darker top edge to slightly lighter mid-band.",
+            "At the lower/base edge of the removed horn, continue short teal fur strands from surrounding head hair direction so the transition into scalp fur is seamless."
+          ],
+          "texture": "Low-noise cinematic interior shading in the background with soft gradients; fine fuzzy fur texture only at the horn-base contact zone."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:27:51.119782Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012_members/scene_after_22_members/scene_after_42.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012_members/scene_after_22.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          483,
+          101,
+          516,
+          130
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed right horn, continue Sulley’s head/fur at the horn base with teal-to-aqua fuzzy strands and soft purple shadowing in the tufted top hair. In the upper outer portion of the horn area, continue the dark interior card background (charcoal/navy) with subtle horizontal banding and gentle vignette shading.",
+          "colors": [
+            "#6ED8CF",
+            "#57C8C0",
+            "#3FA7A7",
+            "#7A5FA5",
+            "#1A1D2A",
+            "#10131F",
+            "#2A2E3B"
+          ],
+          "continueEdges": [
+            "Extend the curved top-of-head fur silhouette smoothly through the horn footprint.",
+            "Blend short directional fur strands from left and lower edges into the center of the removed region.",
+            "Continue the dark ceiling/background gradient from upper-right toward upper-left without introducing new hard lines.",
+            "Preserve soft shadow transition where fur meets the dark background at the horn boundary."
+          ],
+          "texture": "Mixed texture: fine, soft, slightly directional furry strands at the base region transitioning into smooth low-noise cinematic background gradient with faint horizontal structure."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:33:33.788761Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012_members/scene_after_22_members/scene_after_42_members/scene_after_57.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012_members/scene_after_22_members/scene_after_42.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          221,
+          101,
+          640,
+          394
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind Sulley is the interior set of the Monsters, Inc. scene: a dark bluish-gray room with soft horizontal structural bands/wall seams across the upper half, subtle ambient glow around the center, and the bright ceiling fixture area continuing near the top-right. The lower half behind the body stays darker and smoother with gentle falloff toward the card edges.",
+          "colors": [
+            "#0B0D14",
+            "#161A24",
+            "#232A36",
+            "#3B4452",
+            "#6E7783",
+            "#DDE3E8"
+          ],
+          "continueEdges": [
+            "Extend the upper horizontal wall/beam lines from left to right through the removed silhouette",
+            "Continue the top-right ceiling-light halo/elliptical highlight smoothly across the former head/horn region",
+            "Preserve the card’s existing dark-to-slightly-lighter center gradient and edge vignetting",
+            "Maintain uninterrupted background tone behind both shoulders and torso with no character-color remnants"
+          ],
+          "texture": "Soft cinematic interior shading with mild blur/grain and low-contrast structural lines; no fur texture or sharp foreground detail."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T19:22:52.499183Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012_members/scene_after_22_members/scene_after_42_members/scene_after_57_members/scene_after_102.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012_members/scene_after_22_members/scene_after_42_members/scene_after_57.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0012.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          514,
+          98,
+          624,
+          127
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Dark interior ceiling area inside the card should continue through this region, with a near-black to charcoal gradient and very subtle cool-gray sheen. The bright oval highlight is removed and replaced by the underlying dim ceiling tone.",
+          "colors": [
+            "#0E0F16",
+            "#171A22",
+            "#232733",
+            "#313645"
+          ],
+          "continueEdges": [
+            "top interior dark band continues horizontally across the removed area",
+            "subtle ceiling shading transition from darker upper edge to slightly lighter lower edge continues smoothly",
+            "faint soft horizontal glow/streaks on the ceiling continue through without a hard boundary"
+          ],
+          "texture": "Smooth, low-contrast cinematic gradient with slight soft blur; no sharp lines or high-frequency detail."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T19:43:49.646779Z"
+    }
+  ]
+}

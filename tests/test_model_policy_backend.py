@@ -1,8 +1,15 @@
 from __future__ import annotations
 
+import asyncio
+import io
 import json
 import sys
+import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from urllib.error import HTTPError
+
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 SERVER = ROOT / "workbench" / "server"
@@ -10,6 +17,7 @@ sys.path.insert(0, str(SERVER))
 
 import policy_api  # noqa: E402
 import model_benchmark  # noqa: E402
+import workflow_providers  # noqa: E402
 from backend_library import load_workspace_backend_records  # noqa: E402
 from model_discovery import discover_backend_models, import_discovered_models, reconcile_discovered_models, remove_missing_models  # noqa: E402
 from model_policy_ping import run_ping_job  # noqa: E402
@@ -346,9 +354,12 @@ def test_model_import_route_always_targets_shared_workspace(tmp_path: Path, monk
 
 
 def test_model_example_invokes_resolved_model(monkeypatch, tmp_path: Path) -> None:
-    monkeypatch.setattr(policy_api, "_resolve_workspace", lambda workspace_id: {"id": workspace_id, "root": str(tmp_path)})
+    monkeypatch.setattr(policy_api, "restart_pending_active", lambda: False)
+    resolve = lambda workspace_id: {"id": workspace_id, "root": str(tmp_path)}
+    monkeypatch.setattr(policy_api, "_resolve_workspace", resolve)
+    monkeypatch.setattr(policy_api, "_resolve_workspace_without_counts", resolve)
     monkeypatch.setattr(policy_api, "resolve_model_records", lambda _root: [{"document": {"id": "model"}, "resolved": {"enabled": True, "model": "remote", "configuration": {}, "defaults": {}}}])
-    monkeypatch.setattr(policy_api, "_model_execution_parameters", lambda _root, _selection: {"model": "remote", "backendId": "backend"})
+    monkeypatch.setattr(policy_api, "_model_execution_parameters", lambda _root, _selection, _records=None: {"model": "remote", "backendId": "backend"})
     captured: dict = {}
     def invoke(inputs, parameters):
         captured.update({"image": inputs.get("image"), "prompt": inputs.get("prompt"), "model": parameters.get("model")})
@@ -356,17 +367,53 @@ def test_model_example_invokes_resolved_model(monkeypatch, tmp_path: Path) -> No
         return {"text": str(inputs.get("prompt")).upper(), "response": {"id": "response-1", "usage": {"prompt_tokens": 2, "completion_tokens": 1}}}
     monkeypatch.setattr(policy_api, "_llm_complete", invoke)
     image = "data:image/png;base64,aGVsbG8="
-    result = policy_api.invoke_model_example("shared_library_system", "model", {"arguments": {"prompt": "hello"}, "image": image})
+    result = asyncio.run(policy_api.invoke_model_example("shared_library_system", "model", {"arguments": {"prompt": "hello"}, "image": image}))
     assert result["text"] == "HELLO"
     assert captured == {"image": image, "prompt": "hello", "model": "remote"}
     assert result["inputTokens"] == 2
     assert result["outputTokens"] == 1
+    assert result["preDispatchMs"] >= 0
+    assert result["totalLatencyMs"] >= result["preDispatchMs"]
     assert result["debugLogPath"].startswith("runtime/logs/model_invocations/")
     trace = json.loads(policy_api.read_model_debug_log("shared_library_system", result["debugLogPath"])["content"])
     assert trace["status"] == "completed"
     assert trace["prompt"] == "hello"
     assert trace["image"] == {"source": "data_url", "mediaType": "image/png", "length": len(image)}
     assert trace["response"]["text"] == "HELLO"
+
+
+def test_model_invocation_is_rejected_while_restart_is_pending(monkeypatch) -> None:
+    monkeypatch.setattr(policy_api, "restart_pending_active", lambda: True)
+    with pytest.raises(policy_api.HTTPException, match="new model invocations are paused") as blocked:
+        asyncio.run(
+            policy_api.invoke_model_example(
+                "workspace",
+                "model",
+                {"arguments": {"prompt": "hello"}},
+            )
+        )
+    assert blocked.value.status_code == 409
+
+
+def test_model_resolution_cache_coalesces_concurrent_invocations(monkeypatch, tmp_path: Path) -> None:
+    calls = 0
+    expected = [{"document": {"id": "model"}, "resolved": {"enabled": True}}]
+
+    def resolve(_root: Path) -> list[dict]:
+        nonlocal calls
+        calls += 1
+        time.sleep(0.05)
+        return expected
+
+    policy_api._invalidate_model_resolution_cache()
+    monkeypatch.setattr(policy_api, "resolve_model_records", resolve)
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        results = list(pool.map(lambda _index: policy_api._resolved_model_records(tmp_path), range(8)))
+
+    assert calls == 1
+    assert results == [expected] * 8
+    assert policy_api._MODEL_RESOLUTION_CACHE_SECONDS >= 300
 
 
 def test_model_call_sends_multimodal_chat_content(monkeypatch) -> None:
@@ -389,6 +436,35 @@ def test_model_call_sends_multimodal_chat_content(monkeypatch) -> None:
     assert content == [{"type": "text", "text": "describe"}, {"type": "image_url", "image_url": {"url": image}}]
     assert captured["timeout"] == 9
     assert result["text"] == "seen"
+
+
+def test_llm_complete_surfaces_provider_error_detail(monkeypatch, tmp_path: Path) -> None:
+    def fail(_request, timeout):
+        assert timeout == 12
+        raise HTTPError(
+            "http://127.0.0.1:8801/v1/chat/completions",
+            503,
+            "Service Unavailable",
+            {},
+            io.BytesIO(b'{"detail":"worker-6 not ready; worker-7 rejected"}'),
+        )
+
+    monkeypatch.setattr(workflow_providers.urllib.request, "urlopen", fail)
+    parameters = {
+        "baseUrl": "http://127.0.0.1:8801/v1",
+        "model": "copilot/test",
+        "timeoutSeconds": 12,
+        "workspaceRoot": str(tmp_path),
+    }
+
+    with pytest.raises(
+        RuntimeError,
+        match="worker-6 not ready; worker-7 rejected",
+    ):
+        workflow_providers._llm_complete({"prompt": "hello"}, parameters)
+
+    assert parameters["_debugExecution"]["response"]["status"] == 503
+    assert parameters["_debugExecution"]["response"]["bodyJson"]["detail"].startswith("worker-6")
 
 
 def test_example_executor_is_shared_by_models_and_prompts() -> None:
@@ -446,7 +522,7 @@ def test_open_model_resource_has_the_universal_execution_runner() -> None:
     assert '@router.post("/{workspace_id}/models/{model_id}/invoke")' in api
     assert '@router.get("/{workspace_id}/models/debug-log")' in api
     assert "_model_execution_parameters" in api
-    assert "_llm_complete(inputs, parameters)" in api
+    assert "await asyncio.to_thread(_llm_complete, inputs, parameters)" in api
 
 
 def test_model_policy_history_charts_real_persisted_results() -> None:

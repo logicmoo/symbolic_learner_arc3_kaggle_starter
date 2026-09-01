@@ -1,0 +1,219 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007_members/next_pass_09_dora_backpack.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007_members/next_pass_09_dora_backpack.provenance.json",
+  "createdAt": "2026-09-01T17:23:02.805503Z",
+  "operation": "enlarge_object_for_analysis",
+  "dimensions": {
+    "width": 396,
+    "height": 844
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 57.1,
+    "sceneIndex": 23,
+    "videoFrameIndex": 1713
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007_members/cut_09_dora_backpack.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007_members/cut_09_dora_backpack.provenance.json"
+  },
+  "source": {
+    "objectName": "dora_backpack"
+  },
+  "transform": {
+    "sourceDimensions": {
+      "width": 70,
+      "height": 182
+    },
+    "scale": 4,
+    "resizedDimensions": {
+      "width": 280,
+      "height": 728
+    },
+    "padding": {
+      "left": 58,
+      "top": 58,
+      "right": 58,
+      "bottom": 58
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:31.986150Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007_members/cut_09_dora_backpack.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 70,
+        "height": 182
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          483,
+          255,
+          553,
+          437
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              494,
+              263
+            ],
+            [
+              508,
+              257
+            ],
+            [
+              523,
+              258
+            ],
+            [
+              534,
+              266
+            ],
+            [
+              541,
+              279
+            ],
+            [
+              545,
+              298
+            ],
+            [
+              548,
+              322
+            ],
+            [
+              550,
+              347
+            ],
+            [
+              550,
+              371
+            ],
+            [
+              548,
+              393
+            ],
+            [
+              543,
+              412
+            ],
+            [
+              534,
+              425
+            ],
+            [
+              522,
+              434
+            ],
+            [
+              509,
+              435
+            ],
+            [
+              499,
+              428
+            ],
+            [
+              493,
+              414
+            ],
+            [
+              490,
+              396
+            ],
+            [
+              488,
+              374
+            ],
+            [
+              487,
+              350
+            ],
+            [
+              486,
+              325
+            ],
+            [
+              485,
+              300
+            ],
+            [
+              486,
+              281
+            ],
+            [
+              489,
+              269
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T17:23:02.735784Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0007_members/next_pass_09_dora_backpack.png",
+      "operation": "enlarge_object_for_analysis",
+      "dimensions": {
+        "width": 396,
+        "height": 844
+      },
+      "transform": {
+        "sourceDimensions": {
+          "width": 70,
+          "height": 182
+        },
+        "scale": 4,
+        "resizedDimensions": {
+          "width": 280,
+          "height": 728
+        },
+        "padding": {
+          "left": 58,
+          "top": 58,
+          "right": 58,
+          "bottom": 58
+        }
+      },
+      "createdAt": "2026-09-01T17:23:02.805503Z"
+    }
+  ]
+}

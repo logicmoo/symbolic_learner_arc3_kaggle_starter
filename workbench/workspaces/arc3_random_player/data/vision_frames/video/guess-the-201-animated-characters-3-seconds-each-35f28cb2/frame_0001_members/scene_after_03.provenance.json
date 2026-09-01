@@ -1,0 +1,156 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/scene_after_03.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/scene_after_03.provenance.json",
+  "createdAt": "2026-09-01T17:21:32.177582Z",
+  "operation": "remove_object_from_scene",
+  "dimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 10.7,
+    "sceneIndex": 5,
+    "videoFrameIndex": 321
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001.provenance.json"
+  },
+  "source": {
+    "objectName": "moana_character",
+    "cutout": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/cut_03_moana_character.png",
+    "fillInstructions": {
+      "description": "Fill the removed Moana silhouette with the central card’s ocean backdrop: bright turquoise-to-cyan water with flowing, curved wave streaks and soft highlight patches. Reconstruct the water continuously across the former face/torso/hair area so it matches surrounding motion-like swirls. Where the character previously occluded it, continue the wooden oar segment diagonally from lower-left toward upper-right with consistent tan wood grain and lighting, aligned to the visible oar pieces above her head and at her left side.",
+      "colors": [
+        "#18B8D4",
+        "#1AA9CB",
+        "#1598C0",
+        "#0F87B2",
+        "#49D6E8",
+        "#C99A6A"
+      ],
+      "continueEdges": [
+        "Continue cyan wave streaks from left interior panel through center-right behind former hair mass.",
+        "Extend soft white/aqua water highlights across the chest/face area to match nearby ripple direction.",
+        "Maintain the diagonal oar trajectory (bottom-left to top-right) through the removed shoulder/hand zone, preserving width and wood texture continuity.",
+        "Keep all reconstruction inside the rounded-rectangle card boundaries and preserve existing border edge contrast."
+      ],
+      "texture": "Medium-detail aquatic texture with layered painterly swirls, subtle blur gradients, and speckled light reflections; smooth, fibrous wood grain on the oar."
+    }
+  },
+  "transform": {
+    "fill": "median",
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001.png",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "verified": true
+    },
+    "removedBox": [
+      256,
+      97,
+      635,
+      434
+    ],
+    "maskScale": 4,
+    "fillInstructions": {
+      "description": "Fill the removed Moana silhouette with the central card’s ocean backdrop: bright turquoise-to-cyan water with flowing, curved wave streaks and soft highlight patches. Reconstruct the water continuously across the former face/torso/hair area so it matches surrounding motion-like swirls. Where the character previously occluded it, continue the wooden oar segment diagonally from lower-left toward upper-right with consistent tan wood grain and lighting, aligned to the visible oar pieces above her head and at her left side.",
+      "colors": [
+        "#18B8D4",
+        "#1AA9CB",
+        "#1598C0",
+        "#0F87B2",
+        "#49D6E8",
+        "#C99A6A"
+      ],
+      "continueEdges": [
+        "Continue cyan wave streaks from left interior panel through center-right behind former hair mass.",
+        "Extend soft white/aqua water highlights across the chest/face area to match nearby ripple direction.",
+        "Maintain the diagonal oar trajectory (bottom-left to top-right) through the removed shoulder/hand zone, preserving width and wood texture continuity.",
+        "Keep all reconstruction inside the rounded-rectangle card boundaries and preserve existing border edge contrast."
+      ],
+      "texture": "Medium-detail aquatic texture with layered painterly swirls, subtle blur gradients, and speckled light reflections; smooth, fibrous wood grain on the oar."
+    },
+    "imageGeneration": {
+      "renderer": "median"
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:28.116745Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/scene_after_03.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          256,
+          97,
+          635,
+          434
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Fill the removed Moana silhouette with the central card’s ocean backdrop: bright turquoise-to-cyan water with flowing, curved wave streaks and soft highlight patches. Reconstruct the water continuously across the former face/torso/hair area so it matches surrounding motion-like swirls. Where the character previously occluded it, continue the wooden oar segment diagonally from lower-left toward upper-right with consistent tan wood grain and lighting, aligned to the visible oar pieces above her head and at her left side.",
+          "colors": [
+            "#18B8D4",
+            "#1AA9CB",
+            "#1598C0",
+            "#0F87B2",
+            "#49D6E8",
+            "#C99A6A"
+          ],
+          "continueEdges": [
+            "Continue cyan wave streaks from left interior panel through center-right behind former hair mass.",
+            "Extend soft white/aqua water highlights across the chest/face area to match nearby ripple direction.",
+            "Maintain the diagonal oar trajectory (bottom-left to top-right) through the removed shoulder/hand zone, preserving width and wood texture continuity.",
+            "Keep all reconstruction inside the rounded-rectangle card boundaries and preserve existing border edge contrast."
+          ],
+          "texture": "Medium-detail aquatic texture with layered painterly swirls, subtle blur gradients, and speckled light reflections; smooth, fibrous wood grain on the oar."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:21:32.177582Z"
+    }
+  ]
+}

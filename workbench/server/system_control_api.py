@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ipaddress
+import json
 import os
 import time
 from pathlib import Path
@@ -27,12 +28,37 @@ router = APIRouter()
 INSTANCE_ID = uuid4().hex
 SERVER_DIR = Path(__file__).resolve().parent
 API_RESTART_MARKER = SERVER_DIR.parent / "runtime" / "api_restart.request"
+RESTART_PENDING_PATH = SERVER_DIR.parent / "runtime" / "restart_pending.json"
 _api_restart_request_lock = Lock()
 _API_RESTART_DEBOUNCE_SECONDS = 10.0
 _workbench_presence: dict[str, dict[str, object]] = {}
 _workbench_presence_lock = Lock()
 _PRESENCE_TTL_SECONDS = 60.0
-_restart_pending: dict[str, object] | None = None
+
+
+def _load_restart_pending() -> dict[str, object] | None:
+    try:
+        value = json.loads(RESTART_PENDING_PATH.read_text(encoding="utf-8-sig"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return value if isinstance(value, dict) else None
+
+
+def restart_pending_active() -> bool:
+    return _load_restart_pending() is not None
+
+
+def _persist_restart_pending(value: dict[str, object] | None) -> None:
+    if value is None:
+        RESTART_PENDING_PATH.unlink(missing_ok=True)
+        return
+    RESTART_PENDING_PATH.parent.mkdir(parents=True, exist_ok=True)
+    temporary = RESTART_PENDING_PATH.with_suffix(".tmp")
+    temporary.write_text(json.dumps(value, indent=2) + "\n", encoding="utf-8")
+    os.replace(temporary, RESTART_PENDING_PATH)
+
+
+_restart_pending: dict[str, object] | None = _load_restart_pending()
 
 
 def _prune_workbench_presence() -> list[dict[str, object]]:
@@ -45,7 +71,7 @@ def _prune_workbench_presence() -> list[dict[str, object]]:
 
 
 @router.post("/system/presence")
-def report_workbench_presence(body: dict[str, object] = Body(...)) -> dict[str, object]:
+async def report_workbench_presence(body: dict[str, object] = Body(...)) -> dict[str, object]:
     tab_id = str(body.get("tabId") or "").strip()
     if not tab_id or len(tab_id) > 100:
         raise HTTPException(status_code=400, detail="tabId is required and must be at most 100 characters")
@@ -67,12 +93,12 @@ def report_workbench_presence(body: dict[str, object] = Body(...)) -> dict[str, 
 
 
 @router.get("/system/presence")
-def list_workbench_presence() -> dict[str, object]:
+async def list_workbench_presence() -> dict[str, object]:
     return {"workbenches": _prune_workbench_presence(), "ttlSeconds": _PRESENCE_TTL_SECONDS, "restartPending": _restart_pending}
 
 
 @router.post("/system/restart-pending")
-def report_restart_pending(body: dict[str, object] = Body(...)) -> dict[str, object]:
+async def report_restart_pending(body: dict[str, object] = Body(...)) -> dict[str, object]:
     global _restart_pending
     if body.get("active") is False:
         _restart_pending = None
@@ -84,6 +110,7 @@ def report_restart_pending(body: dict[str, object] = Body(...)) -> dict[str, obj
             "changes": [str(change)[:1000] for change in change_list if str(change).strip()][:20],
             "requestedAt": time.time(),
         }
+    await run_in_threadpool(_persist_restart_pending, _restart_pending)
     return {"accepted": True, "restartPending": _restart_pending}
 
 

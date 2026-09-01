@@ -1,0 +1,503 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16_members/scene_after_37_members/next_pass_76_card_dark_neon_backgroun.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16_members/scene_after_37_members/next_pass_76_card_dark_neon_backgroun.provenance.json",
+  "createdAt": "2026-09-01T19:26:03.355352Z",
+  "operation": "enlarge_object_for_analysis",
+  "dimensions": {
+    "width": 972,
+    "height": 710
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 41.633,
+    "sceneIndex": 17,
+    "videoFrameIndex": 1249
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16_members/scene_after_37_members/cut_76_card_dark_neon_backgroun.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16_members/scene_after_37_members/cut_76_card_dark_neon_backgroun.provenance.json"
+  },
+  "source": {
+    "objectName": "card_dark_neon_background"
+  },
+  "transform": {
+    "sourceDimensions": {
+      "width": 419,
+      "height": 288
+    },
+    "scale": 2,
+    "resizedDimensions": {
+      "width": 838,
+      "height": 576
+    },
+    "padding": {
+      "left": 67,
+      "top": 67,
+      "right": 67,
+      "bottom": 67
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:30.576049Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          222,
+          244,
+          643,
+          387
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed cyan/white glow, the central card continues as a dark neon scene: deep blue-violet background with soft magenta/cyan bloom, plus the fighter’s underlying lower-arm/jacket area where the streak crosses her body. Reconstruct a smooth continuation of the character’s muted skin/jacket shading and the card’s ambient purple-blue lighting so no bright streak remains.",
+          "colors": [
+            "#0A0F2A",
+            "#1A1F4A",
+            "#2C2B6E",
+            "#4C3F8E",
+            "#6E5FA8",
+            "#2E7FAE"
+          ],
+          "continueEdges": [
+            "Extend the dark purple-blue background gradient from above and below straight through the removed band.",
+            "Continue small soft bokeh/light specks visible near the streak boundaries across the gap with similar blur and spacing.",
+            "Carry the character edge transitions (arm/jacket contour and shadow boundaries) across the removed area to keep limb and clothing shapes coherent.",
+            "Preserve the card’s lower atmospheric haze as subtle, low-contrast cyan-violet tint, but without any concentrated bright beam core."
+          ],
+          "texture": "Soft cinematic neon haze with gentle grain/bokeh and smooth gradient blending; semi-gloss character shading where the streak crossed the arm/jacket."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:23:18.101179Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16_members/scene_after_37.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          218,
+          102,
+          606,
+          340
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed fighter, the central card continues as a dark neon scene: deep navy-to-purple backdrop with scattered soft magenta/cyan light orbs and subtle diagonal glow streaks. In upper/mid areas, keep low-contrast atmospheric gradients; near the lower region, preserve the existing cyan energy-light environment and bloom transitions already present around the character edges.",
+          "colors": [
+            "#0B0D24",
+            "#141739",
+            "#1E1B4A",
+            "#2A1F5E",
+            "#00CFEA",
+            "#C43BFF"
+          ],
+          "continueEdges": [
+            "Continue the dark purple-blue gradient smoothly through the removed silhouette from left to right",
+            "Extend small blurred magenta/cyan bokeh dots and faint light flecks across the filled region with matching softness",
+            "Preserve neon rim-glow direction around nearby edges so lighting stays consistent with the surrounding card",
+            "Maintain lower-area cyan glow falloff and haze transitions where the scene brightens near the foreground light streak"
+          ],
+          "texture": "Soft cinematic neon texture with gentle bloom, subtle haze, and low-noise digital gradient blending."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:28:38.751424Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16_members/scene_after_37_members/cut_76_card_dark_neon_backgroun.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 419,
+        "height": 288
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16_members/scene_after_37.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          223,
+          102,
+          642,
+          390
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              225,
+              104
+            ],
+            [
+              478,
+              104
+            ],
+            [
+              458,
+              129
+            ],
+            [
+              442,
+              158
+            ],
+            [
+              432,
+              188
+            ],
+            [
+              428,
+              216
+            ],
+            [
+              434,
+              238
+            ],
+            [
+              454,
+              258
+            ],
+            [
+              486,
+              273
+            ],
+            [
+              518,
+              279
+            ],
+            [
+              532,
+              280
+            ],
+            [
+              519,
+              309
+            ],
+            [
+              493,
+              331
+            ],
+            [
+              483,
+              352
+            ],
+            [
+              483,
+              387
+            ],
+            [
+              258,
+              387
+            ],
+            [
+              246,
+              384
+            ],
+            [
+              236,
+              377
+            ],
+            [
+              229,
+              367
+            ],
+            [
+              225,
+              354
+            ]
+          ],
+          [
+            [
+              583,
+              104
+            ],
+            [
+              603,
+              104
+            ],
+            [
+              614,
+              106
+            ],
+            [
+              624,
+              112
+            ],
+            [
+              632,
+              121
+            ],
+            [
+              637,
+              132
+            ],
+            [
+              639,
+              145
+            ],
+            [
+              639,
+              362
+            ],
+            [
+              637,
+              370
+            ],
+            [
+              632,
+              376
+            ],
+            [
+              624,
+              382
+            ],
+            [
+              614,
+              386
+            ],
+            [
+              603,
+              387
+            ],
+            [
+              531,
+              387
+            ],
+            [
+              543,
+              363
+            ],
+            [
+              560,
+              337
+            ],
+            [
+              583,
+              312
+            ],
+            [
+              601,
+              284
+            ],
+            [
+              611,
+              254
+            ],
+            [
+              613,
+              224
+            ],
+            [
+              607,
+              194
+            ],
+            [
+              597,
+              167
+            ],
+            [
+              583,
+              142
+            ],
+            [
+              571,
+              123
+            ],
+            [
+              571,
+              113
+            ],
+            [
+              575,
+              108
+            ]
+          ],
+          [
+            [
+              468,
+              281
+            ],
+            [
+              494,
+              281
+            ],
+            [
+              511,
+              286
+            ],
+            [
+              520,
+              295
+            ],
+            [
+              519,
+              304
+            ],
+            [
+              510,
+              311
+            ],
+            [
+              495,
+              314
+            ],
+            [
+              475,
+              313
+            ],
+            [
+              462,
+              308
+            ],
+            [
+              457,
+              300
+            ],
+            [
+              460,
+              290
+            ]
+          ],
+          [
+            [
+              527,
+              281
+            ],
+            [
+              551,
+              281
+            ],
+            [
+              568,
+              286
+            ],
+            [
+              577,
+              294
+            ],
+            [
+              575,
+              304
+            ],
+            [
+              565,
+              312
+            ],
+            [
+              551,
+              315
+            ],
+            [
+              533,
+              314
+            ],
+            [
+              521,
+              309
+            ],
+            [
+              516,
+              300
+            ],
+            [
+              519,
+              290
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T19:26:03.256108Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16_members/scene_after_37_members/next_pass_76_card_dark_neon_backgroun.png",
+      "operation": "enlarge_object_for_analysis",
+      "dimensions": {
+        "width": 972,
+        "height": 710
+      },
+      "transform": {
+        "sourceDimensions": {
+          "width": 419,
+          "height": 288
+        },
+        "scale": 2,
+        "resizedDimensions": {
+          "width": 838,
+          "height": 576
+        },
+        "padding": {
+          "left": 67,
+          "top": 67,
+          "right": 67,
+          "bottom": 67
+        }
+      },
+      "createdAt": "2026-09-01T19:26:03.355352Z"
+    }
+  ]
+}

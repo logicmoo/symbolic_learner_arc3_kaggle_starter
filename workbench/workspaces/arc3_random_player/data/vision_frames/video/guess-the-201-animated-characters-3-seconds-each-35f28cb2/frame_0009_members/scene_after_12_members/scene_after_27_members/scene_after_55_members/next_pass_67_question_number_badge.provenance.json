@@ -1,0 +1,477 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009_members/scene_after_12_members/scene_after_27_members/scene_after_55_members/next_pass_67_question_number_badge.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009_members/scene_after_12_members/scene_after_27_members/scene_after_55_members/next_pass_67_question_number_badge.provenance.json",
+  "createdAt": "2026-09-01T19:24:25.355336Z",
+  "operation": "enlarge_object_for_analysis",
+  "dimensions": {
+    "width": 844,
+    "height": 780
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 72.6,
+    "sceneIndex": 29,
+    "videoFrameIndex": 2178
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009_members/scene_after_12_members/scene_after_27_members/scene_after_55_members/cut_67_question_number_badge.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009_members/scene_after_12_members/scene_after_27_members/scene_after_55_members/cut_67_question_number_badge.provenance.json"
+  },
+  "source": {
+    "objectName": "question_number_badge"
+  },
+  "transform": {
+    "sourceDimensions": {
+      "width": 91,
+      "height": 83
+    },
+    "scale": 8,
+    "resizedDimensions": {
+      "width": 728,
+      "height": 664
+    },
+    "padding": {
+      "left": 58,
+      "top": 58,
+      "right": 58,
+      "bottom": 58
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:33.407677Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009_members/scene_after_12.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          316,
+          126,
+          610,
+          348
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed fish, the central card continues as clear turquoise water with a gentle top-to-bottom cyan gradient and faint soft wave/bokeh patches. No hard objects sit directly behind the fish; the area is open water.",
+          "colors": [
+            "#22B8CF",
+            "#1FAFC8",
+            "#27C2D8",
+            "#3CCEE0",
+            "#8FE7EE"
+          ],
+          "continueEdges": [
+            "Continue the subtle horizontal/curved water streaks through the fish silhouette without breaks.",
+            "Blend the upper lighter cyan band smoothly across the former dorsal and tail regions.",
+            "Extend the soft circular light patches in the lower-right card area through the belly/tail hole with feathered edges.",
+            "Keep gradient continuity from surrounding water so no outline seam remains where the fish was removed."
+          ],
+          "texture": "Smooth cartoon-water texture with soft gradients, mild haze, and low-contrast diffuse highlights (no sharp lines or grain)."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:23:03.571090Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009_members/scene_after_12_members/scene_after_27.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009_members/scene_after_12.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          221,
+          95,
+          642,
+          390
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed rounded-rectangle card, the scene continues as the same full-frame blue gradient background: medium azure overall with a brighter cyan-blue central glow and slightly deeper royal-blue toward edges. No card border, underwater texture, or internal imagery should remain.",
+          "colors": [
+            "#2082EA",
+            "#2389F0",
+            "#2A97F8",
+            "#3AA8FF",
+            "#1E74DC",
+            "#1666CF"
+          ],
+          "continueEdges": [
+            "Extend the surrounding blue gradient smoothly across the entire removed card area.",
+            "Continue the soft circular/radial glow centered in the lower-middle region through the hole.",
+            "Preserve left-to-right gradient continuity and edge darkening from the outer frame into the former card region."
+          ],
+          "texture": "Clean, smooth digital gradient with very subtle soft glow/vignette; no hard lines, no grain, and no foreground detail."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:28:02.434303Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009_members/scene_after_12_members/scene_after_27_members/scene_after_55.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009_members/scene_after_12_members/scene_after_27.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          32,
+          18,
+          65,
+          74
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed white '9' is the orange interior of the circular question badge, with a smooth warm gradient (lighter yellow-orange toward upper-left/center and deeper orange toward lower-right). The fill should match the badge’s internal shading and remain fully inside the existing white rim.",
+          "colors": [
+            "#F9AE23",
+            "#F5A11A",
+            "#EE9513",
+            "#E98A0F",
+            "#D97A09"
+          ],
+          "continueEdges": [
+            "Continue the badge’s local radial orange gradient seamlessly through the former numeral area.",
+            "Preserve smooth tonal transition from brighter top-left highlight to darker lower-right shading.",
+            "Keep the circular badge curvature implied by shading; do not introduce hard edges or text remnants."
+          ],
+          "texture": "Flat vector-like, clean and smooth with very subtle gradient; no grain, outlines, or embossing."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:36:03.681607Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009_members/scene_after_12_members/scene_after_27_members/scene_after_55_members/cut_67_question_number_badge.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 91,
+        "height": 83
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009_members/scene_after_12_members/scene_after_27_members/scene_after_55.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          5,
+          6,
+          96,
+          89
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              50,
+              8
+            ],
+            [
+              62,
+              9
+            ],
+            [
+              74,
+              13
+            ],
+            [
+              84,
+              20
+            ],
+            [
+              90,
+              30
+            ],
+            [
+              93,
+              42
+            ],
+            [
+              93,
+              54
+            ],
+            [
+              90,
+              66
+            ],
+            [
+              84,
+              76
+            ],
+            [
+              74,
+              83
+            ],
+            [
+              62,
+              86
+            ],
+            [
+              50,
+              87
+            ],
+            [
+              38,
+              86
+            ],
+            [
+              26,
+              83
+            ],
+            [
+              16,
+              76
+            ],
+            [
+              10,
+              66
+            ],
+            [
+              7,
+              54
+            ],
+            [
+              7,
+              42
+            ],
+            [
+              10,
+              30
+            ],
+            [
+              16,
+              20
+            ],
+            [
+              26,
+              13
+            ],
+            [
+              38,
+              9
+            ]
+          ]
+        ],
+        "holes": [
+          [
+            [
+              41,
+              19
+            ],
+            [
+              49,
+              19
+            ],
+            [
+              56,
+              23
+            ],
+            [
+              60,
+              30
+            ],
+            [
+              60,
+              39
+            ],
+            [
+              56,
+              45
+            ],
+            [
+              50,
+              48
+            ],
+            [
+              45,
+              48
+            ],
+            [
+              43,
+              51
+            ],
+            [
+              47,
+              55
+            ],
+            [
+              52,
+              58
+            ],
+            [
+              54,
+              64
+            ],
+            [
+              50,
+              69
+            ],
+            [
+              42,
+              71
+            ],
+            [
+              34,
+              69
+            ],
+            [
+              29,
+              63
+            ],
+            [
+              28,
+              55
+            ],
+            [
+              33,
+              50
+            ],
+            [
+              38,
+              50
+            ],
+            [
+              38,
+              55
+            ],
+            [
+              41,
+              58
+            ],
+            [
+              47,
+              58
+            ],
+            [
+              49,
+              55
+            ],
+            [
+              47,
+              51
+            ],
+            [
+              41,
+              47
+            ],
+            [
+              34,
+              44
+            ],
+            [
+              31,
+              38
+            ],
+            [
+              31,
+              30
+            ],
+            [
+              35,
+              23
+            ]
+          ]
+        ]
+      },
+      "createdAt": "2026-09-01T19:24:25.232452Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009_members/scene_after_12_members/scene_after_27_members/scene_after_55_members/next_pass_67_question_number_badge.png",
+      "operation": "enlarge_object_for_analysis",
+      "dimensions": {
+        "width": 844,
+        "height": 780
+      },
+      "transform": {
+        "sourceDimensions": {
+          "width": 91,
+          "height": 83
+        },
+        "scale": 8,
+        "resizedDimensions": {
+          "width": 728,
+          "height": 664
+        },
+        "padding": {
+          "left": 58,
+          "top": 58,
+          "right": 58,
+          "bottom": 58
+        }
+      },
+      "createdAt": "2026-09-01T19:24:25.355336Z"
+    }
+  ]
+}

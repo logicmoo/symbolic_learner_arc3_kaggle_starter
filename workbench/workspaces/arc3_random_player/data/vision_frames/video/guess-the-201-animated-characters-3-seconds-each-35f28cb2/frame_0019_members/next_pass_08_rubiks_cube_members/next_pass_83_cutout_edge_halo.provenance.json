@@ -1,0 +1,480 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/next_pass_08_rubiks_cube_members/next_pass_83_cutout_edge_halo.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/next_pass_08_rubiks_cube_members/next_pass_83_cutout_edge_halo.provenance.json",
+  "createdAt": "2026-09-01T19:41:34.382923Z",
+  "operation": "enlarge_object_for_analysis",
+  "dimensions": {
+    "width": 823,
+    "height": 835
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 149.9,
+    "sceneIndex": 59,
+    "videoFrameIndex": 4497
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/next_pass_08_rubiks_cube_members/cut_83_cutout_edge_halo.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/next_pass_08_rubiks_cube_members/cut_83_cutout_edge_halo.provenance.json"
+  },
+  "source": {
+    "objectName": "cutout_edge_halo"
+  },
+  "transform": {
+    "sourceDimensions": {
+      "width": 707,
+      "height": 719
+    },
+    "scale": 1,
+    "resizedDimensions": {
+      "width": 707,
+      "height": 719
+    },
+    "padding": {
+      "left": 58,
+      "top": 58,
+      "right": 58,
+      "bottom": 58
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:41.177136Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/cut_08_rubiks_cube.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 70,
+        "height": 68
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          262,
+          167,
+          332,
+          235
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              278,
+              169
+            ],
+            [
+              312,
+              171
+            ],
+            [
+              329,
+              188
+            ],
+            [
+              328,
+              220
+            ],
+            [
+              306,
+              233
+            ],
+            [
+              275,
+              227
+            ],
+            [
+              264,
+              208
+            ],
+            [
+              266,
+              182
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T17:23:01.200494Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/next_pass_08_rubiks_cube.png",
+      "operation": "enlarge_object_for_analysis",
+      "dimensions": {
+        "width": 812,
+        "height": 792
+      },
+      "transform": {
+        "sourceDimensions": {
+          "width": 70,
+          "height": 68
+        },
+        "scale": 10,
+        "resizedDimensions": {
+          "width": 700,
+          "height": 680
+        },
+        "padding": {
+          "left": 56,
+          "top": 56,
+          "right": 56,
+          "bottom": 56
+        }
+      },
+      "createdAt": "2026-09-01T17:23:01.351554Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/next_pass_08_rubiks_cube_members/cut_83_cutout_edge_halo.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 707,
+        "height": 719
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 812,
+          "height": 792
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/next_pass_08_rubiks_cube.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/next_pass_08_rubiks_cube.png",
+          "dimensions": {
+            "width": 812,
+            "height": 792
+          },
+          "verified": true
+        },
+        "cropBox": [
+          66,
+          62,
+          773,
+          781
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              196,
+              64
+            ],
+            [
+              306,
+              64
+            ],
+            [
+              420,
+              66
+            ],
+            [
+              538,
+              69
+            ],
+            [
+              607,
+              83
+            ],
+            [
+              662,
+              128
+            ],
+            [
+              711,
+              186
+            ],
+            [
+              751,
+              250
+            ],
+            [
+              770,
+              322
+            ],
+            [
+              770,
+              401
+            ],
+            [
+              767,
+              482
+            ],
+            [
+              756,
+              560
+            ],
+            [
+              739,
+              633
+            ],
+            [
+              706,
+              696
+            ],
+            [
+              656,
+              742
+            ],
+            [
+              586,
+              769
+            ],
+            [
+              503,
+              778
+            ],
+            [
+              421,
+              778
+            ],
+            [
+              338,
+              775
+            ],
+            [
+              262,
+              765
+            ],
+            [
+              196,
+              741
+            ],
+            [
+              141,
+              702
+            ],
+            [
+              104,
+              647
+            ],
+            [
+              81,
+              581
+            ],
+            [
+              71,
+              509
+            ],
+            [
+              68,
+              431
+            ],
+            [
+              69,
+              353
+            ],
+            [
+              74,
+              278
+            ],
+            [
+              88,
+              208
+            ],
+            [
+              117,
+              149
+            ],
+            [
+              154,
+              103
+            ],
+            [
+              196,
+              64
+            ]
+          ]
+        ],
+        "holes": [
+          [
+            [
+              205,
+              78
+            ],
+            [
+              309,
+              78
+            ],
+            [
+              420,
+              80
+            ],
+            [
+              532,
+              83
+            ],
+            [
+              598,
+              96
+            ],
+            [
+              649,
+              138
+            ],
+            [
+              694,
+              192
+            ],
+            [
+              730,
+              254
+            ],
+            [
+              748,
+              323
+            ],
+            [
+              748,
+              399
+            ],
+            [
+              746,
+              478
+            ],
+            [
+              735,
+              554
+            ],
+            [
+              719,
+              623
+            ],
+            [
+              689,
+              680
+            ],
+            [
+              644,
+              722
+            ],
+            [
+              579,
+              747
+            ],
+            [
+              500,
+              756
+            ],
+            [
+              421,
+              756
+            ],
+            [
+              343,
+              753
+            ],
+            [
+              270,
+              744
+            ],
+            [
+              209,
+              722
+            ],
+            [
+              159,
+              686
+            ],
+            [
+              126,
+              637
+            ],
+            [
+              105,
+              576
+            ],
+            [
+              94,
+              507
+            ],
+            [
+              91,
+              432
+            ],
+            [
+              92,
+              357
+            ],
+            [
+              97,
+              284
+            ],
+            [
+              111,
+              219
+            ],
+            [
+              137,
+              164
+            ],
+            [
+              171,
+              122
+            ],
+            [
+              205,
+              78
+            ]
+          ]
+        ]
+      },
+      "createdAt": "2026-09-01T19:41:34.357999Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0019_members/next_pass_08_rubiks_cube_members/next_pass_83_cutout_edge_halo.png",
+      "operation": "enlarge_object_for_analysis",
+      "dimensions": {
+        "width": 823,
+        "height": 835
+      },
+      "transform": {
+        "sourceDimensions": {
+          "width": 707,
+          "height": 719
+        },
+        "scale": 1,
+        "resizedDimensions": {
+          "width": 707,
+          "height": 719
+        },
+        "padding": {
+          "left": 58,
+          "top": 58,
+          "right": 58,
+          "bottom": 58
+        }
+      },
+      "createdAt": "2026-09-01T19:41:34.382923Z"
+    }
+  ]
+}

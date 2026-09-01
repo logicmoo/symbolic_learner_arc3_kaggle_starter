@@ -1,0 +1,464 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/scene_after_04_members/scene_after_19_members/next_pass_33_fairy_wings_planner/order_14814c88acd7.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/scene_after_04_members/scene_after_19_members/next_pass_33_fairy_wings_planner/order_14814c88acd7.provenance.json",
+  "createdAt": "2026-09-01T20:09:16.871675Z",
+  "operation": "visualize_planner_order",
+  "dimensions": {
+    "width": 640,
+    "height": 816
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 103.5,
+    "sceneIndex": 41,
+    "videoFrameIndex": 3105
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/scene_after_04_members/scene_after_19_members/next_pass_33_fairy_wings.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/scene_after_04_members/scene_after_19_members/next_pass_33_fairy_wings.provenance.json"
+  },
+  "source": {},
+  "transform": {
+    "labels": [
+      {
+        "object": "sparkle_particles",
+        "number": 1,
+        "point": [
+          310,
+          126
+        ]
+      },
+      {
+        "object": "top_frame_white_border",
+        "number": 2,
+        "point": [
+          320,
+          122
+        ]
+      },
+      {
+        "object": "left_frame_cyan_border",
+        "number": 3,
+        "point": [
+          57,
+          220
+        ]
+      },
+      {
+        "object": "tinkerbell_face_partial",
+        "number": 4,
+        "point": [
+          356,
+          410
+        ]
+      },
+      {
+        "object": "tinkerbell_hair_blonde",
+        "number": 5,
+        "point": [
+          322,
+          176
+        ]
+      },
+      {
+        "object": "tinkerbell_skin_partial",
+        "number": 6,
+        "point": [
+          210,
+          662
+        ]
+      },
+      {
+        "object": "tinkerbell_green_dress_partial",
+        "number": 7,
+        "point": [
+          245,
+          602
+        ]
+      },
+      {
+        "object": "fairy_wing_blue",
+        "number": 8,
+        "point": [
+          145,
+          330
+        ]
+      },
+      {
+        "object": "dark_stage_background",
+        "number": 9,
+        "point": [
+          250,
+          140
+        ]
+      },
+      {
+        "object": "cropped_image_fragment",
+        "number": 10,
+        "point": [
+          260,
+          300
+        ]
+      },
+      {
+        "object": "black_background",
+        "number": 11,
+        "point": [
+          20,
+          20
+        ]
+      }
+    ],
+    "plannerHash": "14814c88acd7d3d18c14879e8a03c76392a9fbd44bca687c38735284292fac8d"
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:36.611064Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/scene_after_04.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          284,
+          117,
+          579,
+          297
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Each removed sparkle should be replaced by the local stage backdrop behind it: mostly very dark navy/black with subtle blue-violet glow gradients, varying by cluster position. Left-side sparkles sit over deep blue-black wing/stage haze; right-side sparkles sit over darker purple-violet airglow near the fairy’s right side.",
+          "colors": [
+            "#05050C",
+            "#0A0E1F",
+            "#111635",
+            "#1B1A3D",
+            "#2A2453"
+          ],
+          "continueEdges": [
+            "Continue the smooth dark-to-violet gradient flow through each tiny hole with no hard boundary.",
+            "Where sparkles cross faint atmospheric glow streaks, extend those soft streak directions continuously across the removed points.",
+            "Preserve nearby wing/stage shading transitions so adjacent contour tones blend seamlessly through each sparkle location.",
+            "Do not introduce new highlights; maintain surrounding luminance and color falloff only."
+          ],
+          "texture": "Soft, low-noise, airbrushed cinematic gradient with faint misty glow; no sharp texture or grain."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:21:32.471319Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/scene_after_04_members/scene_after_19.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/scene_after_04.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          384,
+          205,
+          470,
+          282
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed dress, continue Tinker Bell’s body: a light peach skin-tone torso transitioning into slightly warmer peach shading toward the waist and upper hips, with soft cartoon airbrushed gradients matching the existing neck/chest and upper-leg lighting. At the outermost jagged hem tips, preserve tiny touches of the dark stage backdrop only where the dress edge originally projected beyond body silhouette.",
+          "colors": [
+            "#F6D6B8",
+            "#EFC6A8",
+            "#E4B292",
+            "#D99F84",
+            "#120F2A",
+            "#1E1A3A"
+          ],
+          "continueEdges": [
+            "Extend the neck/chest skin gradient downward through the neckline area.",
+            "Connect left and right side body contours smoothly from exposed rib/waist edges.",
+            "Blend into the upper-thigh skin tones directly below the hem points.",
+            "Keep stage-dark purple/navy background continuity only at any hem-tip overhangs beyond body mass."
+          ],
+          "texture": "Smooth cel-shaded cartoon skin with subtle soft shading; no fabric texture, minimal noise, and gentle gradient transitions consistent with the character render."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:23:25.298336Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/scene_after_04_members/scene_after_19_members/cut_33_fairy_wings.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 132,
+        "height": 176
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/scene_after_04_members/scene_after_19.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          371,
+          99,
+          503,
+          275
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              381,
+              101
+            ],
+            [
+              500,
+              101
+            ],
+            [
+              492,
+              118
+            ],
+            [
+              480,
+              141
+            ],
+            [
+              468,
+              166
+            ],
+            [
+              456,
+              194
+            ],
+            [
+              446,
+              224
+            ],
+            [
+              437,
+              252
+            ],
+            [
+              430,
+              274
+            ],
+            [
+              420,
+              266
+            ],
+            [
+              408,
+              245
+            ],
+            [
+              395,
+              216
+            ],
+            [
+              384,
+              182
+            ],
+            [
+              376,
+              149
+            ],
+            [
+              373,
+              123
+            ],
+            [
+              374,
+              109
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T17:28:18.095309Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/scene_after_04_members/scene_after_19_members/next_pass_33_fairy_wings.png",
+      "operation": "enlarge_object_for_analysis",
+      "dimensions": {
+        "width": 640,
+        "height": 816
+      },
+      "transform": {
+        "sourceDimensions": {
+          "width": 132,
+          "height": 176
+        },
+        "scale": 4,
+        "resizedDimensions": {
+          "width": 528,
+          "height": 704
+        },
+        "padding": {
+          "left": 56,
+          "top": 56,
+          "right": 56,
+          "bottom": 56
+        }
+      },
+      "createdAt": "2026-09-01T17:28:18.173243Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/scene_after_04_members/scene_after_19_members/next_pass_33_fairy_wings_planner/order_14814c88acd7.png",
+      "operation": "visualize_planner_order",
+      "dimensions": {
+        "width": 640,
+        "height": 816
+      },
+      "transform": {
+        "labels": [
+          {
+            "object": "sparkle_particles",
+            "number": 1,
+            "point": [
+              310,
+              126
+            ]
+          },
+          {
+            "object": "top_frame_white_border",
+            "number": 2,
+            "point": [
+              320,
+              122
+            ]
+          },
+          {
+            "object": "left_frame_cyan_border",
+            "number": 3,
+            "point": [
+              57,
+              220
+            ]
+          },
+          {
+            "object": "tinkerbell_face_partial",
+            "number": 4,
+            "point": [
+              356,
+              410
+            ]
+          },
+          {
+            "object": "tinkerbell_hair_blonde",
+            "number": 5,
+            "point": [
+              322,
+              176
+            ]
+          },
+          {
+            "object": "tinkerbell_skin_partial",
+            "number": 6,
+            "point": [
+              210,
+              662
+            ]
+          },
+          {
+            "object": "tinkerbell_green_dress_partial",
+            "number": 7,
+            "point": [
+              245,
+              602
+            ]
+          },
+          {
+            "object": "fairy_wing_blue",
+            "number": 8,
+            "point": [
+              145,
+              330
+            ]
+          },
+          {
+            "object": "dark_stage_background",
+            "number": 9,
+            "point": [
+              250,
+              140
+            ]
+          },
+          {
+            "object": "cropped_image_fragment",
+            "number": 10,
+            "point": [
+              260,
+              300
+            ]
+          },
+          {
+            "object": "black_background",
+            "number": 11,
+            "point": [
+              20,
+              20
+            ]
+          }
+        ],
+        "plannerHash": "14814c88acd7d3d18c14879e8a03c76392a9fbd44bca687c38735284292fac8d"
+      },
+      "createdAt": "2026-09-01T20:09:16.871675Z"
+    }
+  ]
+}

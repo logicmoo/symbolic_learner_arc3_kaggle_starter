@@ -121,6 +121,7 @@
     ))
     (owned_by github-copilot)
     (provider github-copilot)
+    (codex_supplier null)
     (backing_model claude-opus-4.8-fast)
     (connected true)
     (active_workers ([]
@@ -348,6 +349,7 @@
     ))
     (owned_by github-copilot)
     (provider github-copilot)
+    (codex_supplier null)
     (backing_model claude-opus-4.8-fast)
     (connected true)
     (active_workers ([]

@@ -1,0 +1,94 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ab01-v1-saved_001/frame_000001.png",
+  "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ab01-v1-saved_001/frame_000001.provenance.json",
+  "createdAt": "2026-09-01T20:51:17.437045Z",
+  "operation": "import_arc_playback_frame",
+  "dimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "originalDimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "root": {
+    "firstSeenImage": "data/arc3_games/recordings/ab01-v1/saved_001/0/image.png",
+    "dimensions": {
+      "width": 640,
+      "height": 640
+    }
+  },
+  "parent": {
+    "image": "data/arc3_games/recordings/ab01-v1/saved_001/0/image.png",
+    "provenance": "data/arc3_games/recordings/ab01-v1/saved_001/0/image.provenance.json"
+  },
+  "source": {
+    "arcRecording": "data/arc3_games/recordings/ab01-v1/saved_001",
+    "arcFrame": "0/image.png",
+    "frameIndex": 1,
+    "moveCount": 1,
+    "moveList": [
+      {
+        "index": 0,
+        "action": "ACTION2",
+        "data": {},
+        "directory": "data/arc3_games/recordings/ab01-v1/saved_001/0",
+        "state": "NOT_FINISHED",
+        "level": "1",
+        "recorded_at": "2026-08-28T02:47:16.060248Z"
+      }
+    ],
+    "incomingAction": "ACTION2",
+    "actionData": {},
+    "actionPath": [
+      "0"
+    ],
+    "gameState": "NOT_FINISHED",
+    "level": "1",
+    "observation": {
+      "game_id": "ab01-v1",
+      "state": "NOT_FINISHED",
+      "levels_completed": 0,
+      "win_levels": 7,
+      "action_input": {
+        "id": "ACTION2",
+        "data": {},
+        "reasoning": null
+      },
+      "guid": "ea0f0b30-4517-4294-8669-65d3a7438cbb",
+      "full_reset": false,
+      "available_actions": [
+        1,
+        2,
+        3,
+        4,
+        6
+      ]
+    }
+  },
+  "transform": {},
+  "lineage": [
+    {
+      "image": "data/arc3_games/recordings/ab01-v1/saved_001/0/image.png",
+      "operation": "legacy_source",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-01T20:51:17.428706Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ab01-v1-saved_001/frame_000001.png",
+      "operation": "import_arc_playback_frame",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-01T20:51:17.437045Z"
+    }
+  ]
+}

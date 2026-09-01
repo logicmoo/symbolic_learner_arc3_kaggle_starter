@@ -1,0 +1,319 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009_members/scene_after_12_members/cut_27_main_character_card.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009_members/scene_after_12_members/cut_27_main_character_card.provenance.json",
+  "createdAt": "2026-09-01T17:28:02.276715Z",
+  "operation": "extract_object_cutout",
+  "dimensions": {
+    "width": 421,
+    "height": 295
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 72.6,
+    "sceneIndex": 29,
+    "videoFrameIndex": 2178
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009_members/scene_after_12.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009_members/scene_after_12.provenance.json"
+  },
+  "source": {
+    "objectName": "main_character_card"
+  },
+  "transform": {
+    "inputDimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009_members/scene_after_12.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009.png",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "verified": true
+    },
+    "cropBox": [
+      221,
+      95,
+      642,
+      390
+    ],
+    "maskScale": 4,
+    "polygons": [
+      [
+        [
+          223,
+          124
+        ],
+        [
+          227,
+          113
+        ],
+        [
+          235,
+          104
+        ],
+        [
+          246,
+          98
+        ],
+        [
+          258,
+          97
+        ],
+        [
+          603,
+          97
+        ],
+        [
+          616,
+          98
+        ],
+        [
+          627,
+          104
+        ],
+        [
+          635,
+          113
+        ],
+        [
+          639,
+          124
+        ],
+        [
+          639,
+          360
+        ],
+        [
+          635,
+          371
+        ],
+        [
+          627,
+          380
+        ],
+        [
+          616,
+          386
+        ],
+        [
+          603,
+          387
+        ],
+        [
+          258,
+          387
+        ],
+        [
+          246,
+          386
+        ],
+        [
+          235,
+          380
+        ],
+        [
+          227,
+          371
+        ],
+        [
+          223,
+          360
+        ]
+      ]
+    ],
+    "holes": []
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:33.407677Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009_members/scene_after_12.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          316,
+          126,
+          610,
+          348
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed fish, the central card continues as clear turquoise water with a gentle top-to-bottom cyan gradient and faint soft wave/bokeh patches. No hard objects sit directly behind the fish; the area is open water.",
+          "colors": [
+            "#22B8CF",
+            "#1FAFC8",
+            "#27C2D8",
+            "#3CCEE0",
+            "#8FE7EE"
+          ],
+          "continueEdges": [
+            "Continue the subtle horizontal/curved water streaks through the fish silhouette without breaks.",
+            "Blend the upper lighter cyan band smoothly across the former dorsal and tail regions.",
+            "Extend the soft circular light patches in the lower-right card area through the belly/tail hole with feathered edges.",
+            "Keep gradient continuity from surrounding water so no outline seam remains where the fish was removed."
+          ],
+          "texture": "Smooth cartoon-water texture with soft gradients, mild haze, and low-contrast diffuse highlights (no sharp lines or grain)."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:23:03.571090Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009_members/scene_after_12_members/cut_27_main_character_card.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 421,
+        "height": 295
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009_members/scene_after_12.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          221,
+          95,
+          642,
+          390
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              223,
+              124
+            ],
+            [
+              227,
+              113
+            ],
+            [
+              235,
+              104
+            ],
+            [
+              246,
+              98
+            ],
+            [
+              258,
+              97
+            ],
+            [
+              603,
+              97
+            ],
+            [
+              616,
+              98
+            ],
+            [
+              627,
+              104
+            ],
+            [
+              635,
+              113
+            ],
+            [
+              639,
+              124
+            ],
+            [
+              639,
+              360
+            ],
+            [
+              635,
+              371
+            ],
+            [
+              627,
+              380
+            ],
+            [
+              616,
+              386
+            ],
+            [
+              603,
+              387
+            ],
+            [
+              258,
+              387
+            ],
+            [
+              246,
+              386
+            ],
+            [
+              235,
+              380
+            ],
+            [
+              227,
+              371
+            ],
+            [
+              223,
+              360
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T17:28:02.276715Z"
+    }
+  ]
+}

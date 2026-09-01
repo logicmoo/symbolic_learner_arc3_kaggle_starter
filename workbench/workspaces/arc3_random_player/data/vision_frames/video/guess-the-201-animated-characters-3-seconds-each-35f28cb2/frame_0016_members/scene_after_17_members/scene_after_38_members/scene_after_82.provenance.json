@@ -1,0 +1,245 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/scene_after_17_members/scene_after_38_members/scene_after_82.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/scene_after_17_members/scene_after_38_members/scene_after_82.provenance.json",
+  "createdAt": "2026-09-01T19:26:53.056321Z",
+  "operation": "remove_object_from_scene",
+  "dimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 126.7,
+    "sceneIndex": 50,
+    "videoFrameIndex": 3801
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/scene_after_17_members/scene_after_38.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/scene_after_17_members/scene_after_38.provenance.json"
+  },
+  "source": {
+    "objectName": "inset_pink_red_background",
+    "cutout": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/scene_after_17_members/scene_after_38_members/cut_82_inset_pink_red_backgroun.png",
+    "fillInstructions": {
+      "description": "Behind the removed pink-red inset backdrop, continue the underlying card interior as a clean, neutral base layer that sits inside the rounded frame while keeping Stewie/tricycle holes untouched. The white rounded border remains fixed, and the fill inside should read as a subtle cool-light panel rather than saturated magenta.",
+      "colors": [
+        "#F4F6FB",
+        "#E8EDF7",
+        "#D7E1F2",
+        "#C6D4EC"
+      ],
+      "continueEdges": [
+        "Preserve the rounded-rectangle frame boundary and its thin white rim exactly at the existing edge.",
+        "Blend smoothly from the upper interior to slightly darker lower interior with no hard seams where the pink layer was removed.",
+        "Do not alter the interior hole silhouette around Stewie and the tricycle; keep those cutout boundaries crisp."
+      ],
+      "texture": "Very smooth, low-noise gradient panel with faint vignette and no visible pattern or grain."
+    }
+  },
+  "transform": {
+    "fill": "median",
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/scene_after_17_members/scene_after_38.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016.png",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "verified": true
+    },
+    "removedBox": [
+      197,
+      101,
+      665,
+      392
+    ],
+    "maskScale": 4,
+    "fillInstructions": {
+      "description": "Behind the removed pink-red inset backdrop, continue the underlying card interior as a clean, neutral base layer that sits inside the rounded frame while keeping Stewie/tricycle holes untouched. The white rounded border remains fixed, and the fill inside should read as a subtle cool-light panel rather than saturated magenta.",
+      "colors": [
+        "#F4F6FB",
+        "#E8EDF7",
+        "#D7E1F2",
+        "#C6D4EC"
+      ],
+      "continueEdges": [
+        "Preserve the rounded-rectangle frame boundary and its thin white rim exactly at the existing edge.",
+        "Blend smoothly from the upper interior to slightly darker lower interior with no hard seams where the pink layer was removed.",
+        "Do not alter the interior hole silhouette around Stewie and the tricycle; keep those cutout boundaries crisp."
+      ],
+      "texture": "Very smooth, low-noise gradient panel with faint vignette and no visible pattern or grain."
+    },
+    "imageGeneration": {
+      "renderer": "median"
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:38.921502Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/scene_after_17.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          283,
+          242,
+          516,
+          372
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed tricycle, the central inset should continue with Stewie’s body where it is directly behind the bike (red overalls/torso area, small yellow sleeve/hand-adjacent regions, and a small light-blue shoe area), transitioning to the pink-red inset backdrop in exposed gaps around the character. The fill should preserve the original cartoon shading and black outline style.",
+          "colors": [
+            "#F83D73",
+            "#DB0A4F",
+            "#B1073B",
+            "#D73A2C",
+            "#F5D36A",
+            "#C8D8E8"
+          ],
+          "continueEdges": [
+            "Extend Stewie’s red overall contours and interior shading bands smoothly through the removed frame/fork and wheel regions",
+            "Continue nearby black character outline strokes with the same line weight where body edges pass behind the tricycle",
+            "Blend the inset background gradient from darker red (lower/right) to brighter pink (mid/upper) across open spaces revealed by wheel and frame removal",
+            "Preserve soft ground-shadow tint in the lower inset where visible adjacent to the rear-wheel area"
+          ],
+          "texture": "Flat 2D cartoon fill with clean inked outlines, smooth cel-style color regions, and gentle airbrushed background gradient."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:23:19.029394Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/scene_after_17_members/scene_after_38.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/scene_after_17.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          339,
+          109,
+          562,
+          371
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind Stewie, the central inset continues as a smooth pink-to-red radial backdrop with brighter hot-pink near center and deeper magenta/red toward the edges, plus a darker maroon floor-like band along the lower portion of the inset.",
+          "colors": [
+            "#FF4F8E",
+            "#F53A7B",
+            "#E91E63",
+            "#C2185B",
+            "#8E1B4A",
+            "#6F153D"
+          ],
+          "continueEdges": [
+            "Continue the radial glow centered behind the character so brightness transitions smoothly outward to darker red edges.",
+            "Extend the lower dark maroon horizontal ground/shadow band across the bottom where Stewie’s body was.",
+            "Preserve soft gradient blending with no hard seams where the silhouette is removed.",
+            "Do not introduce character outlines; keep only the clean inset background shading continuity."
+          ],
+          "texture": "Clean, soft digital gradient with slight vignette falloff and minimal texture/noise."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:28:39.009807Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/scene_after_17_members/scene_after_38_members/scene_after_82.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/scene_after_17_members/scene_after_38.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          197,
+          101,
+          665,
+          392
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed pink-red inset backdrop, continue the underlying card interior as a clean, neutral base layer that sits inside the rounded frame while keeping Stewie/tricycle holes untouched. The white rounded border remains fixed, and the fill inside should read as a subtle cool-light panel rather than saturated magenta.",
+          "colors": [
+            "#F4F6FB",
+            "#E8EDF7",
+            "#D7E1F2",
+            "#C6D4EC"
+          ],
+          "continueEdges": [
+            "Preserve the rounded-rectangle frame boundary and its thin white rim exactly at the existing edge.",
+            "Blend smoothly from the upper interior to slightly darker lower interior with no hard seams where the pink layer was removed.",
+            "Do not alter the interior hole silhouette around Stewie and the tricycle; keep those cutout boundaries crisp."
+          ],
+          "texture": "Very smooth, low-noise gradient panel with faint vignette and no visible pattern or grain."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T19:26:53.056321Z"
+    }
+  ]
+}

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import json
 from pathlib import Path
 
 import system_control_api
@@ -66,38 +68,45 @@ def test_workbench_presence_registry_tracks_and_removes_tabs() -> None:
     with system_control_api._workbench_presence_lock:
         system_control_api._workbench_presence.clear()
 
-    first = system_control_api.report_workbench_presence({
+    first = asyncio.run(system_control_api.report_workbench_presence({
         "tabId": "tab-a",
         "workspaceId": "workspace-a",
         "pageId": "videoImport",
         "href": "http://localhost/?view=videoImport",
         "active": True,
         "seenAt": 123,
-    })
-    system_control_api.report_workbench_presence({
+    }))
+    asyncio.run(system_control_api.report_workbench_presence({
         "tabId": "tab-b",
         "workspaceId": "workspace-b",
         "pageId": "models",
         "active": True,
         "seenAt": 456,
-    })
+    }))
 
     assert first["accepted"] is True
-    assert len(system_control_api.list_workbench_presence()["workbenches"]) == 2
-    removed = system_control_api.report_workbench_presence({"tabId": "tab-a", "active": False})
+    assert len(asyncio.run(system_control_api.list_workbench_presence())["workbenches"]) == 2
+    removed = asyncio.run(system_control_api.report_workbench_presence({"tabId": "tab-a", "active": False}))
     assert [entry["tabId"] for entry in removed["workbenches"]] == ["tab-b"]
 
 
-def test_restart_pending_registry_is_shared_with_presence() -> None:
-    pending = system_control_api.report_restart_pending({
+def test_restart_pending_registry_is_shared_with_presence(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    path = tmp_path / "restart-pending.json"
+    monkeypatch.setattr(system_control_api, "RESTART_PENDING_PATH", path)
+    pending = asyncio.run(system_control_api.report_restart_pending({
         "active": True,
         "reason": "workers active",
         "changes": ["scheduler update"],
-    })
+    }))
     assert pending["restartPending"]["reason"] == "workers active"
-    assert system_control_api.list_workbench_presence()["restartPending"]["changes"] == ["scheduler update"]
-    cleared = system_control_api.report_restart_pending({"active": False})
+    assert json.loads(path.read_text(encoding="utf-8"))["reason"] == "workers active"
+    assert asyncio.run(system_control_api.list_workbench_presence())["restartPending"]["changes"] == ["scheduler update"]
+    cleared = asyncio.run(system_control_api.report_restart_pending({"active": False}))
     assert cleared["restartPending"] is None
+    assert not path.exists()
 
 
 def test_resource_provider_status_exposes_migration_metrics() -> None:

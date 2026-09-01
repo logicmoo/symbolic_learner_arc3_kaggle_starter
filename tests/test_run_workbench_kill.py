@@ -100,6 +100,12 @@ def test_api_startup_reconciles_enabled_missing_daemons(monkeypatch) -> None:
     }
 
 
+def test_startup_reconciliation_log_is_raw_json_not_a_resource_document() -> None:
+    monitor = (ROOT / "workbench" / "server" / "service_monitor_api.py").read_text(encoding="utf-8")
+    assert 'provider.write_bytes(LOG_ROOT / "startup-reconciliation.json"' in monitor
+    assert 'write_text(\n            LOG_ROOT / "startup-reconciliation.json"' not in monitor
+
+
 def test_api_launch_ledger_uses_unique_temp_files_and_deduplicates_pending_requests() -> None:
     monitor = (ROOT / "workbench" / "server" / "service_monitor_api.py").read_text(encoding="utf-8")
     starter = (ROOT / "workbench" / "scripts" / "start_with_policy.py").read_text(encoding="utf-8")

@@ -2,6 +2,7 @@ import base64
 import io
 import json
 import threading
+import zipfile
 from pathlib import Path
 
 from PIL import Image, ImageDraw
@@ -42,6 +43,53 @@ def test_video_caption_webvtt_round_trip() -> None:
     rendered = video_import_api._captions_to_webvtt(cues)
     assert "00:00:01.250 --> 00:00:03.500" in rendered
     assert video_import_api._parse_webvtt(rendered) == cues
+
+
+def test_page_state_compacts_cached_debug_image_payloads() -> None:
+    state = {
+        "modelResponseCache": {
+            "key": {
+                "payload": {
+                    "text": "answer",
+                    "latencyMs": 12,
+                    "debugExecution": {"request": {"image": "data:image/png;base64,large"}},
+                    "response": {"large": "payload"},
+                }
+            }
+        }
+    }
+
+    compacted = video_import_api._compact_page_state(state)
+
+    assert compacted["modelResponseCache"]["key"]["payload"] == {
+        "text": "answer",
+        "latencyMs": 12,
+    }
+
+
+def test_page_state_shards_heavy_collections_and_hydrates_them(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(video_import_api, "_workspace_root", lambda _workspace_id: tmp_path)
+    state = {
+        "v": 1,
+        "selectedPath": "data/video.mp4",
+        "memberInventories": [{"id": "inventory"}],
+        "modelResponseCache": {"key": {"payload": {"text": "answer"}}},
+    }
+
+    saved = video_import_api._save_page_state_payload(
+        {"workspaceId": "workspace", "state": state}
+    )
+
+    manifest = json.loads(Path(saved["path"]).read_text(encoding="utf-8"))
+    assert Path(saved["path"]).parent == tmp_path / "data" / "video_import"
+    assert "memberInventories" not in manifest
+    assert "modelResponseCache" not in manifest
+    assert manifest["stateShards"] == video_import_api._PAGE_STATE_SHARDS
+    restored = video_import_api.get_page_state("workspace")["state"]
+    assert restored == state
 
 
 def test_image_edit_falls_back_to_declared_backend_when_model_resolution_is_blocked(
@@ -107,6 +155,26 @@ def test_image_edit_falls_back_to_declared_backend_when_model_resolution_is_bloc
 
 
 def test_scene_extraction_targets_support_scene_windows_and_skips() -> None:
+    assert video_import_api._scene_marker_limit(None) is None
+    assert video_import_api._scene_marker_limit(0) is None
+    assert video_import_api._scene_marker_limit(120) == 120
+    assert video_import_api._scene_marker_limit(20_000) == 10_000
+    assert video_import_api._scene_detection_float(
+        None,
+        default=4,
+        minimum=0.25,
+        maximum=30,
+        label="samplesPerSecond",
+    ) == 4
+    with pytest.raises(video_import_api.HTTPException, match="between 0.25 and 30"):
+        video_import_api._scene_detection_float(
+            31,
+            default=4,
+            minimum=0.25,
+            maximum=30,
+            label="samplesPerSecond",
+        )
+
     targets = video_import_api._scene_extraction_targets(
         [10, 20, 30, 40, 50],
         duration=60,
@@ -134,6 +202,190 @@ def test_scene_extraction_targets_support_scene_windows_and_skips() -> None:
         max_frames=20,
     )
     assert short_window == [(30.5, 4)]
+
+
+def test_planner_number_preview_and_outliner_trace_verification(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(video_import_api, "_workspace_root", lambda _workspace_id: tmp_path)
+    source_path = tmp_path / "data" / "input.png"
+    source_path.parent.mkdir(parents=True)
+    Image.new("RGB", (100, 100), "white").save(source_path)
+
+    planner = video_import_api.planner_visualization(
+        {
+            "workspaceId": "test",
+            "image": "data/input.png",
+            "labels": [
+                {"object": "square", "number": 1, "point": [50, 50]},
+                {"object": "corner", "number": 2, "point": [10, 10]},
+            ],
+        }
+    )
+    assert planner["labels"][0]["number"] == 1
+    assert (tmp_path / planner["visualizationImage"]).is_file()
+    assert (tmp_path / planner["provenance"]).is_file()
+
+    polygon = [[20, 20], [80, 20], [80, 80], [20, 80]]
+    trace = [
+        {"op": "move", "x": 202, "y": 202},
+        {"op": "line", "x": 808, "y": 202},
+        {"op": "line", "x": 808, "y": 808},
+        {"op": "line", "x": 202, "y": 808},
+        {"op": "line", "x": 202, "y": 202},
+    ]
+    verification = video_import_api.outline_verification(
+        {
+            "workspaceId": "test",
+            "image": "data/input.png",
+            "name": "square",
+            "polygons": [polygon],
+            "holes": [],
+            "traceTurtle": trace,
+            "plannerNumber": 1,
+        }
+    )
+    assert verification["verified"] is True
+    assert verification["traceAgreement"] >= 0.7
+    assert verification["boundaryCoverage"] >= 0.45
+    assert (tmp_path / verification["verificationImage"]).is_file()
+
+    cut = video_import_api.member_cut(
+        {
+            "workspaceId": "test",
+            "image": "data/input.png",
+            "name": "square",
+            "step": 1,
+            "polygons": [polygon],
+            "outlineSourceImage": "data/input.png",
+            "outlineSourceDimensions": {"width": 100, "height": 100},
+            "outlineVerificationImage": verification["verificationImage"],
+            "outlineGeometryHash": verification["geometryHash"],
+        }
+    )
+    assert cut["outlineAlignment"]["traceVerified"] is True
+    assert cut["outlineAlignment"]["geometryHash"] == verification["geometryHash"]
+
+    with pytest.raises(video_import_api.HTTPException, match="does not agree"):
+        video_import_api.outline_verification(
+            {
+                "workspaceId": "test",
+                "image": "data/input.png",
+                "name": "wrong",
+                "polygons": [polygon],
+                "traceTurtle": [
+                    {"op": "move", "x": 400, "y": 400},
+                    {"op": "line", "x": 500, "y": 400},
+                    {"op": "line", "x": 500, "y": 500},
+                ],
+            }
+        )
+
+
+def test_standard_stream_urls_and_arc_playback_import_include_move_prefix(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(video_import_api, "_workspace_root", lambda _workspace_id: tmp_path)
+    urls = video_import_api._stream_router_urls("media.example.test", "My Stream")
+    assert urls["publishWhip"] == "http://media.example.test:8889/my-stream/whip"
+    assert urls["publishRtmp"] == "rtmp://media.example.test:1935/my-stream"
+    assert urls["watchWhep"] == "http://media.example.test:8889/my-stream/whep"
+    assert urls["watchHls"] == "http://media.example.test:8888/my-stream/index.m3u8"
+    assert video_import_api._stream_source_url(urls["watchHls"]) == urls["watchHls"]
+    with pytest.raises(video_import_api.HTTPException, match="sourceUrl must use"):
+        video_import_api._stream_source_url("file:///private/video.mp4")
+
+    recording = tmp_path / "data" / "Recordings" / "game-one" / "saved_001"
+    (recording / "0").mkdir(parents=True)
+    (recording / "1").mkdir()
+    moves = [
+        {"index": 0, "action": "ACTION1", "data": {"x": 1}},
+        {"index": 1, "action": "ACTION2", "data": {"y": 2}},
+    ]
+    (recording / "recording.json").write_text(
+        json.dumps({"game_id": "game-one", "level": 1, "moves": moves}),
+        encoding="utf-8",
+    )
+    Image.new("RGB", (12, 12), "black").save(recording / "image.png")
+    for index, color in enumerate(("red", "blue")):
+        Image.new("RGB", (12, 12), color).save(recording / str(index) / "image.png")
+        (recording / str(index) / "state.json").write_text(
+            json.dumps(
+                {
+                    "incoming_action": moves[index]["action"],
+                    "action_data": moves[index]["data"],
+                    "action_path": [str(value) for value in range(index + 1)],
+                    "state": "NOT_FINISHED",
+                    "level": 1,
+                }
+            ),
+            encoding="utf-8",
+        )
+    curated = tmp_path / "data" / "curated_game"
+    curated.mkdir()
+    Image.new("RGB", (10, 10), "green").save(curated / "frame_10.png")
+    Image.new("RGB", (10, 10), "yellow").save(curated / "frame_2.png")
+
+    listing = video_import_api.list_arc_recordings("test")["recordings"]
+    assert listing[0]["frames"] == 3
+    assert listing[0]["path"].startswith("data/arc3_games/recordings/")
+    imported = video_import_api.import_arc_recording(
+        {
+            "workspaceId": "test",
+            "recording": listing[0]["path"],
+        }
+    )
+    assert len(imported["frames"]) == 3
+    assert imported["frames"][0]["path"].startswith("data/vision_frames/")
+    root_provenance = json.loads(
+        (tmp_path / imported["frames"][0]["provenance"]).read_text(encoding="utf-8")
+    )
+    first_move_provenance = json.loads(
+        (tmp_path / imported["frames"][1]["provenance"]).read_text(encoding="utf-8")
+    )
+    second_move_provenance = json.loads(
+        (tmp_path / imported["frames"][2]["provenance"]).read_text(encoding="utf-8")
+    )
+    assert root_provenance["source"]["moveList"] == []
+    assert first_move_provenance["source"]["moveList"] == moves[:1]
+    assert second_move_provenance["source"]["moveList"] == moves
+    assert second_move_provenance["source"]["incomingAction"] == "ACTION2"
+    curated_sources = video_import_api.list_curated_image_sources("test")["sources"]
+    assert curated_sources == [
+        {
+            "path": "data/arc3_games/curated/curated_game",
+            "label": "curated_game",
+            "frames": 2,
+            "preview": "data/arc3_games/curated/curated_game/frame_2.png",
+        }
+    ]
+    curated_import = video_import_api.import_curated_image_source(
+        {"workspaceId": "test", "source": curated_sources[0]["path"]}
+    )
+    assert len(curated_import["frames"]) == 2
+    assert curated_import["frames"][0]["path"].startswith("data/vision_frames/")
+
+    archive_buffer = io.BytesIO()
+    with zipfile.ZipFile(archive_buffer, "w") as archive:
+        for name, color in (("frames/002.png", "blue"), ("frames/001.png", "red")):
+            image_buffer = io.BytesIO()
+            Image.new("RGB", (8, 8), color).save(image_buffer, format="PNG")
+            archive.writestr(name, image_buffer.getvalue())
+    archive_buffer.seek(0)
+    archive_import = video_import_api._import_image_archive(
+        "test",
+        "sequence.zip",
+        archive_buffer,
+    )
+    assert len(archive_import["frames"]) == 2
+    assert archive_import["frames"][0]["path"].startswith("data/vision_frames/")
+    archive_provenance = json.loads(
+        (tmp_path / archive_import["frames"][0]["provenance"]).read_text(encoding="utf-8")
+    )
+    assert archive_provenance["source"]["archiveName"] == "sequence.zip"
+    assert archive_provenance["source"]["archiveEntry"] == "frames/001.png"
 
 
 def test_turtle_leaf_program_is_safely_rendered_and_linked_to_provenance(

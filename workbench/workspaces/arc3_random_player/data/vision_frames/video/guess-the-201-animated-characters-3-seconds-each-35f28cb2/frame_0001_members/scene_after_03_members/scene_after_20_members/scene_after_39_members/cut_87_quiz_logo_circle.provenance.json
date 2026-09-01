@@ -1,0 +1,570 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/scene_after_03_members/scene_after_20_members/scene_after_39_members/cut_87_quiz_logo_circle.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/scene_after_03_members/scene_after_20_members/scene_after_39_members/cut_87_quiz_logo_circle.provenance.json",
+  "createdAt": "2026-09-01T19:28:22.239445Z",
+  "operation": "extract_object_cutout",
+  "dimensions": {
+    "width": 93,
+    "height": 84
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 10.7,
+    "sceneIndex": 5,
+    "videoFrameIndex": 321
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/scene_after_03_members/scene_after_20_members/scene_after_39.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/scene_after_03_members/scene_after_20_members/scene_after_39.provenance.json"
+  },
+  "source": {
+    "objectName": "quiz_logo_circle"
+  },
+  "transform": {
+    "inputDimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/scene_after_03_members/scene_after_20_members/scene_after_39.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001.png",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "verified": true
+    },
+    "cropBox": [
+      761,
+      0,
+      854,
+      84
+    ],
+    "maskScale": 4,
+    "polygons": [
+      [
+        [
+          771,
+          0
+        ],
+        [
+          851,
+          0
+        ],
+        [
+          851,
+          76
+        ],
+        [
+          846,
+          76
+        ],
+        [
+          836,
+          79
+        ],
+        [
+          824,
+          81
+        ],
+        [
+          812,
+          82
+        ],
+        [
+          800,
+          81
+        ],
+        [
+          789,
+          79
+        ],
+        [
+          780,
+          75
+        ],
+        [
+          773,
+          69
+        ],
+        [
+          768,
+          61
+        ],
+        [
+          765,
+          52
+        ],
+        [
+          763,
+          42
+        ],
+        [
+          763,
+          31
+        ],
+        [
+          765,
+          22
+        ],
+        [
+          768,
+          13
+        ],
+        [
+          773,
+          6
+        ]
+      ]
+    ],
+    "holes": [
+      [
+        [
+          792,
+          14
+        ],
+        [
+          805,
+          12
+        ],
+        [
+          818,
+          14
+        ],
+        [
+          829,
+          20
+        ],
+        [
+          836,
+          30
+        ],
+        [
+          838,
+          42
+        ],
+        [
+          833,
+          53
+        ],
+        [
+          822,
+          60
+        ],
+        [
+          808,
+          62
+        ],
+        [
+          796,
+          58
+        ],
+        [
+          788,
+          49
+        ],
+        [
+          786,
+          37
+        ],
+        [
+          789,
+          25
+        ]
+      ],
+      [
+        [
+          839,
+          9
+        ],
+        [
+          845,
+          8
+        ],
+        [
+          849,
+          11
+        ],
+        [
+          849,
+          18
+        ],
+        [
+          844,
+          22
+        ],
+        [
+          838,
+          20
+        ],
+        [
+          835,
+          14
+        ]
+      ]
+    ]
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:28.116745Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/scene_after_03.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          256,
+          97,
+          635,
+          434
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Fill the removed Moana silhouette with the central card’s ocean backdrop: bright turquoise-to-cyan water with flowing, curved wave streaks and soft highlight patches. Reconstruct the water continuously across the former face/torso/hair area so it matches surrounding motion-like swirls. Where the character previously occluded it, continue the wooden oar segment diagonally from lower-left toward upper-right with consistent tan wood grain and lighting, aligned to the visible oar pieces above her head and at her left side.",
+          "colors": [
+            "#18B8D4",
+            "#1AA9CB",
+            "#1598C0",
+            "#0F87B2",
+            "#49D6E8",
+            "#C99A6A"
+          ],
+          "continueEdges": [
+            "Continue cyan wave streaks from left interior panel through center-right behind former hair mass.",
+            "Extend soft white/aqua water highlights across the chest/face area to match nearby ripple direction.",
+            "Maintain the diagonal oar trajectory (bottom-left to top-right) through the removed shoulder/hand zone, preserving width and wood texture continuity.",
+            "Keep all reconstruction inside the rounded-rectangle card boundaries and preserve existing border edge contrast."
+          ],
+          "texture": "Medium-detail aquatic texture with layered painterly swirls, subtle blur gradients, and speckled light reflections; smooth, fibrous wood grain on the oar."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:21:32.177582Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/scene_after_03_members/scene_after_20.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/scene_after_03.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          224,
+          97,
+          599,
+          444
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed oar, fill each segment from its immediate surroundings: the upper blade area continues the card’s turquoise water backdrop with soft wave-like streaks, while the lower shaft area transitions through the existing flat blue character-removal patch and nearby cyan water at the card edge.",
+          "colors": [
+            "#1D88C8",
+            "#1A9FC8",
+            "#22B8CE",
+            "#1E7FB7",
+            "#56C9D8",
+            "#0F5A96"
+          ],
+          "continueEdges": [
+            "Continue the turquoise water swirl/brush lines across the top blade hole, following the local diagonal flow near the card’s top edge.",
+            "Extend the flat medium-blue filled region through the shaft hole where the shaft crosses the large central blue patch.",
+            "At the lower-left shaft segment, blend from flat blue into surrounding cyan water and white splash highlights so the transition matches adjacent pixels.",
+            "Preserve the rounded-card interior lighting gradient without introducing new hard edges."
+          ],
+          "texture": "Smooth painted water texture with soft streaks and mild highlight speckling; flat matte blue fill where the pre-existing character-removal patch is present."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:23:39.515351Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/scene_after_03_members/scene_after_20_members/scene_after_39.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/scene_after_03_members/scene_after_20.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          218,
+          98,
+          644,
+          397
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed central card, the frame continues as the same bright blue quiz-background field with a soft radial glow centered slightly below mid-frame and darker blue toward outer edges.",
+          "colors": [
+            "#1E7FE8",
+            "#248CF2",
+            "#2F99F8",
+            "#1A74DD",
+            "#3AA8FF"
+          ],
+          "continueEdges": [
+            "Extend the surrounding blue gradient smoothly across the full rounded-rectangle hole.",
+            "Preserve the center-bright glow so luminance peaks near the middle-lower center of the removed area.",
+            "Blend into slightly darker side and corner blues to match the existing vignette-like falloff."
+          ],
+          "texture": "Clean digital gradient with very subtle soft glow; no grain, no hard lines, and no patterned texture."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:29:12.311179Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/scene_after_03_members/scene_after_20_members/scene_after_39_members/cut_87_quiz_logo_circle.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 93,
+        "height": 84
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/scene_after_03_members/scene_after_20_members/scene_after_39.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          761,
+          0,
+          854,
+          84
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              771,
+              0
+            ],
+            [
+              851,
+              0
+            ],
+            [
+              851,
+              76
+            ],
+            [
+              846,
+              76
+            ],
+            [
+              836,
+              79
+            ],
+            [
+              824,
+              81
+            ],
+            [
+              812,
+              82
+            ],
+            [
+              800,
+              81
+            ],
+            [
+              789,
+              79
+            ],
+            [
+              780,
+              75
+            ],
+            [
+              773,
+              69
+            ],
+            [
+              768,
+              61
+            ],
+            [
+              765,
+              52
+            ],
+            [
+              763,
+              42
+            ],
+            [
+              763,
+              31
+            ],
+            [
+              765,
+              22
+            ],
+            [
+              768,
+              13
+            ],
+            [
+              773,
+              6
+            ]
+          ]
+        ],
+        "holes": [
+          [
+            [
+              792,
+              14
+            ],
+            [
+              805,
+              12
+            ],
+            [
+              818,
+              14
+            ],
+            [
+              829,
+              20
+            ],
+            [
+              836,
+              30
+            ],
+            [
+              838,
+              42
+            ],
+            [
+              833,
+              53
+            ],
+            [
+              822,
+              60
+            ],
+            [
+              808,
+              62
+            ],
+            [
+              796,
+              58
+            ],
+            [
+              788,
+              49
+            ],
+            [
+              786,
+              37
+            ],
+            [
+              789,
+              25
+            ]
+          ],
+          [
+            [
+              839,
+              9
+            ],
+            [
+              845,
+              8
+            ],
+            [
+              849,
+              11
+            ],
+            [
+              849,
+              18
+            ],
+            [
+              844,
+              22
+            ],
+            [
+              838,
+              20
+            ],
+            [
+              835,
+              14
+            ]
+          ]
+        ]
+      },
+      "createdAt": "2026-09-01T19:28:22.239445Z"
+    }
+  ]
+}

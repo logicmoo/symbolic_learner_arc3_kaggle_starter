@@ -1,0 +1,475 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/next_pass_10_carrot_members/cut_84_upper_curved_stroke_frag.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/next_pass_10_carrot_members/cut_84_upper_curved_stroke_frag.provenance.json",
+  "createdAt": "2026-09-01T19:41:37.591928Z",
+  "operation": "extract_object_cutout",
+  "dimensions": {
+    "width": 397,
+    "height": 348
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 64.833,
+    "sceneIndex": 26,
+    "videoFrameIndex": 1945
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/next_pass_10_carrot.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/next_pass_10_carrot.provenance.json"
+  },
+  "source": {
+    "objectName": "upper_curved_stroke_fragment"
+  },
+  "transform": {
+    "inputDimensions": {
+      "width": 512,
+      "height": 758
+    },
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/next_pass_10_carrot.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/next_pass_10_carrot.png",
+      "dimensions": {
+        "width": 512,
+        "height": 758
+      },
+      "verified": true
+    },
+    "cropBox": [
+      56,
+      82,
+      453,
+      430
+    ],
+    "maskScale": 4,
+    "polygons": [
+      [
+        [
+          59,
+          319
+        ],
+        [
+          79,
+          291
+        ],
+        [
+          112,
+          257
+        ],
+        [
+          154,
+          222
+        ],
+        [
+          203,
+          184
+        ],
+        [
+          252,
+          147
+        ],
+        [
+          301,
+          113
+        ],
+        [
+          350,
+          87
+        ],
+        [
+          393,
+          84
+        ],
+        [
+          426,
+          96
+        ],
+        [
+          447,
+          123
+        ],
+        [
+          450,
+          158
+        ],
+        [
+          438,
+          193
+        ],
+        [
+          411,
+          230
+        ],
+        [
+          374,
+          268
+        ],
+        [
+          332,
+          304
+        ],
+        [
+          286,
+          340
+        ],
+        [
+          239,
+          373
+        ],
+        [
+          193,
+          401
+        ],
+        [
+          149,
+          421
+        ],
+        [
+          109,
+          428
+        ],
+        [
+          79,
+          419
+        ],
+        [
+          62,
+          399
+        ],
+        [
+          58,
+          368
+        ]
+      ]
+    ],
+    "holes": []
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:32.704688Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/cut_10_carrot.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 68,
+        "height": 109
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          497,
+          242,
+          565,
+          351
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              556,
+              244
+            ],
+            [
+              562,
+              247
+            ],
+            [
+              559,
+              255
+            ],
+            [
+              548,
+              266
+            ],
+            [
+              537,
+              277
+            ],
+            [
+              526,
+              287
+            ],
+            [
+              515,
+              296
+            ],
+            [
+              505,
+              299
+            ],
+            [
+              499,
+              295
+            ],
+            [
+              501,
+              287
+            ],
+            [
+              512,
+              276
+            ],
+            [
+              523,
+              266
+            ],
+            [
+              535,
+              255
+            ],
+            [
+              547,
+              246
+            ]
+          ],
+          [
+            [
+              531,
+              298
+            ],
+            [
+              538,
+              296
+            ],
+            [
+              545,
+              299
+            ],
+            [
+              548,
+              307
+            ],
+            [
+              546,
+              318
+            ],
+            [
+              542,
+              329
+            ],
+            [
+              544,
+              340
+            ],
+            [
+              539,
+              348
+            ],
+            [
+              531,
+              349
+            ],
+            [
+              526,
+              341
+            ],
+            [
+              527,
+              329
+            ],
+            [
+              524,
+              318
+            ],
+            [
+              526,
+              307
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T17:23:02.983934Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/next_pass_10_carrot.png",
+      "operation": "enlarge_object_for_analysis",
+      "dimensions": {
+        "width": 512,
+        "height": 758
+      },
+      "transform": {
+        "sourceDimensions": {
+          "width": 68,
+          "height": 109
+        },
+        "scale": 6,
+        "resizedDimensions": {
+          "width": 408,
+          "height": 654
+        },
+        "padding": {
+          "left": 52,
+          "top": 52,
+          "right": 52,
+          "bottom": 52
+        }
+      },
+      "createdAt": "2026-09-01T17:23:03.052116Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/next_pass_10_carrot_members/cut_84_upper_curved_stroke_frag.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 397,
+        "height": 348
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 512,
+          "height": 758
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/next_pass_10_carrot.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/next_pass_10_carrot.png",
+          "dimensions": {
+            "width": 512,
+            "height": 758
+          },
+          "verified": true
+        },
+        "cropBox": [
+          56,
+          82,
+          453,
+          430
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              59,
+              319
+            ],
+            [
+              79,
+              291
+            ],
+            [
+              112,
+              257
+            ],
+            [
+              154,
+              222
+            ],
+            [
+              203,
+              184
+            ],
+            [
+              252,
+              147
+            ],
+            [
+              301,
+              113
+            ],
+            [
+              350,
+              87
+            ],
+            [
+              393,
+              84
+            ],
+            [
+              426,
+              96
+            ],
+            [
+              447,
+              123
+            ],
+            [
+              450,
+              158
+            ],
+            [
+              438,
+              193
+            ],
+            [
+              411,
+              230
+            ],
+            [
+              374,
+              268
+            ],
+            [
+              332,
+              304
+            ],
+            [
+              286,
+              340
+            ],
+            [
+              239,
+              373
+            ],
+            [
+              193,
+              401
+            ],
+            [
+              149,
+              421
+            ],
+            [
+              109,
+              428
+            ],
+            [
+              79,
+              419
+            ],
+            [
+              62,
+              399
+            ],
+            [
+              58,
+              368
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T19:41:37.591928Z"
+    }
+  ]
+}

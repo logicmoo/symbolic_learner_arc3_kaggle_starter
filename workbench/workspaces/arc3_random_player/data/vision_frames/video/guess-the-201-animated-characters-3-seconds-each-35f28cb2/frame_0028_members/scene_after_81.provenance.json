@@ -1,0 +1,144 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0028_members/scene_after_81.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0028_members/scene_after_81.provenance.json",
+  "createdAt": "2026-09-01T19:41:27.695033Z",
+  "operation": "remove_object_from_scene",
+  "dimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0028.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 219.5,
+    "sceneIndex": 86,
+    "videoFrameIndex": 6585
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0028.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0028.provenance.json"
+  },
+  "source": {
+    "objectName": "question_number_text_28",
+    "cutout": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0028_members/cut_81_question_number_text_28.png",
+    "fillInstructions": {
+      "description": "The removed white '28' reveals the orange badge interior only: a smooth orange fill with subtle radial shading (slightly lighter toward upper-left/center and slightly deeper toward lower-right). The two hole regions inside the '8' continue this same orange shading with no separate markings.",
+      "colors": [
+        "#F8A31A",
+        "#F39A12",
+        "#EE8F08"
+      ],
+      "continueEdges": [
+        "Continue the badge’s internal orange gradient seamlessly through all removed digit strokes of '2' and '8'.",
+        "Continue the same orange tone through both enclosed counters of the '8' (no white or dark remnants).",
+        "Preserve circular badge shading flow; do not introduce new edges, outlines, or texture breaks."
+      ],
+      "texture": "Clean flat graphic gradient with very slight compression softness, no pattern or grain."
+    }
+  },
+  "transform": {
+    "fill": "median",
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0028.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0028.png",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "verified": true
+    },
+    "removedBox": [
+      17,
+      15,
+      71,
+      63
+    ],
+    "maskScale": 4,
+    "fillInstructions": {
+      "description": "The removed white '28' reveals the orange badge interior only: a smooth orange fill with subtle radial shading (slightly lighter toward upper-left/center and slightly deeper toward lower-right). The two hole regions inside the '8' continue this same orange shading with no separate markings.",
+      "colors": [
+        "#F8A31A",
+        "#F39A12",
+        "#EE8F08"
+      ],
+      "continueEdges": [
+        "Continue the badge’s internal orange gradient seamlessly through all removed digit strokes of '2' and '8'.",
+        "Continue the same orange tone through both enclosed counters of the '8' (no white or dark remnants).",
+        "Preserve circular badge shading flow; do not introduce new edges, outlines, or texture breaks."
+      ],
+      "texture": "Clean flat graphic gradient with very slight compression softness, no pattern or grain."
+    },
+    "imageGeneration": {
+      "renderer": "median"
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0028.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:47.813309Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0028_members/scene_after_81.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0028.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0028.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          17,
+          15,
+          71,
+          63
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "The removed white '28' reveals the orange badge interior only: a smooth orange fill with subtle radial shading (slightly lighter toward upper-left/center and slightly deeper toward lower-right). The two hole regions inside the '8' continue this same orange shading with no separate markings.",
+          "colors": [
+            "#F8A31A",
+            "#F39A12",
+            "#EE8F08"
+          ],
+          "continueEdges": [
+            "Continue the badge’s internal orange gradient seamlessly through all removed digit strokes of '2' and '8'.",
+            "Continue the same orange tone through both enclosed counters of the '8' (no white or dark remnants).",
+            "Preserve circular badge shading flow; do not introduce new edges, outlines, or texture breaks."
+          ],
+          "texture": "Clean flat graphic gradient with very slight compression softness, no pattern or grain."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T19:41:27.695033Z"
+    }
+  ]
+}

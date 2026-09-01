@@ -1,0 +1,753 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014_members/next_pass_02_pikachu_character_members/scene_after_48_members/cut_63_pikachu_eye.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014_members/next_pass_02_pikachu_character_members/scene_after_48_members/cut_63_pikachu_eye.provenance.json",
+  "createdAt": "2026-09-01T19:24:01.248886Z",
+  "operation": "extract_object_cutout",
+  "dimensions": {
+    "width": 54,
+    "height": 71
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 111.233,
+    "sceneIndex": 44,
+    "videoFrameIndex": 3337
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014_members/next_pass_02_pikachu_character_members/scene_after_48.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014_members/next_pass_02_pikachu_character_members/scene_after_48.provenance.json"
+  },
+  "source": {
+    "objectName": "pikachu_eye"
+  },
+  "transform": {
+    "inputDimensions": {
+      "width": 1058,
+      "height": 941
+    },
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014_members/next_pass_02_pikachu_character_members/scene_after_48.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014_members/next_pass_02_pikachu_character.png",
+      "dimensions": {
+        "width": 1058,
+        "height": 941
+      },
+      "verified": true
+    },
+    "cropBox": [
+      621,
+      398,
+      675,
+      469
+    ],
+    "maskScale": 4,
+    "polygons": [
+      [
+        [
+          640,
+          402
+        ],
+        [
+          649,
+          400
+        ],
+        [
+          658,
+          402
+        ],
+        [
+          665,
+          408
+        ],
+        [
+          670,
+          417
+        ],
+        [
+          672,
+          429
+        ],
+        [
+          672,
+          441
+        ],
+        [
+          669,
+          452
+        ],
+        [
+          663,
+          461
+        ],
+        [
+          655,
+          466
+        ],
+        [
+          646,
+          467
+        ],
+        [
+          637,
+          465
+        ],
+        [
+          630,
+          459
+        ],
+        [
+          625,
+          451
+        ],
+        [
+          623,
+          439
+        ],
+        [
+          623,
+          427
+        ],
+        [
+          626,
+          416
+        ],
+        [
+          632,
+          408
+        ]
+      ],
+      [
+        [
+          646,
+          414
+        ],
+        [
+          650,
+          412
+        ],
+        [
+          654,
+          413
+        ],
+        [
+          657,
+          416
+        ],
+        [
+          658,
+          421
+        ],
+        [
+          657,
+          425
+        ],
+        [
+          654,
+          428
+        ],
+        [
+          650,
+          429
+        ],
+        [
+          646,
+          427
+        ],
+        [
+          644,
+          423
+        ],
+        [
+          644,
+          418
+        ]
+      ]
+    ],
+    "holes": []
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:37.381009Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014_members/cut_02_pikachu_character.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 304,
+        "height": 265
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          290,
+          100,
+          594,
+          365
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              446,
+              102
+            ],
+            [
+              431,
+              121
+            ],
+            [
+              415,
+              142
+            ],
+            [
+              401,
+              164
+            ],
+            [
+              391,
+              187
+            ],
+            [
+              378,
+              205
+            ],
+            [
+              359,
+              219
+            ],
+            [
+              340,
+              236
+            ],
+            [
+              325,
+              254
+            ],
+            [
+              318,
+              274
+            ],
+            [
+              322,
+              292
+            ],
+            [
+              338,
+              305
+            ],
+            [
+              360,
+              314
+            ],
+            [
+              382,
+              323
+            ],
+            [
+              402,
+              338
+            ],
+            [
+              423,
+              352
+            ],
+            [
+              448,
+              360
+            ],
+            [
+              474,
+              363
+            ],
+            [
+              501,
+              359
+            ],
+            [
+              525,
+              347
+            ],
+            [
+              546,
+              331
+            ],
+            [
+              563,
+              313
+            ],
+            [
+              575,
+              293
+            ],
+            [
+              585,
+              272
+            ],
+            [
+              591,
+              250
+            ],
+            [
+              588,
+              231
+            ],
+            [
+              574,
+              218
+            ],
+            [
+              555,
+              212
+            ],
+            [
+              537,
+              211
+            ],
+            [
+              545,
+              196
+            ],
+            [
+              555,
+              179
+            ],
+            [
+              559,
+              161
+            ],
+            [
+              552,
+              146
+            ],
+            [
+              536,
+              138
+            ],
+            [
+              516,
+              137
+            ],
+            [
+              495,
+              141
+            ],
+            [
+              478,
+              152
+            ],
+            [
+              466,
+              168
+            ],
+            [
+              459,
+              187
+            ],
+            [
+              456,
+              206
+            ],
+            [
+              447,
+              222
+            ],
+            [
+              432,
+              229
+            ],
+            [
+              416,
+              228
+            ],
+            [
+              402,
+              220
+            ],
+            [
+              390,
+              207
+            ],
+            [
+              381,
+              191
+            ],
+            [
+              372,
+              175
+            ],
+            [
+              360,
+              161
+            ],
+            [
+              347,
+              150
+            ],
+            [
+              337,
+              136
+            ],
+            [
+              336,
+              120
+            ],
+            [
+              347,
+              109
+            ],
+            [
+              368,
+              104
+            ],
+            [
+              392,
+              104
+            ],
+            [
+              416,
+              106
+            ]
+          ],
+          [
+            [
+              319,
+              255
+            ],
+            [
+              305,
+              264
+            ],
+            [
+              295,
+              278
+            ],
+            [
+              292,
+              293
+            ],
+            [
+              297,
+              305
+            ],
+            [
+              309,
+              306
+            ],
+            [
+              322,
+              296
+            ],
+            [
+              328,
+              280
+            ],
+            [
+              327,
+              266
+            ]
+          ],
+          [
+            [
+              522,
+              313
+            ],
+            [
+              538,
+              320
+            ],
+            [
+              552,
+              333
+            ],
+            [
+              555,
+              345
+            ],
+            [
+              546,
+              352
+            ],
+            [
+              530,
+              351
+            ],
+            [
+              517,
+              340
+            ],
+            [
+              513,
+              326
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T17:21:31.515305Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014_members/next_pass_02_pikachu_character.png",
+      "operation": "enlarge_object_for_analysis",
+      "dimensions": {
+        "width": 1058,
+        "height": 941
+      },
+      "transform": {
+        "sourceDimensions": {
+          "width": 304,
+          "height": 265
+        },
+        "scale": 3,
+        "resizedDimensions": {
+          "width": 912,
+          "height": 795
+        },
+        "padding": {
+          "left": 73,
+          "top": 73,
+          "right": 73,
+          "bottom": 73
+        }
+      },
+      "createdAt": "2026-09-01T17:21:31.694600Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014_members/next_pass_02_pikachu_character_members/scene_after_48.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 1058,
+        "height": 941
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014_members/next_pass_02_pikachu_character.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014_members/next_pass_02_pikachu_character.png",
+          "dimensions": {
+            "width": 1058,
+            "height": 941
+          },
+          "verified": true
+        },
+        "removedBox": [
+          327,
+          256,
+          597,
+          518
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind this interior cutout, the missing content is mostly Pikachu’s upper head/forehead and central face transition area, with some background forest visible near the upper-left side of the hole where character coverage is absent. The reconstruction should restore yellow character shading and line-art continuity across the face/head, blending into teal-green blurred forest only in non-character regions.",
+          "colors": [
+            "#FDE047",
+            "#FACC15",
+            "#F59E0B",
+            "#EF4444",
+            "#6B2D2D",
+            "#0F766E",
+            "#0EA5A4",
+            "#A3B18A"
+          ],
+          "continueEdges": [
+            "Continue Pikachu’s yellow head contour from both left and right hole boundaries across the top-middle gap.",
+            "Extend facial linework smoothly: mouth upper boundary and cheek curvature should align through the lower-right portion of the hole.",
+            "Maintain the dark outline thickness where character edges intersect the hole boundary.",
+            "In upper-left interior sections not occupied by Pikachu, continue the vertical soft forest streaks and teal blur from surrounding background.",
+            "Preserve lighting direction so Pikachu’s fill remains brighter on frontal planes and slightly darker toward edge/under-curve regions."
+          ],
+          "texture": "Cartoon/anime-style flat-to-soft cel shading for Pikachu with crisp dark outlines; background is softly blurred, vertical-streaked forest texture with low-detail gradients."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:34:02.817384Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014_members/next_pass_02_pikachu_character_members/scene_after_48_members/cut_63_pikachu_eye.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 54,
+        "height": 71
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 1058,
+          "height": 941
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014_members/next_pass_02_pikachu_character_members/scene_after_48.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014_members/next_pass_02_pikachu_character.png",
+          "dimensions": {
+            "width": 1058,
+            "height": 941
+          },
+          "verified": true
+        },
+        "cropBox": [
+          621,
+          398,
+          675,
+          469
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              640,
+              402
+            ],
+            [
+              649,
+              400
+            ],
+            [
+              658,
+              402
+            ],
+            [
+              665,
+              408
+            ],
+            [
+              670,
+              417
+            ],
+            [
+              672,
+              429
+            ],
+            [
+              672,
+              441
+            ],
+            [
+              669,
+              452
+            ],
+            [
+              663,
+              461
+            ],
+            [
+              655,
+              466
+            ],
+            [
+              646,
+              467
+            ],
+            [
+              637,
+              465
+            ],
+            [
+              630,
+              459
+            ],
+            [
+              625,
+              451
+            ],
+            [
+              623,
+              439
+            ],
+            [
+              623,
+              427
+            ],
+            [
+              626,
+              416
+            ],
+            [
+              632,
+              408
+            ]
+          ],
+          [
+            [
+              646,
+              414
+            ],
+            [
+              650,
+              412
+            ],
+            [
+              654,
+              413
+            ],
+            [
+              657,
+              416
+            ],
+            [
+              658,
+              421
+            ],
+            [
+              657,
+              425
+            ],
+            [
+              654,
+              428
+            ],
+            [
+              650,
+              429
+            ],
+            [
+              646,
+              427
+            ],
+            [
+              644,
+              423
+            ],
+            [
+              644,
+              418
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T19:24:01.248886Z"
+    }
+  ]
+}

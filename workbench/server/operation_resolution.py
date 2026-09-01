@@ -116,6 +116,7 @@ def _implementation_parameters(implementation: dict[str, Any], step: dict[str, A
 def _model_execution_parameters(
     workspace_root: Path,
     model_selection: dict[str, Any],
+    resolved_records: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Resolve an operation's selected model into provider call parameters.
 
@@ -131,7 +132,7 @@ def _model_execution_parameters(
         return {}
 
     resolved_model: dict[str, Any] | None = None
-    for record in resolve_model_records(workspace_root):
+    for record in resolved_records if resolved_records is not None else resolve_model_records(workspace_root):
         document = record.get("document") or {}
         if str(document.get("id") or "") == selected_id and not record.get("error"):
             resolved_model = record.get("resolved") or {}

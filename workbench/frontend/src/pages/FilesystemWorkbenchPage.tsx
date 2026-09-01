@@ -1316,6 +1316,9 @@ export function FilesystemWorkbenchPage() {
   const b1b2PageDefinitionForPlay = workflowPageDefinitions.find(
     (definition) => definition.routeView === "arc3B1B2Pipeline",
   );
+  const arc3PageDefinitionForVideoImport = workflowPageDefinitions.find(
+    (definition) => definition.renderer === "arc3_play",
+  );
   const workflowNavigationEntries = useMemo(
     () =>
       workflowPageDefinitions
@@ -4783,7 +4786,18 @@ export function FilesystemWorkbenchPage() {
               />
             )}{" "}
             {view === "plugins" && <PluginManagerPage />}{" "}
-            {view === "videoImport" && <VideoImportPage workspaceId={workspace.id} onChainSummaryChange={setVideoImportChainSummary} />}{" "}
+            {view === "videoImport" && (
+              <VideoImportPage
+                workspaceId={workspace.id}
+                workspaceLabel={workspace.label}
+                arc3PageDefinition={arc3PageDefinitionForVideoImport}
+                arc3B1B2PageDefinition={b1b2PageDefinitionForPlay}
+                arc3B1B2Models={workflowRunnerModels}
+                arc3B1B2Files={snapshot?.files || []}
+                onArc3B1B2PageDefinitionSaved={refreshSnapshot}
+                onChainSummaryChange={setVideoImportChainSummary}
+              />
+            )}{" "}
             {view === "googleMeet" && <GoogleMeetBridgePage />}{" "}
             {view === "pluginPage" && <PluginHostedPage entry={pluginPage} />}{" "}
             {view === "setup" && (

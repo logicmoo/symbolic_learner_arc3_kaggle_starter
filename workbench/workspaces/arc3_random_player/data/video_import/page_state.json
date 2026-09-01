@@ -1,0 +1,2533 @@
+{
+  "v": 1,
+  "at": "2026-09-01T20:57:34.958Z",
+  "selectedPath": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+  "playerTime": 0,
+  "markers": [
+    {
+      "atSeconds": 0.8,
+      "score": 38
+    },
+    {
+      "atSeconds": 9.6,
+      "score": 92.2
+    },
+    {
+      "atSeconds": 10.13,
+      "score": 106
+    },
+    {
+      "atSeconds": 10.4,
+      "score": 39.3
+    },
+    {
+      "atSeconds": 17.33,
+      "score": 110.3
+    },
+    {
+      "atSeconds": 17.87,
+      "score": 106.1
+    },
+    {
+      "atSeconds": 18.13,
+      "score": 44.3
+    },
+    {
+      "atSeconds": 25.07,
+      "score": 110.9
+    },
+    {
+      "atSeconds": 25.6,
+      "score": 106
+    },
+    {
+      "atSeconds": 25.87,
+      "score": 49.4
+    },
+    {
+      "atSeconds": 32.8,
+      "score": 72.6
+    },
+    {
+      "atSeconds": 33.33,
+      "score": 106.1
+    },
+    {
+      "atSeconds": 33.6,
+      "score": 45.2
+    },
+    {
+      "atSeconds": 40.53,
+      "score": 87.8
+    },
+    {
+      "atSeconds": 41.07,
+      "score": 106.1
+    },
+    {
+      "atSeconds": 41.33,
+      "score": 39
+    },
+    {
+      "atSeconds": 48.27,
+      "score": 112.5
+    },
+    {
+      "atSeconds": 48.8,
+      "score": 106.1
+    },
+    {
+      "atSeconds": 49.07,
+      "score": 42
+    },
+    {
+      "atSeconds": 56,
+      "score": 84.5
+    },
+    {
+      "atSeconds": 56.53,
+      "score": 106.1
+    },
+    {
+      "atSeconds": 56.8,
+      "score": 40.1
+    },
+    {
+      "atSeconds": 63.73,
+      "score": 105.7
+    },
+    {
+      "atSeconds": 64.27,
+      "score": 106.1
+    },
+    {
+      "atSeconds": 64.53,
+      "score": 42.5
+    },
+    {
+      "atSeconds": 71.47,
+      "score": 102.4
+    },
+    {
+      "atSeconds": 72,
+      "score": 106.1
+    },
+    {
+      "atSeconds": 72.27,
+      "score": 30.8
+    },
+    {
+      "atSeconds": 79.2,
+      "score": 99.3
+    },
+    {
+      "atSeconds": 79.73,
+      "score": 106
+    },
+    {
+      "atSeconds": 80,
+      "score": 52
+    },
+    {
+      "atSeconds": 86.93,
+      "score": 103.7
+    },
+    {
+      "atSeconds": 87.47,
+      "score": 106.1
+    },
+    {
+      "atSeconds": 87.73,
+      "score": 36.2
+    },
+    {
+      "atSeconds": 94.67,
+      "score": 81.8
+    },
+    {
+      "atSeconds": 95.2,
+      "score": 106
+    },
+    {
+      "atSeconds": 95.47,
+      "score": 38.8
+    },
+    {
+      "atSeconds": 102.4,
+      "score": 111.3
+    },
+    {
+      "atSeconds": 102.93,
+      "score": 106
+    },
+    {
+      "atSeconds": 103.2,
+      "score": 46.4
+    },
+    {
+      "atSeconds": 110.13,
+      "score": 124.1
+    },
+    {
+      "atSeconds": 110.67,
+      "score": 106.1
+    },
+    {
+      "atSeconds": 110.93,
+      "score": 44.9
+    },
+    {
+      "atSeconds": 117.87,
+      "score": 101.2
+    },
+    {
+      "atSeconds": 118.4,
+      "score": 106.1
+    },
+    {
+      "atSeconds": 118.67,
+      "score": 44.4
+    },
+    {
+      "atSeconds": 125.6,
+      "score": 106.6
+    },
+    {
+      "atSeconds": 126.13,
+      "score": 106.1
+    },
+    {
+      "atSeconds": 126.4,
+      "score": 55.7
+    },
+    {
+      "atSeconds": 133.33,
+      "score": 97.8
+    },
+    {
+      "atSeconds": 133.87,
+      "score": 106.1
+    },
+    {
+      "atSeconds": 134.13,
+      "score": 34.1
+    },
+    {
+      "atSeconds": 141.07,
+      "score": 104.9
+    },
+    {
+      "atSeconds": 141.6,
+      "score": 106.1
+    },
+    {
+      "atSeconds": 141.87,
+      "score": 31.8
+    },
+    {
+      "atSeconds": 148.8,
+      "score": 97.1
+    },
+    {
+      "atSeconds": 149.33,
+      "score": 106
+    },
+    {
+      "atSeconds": 149.6,
+      "score": 47.9
+    },
+    {
+      "atSeconds": 156.53,
+      "score": 116.9
+    },
+    {
+      "atSeconds": 157.07,
+      "score": 106.1
+    },
+    {
+      "atSeconds": 157.33,
+      "score": 45.7
+    },
+    {
+      "atSeconds": 164.27,
+      "score": 109.4
+    },
+    {
+      "atSeconds": 164.8,
+      "score": 106
+    },
+    {
+      "atSeconds": 165.07,
+      "score": 36.7
+    },
+    {
+      "atSeconds": 172,
+      "score": 94
+    },
+    {
+      "atSeconds": 172.53,
+      "score": 106
+    },
+    {
+      "atSeconds": 172.8,
+      "score": 47.6
+    },
+    {
+      "atSeconds": 179.73,
+      "score": 67.1
+    },
+    {
+      "atSeconds": 180.27,
+      "score": 106
+    },
+    {
+      "atSeconds": 180.53,
+      "score": 51
+    },
+    {
+      "atSeconds": 187.47,
+      "score": 75.3
+    },
+    {
+      "atSeconds": 188,
+      "score": 106
+    },
+    {
+      "atSeconds": 188.27,
+      "score": 47.5
+    },
+    {
+      "atSeconds": 195.2,
+      "score": 112.1
+    },
+    {
+      "atSeconds": 195.73,
+      "score": 106
+    },
+    {
+      "atSeconds": 196,
+      "score": 47.8
+    },
+    {
+      "atSeconds": 202.93,
+      "score": 68.2
+    },
+    {
+      "atSeconds": 203.47,
+      "score": 106.1
+    },
+    {
+      "atSeconds": 203.73,
+      "score": 45.5
+    },
+    {
+      "atSeconds": 210.67,
+      "score": 97.5
+    },
+    {
+      "atSeconds": 211.2,
+      "score": 106.1
+    },
+    {
+      "atSeconds": 211.47,
+      "score": 47.5
+    },
+    {
+      "atSeconds": 218.4,
+      "score": 68.9
+    },
+    {
+      "atSeconds": 218.93,
+      "score": 106
+    },
+    {
+      "atSeconds": 219.2,
+      "score": 33.7
+    },
+    {
+      "atSeconds": 226.13,
+      "score": 92.2
+    },
+    {
+      "atSeconds": 226.67,
+      "score": 106
+    },
+    {
+      "atSeconds": 233.87,
+      "score": 100
+    },
+    {
+      "atSeconds": 234.4,
+      "score": 106
+    },
+    {
+      "atSeconds": 234.67,
+      "score": 35.4
+    },
+    {
+      "atSeconds": 241.6,
+      "score": 109.6
+    },
+    {
+      "atSeconds": 242.13,
+      "score": 106.1
+    },
+    {
+      "atSeconds": 242.4,
+      "score": 49.8
+    },
+    {
+      "atSeconds": 249.33,
+      "score": 68.6
+    },
+    {
+      "atSeconds": 249.87,
+      "score": 106
+    },
+    {
+      "atSeconds": 250.13,
+      "score": 46.2
+    },
+    {
+      "atSeconds": 257.07,
+      "score": 125.7
+    },
+    {
+      "atSeconds": 257.6,
+      "score": 106.1
+    },
+    {
+      "atSeconds": 257.87,
+      "score": 47.8
+    },
+    {
+      "atSeconds": 264.8,
+      "score": 82.6
+    },
+    {
+      "atSeconds": 265.33,
+      "score": 106
+    },
+    {
+      "atSeconds": 265.6,
+      "score": 45.8
+    },
+    {
+      "atSeconds": 272.53,
+      "score": 119.9
+    },
+    {
+      "atSeconds": 273.07,
+      "score": 106.1
+    },
+    {
+      "atSeconds": 273.33,
+      "score": 46.3
+    },
+    {
+      "atSeconds": 280.27,
+      "score": 122.3
+    },
+    {
+      "atSeconds": 280.8,
+      "score": 106.1
+    },
+    {
+      "atSeconds": 281.07,
+      "score": 47.5
+    },
+    {
+      "atSeconds": 288,
+      "score": 101.8
+    },
+    {
+      "atSeconds": 288.53,
+      "score": 106.1
+    },
+    {
+      "atSeconds": 288.8,
+      "score": 44.3
+    },
+    {
+      "atSeconds": 295.73,
+      "score": 99.5
+    },
+    {
+      "atSeconds": 296.27,
+      "score": 106.1
+    },
+    {
+      "atSeconds": 296.53,
+      "score": 41.9
+    },
+    {
+      "atSeconds": 303.47,
+      "score": 107.7
+    },
+    {
+      "atSeconds": 304,
+      "score": 106.1
+    },
+    {
+      "atSeconds": 304.27,
+      "score": 42.8
+    },
+    {
+      "atSeconds": 311.2,
+      "score": 120.4
+    },
+    {
+      "atSeconds": 311.73,
+      "score": 106
+    },
+    {
+      "atSeconds": 312,
+      "score": 38.3
+    },
+    {
+      "atSeconds": 318.93,
+      "score": 94.6
+    },
+    {
+      "atSeconds": 319.47,
+      "score": 106.1
+    },
+    {
+      "atSeconds": 319.73,
+      "score": 44.9
+    },
+    {
+      "atSeconds": 326.67,
+      "score": 94.3
+    },
+    {
+      "atSeconds": 327.2,
+      "score": 106
+    },
+    {
+      "atSeconds": 327.47,
+      "score": 51.7
+    },
+    {
+      "atSeconds": 334.4,
+      "score": 118.4
+    },
+    {
+      "atSeconds": 334.93,
+      "score": 106.1
+    },
+    {
+      "atSeconds": 335.2,
+      "score": 48
+    },
+    {
+      "atSeconds": 342.13,
+      "score": 68.4
+    },
+    {
+      "atSeconds": 342.67,
+      "score": 106
+    },
+    {
+      "atSeconds": 342.93,
+      "score": 43.7
+    },
+    {
+      "atSeconds": 349.87,
+      "score": 110.6
+    },
+    {
+      "atSeconds": 350.4,
+      "score": 106
+    },
+    {
+      "atSeconds": 350.67,
+      "score": 47.6
+    },
+    {
+      "atSeconds": 357.6,
+      "score": 66.4
+    },
+    {
+      "atSeconds": 358.13,
+      "score": 106.1
+    },
+    {
+      "atSeconds": 358.4,
+      "score": 38
+    },
+    {
+      "atSeconds": 365.33,
+      "score": 109.7
+    },
+    {
+      "atSeconds": 365.87,
+      "score": 106
+    },
+    {
+      "atSeconds": 366.13,
+      "score": 49.3
+    },
+    {
+      "atSeconds": 373.07,
+      "score": 73.2
+    },
+    {
+      "atSeconds": 373.6,
+      "score": 106
+    },
+    {
+      "atSeconds": 373.87,
+      "score": 37.2
+    },
+    {
+      "atSeconds": 380.8,
+      "score": 108.4
+    },
+    {
+      "atSeconds": 381.33,
+      "score": 106.1
+    },
+    {
+      "atSeconds": 381.6,
+      "score": 50.6
+    },
+    {
+      "atSeconds": 388.53,
+      "score": 81.8
+    },
+    {
+      "atSeconds": 389.07,
+      "score": 106.1
+    },
+    {
+      "atSeconds": 389.33,
+      "score": 45.5
+    },
+    {
+      "atSeconds": 396.27,
+      "score": 74.4
+    },
+    {
+      "atSeconds": 396.8,
+      "score": 106
+    },
+    {
+      "atSeconds": 397.07,
+      "score": 36.9
+    },
+    {
+      "atSeconds": 404,
+      "score": 106.4
+    },
+    {
+      "atSeconds": 404.53,
+      "score": 106
+    },
+    {
+      "atSeconds": 404.8,
+      "score": 56.8
+    },
+    {
+      "atSeconds": 412.53,
+      "score": 61.3
+    },
+    {
+      "atSeconds": 412.8,
+      "score": 78
+    },
+    {
+      "atSeconds": 413.07,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 413.33,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 413.6,
+      "score": 40
+    },
+    {
+      "atSeconds": 420.27,
+      "score": 51.2
+    },
+    {
+      "atSeconds": 420.53,
+      "score": 71.9
+    },
+    {
+      "atSeconds": 420.8,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 421.07,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 421.33,
+      "score": 60.6
+    },
+    {
+      "atSeconds": 421.6,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 428,
+      "score": 46.4
+    },
+    {
+      "atSeconds": 428.27,
+      "score": 56.6
+    },
+    {
+      "atSeconds": 428.53,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 428.8,
+      "score": 90.8
+    },
+    {
+      "atSeconds": 429.07,
+      "score": 53.3
+    },
+    {
+      "atSeconds": 429.33,
+      "score": 30.4
+    },
+    {
+      "atSeconds": 435.73,
+      "score": 65.3
+    },
+    {
+      "atSeconds": 436,
+      "score": 82.4
+    },
+    {
+      "atSeconds": 436.27,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 436.53,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 436.8,
+      "score": 42
+    },
+    {
+      "atSeconds": 437.07,
+      "score": 28.4
+    },
+    {
+      "atSeconds": 443.47,
+      "score": 60.3
+    },
+    {
+      "atSeconds": 443.73,
+      "score": 81.1
+    },
+    {
+      "atSeconds": 444,
+      "score": 32.4
+    },
+    {
+      "atSeconds": 444.27,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 444.53,
+      "score": 47.1
+    },
+    {
+      "atSeconds": 451.2,
+      "score": 62.9
+    },
+    {
+      "atSeconds": 451.47,
+      "score": 78.4
+    },
+    {
+      "atSeconds": 451.73,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 452,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 452.27,
+      "score": 51.2
+    },
+    {
+      "atSeconds": 452.53,
+      "score": 28.9
+    },
+    {
+      "atSeconds": 458.93,
+      "score": 63.7
+    },
+    {
+      "atSeconds": 459.2,
+      "score": 77.9
+    },
+    {
+      "atSeconds": 459.47,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 459.73,
+      "score": 90.8
+    },
+    {
+      "atSeconds": 460,
+      "score": 43.7
+    },
+    {
+      "atSeconds": 466.67,
+      "score": 53.1
+    },
+    {
+      "atSeconds": 466.93,
+      "score": 67.5
+    },
+    {
+      "atSeconds": 467.2,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 467.47,
+      "score": 90.8
+    },
+    {
+      "atSeconds": 467.73,
+      "score": 62.7
+    },
+    {
+      "atSeconds": 468,
+      "score": 29
+    },
+    {
+      "atSeconds": 474.4,
+      "score": 46.2
+    },
+    {
+      "atSeconds": 474.67,
+      "score": 57.2
+    },
+    {
+      "atSeconds": 474.93,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 475.2,
+      "score": 90.8
+    },
+    {
+      "atSeconds": 475.47,
+      "score": 62.2
+    },
+    {
+      "atSeconds": 475.73,
+      "score": 32
+    },
+    {
+      "atSeconds": 482.13,
+      "score": 46.9
+    },
+    {
+      "atSeconds": 482.4,
+      "score": 56.6
+    },
+    {
+      "atSeconds": 482.67,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 482.93,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 483.2,
+      "score": 54.5
+    },
+    {
+      "atSeconds": 483.47,
+      "score": 31.3
+    },
+    {
+      "atSeconds": 489.87,
+      "score": 59.8
+    },
+    {
+      "atSeconds": 490.13,
+      "score": 77.2
+    },
+    {
+      "atSeconds": 490.4,
+      "score": 32.4
+    },
+    {
+      "atSeconds": 490.67,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 490.93,
+      "score": 60.1
+    },
+    {
+      "atSeconds": 491.2,
+      "score": 28.4
+    },
+    {
+      "atSeconds": 497.6,
+      "score": 44.5
+    },
+    {
+      "atSeconds": 497.87,
+      "score": 54.6
+    },
+    {
+      "atSeconds": 498.13,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 498.4,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 498.67,
+      "score": 62
+    },
+    {
+      "atSeconds": 498.93,
+      "score": 30.1
+    },
+    {
+      "atSeconds": 505.33,
+      "score": 46.3
+    },
+    {
+      "atSeconds": 505.6,
+      "score": 56.4
+    },
+    {
+      "atSeconds": 505.87,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 506.13,
+      "score": 90.8
+    },
+    {
+      "atSeconds": 506.4,
+      "score": 73.9
+    },
+    {
+      "atSeconds": 506.67,
+      "score": 35.8
+    },
+    {
+      "atSeconds": 513.07,
+      "score": 59
+    },
+    {
+      "atSeconds": 513.33,
+      "score": 72.7
+    },
+    {
+      "atSeconds": 513.6,
+      "score": 32.4
+    },
+    {
+      "atSeconds": 513.87,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 514.13,
+      "score": 36
+    },
+    {
+      "atSeconds": 514.4,
+      "score": 29.1
+    },
+    {
+      "atSeconds": 520.8,
+      "score": 53.8
+    },
+    {
+      "atSeconds": 521.07,
+      "score": 69.8
+    },
+    {
+      "atSeconds": 521.33,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 521.6,
+      "score": 90.8
+    },
+    {
+      "atSeconds": 521.87,
+      "score": 56.1
+    },
+    {
+      "atSeconds": 528.53,
+      "score": 47
+    },
+    {
+      "atSeconds": 528.8,
+      "score": 56.6
+    },
+    {
+      "atSeconds": 529.07,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 529.33,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 529.6,
+      "score": 44.7
+    },
+    {
+      "atSeconds": 536.27,
+      "score": 55.2
+    },
+    {
+      "atSeconds": 536.53,
+      "score": 72.7
+    },
+    {
+      "atSeconds": 536.8,
+      "score": 32.4
+    },
+    {
+      "atSeconds": 537.07,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 537.33,
+      "score": 38.7
+    },
+    {
+      "atSeconds": 544,
+      "score": 55.1
+    },
+    {
+      "atSeconds": 544.27,
+      "score": 76.7
+    },
+    {
+      "atSeconds": 544.53,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 544.8,
+      "score": 90.8
+    },
+    {
+      "atSeconds": 545.07,
+      "score": 43.3
+    },
+    {
+      "atSeconds": 551.73,
+      "score": 64.4
+    },
+    {
+      "atSeconds": 552,
+      "score": 80.7
+    },
+    {
+      "atSeconds": 552.27,
+      "score": 32.4
+    },
+    {
+      "atSeconds": 552.53,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 559.47,
+      "score": 54.5
+    },
+    {
+      "atSeconds": 559.73,
+      "score": 74.4
+    },
+    {
+      "atSeconds": 560,
+      "score": 32.4
+    },
+    {
+      "atSeconds": 560.27,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 560.53,
+      "score": 42.2
+    },
+    {
+      "atSeconds": 567.2,
+      "score": 55
+    },
+    {
+      "atSeconds": 567.47,
+      "score": 74.8
+    },
+    {
+      "atSeconds": 567.73,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 568,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 568.27,
+      "score": 58
+    },
+    {
+      "atSeconds": 574.93,
+      "score": 44.5
+    },
+    {
+      "atSeconds": 575.2,
+      "score": 55.2
+    },
+    {
+      "atSeconds": 575.47,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 575.73,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 576,
+      "score": 59.6
+    },
+    {
+      "atSeconds": 576.27,
+      "score": 33.3
+    },
+    {
+      "atSeconds": 582.67,
+      "score": 46.5
+    },
+    {
+      "atSeconds": 582.93,
+      "score": 57
+    },
+    {
+      "atSeconds": 583.2,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 583.47,
+      "score": 90.8
+    },
+    {
+      "atSeconds": 583.73,
+      "score": 66.6
+    },
+    {
+      "atSeconds": 584,
+      "score": 36.4
+    },
+    {
+      "atSeconds": 590.4,
+      "score": 62.8
+    },
+    {
+      "atSeconds": 590.67,
+      "score": 74.7
+    },
+    {
+      "atSeconds": 590.93,
+      "score": 32.4
+    },
+    {
+      "atSeconds": 591.2,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 591.47,
+      "score": 58.7
+    },
+    {
+      "atSeconds": 591.73,
+      "score": 39.4
+    },
+    {
+      "atSeconds": 598.13,
+      "score": 63.8
+    },
+    {
+      "atSeconds": 598.4,
+      "score": 77
+    },
+    {
+      "atSeconds": 598.67,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 598.93,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 599.2,
+      "score": 73.5
+    },
+    {
+      "atSeconds": 599.47,
+      "score": 35.2
+    },
+    {
+      "atSeconds": 605.87,
+      "score": 51.8
+    },
+    {
+      "atSeconds": 606.13,
+      "score": 62.3
+    },
+    {
+      "atSeconds": 606.4,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 606.67,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 606.93,
+      "score": 55.2
+    },
+    {
+      "atSeconds": 607.2,
+      "score": 30.8
+    },
+    {
+      "atSeconds": 613.6,
+      "score": 44.5
+    },
+    {
+      "atSeconds": 613.87,
+      "score": 58
+    },
+    {
+      "atSeconds": 614.13,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 614.4,
+      "score": 90.8
+    },
+    {
+      "atSeconds": 614.67,
+      "score": 39
+    },
+    {
+      "atSeconds": 621.33,
+      "score": 48.4
+    },
+    {
+      "atSeconds": 621.6,
+      "score": 63.9
+    },
+    {
+      "atSeconds": 621.87,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 622.13,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 622.4,
+      "score": 60.4
+    },
+    {
+      "atSeconds": 622.67,
+      "score": 31.3
+    },
+    {
+      "atSeconds": 629.07,
+      "score": 46.7
+    },
+    {
+      "atSeconds": 629.33,
+      "score": 57.5
+    },
+    {
+      "atSeconds": 629.6,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 629.87,
+      "score": 90.8
+    },
+    {
+      "atSeconds": 630.13,
+      "score": 56
+    },
+    {
+      "atSeconds": 630.4,
+      "score": 29.5
+    },
+    {
+      "atSeconds": 636.8,
+      "score": 67.7
+    },
+    {
+      "atSeconds": 637.07,
+      "score": 82
+    },
+    {
+      "atSeconds": 637.33,
+      "score": 32.4
+    },
+    {
+      "atSeconds": 637.6,
+      "score": 90.8
+    },
+    {
+      "atSeconds": 637.87,
+      "score": 50.9
+    },
+    {
+      "atSeconds": 638.13,
+      "score": 28.8
+    },
+    {
+      "atSeconds": 644.53,
+      "score": 67.3
+    },
+    {
+      "atSeconds": 644.8,
+      "score": 81.3
+    },
+    {
+      "atSeconds": 645.07,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 645.33,
+      "score": 90.8
+    },
+    {
+      "atSeconds": 645.6,
+      "score": 60.3
+    },
+    {
+      "atSeconds": 645.87,
+      "score": 30.3
+    },
+    {
+      "atSeconds": 652.27,
+      "score": 44.7
+    },
+    {
+      "atSeconds": 652.53,
+      "score": 57.3
+    },
+    {
+      "atSeconds": 652.8,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 653.07,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 653.33,
+      "score": 57.7
+    },
+    {
+      "atSeconds": 660,
+      "score": 44.2
+    },
+    {
+      "atSeconds": 660.27,
+      "score": 54.5
+    },
+    {
+      "atSeconds": 660.53,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 660.8,
+      "score": 90.8
+    },
+    {
+      "atSeconds": 661.07,
+      "score": 60.5
+    },
+    {
+      "atSeconds": 661.33,
+      "score": 30.9
+    },
+    {
+      "atSeconds": 667.73,
+      "score": 46.7
+    },
+    {
+      "atSeconds": 668,
+      "score": 57.3
+    },
+    {
+      "atSeconds": 668.27,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 668.53,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 668.8,
+      "score": 35.7
+    },
+    {
+      "atSeconds": 675.47,
+      "score": 53.4
+    },
+    {
+      "atSeconds": 675.73,
+      "score": 70.7
+    },
+    {
+      "atSeconds": 676,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 676.27,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 676.53,
+      "score": 40.8
+    },
+    {
+      "atSeconds": 683.2,
+      "score": 53.3
+    },
+    {
+      "atSeconds": 683.47,
+      "score": 70.9
+    },
+    {
+      "atSeconds": 683.73,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 684,
+      "score": 90.8
+    },
+    {
+      "atSeconds": 684.27,
+      "score": 51.5
+    },
+    {
+      "atSeconds": 690.93,
+      "score": 47.5
+    },
+    {
+      "atSeconds": 691.2,
+      "score": 60.6
+    },
+    {
+      "atSeconds": 691.47,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 691.73,
+      "score": 90.8
+    },
+    {
+      "atSeconds": 692,
+      "score": 60.2
+    },
+    {
+      "atSeconds": 692.27,
+      "score": 28.9
+    },
+    {
+      "atSeconds": 698.67,
+      "score": 44.9
+    },
+    {
+      "atSeconds": 698.93,
+      "score": 54.6
+    },
+    {
+      "atSeconds": 699.2,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 699.47,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 699.73,
+      "score": 54.7
+    },
+    {
+      "atSeconds": 700,
+      "score": 33.9
+    },
+    {
+      "atSeconds": 706.4,
+      "score": 61.5
+    },
+    {
+      "atSeconds": 706.67,
+      "score": 76.1
+    },
+    {
+      "atSeconds": 706.93,
+      "score": 32.4
+    },
+    {
+      "atSeconds": 707.2,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 707.47,
+      "score": 53.1
+    },
+    {
+      "atSeconds": 707.73,
+      "score": 28.9
+    },
+    {
+      "atSeconds": 714.13,
+      "score": 44.7
+    },
+    {
+      "atSeconds": 714.4,
+      "score": 56.5
+    },
+    {
+      "atSeconds": 714.67,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 714.93,
+      "score": 90.8
+    },
+    {
+      "atSeconds": 715.2,
+      "score": 42.9
+    },
+    {
+      "atSeconds": 715.47,
+      "score": 28.4
+    },
+    {
+      "atSeconds": 721.87,
+      "score": 56.3
+    },
+    {
+      "atSeconds": 722.13,
+      "score": 70.5
+    },
+    {
+      "atSeconds": 722.4,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 722.67,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 722.93,
+      "score": 58.1
+    },
+    {
+      "atSeconds": 729.6,
+      "score": 44.3
+    },
+    {
+      "atSeconds": 729.87,
+      "score": 55.7
+    },
+    {
+      "atSeconds": 730.13,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 730.4,
+      "score": 90.8
+    },
+    {
+      "atSeconds": 730.67,
+      "score": 57.4
+    },
+    {
+      "atSeconds": 730.93,
+      "score": 29.5
+    },
+    {
+      "atSeconds": 737.33,
+      "score": 65.8
+    },
+    {
+      "atSeconds": 737.6,
+      "score": 81.5
+    },
+    {
+      "atSeconds": 737.87,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 738.13,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 738.4,
+      "score": 70.8
+    },
+    {
+      "atSeconds": 738.67,
+      "score": 37.8
+    },
+    {
+      "atSeconds": 745.07,
+      "score": 60.9
+    },
+    {
+      "atSeconds": 745.33,
+      "score": 74.9
+    },
+    {
+      "atSeconds": 745.6,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 745.87,
+      "score": 90.8
+    },
+    {
+      "atSeconds": 746.13,
+      "score": 52.9
+    },
+    {
+      "atSeconds": 746.4,
+      "score": 32.6
+    },
+    {
+      "atSeconds": 752.8,
+      "score": 61.9
+    },
+    {
+      "atSeconds": 753.07,
+      "score": 80.2
+    },
+    {
+      "atSeconds": 753.33,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 753.6,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 753.87,
+      "score": 57.1
+    },
+    {
+      "atSeconds": 760.53,
+      "score": 44.2
+    },
+    {
+      "atSeconds": 760.8,
+      "score": 54.2
+    },
+    {
+      "atSeconds": 761.07,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 761.33,
+      "score": 90.8
+    },
+    {
+      "atSeconds": 761.6,
+      "score": 50.4
+    },
+    {
+      "atSeconds": 768.27,
+      "score": 55.6
+    },
+    {
+      "atSeconds": 768.53,
+      "score": 78.6
+    },
+    {
+      "atSeconds": 768.8,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 769.07,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 769.33,
+      "score": 36.6
+    },
+    {
+      "atSeconds": 776,
+      "score": 61.4
+    },
+    {
+      "atSeconds": 776.27,
+      "score": 75
+    },
+    {
+      "atSeconds": 776.53,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 776.8,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 777.07,
+      "score": 61.9
+    },
+    {
+      "atSeconds": 777.33,
+      "score": 32.4
+    },
+    {
+      "atSeconds": 783.73,
+      "score": 66.6
+    },
+    {
+      "atSeconds": 784,
+      "score": 71
+    },
+    {
+      "atSeconds": 784.27,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 784.53,
+      "score": 91
+    },
+    {
+      "atSeconds": 784.8,
+      "score": 61.1
+    },
+    {
+      "atSeconds": 785.07,
+      "score": 32.6
+    },
+    {
+      "atSeconds": 791.47,
+      "score": 45.9
+    },
+    {
+      "atSeconds": 791.73,
+      "score": 56.9
+    },
+    {
+      "atSeconds": 792,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 792.27,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 792.53,
+      "score": 58.9
+    },
+    {
+      "atSeconds": 792.8,
+      "score": 29.8
+    },
+    {
+      "atSeconds": 799.2,
+      "score": 44.7
+    },
+    {
+      "atSeconds": 799.47,
+      "score": 54.7
+    },
+    {
+      "atSeconds": 799.73,
+      "score": 32.2
+    },
+    {
+      "atSeconds": 800,
+      "score": 91
+    },
+    {
+      "atSeconds": 800.27,
+      "score": 59.8
+    },
+    {
+      "atSeconds": 800.53,
+      "score": 41.2
+    },
+    {
+      "atSeconds": 806.93,
+      "score": 47.6
+    },
+    {
+      "atSeconds": 807.2,
+      "score": 59.7
+    },
+    {
+      "atSeconds": 807.47,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 807.73,
+      "score": 90.8
+    },
+    {
+      "atSeconds": 808,
+      "score": 65.8
+    },
+    {
+      "atSeconds": 808.27,
+      "score": 33.1
+    },
+    {
+      "atSeconds": 814.67,
+      "score": 60.2
+    },
+    {
+      "atSeconds": 814.93,
+      "score": 68.4
+    },
+    {
+      "atSeconds": 815.2,
+      "score": 32.2
+    },
+    {
+      "atSeconds": 815.47,
+      "score": 90.8
+    },
+    {
+      "atSeconds": 815.73,
+      "score": 61.2
+    },
+    {
+      "atSeconds": 816,
+      "score": 29
+    },
+    {
+      "atSeconds": 822.4,
+      "score": 45
+    },
+    {
+      "atSeconds": 822.67,
+      "score": 56.6
+    },
+    {
+      "atSeconds": 822.93,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 823.2,
+      "score": 90.8
+    },
+    {
+      "atSeconds": 823.47,
+      "score": 34.9
+    },
+    {
+      "atSeconds": 830.13,
+      "score": 59.4
+    },
+    {
+      "atSeconds": 830.4,
+      "score": 75.9
+    },
+    {
+      "atSeconds": 830.67,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 830.93,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 831.2,
+      "score": 59.7
+    },
+    {
+      "atSeconds": 837.87,
+      "score": 44.4
+    },
+    {
+      "atSeconds": 838.13,
+      "score": 54.5
+    },
+    {
+      "atSeconds": 838.4,
+      "score": 32.2
+    },
+    {
+      "atSeconds": 838.67,
+      "score": 90.8
+    },
+    {
+      "atSeconds": 838.93,
+      "score": 58.7
+    },
+    {
+      "atSeconds": 839.2,
+      "score": 30.3
+    },
+    {
+      "atSeconds": 845.6,
+      "score": 50.9
+    },
+    {
+      "atSeconds": 845.87,
+      "score": 62.8
+    },
+    {
+      "atSeconds": 846.13,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 846.4,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 846.67,
+      "score": 49.9
+    },
+    {
+      "atSeconds": 846.93,
+      "score": 29
+    },
+    {
+      "atSeconds": 853.33,
+      "score": 60.5
+    },
+    {
+      "atSeconds": 853.6,
+      "score": 75.9
+    },
+    {
+      "atSeconds": 853.87,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 854.13,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 854.4,
+      "score": 61.5
+    },
+    {
+      "atSeconds": 854.67,
+      "score": 31.5
+    },
+    {
+      "atSeconds": 861.07,
+      "score": 66.7
+    },
+    {
+      "atSeconds": 861.33,
+      "score": 82.9
+    },
+    {
+      "atSeconds": 861.6,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 861.87,
+      "score": 91
+    },
+    {
+      "atSeconds": 862.13,
+      "score": 61.8
+    },
+    {
+      "atSeconds": 862.4,
+      "score": 29
+    },
+    {
+      "atSeconds": 868.8,
+      "score": 45.7
+    },
+    {
+      "atSeconds": 869.07,
+      "score": 55.2
+    },
+    {
+      "atSeconds": 869.33,
+      "score": 32.4
+    },
+    {
+      "atSeconds": 869.6,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 869.87,
+      "score": 57.6
+    },
+    {
+      "atSeconds": 876.53,
+      "score": 43.5
+    },
+    {
+      "atSeconds": 876.8,
+      "score": 57.9
+    },
+    {
+      "atSeconds": 877.07,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 877.33,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 877.6,
+      "score": 56.4
+    },
+    {
+      "atSeconds": 877.87,
+      "score": 36
+    },
+    {
+      "atSeconds": 884.27,
+      "score": 57.3
+    },
+    {
+      "atSeconds": 884.53,
+      "score": 70.7
+    },
+    {
+      "atSeconds": 884.8,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 885.07,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 885.33,
+      "score": 53.4
+    },
+    {
+      "atSeconds": 892,
+      "score": 55.4
+    },
+    {
+      "atSeconds": 892.27,
+      "score": 75.4
+    },
+    {
+      "atSeconds": 892.53,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 892.8,
+      "score": 91
+    },
+    {
+      "atSeconds": 893.07,
+      "score": 60.4
+    },
+    {
+      "atSeconds": 899.73,
+      "score": 44.5
+    },
+    {
+      "atSeconds": 900,
+      "score": 54.7
+    },
+    {
+      "atSeconds": 900.27,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 900.53,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 900.8,
+      "score": 56.1
+    },
+    {
+      "atSeconds": 907.47,
+      "score": 64
+    },
+    {
+      "atSeconds": 907.73,
+      "score": 80.9
+    },
+    {
+      "atSeconds": 908,
+      "score": 32.4
+    },
+    {
+      "atSeconds": 908.27,
+      "score": 91
+    },
+    {
+      "atSeconds": 908.53,
+      "score": 54.4
+    },
+    {
+      "atSeconds": 908.8,
+      "score": 31.4
+    },
+    {
+      "atSeconds": 915.2,
+      "score": 61
+    },
+    {
+      "atSeconds": 915.47,
+      "score": 75.3
+    },
+    {
+      "atSeconds": 915.73,
+      "score": 32.2
+    },
+    {
+      "atSeconds": 916,
+      "score": 90.8
+    },
+    {
+      "atSeconds": 916.27,
+      "score": 57.3
+    },
+    {
+      "atSeconds": 916.53,
+      "score": 29.7
+    },
+    {
+      "atSeconds": 922.93,
+      "score": 44.3
+    },
+    {
+      "atSeconds": 923.2,
+      "score": 55.6
+    },
+    {
+      "atSeconds": 923.47,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 923.73,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 924,
+      "score": 47
+    },
+    {
+      "atSeconds": 924.27,
+      "score": 35.3
+    },
+    {
+      "atSeconds": 930.67,
+      "score": 55.9
+    },
+    {
+      "atSeconds": 930.93,
+      "score": 71.4
+    },
+    {
+      "atSeconds": 931.2,
+      "score": 32.3
+    },
+    {
+      "atSeconds": 931.47,
+      "score": 90.9
+    },
+    {
+      "atSeconds": 931.73,
+      "score": 62.3
+    },
+    {
+      "atSeconds": 932,
+      "score": 30.2
+    },
+    {
+      "atSeconds": 938.4,
+      "score": 58.4
+    },
+    {
+      "atSeconds": 938.67,
+      "score": 72.3
+    },
+    {
+      "atSeconds": 938.93,
+      "score": 32.3
+    }
+  ],
+  "captions": [],
+  "captionSource": "",
+  "segments": [],
+  "mode": "scenes",
+  "sceneThreshold": "28",
+  "sceneSamplesPerSecond": "4",
+  "sceneMinGapSeconds": "0.5",
+  "sceneMaxMarkers": "",
+  "streamId": "workbench",
+  "streamPublicHost": "127.0.0.1",
+  "externalStreamUrl": "",
+  "streamMaxSeconds": "",
+  "streamMaxScenes": "",
+  "everySeconds": "2",
+  "perScene": "1",
+  "sceneOffset": "0.3",
+  "startScene": "2",
+  "endScene": "",
+  "skipScenes": "2",
+  "rangeStart": "0",
+  "rangeEnd": "",
+  "maxFrames": "200",
+  "frames": [],
+  "frameSources": [
+    {
+      "id": "restored",
+      "label": "Restored extracted images",
+      "kind": "restored",
+      "frames": []
+    }
+  ],
+  "selectedFrameSourceId": "restored",
+  "picked": null,
+  "kept": null,
+  "memberInputPaths": [],
+  "selectedWorkflowGalleryPaths": [],
+  "previewSource": "selectedframe",
+  "galleryScope": "included",
+  "filterId": "skill:edge_sketch",
+  "filterParams": {
+    "threshold": "40"
+  },
+  "chain": [
+    {
+      "entryId": "skill:edge_sketch",
+      "params": {
+        "threshold": "40"
+      }
+    }
+  ],
+  "candidateCount": "6",
+  "fullSelectors": false,
+  "gallery": null,
+  "output": [],
+  "outputMode": "preview",
+  "outputLabel": "Edge sketch (line art)",
+  "appliedIds": [
+    "skill:edge_sketch"
+  ],
+  "trail": [],
+  "probes": [],
+  "members": [],
+  "memberScenes": {},
+  "memberDescriptionPrompt": "SCENE OBJECTS TEXTUAL DESCRIPTION.\nDescribe this video-frame scene, then make a list of the individual things that can be visually extracted from it.\n{{goal}}\nList every distinct extractable thing you can identify. Do not return polygons coordinates in this stage.\n{{alreadyExtracted}}\nAnswer ONLY with JSON: {\"description\":\"scene description\",\"things\":[{\"name\":\"short unique name\",first pixel encountered in raster-scan,\"description\":\"visual identity location\"}]}",
+  "objectPromptWriter": "OBJECT EXTRACTION PROMPT WRITER.\nWrite a better, precise visual-localization prompt for extracting the named object from the attached image.\nUse its appearance, location, parent relationship, boundaries, overlaps, and the scene context to distinguish it from its own sub-objects, neighboring objects, and background.\nThe prompt must work when the attached extraction image is either the full scene or an independently extracted image of the object's parent.\nThe generated prompt must tell a vision model to return ONLY {\"name\":\"exact name\",\"polygon\":[[x,y],...]} with 3-20 pixel-coordinate points, allow box only when polygon is impossible, and return exactly NONE when the object is not visible.\nDo not perform the extraction now. Return the complete ready-to-run prompt as JSON.\nTEXTUAL DESCRIPTION:\n{{textualDescription}}\nOBJECT NAME: {{objectName}}\nOBJECT DESCRIPTION: {{objectDescription}}\nPARENT OBJECT: {{parentName}}\nVISIBILITY: {{visibility}}\nAnswer ONLY with JSON: {\"name\":\"{{objectName}}\",\"extraction_prompt\":\"complete ready-to-run extraction prompt\"}",
+  "memberDecompositionPrompt": "OBJECTS_WITH_SUB_OBJECTS.\nRefine the listed objects into a hierarchical inventory of visible, independently localizable things in the attached image.\nKeep every original object. Add meaningful visible sub-objects recursively when they can be named, counted, localized, or extracted separately.\nExamples include a face's two eyes, nose, mouth, ears, and hair; a car's individual wheels, doors, windows, lights, and mirrors; clothing bows, buttons, gloves on hands, and a reflection visible in a mirror.\nRepresent repeated countable parts as separate keyed entries with distinct globally unique names, countIndex, and countTotal. Use left/right/front/rear when visible; otherwise use stable numeric suffixes.\nCreate each sub-object as a key inside its immediate parent's sub_objects object. A sub-object may itself own another sub_objects object.\nSometimes point out a strongly implied but fully hidden part that matters to the parent or count (for example an occluded second wheel). Mark it visibility \"hidden\", explain hidden_reason, and name occluded_by. Never present an inferred hidden part as visible.\nUse visibility \"partially_hidden\" for a localized part that is only partly occluded. Do not invent unsupported parts, microscopic detail, arbitrary color patches, or duplicate aliases. Stop when a smaller part is not independently meaningful.\nTEXTUAL DESCRIPTION:\n{{textualDescription}}\nFOUND OBJECTS:\n{{objects}}\nAnswer ONLY with JSON whose top-level key is objects_with_sub_objects. Use this recursive shape:\n{\"objects_with_sub_objects\":{\"face\":{\"description\":\"visible face and location\",\"visibility\":\"visible\",\"sub_objects\":{\"left_eye\":{\"description\":\"visible left eye\",\"visibility\":\"visible\",\"countIndex\":1,\"countTotal\":2,\"sub_objects\":{}},\"right_eye\":{\"description\":\"right eye hidden by hair\",\"visibility\":\"hidden\",\"hidden_reason\":\"occluded by hair\",\"occluded_by\":[\"hair\"],\"countIndex\":2,\"countTotal\":2,\"sub_objects\":{}}}}}}",
+  "memberOrderPrompt": "OBJECT EXTRACTION PLANNER.\nUse the textual description and attached image to declare the visible relationships among every listed direct child object, then order their extraction.\nAlways remove every sub-object before its parent object so removing a whole does not erase parts that still need extraction.\nDeclare every pair of listed objects whose visible boundaries physically touch. Touching is symmetric; do not report objects that are merely near each other.\nDeclare every directed occlusion where one listed object visibly covers any part of another. Name the foreground object as occluder and the covered object as occluded.\nDeclare every directed containment where the complete visible extent of one listed object is spatially inside another listed object's boundary. Name the enclosing object as container and the inner object as contained. Do not call partial overlap or ordinary touching containment.\nOrder every occluder before the object it occludes, and every contained object before its container. Remove foreground objects first and the farthest background objects last.\nUse every object name exactly once.\nDo not outline objects and do not return polygons, coordinates, masks, or cutout instructions. Outliner handles that separately, one object at a time.\nTEXTUAL DESCRIPTION:\n{{textualDescription}}\nOBJECTS:\n{{objects}}\nNUMBER LABEL COORDINATE SPACE: width={{imageWidth}}, height={{imageHeight}}. Give one point [x,y] visibly inside each exact object so the workbench can draw its extraction-order number on the object.\nAlways include touching, occlusions, containments, and labels as arrays, using [] only when that relationship type has no entries.\nAnswer ONLY with JSON: {\"touching\":[{\"objects\":[\"exact object name\",\"exact object name\"],\"contact\":\"what visibly touches where\"}],\"occlusions\":[{\"occluder\":\"foreground exact object name\",\"occluded\":\"covered exact object name\",\"region\":\"what part is covered\"}],\"containments\":[{\"container\":\"enclosing exact object name\",\"contained\":\"fully inner exact object name\",\"evidence\":\"how its complete visible extent is inside\"}],\"order\":[\"exact object name\",...],\"labels\":[{\"object\":\"exact object name\",\"number\":1,\"point\":[x,y]}],\"reasoning\":[\"why this relationship-aware order\",...]}",
+  "memberOutlinerPrompt": "OBJECT OUTLINER.\nOutline exactly ONE object in the attached current scene. Planner has already selected its order position.\nDo not outline, include, or remove any other listed object.\nTEXTUAL DESCRIPTION:\n{{textualDescription}}\nPLANNER-SELECTED OBJECT: {{nextObjectName}}\nObject description: {{nextObjectDescription}}\nPlanner position: {{plannerPosition}} of {{plannerTotal}}\nTrace the named object's visible silhouette at pixel-edge precision in THIS current image.\nExplicitly include only pixels belonging to the named object and exclude adjacent body parts, neighboring objects, shadows, and background.\nPreserve disconnected visible parts as separate polygons and enclosed transparent gaps as holes. Respect occluders: trace only the visible contour and never invent hidden pixels.\nFor parts such as a character's chest, exclude the head, arms, hands, lower body, clothing outside the chest, and background unless truly part of the named object.\nAlso describe the contour clockwise and as normalized 0..1000 move/line commands in Turtle form for inspection.\nAnswer ONLY with JSON: {\"name\":\"{{nextObjectName}}\",\"polygons\":[[[x,y],...]],\"holes\":[[[x,y],...]],\"traceClockwise\":[\"start at ...\",\"follow edge ...\",\"return to start\"],\"traceTurtle\":[{\"op\":\"move\",\"x\":0,\"y\":0},{\"op\":\"line\",\"x\":0,\"y\":0}],\"occlusion\":\"...\"} using pixel coordinates in THIS current image.\nUse polygon only as a compatibility fallback for one connected part. Use box only for a genuinely rectangular object with exact rectangular boundaries.\nIf this exact object is no longer visible, answer exactly: NONE",
+  "memberExtractorPrompt": "SCENE OBJECT EXTRACTION AND BACKGROUND RECONSTRUCTION.\nRemove exactly ONE object from the attached current image using the exact geometry already produced by Outliner.\nTEXTUAL DESCRIPTION:\n{{textualDescription}}\nPLANNER-SELECTED NEXT OBJECT: {{nextObjectName}}\nObject description: {{nextObjectDescription}}\nPlanner position: {{plannerPosition}} of {{plannerTotal}}\nOUTLINER RESULT:\n{{outline}}\nDo not change the extraction order or outline another object. Outliner owns contour geometry; Extractor owns removal and reconstruction.\nDescribe what visually continues BEHIND the outlined object: background colors, gradients, lines, texture, and which surrounding edges should continue through the hole.\nAnswer ONLY with JSON: {\"name\":\"{{nextObjectName}}\",\"backgroundFill\":{\"description\":\"...\",\"colors\":[\"#RRGGBB\"],\"continueEdges\":[\"...\"],\"texture\":\"...\"}}.",
+  "turtlePrompt": "TURTLE LEAF RENDERER.\nThe attached image is the terminal object {{subjectName}}. Its recursive Describer found no further sub-objects.\nObject description: {{description}}\nWrite a constrained turtle drawing program that reconstructs this one object.\nUse normalized coordinates from 0 to 1000 with origin at the top-left.\nAllowed commands: pen, move, line, polyline, polygon, rectangle, ellipse, dot.\nUse transparent background unless the object itself requires a background. Use at most 100 commands.\nAnswer ONLY with JSON: {\"version\":1,\"background\":\"transparent\",\"penColor\":\"#RRGGBB\",\"penWidth\":4,\"commands\":[{\"op\":\"move\",\"x\":0,\"y\":0},...]}",
+  "turtlePngPrompt": "TURTLE PNG DRAW STEP.\nThe attached image is terminal object {{subjectName}}.\nObject description: {{description}}\nReview the draft Turtle program below and return the final drawing program that should be rendered to PNG.\nPreserve accurate silhouette, colors, holes, and visible internal details. Coordinates are normalized from 0 to 1000 with top-left origin.\nAllowed commands: pen, move, line, polyline, polygon, rectangle, ellipse, dot. Use at most 200 commands.\nDRAFT TURTLE PROGRAM:\n{{draftProgram}}\nAnswer ONLY with the final JSON object. Do not include Markdown or Python.",
+  "turtleArtifacts": {
+    "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0027_members/next_pass_50_question_number_text_27.png": {
+      "sourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0027_members/next_pass_50_question_number_text_27.png",
+      "subjectName": "question_number_text_27",
+      "prompt": "TURTLE LEAF RENDERER.\nThe attached image is the terminal object question_number_text_27. Its recursive Describer found no further sub-objects.\nObject description: Bad Request\nWrite a constrained turtle drawing program that reconstructs this one object.\nUse normalized coordinates from 0 to 1000 with origin at the top-left.\nAllowed commands: pen, move, line, polyline, polygon, rectangle, ellipse, dot.\nUse transparent background unless the object itself requires a background. Use at most 100 commands.\nAnswer ONLY with JSON: {\"version\":1,\"background\":\"transparent\",\"penColor\":\"#RRGGBB\",\"penWidth\":4,\"commands\":[{\"op\":\"move\",\"x\":0,\"y\":0},...]}",
+      "rawProgram": "{\"version\":1,\"background\":\"transparent\",\"penColor\":\"#F59A18\",\"penWidth\":4,\"commands\":[{\"op\":\"pen\",\"color\":\"#F59A18\",\"width\":4},{\"op\":\"polygon\",\"points\":[[70,80],[430,80],[500,190],[500,410],[430,520],[140,520],[260,360],[350,300],[430,210],[380,140],[70,140]]},{\"op\":\"polygon\",\"points\":[[80,700],[440,700],[440,930],[80,930]]},{\"op\":\"polygon\",\"points\":[[520,80],[920,80],[920,230],[820,230],[820,930],[520,930],[520,700],[700,700],[700,520],[520,520]]},{\"op\":\"pen\",\"color\":\"#FFFFFF\",\"width\":4},{\"op\":\"polygon\",\"points\":[[120,200],[360,200],[390,240],[330,310],[250,390],[180,470],[120,560],[120,640],[380,640],[380,820],[80,820],[80,700],[140,560],[230,450],[320,350],[390,280],[430,230],[410,200],[120,200]]},{\"op\":\"polygon\",\"points\":[[560,230],[780,230],[780,260],[700,360],[650,430],[650,640],[820,640],[820,820],[560,820],[560,700],[560,300]]},{\"op\":\"pen\",\"color\":\"#D67F00\",\"width\":3},{\"op\":\"polyline\",\"points\":[[70,140],[430,140],[500,250]]},{\"op\":\"polyline\",\"points\":[[80,930],[440,930]]},{\"op\":\"polyline\",\"points\":[[520,140],[920,140]]},{\"op\":\"polyline\",\"points\":[[520,930],[920,930]]},{\"op\":\"pen\",\"color\":\"#E8E8E8\",\"width\":2},{\"op\":\"polyline\",\"points\":[[210,390],[150,470],[120,560]]},{\"op\":\"polyline\",\"points\":[[700,360],[650,430]]}]}",
+      "status": "rendered",
+      "attempts": 1,
+      "pngPrompt": "TURTLE PNG DRAW STEP.\nThe attached image is terminal object question_number_text_27.\nObject description: Bad Request\nReview the draft Turtle program below and return the final drawing program that should be rendered to PNG.\nPreserve accurate silhouette, colors, holes, and visible internal details. Coordinates are normalized from 0 to 1000 with top-left origin.\nAllowed commands: pen, move, line, polyline, polygon, rectangle, ellipse, dot. Use at most 200 commands.\nDRAFT TURTLE PROGRAM:\n{\"version\":1,\"background\":\"transparent\",\"penColor\":\"#F59A18\",\"penWidth\":4,\"commands\":[{\"op\":\"pen\",\"color\":\"#F59A18\",\"width\":4},{\"op\":\"polygon\",\"points\":[[70,80],[430,80],[500,190],[500,410],[430,520],[140,520],[260,360],[350,300],[430,210],[380,140],[70,140]]},{\"op\":\"polygon\",\"points\":[[80,700],[440,700],[440,930],[80,930]]},{\"op\":\"polygon\",\"points\":[[520,80],[920,80],[920,230],[820,230],[820,930],[520,930],[520,700],[700,700],[700,520],[520,520]]},{\"op\":\"pen\",\"color\":\"#FFFFFF\",\"width\":4},{\"op\":\"polygon\",\"points\":[[120,200],[360,200],[390,240],[330,310],[250,390],[180,470],[120,560],[120,640],[380,640],[380,820],[80,820],[80,700],[140,560],[230,450],[320,350],[390,280],[430,230],[410,200],[120,200]]},{\"op\":\"polygon\",\"points\":[[560,230],[780,230],[780,260],[700,360],[650,430],[650,640],[820,640],[820,820],[560,820],[560,700],[560,300]]},{\"op\":\"pen\",\"color\":\"#D67F00\",\"width\":3},{\"op\":\"polyline\",\"points\":[[70,140],[430,140],[500,250]]},{\"op\":\"polyline\",\"points\":[[80,930],[440,930]]},{\"op\":\"polyline\",\"points\":[[520,140],[920,140]]},{\"op\":\"polyline\",\"points\":[[520,930],[920,930]]},{\"op\":\"pen\",\"color\":\"#E8E8E8\",\"width\":2},{\"op\":\"polyline\",\"points\":[[210,390],[150,470],[120,560]]},{\"op\":\"polyline\",\"points\":[[700,360],[650,430]]}]}\nAnswer ONLY with the final JSON object. Do not include Markdown or Python.",
+      "pngProgram": "{\"version\":1,\"background\":\"transparent\",\"penColor\":\"#F59A18\",\"penWidth\":4,\"commands\":[{\"op\":\"pen\",\"color\":\"#F59A18\",\"width\":4},{\"op\":\"polygon\",\"points\":[[58,82],[370,82],[468,182],[468,332],[402,438],[328,538],[266,614],[444,614],[444,948],[54,948],[54,754],[314,754],[314,706],[156,706],[156,640],[224,548],[300,456],[374,366],[374,286],[58,286]]},{\"op\":\"polygon\",\"points\":[[522,82],[942,82],[942,286],[786,286],[786,948],[510,948],[510,754],[706,754],[706,286],[522,286]]},{\"op\":\"pen\",\"color\":\"#FFFFFF\",\"width\":4},{\"op\":\"polygon\",\"points\":[[98,328],[328,328],[352,358],[306,418],[244,492],[180,568],[118,656],[112,706],[364,706],[364,854],[86,854],[86,760],[136,668],[204,578],[276,490],[346,404],[394,344],[374,322],[98,322]]},{\"op\":\"polygon\",\"points\":[[556,322],[764,322],[764,852],[574,852],[574,458],[642,458],[676,404],[700,362],[556,362]]},{\"op\":\"pen\",\"color\":\"#0A0A0A\",\"width\":3},{\"op\":\"polygon\",\"points\":[[640,454],[696,454],[676,504],[640,548]]},{\"op\":\"pen\",\"color\":\"#D67F00\",\"width\":3},{\"op\":\"polyline\",\"points\":[[58,286],[370,286],[468,182]]},{\"op\":\"polyline\",\"points\":[[54,948],[444,948]]},{\"op\":\"polyline\",\"points\":[[522,286],[942,286]]},{\"op\":\"polyline\",\"points\":[[510,948],[942,948]]},{\"op\":\"pen\",\"color\":\"#EDEDED\",\"width\":2},{\"op\":\"polyline\",\"points\":[[176,566],[230,496],[286,430],[336,370]]},{\"op\":\"pen\",\"color\":\"#6ED0FF\",\"width\":2},{\"op\":\"polyline\",\"points\":[[838,84],[892,84],[930,142]]}]}",
+      "programPath": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0027_members/next_pass_50_question_number_text_27.turtle.json",
+      "renderedImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0027_members/next_pass_50_question_number_text_27.turtle.png",
+      "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0027_members/next_pass_50_question_number_text_27.turtle.provenance.json"
+    },
+    "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0024_members/next_pass_51_frying_pan.png": {
+      "sourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0024_members/next_pass_51_frying_pan.png",
+      "subjectName": "frying_pan",
+      "prompt": "TURTLE LEAF RENDERER.\nThe attached image is the terminal object frying_pan. Its recursive Describer found no further sub-objects.\nObject description: Bad Request\nWrite a constrained turtle drawing program that reconstructs this one object.\nUse normalized coordinates from 0 to 1000 with origin at the top-left.\nAllowed commands: pen, move, line, polyline, polygon, rectangle, ellipse, dot.\nUse transparent background unless the object itself requires a background. Use at most 100 commands.\nAnswer ONLY with JSON: {\"version\":1,\"background\":\"transparent\",\"penColor\":\"#RRGGBB\",\"penWidth\":4,\"commands\":[{\"op\":\"move\",\"x\":0,\"y\":0},...]}",
+      "rawProgram": "{\"version\":1,\"background\":\"transparent\",\"penColor\":\"#2A1A16\",\"penWidth\":4,\"commands\":[{\"op\":\"pen\",\"color\":\"#1A100E\",\"width\":4},{\"op\":\"ellipse\",\"cx\":502,\"cy\":533,\"rx\":430,\"ry\":292},{\"op\":\"pen\",\"color\":\"#2A1A16\",\"width\":3},{\"op\":\"ellipse\",\"cx\":500,\"cy\":528,\"rx\":404,\"ry\":268},{\"op\":\"pen\",\"color\":\"#3A251F\",\"width\":3},{\"op\":\"ellipse\",\"cx\":518,\"cy\":505,\"rx\":360,\"ry\":228},{\"op\":\"pen\",\"color\":\"#241613\",\"width\":3},{\"op\":\"ellipse\",\"cx\":463,\"cy\":520,\"rx\":335,\"ry\":214},{\"op\":\"pen\",\"color\":\"#4A332B\",\"width\":2},{\"op\":\"polyline\",\"points\":[[120,420],[215,360],[340,318],[495,292],[640,300],[755,350]]},{\"op\":\"pen\",\"color\":\"#5A443A\",\"width\":2},{\"op\":\"polyline\",\"points\":[[400,650],[490,632],[585,635]]},{\"op\":\"pen\",\"color\":\"#1F1311\",\"width\":3},{\"op\":\"polyline\",\"points\":[[145,705],[300,800],[505,860],[690,830],[810,740]]}]}",
+      "status": "drawing",
+      "attempts": 4,
+      "error": "Bad Request",
+      "failedStage": "png",
+      "retryAfter": 1788291476336,
+      "pngPrompt": "TURTLE PNG DRAW STEP.\nThe attached image is terminal object frying_pan.\nObject description: Bad Request\nReview the draft Turtle program below and return the final drawing program that should be rendered to PNG.\nPreserve accurate silhouette, colors, holes, and visible internal details. Coordinates are normalized from 0 to 1000 with top-left origin.\nAllowed commands: pen, move, line, polyline, polygon, rectangle, ellipse, dot. Use at most 200 commands.\nDRAFT TURTLE PROGRAM:\n{\"version\":1,\"background\":\"transparent\",\"penColor\":\"#2A1A16\",\"penWidth\":4,\"commands\":[{\"op\":\"pen\",\"color\":\"#1A100E\",\"width\":4},{\"op\":\"ellipse\",\"cx\":502,\"cy\":533,\"rx\":430,\"ry\":292},{\"op\":\"pen\",\"color\":\"#2A1A16\",\"width\":3},{\"op\":\"ellipse\",\"cx\":500,\"cy\":528,\"rx\":404,\"ry\":268},{\"op\":\"pen\",\"color\":\"#3A251F\",\"width\":3},{\"op\":\"ellipse\",\"cx\":518,\"cy\":505,\"rx\":360,\"ry\":228},{\"op\":\"pen\",\"color\":\"#241613\",\"width\":3},{\"op\":\"ellipse\",\"cx\":463,\"cy\":520,\"rx\":335,\"ry\":214},{\"op\":\"pen\",\"color\":\"#4A332B\",\"width\":2},{\"op\":\"polyline\",\"points\":[[120,420],[215,360],[340,318],[495,292],[640,300],[755,350]]},{\"op\":\"pen\",\"color\":\"#5A443A\",\"width\":2},{\"op\":\"polyline\",\"points\":[[400,650],[490,632],[585,635]]},{\"op\":\"pen\",\"color\":\"#1F1311\",\"width\":3},{\"op\":\"polyline\",\"points\":[[145,705],[300,800],[505,860],[690,830],[810,740]]}]}\nAnswer ONLY with the final JSON object. Do not include Markdown or Python."
+    },
+    "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004_members/next_pass_46_bubble_group.png": {
+      "sourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004_members/next_pass_46_bubble_group.png",
+      "subjectName": "bubble_group",
+      "prompt": "TURTLE LEAF RENDERER.\nThe attached image is the terminal object bubble_group. Its recursive Describer found no further sub-objects.\nObject description: Bad Request\nWrite a constrained turtle drawing program that reconstructs this one object.\nUse normalized coordinates from 0 to 1000 with origin at the top-left.\nAllowed commands: pen, move, line, polyline, polygon, rectangle, ellipse, dot.\nUse transparent background unless the object itself requires a background. Use at most 100 commands.\nAnswer ONLY with JSON: {\"version\":1,\"background\":\"transparent\",\"penColor\":\"#RRGGBB\",\"penWidth\":4,\"commands\":[{\"op\":\"move\",\"x\":0,\"y\":0},...]}",
+      "rawProgram": "{\"version\":1,\"background\":\"transparent\",\"penColor\":\"#6FEFFF\",\"penWidth\":4,\"commands\":[{\"op\":\"pen\",\"color\":\"#67F4FF\",\"width\":4},{\"op\":\"ellipse\",\"x\":118,\"y\":122,\"rx\":30,\"ry\":30},{\"op\":\"ellipse\",\"x\":169,\"y\":132,\"rx\":30,\"ry\":30},{\"op\":\"ellipse\",\"x\":98,\"y\":198,\"rx\":29,\"ry\":29},{\"op\":\"ellipse\",\"x\":143,\"y\":242,\"rx\":30,\"ry\":30},{\"op\":\"pen\",\"color\":\"#1F2A2D\",\"width\":3},{\"op\":\"ellipse\",\"x\":118,\"y\":122,\"rx\":10,\"ry\":10},{\"op\":\"ellipse\",\"x\":169,\"y\":132,\"rx\":10,\"ry\":10},{\"op\":\"ellipse\",\"x\":98,\"y\":198,\"rx\":10,\"ry\":10},{\"op\":\"ellipse\",\"x\":143,\"y\":242,\"rx\":10,\"ry\":10},{\"op\":\"pen\",\"color\":\"#8EEBFF\",\"width\":4},{\"op\":\"ellipse\",\"x\":861,\"y\":268,\"rx\":29,\"ry\":29},{\"op\":\"ellipse\",\"x\":900,\"y\":306,\"rx\":30,\"ry\":30},{\"op\":\"pen\",\"color\":\"#2A3031\",\"width\":3},{\"op\":\"ellipse\",\"x\":861,\"y\":268,\"rx\":10,\"ry\":10},{\"op\":\"ellipse\",\"x\":900,\"y\":306,\"rx\":10,\"ry\":10},{\"op\":\"pen\",\"color\":\"#E5FFE9\",\"width\":4},{\"op\":\"ellipse\",\"x\":846,\"y\":429,\"rx\":30,\"ry\":30},{\"op\":\"ellipse\",\"x\":884,\"y\":459,\"rx\":30,\"ry\":30},{\"op\":\"pen\",\"color\":\"#2F3434\",\"width\":3},{\"op\":\"ellipse\",\"x\":846,\"y\":429,\"rx\":10,\"ry\":10},{\"op\":\"ellipse\",\"x\":884,\"y\":459,\"rx\":10,\"ry\":10},{\"op\":\"pen\",\"color\":\"#3AB2FF\",\"width\":4},{\"op\":\"ellipse\",\"x\":840,\"y\":842,\"rx\":31,\"ry\":31},{\"op\":\"ellipse\",\"x\":886,\"y\":866,\"rx\":31,\"ry\":31},{\"op\":\"pen\",\"color\":\"#24313A\",\"width\":3},{\"op\":\"ellipse\",\"x\":840,\"y\":842,\"rx\":10,\"ry\":10},{\"op\":\"ellipse\",\"x\":886,\"y\":866,\"rx\":10,\"ry\":10}]}",
+      "status": "drawing",
+      "attempts": 4,
+      "error": "Could not load Turtle PNG input: data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004_members/next_pass_46_bubble_group.png",
+      "failedStage": "png",
+      "retryAfter": 1788291497305,
+      "pngPrompt": "TURTLE PNG DRAW STEP.\nThe attached image is terminal object bubble_group.\nObject description: Bad Request\nReview the draft Turtle program below and return the final drawing program that should be rendered to PNG.\nPreserve accurate silhouette, colors, holes, and visible internal details. Coordinates are normalized from 0 to 1000 with top-left origin.\nAllowed commands: pen, move, line, polyline, polygon, rectangle, ellipse, dot. Use at most 200 commands.\nDRAFT TURTLE PROGRAM:\n{\"version\":1,\"background\":\"transparent\",\"penColor\":\"#6FEFFF\",\"penWidth\":4,\"commands\":[{\"op\":\"pen\",\"color\":\"#67F4FF\",\"width\":4},{\"op\":\"ellipse\",\"x\":118,\"y\":122,\"rx\":30,\"ry\":30},{\"op\":\"ellipse\",\"x\":169,\"y\":132,\"rx\":30,\"ry\":30},{\"op\":\"ellipse\",\"x\":98,\"y\":198,\"rx\":29,\"ry\":29},{\"op\":\"ellipse\",\"x\":143,\"y\":242,\"rx\":30,\"ry\":30},{\"op\":\"pen\",\"color\":\"#1F2A2D\",\"width\":3},{\"op\":\"ellipse\",\"x\":118,\"y\":122,\"rx\":10,\"ry\":10},{\"op\":\"ellipse\",\"x\":169,\"y\":132,\"rx\":10,\"ry\":10},{\"op\":\"ellipse\",\"x\":98,\"y\":198,\"rx\":10,\"ry\":10},{\"op\":\"ellipse\",\"x\":143,\"y\":242,\"rx\":10,\"ry\":10},{\"op\":\"pen\",\"color\":\"#8EEBFF\",\"width\":4},{\"op\":\"ellipse\",\"x\":861,\"y\":268,\"rx\":29,\"ry\":29},{\"op\":\"ellipse\",\"x\":900,\"y\":306,\"rx\":30,\"ry\":30},{\"op\":\"pen\",\"color\":\"#2A3031\",\"width\":3},{\"op\":\"ellipse\",\"x\":861,\"y\":268,\"rx\":10,\"ry\":10},{\"op\":\"ellipse\",\"x\":900,\"y\":306,\"rx\":10,\"ry\":10},{\"op\":\"pen\",\"color\":\"#E5FFE9\",\"width\":4},{\"op\":\"ellipse\",\"x\":846,\"y\":429,\"rx\":30,\"ry\":30},{\"op\":\"ellipse\",\"x\":884,\"y\":459,\"rx\":30,\"ry\":30},{\"op\":\"pen\",\"color\":\"#2F3434\",\"width\":3},{\"op\":\"ellipse\",\"x\":846,\"y\":429,\"rx\":10,\"ry\":10},{\"op\":\"ellipse\",\"x\":884,\"y\":459,\"rx\":10,\"ry\":10},{\"op\":\"pen\",\"color\":\"#3AB2FF\",\"width\":4},{\"op\":\"ellipse\",\"x\":840,\"y\":842,\"rx\":31,\"ry\":31},{\"op\":\"ellipse\",\"x\":886,\"y\":866,\"rx\":31,\"ry\":31},{\"op\":\"pen\",\"color\":\"#24313A\",\"width\":3},{\"op\":\"ellipse\",\"x\":840,\"y\":842,\"rx\":10,\"ry\":10},{\"op\":\"ellipse\",\"x\":886,\"y\":866,\"rx\":10,\"ry\":10}]}\nAnswer ONLY with the final JSON object. Do not include Markdown or Python."
+    },
+    "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/next_pass_04_sparkle_particles_members/next_pass_47_upper_left_faint_dots.png": {
+      "sourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/next_pass_04_sparkle_particles_members/next_pass_47_upper_left_faint_dots.png",
+      "subjectName": "upper_left_faint_dots",
+      "prompt": "TURTLE LEAF RENDERER.\nThe attached image is the terminal object upper_left_faint_dots. Its recursive Describer found no further sub-objects.\nObject description: Bad Request\nWrite a constrained turtle drawing program that reconstructs this one object.\nUse normalized coordinates from 0 to 1000 with origin at the top-left.\nAllowed commands: pen, move, line, polyline, polygon, rectangle, ellipse, dot.\nUse transparent background unless the object itself requires a background. Use at most 100 commands.\nAnswer ONLY with JSON: {\"version\":1,\"background\":\"transparent\",\"penColor\":\"#RRGGBB\",\"penWidth\":4,\"commands\":[{\"op\":\"move\",\"x\":0,\"y\":0},...]}",
+      "rawProgram": "{\"version\":1,\"background\":\"transparent\",\"penColor\":\"#0A0F38\",\"penWidth\":4,\"commands\":[{\"op\":\"dot\",\"x\":102,\"y\":78,\"r\":8},{\"op\":\"dot\",\"x\":92,\"y\":74,\"r\":5},{\"op\":\"dot\",\"x\":112,\"y\":82,\"r\":4},{\"op\":\"dot\",\"x\":531,\"y\":522,\"r\":9},{\"op\":\"dot\",\"x\":523,\"y\":516,\"r\":5}]}",
+      "status": "rendered",
+      "attempts": 0,
+      "pngPrompt": "TURTLE PNG DRAW STEP.\nThe attached image is terminal object upper_left_faint_dots.\nObject description: Bad Request\nReview the draft Turtle program below and return the final drawing program that should be rendered to PNG.\nPreserve accurate silhouette, colors, holes, and visible internal details. Coordinates are normalized from 0 to 1000 with top-left origin.\nAllowed commands: pen, move, line, polyline, polygon, rectangle, ellipse, dot. Use at most 200 commands.\nDRAFT TURTLE PROGRAM:\n{\"version\":1,\"background\":\"transparent\",\"penColor\":\"#0A0F38\",\"penWidth\":4,\"commands\":[{\"op\":\"dot\",\"x\":102,\"y\":78,\"r\":8},{\"op\":\"dot\",\"x\":92,\"y\":74,\"r\":5},{\"op\":\"dot\",\"x\":112,\"y\":82,\"r\":4},{\"op\":\"dot\",\"x\":531,\"y\":522,\"r\":9},{\"op\":\"dot\",\"x\":523,\"y\":516,\"r\":5}]}\nAnswer ONLY with the final JSON object. Do not include Markdown or Python.",
+      "pngProgram": "{\"version\":1,\"background\":\"transparent\",\"penColor\":\"#060B2F\",\"penWidth\":2,\"commands\":[{\"op\":\"pen\",\"color\":\"#060B2F\",\"width\":2},{\"op\":\"dot\",\"x\":102,\"y\":78,\"r\":7},{\"op\":\"dot\",\"x\":94,\"y\":74,\"r\":4},{\"op\":\"dot\",\"x\":110,\"y\":82,\"r\":3},{\"op\":\"pen\",\"color\":\"#0A1242\",\"width\":1},{\"op\":\"dot\",\"x\":100,\"y\":79,\"r\":3}]}",
+      "programPath": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/next_pass_04_sparkle_particles_members/next_pass_47_upper_left_faint_dots.turtle.json",
+      "renderedImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/next_pass_04_sparkle_particles_members/next_pass_47_upper_left_faint_dots.turtle.png",
+      "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0013_members/next_pass_04_sparkle_particles_members/next_pass_47_upper_left_faint_dots.turtle.provenance.json"
+    },
+    "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014_members/next_pass_02_pikachu_character_members/next_pass_48_interior_black_cutout_ho.png": {
+      "sourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014_members/next_pass_02_pikachu_character_members/next_pass_48_interior_black_cutout_ho.png",
+      "subjectName": "interior_black_cutout_hole",
+      "prompt": "TURTLE LEAF RENDERER.\nThe attached image is the terminal object interior_black_cutout_hole. Its recursive Describer found no further sub-objects.\nObject description: Bad Request\nWrite a constrained turtle drawing program that reconstructs this one object.\nUse normalized coordinates from 0 to 1000 with origin at the top-left.\nAllowed commands: pen, move, line, polyline, polygon, rectangle, ellipse, dot.\nUse transparent background unless the object itself requires a background. Use at most 100 commands.\nAnswer ONLY with JSON: {\"version\":1,\"background\":\"transparent\",\"penColor\":\"#RRGGBB\",\"penWidth\":4,\"commands\":[{\"op\":\"move\",\"x\":0,\"y\":0},...]}",
+      "rawProgram": "{\"version\":1,\"background\":\"transparent\",\"penColor\":\"#000000\",\"penWidth\":4,\"commands\":[{\"op\":\"polygon\",\"points\":[[0,0],[1000,0],[1000,230],[965,325],[930,430],[900,500],[860,560],[790,615],[700,655],[610,680],[520,690],[440,680],[360,650],[290,605],[230,545],[185,470],[165,390],[170,315],[200,245],[250,185],[305,135],[350,90],[385,40],[400,0]]},{\"op\":\"polygon\",\"points\":[[385,40],[420,95],[455,150],[485,220],[500,295],[495,370],[470,440],[430,500],[380,545],[325,575],[280,555],[250,500],[240,430],[250,350],[275,275],[310,205],[345,140],[375,85]]}]}",
+      "status": "rendered",
+      "attempts": 0,
+      "pngPrompt": "TURTLE PNG DRAW STEP.\nThe attached image is terminal object interior_black_cutout_hole.\nObject description: Bad Request\nReview the draft Turtle program below and return the final drawing program that should be rendered to PNG.\nPreserve accurate silhouette, colors, holes, and visible internal details. Coordinates are normalized from 0 to 1000 with top-left origin.\nAllowed commands: pen, move, line, polyline, polygon, rectangle, ellipse, dot. Use at most 200 commands.\nDRAFT TURTLE PROGRAM:\n{\"version\":1,\"background\":\"transparent\",\"penColor\":\"#000000\",\"penWidth\":4,\"commands\":[{\"op\":\"polygon\",\"points\":[[0,0],[1000,0],[1000,230],[965,325],[930,430],[900,500],[860,560],[790,615],[700,655],[610,680],[520,690],[440,680],[360,650],[290,605],[230,545],[185,470],[165,390],[170,315],[200,245],[250,185],[305,135],[350,90],[385,40],[400,0]]},{\"op\":\"polygon\",\"points\":[[385,40],[420,95],[455,150],[485,220],[500,295],[495,370],[470,440],[430,500],[380,545],[325,575],[280,555],[250,500],[240,430],[250,350],[275,275],[310,205],[345,140],[375,85]]}]}\nAnswer ONLY with the final JSON object. Do not include Markdown or Python.",
+      "pngProgram": "{\"version\":1,\"background\":\"transparent\",\"penColor\":\"#000000\",\"penWidth\":1,\"commands\":[{\"op\":\"pen\",\"color\":\"#000000\",\"width\":1},{\"op\":\"polygon\",\"points\":[[292,71],[404,72],[520,74],[642,75],[756,78],[835,92],[873,124],[885,178],[883,250],[873,321],[863,387],[851,451],[833,516],[804,579],[759,633],[692,673],[609,693],[520,699],[436,694],[362,673],[299,638],[247,593],[206,544],[176,491],[157,432],[150,369],[152,307],[164,249],[187,197],[220,151],[254,113]]},{\"op\":\"polygon\",\"points\":[[797,170],[814,154],[834,161],[839,192],[834,230],[824,263],[808,289],[794,279],[793,244],[794,206]]}]}",
+      "programPath": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014_members/next_pass_02_pikachu_character_members/next_pass_48_interior_black_cutout_ho.turtle.json",
+      "renderedImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014_members/next_pass_02_pikachu_character_members/next_pass_48_interior_black_cutout_ho.turtle.png",
+      "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014_members/next_pass_02_pikachu_character_members/next_pass_48_interior_black_cutout_ho.turtle.provenance.json"
+    },
+    "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011_members/next_pass_03_question_number_text_11_members/next_pass_49_top_edge_jagged_artifact.png": {
+      "sourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011_members/next_pass_03_question_number_text_11_members/next_pass_49_top_edge_jagged_artifact.png",
+      "subjectName": "top_edge_jagged_artifacts",
+      "prompt": "TURTLE LEAF RENDERER.\nThe attached image is the terminal object top_edge_jagged_artifacts. Its recursive Describer found no further sub-objects.\nObject description: Bad Request\nWrite a constrained turtle drawing program that reconstructs this one object.\nUse normalized coordinates from 0 to 1000 with origin at the top-left.\nAllowed commands: pen, move, line, polyline, polygon, rectangle, ellipse, dot.\nUse transparent background unless the object itself requires a background. Use at most 100 commands.\nAnswer ONLY with JSON: {\"version\":1,\"background\":\"transparent\",\"penColor\":\"#RRGGBB\",\"penWidth\":4,\"commands\":[{\"op\":\"move\",\"x\":0,\"y\":0},...]}",
+      "rawProgram": "{\"version\":1,\"background\":\"transparent\",\"penColor\":\"#F5A313\",\"penWidth\":4,\"commands\":[{\"op\":\"pen\",\"color\":\"#F5A313\",\"width\":4},{\"op\":\"polygon\",\"points\":[[140,405],[174,367],[216,367],[244,405],[244,457],[216,496],[174,496],[140,457]]},{\"op\":\"polygon\",\"points\":[[199,252],[230,214],[280,214],[309,252],[309,305],[280,343],[230,343],[199,305]]},{\"op\":\"polygon\",\"points\":[[839,252],[870,214],[920,214],[949,252],[949,305],[920,343],[870,343],[839,305]]},{\"op\":\"polygon\",\"points\":[[816,305],[841,286],[865,286],[881,314],[881,371],[857,390],[826,390],[816,362]]},{\"op\":\"pen\",\"color\":\"#E38900\",\"width\":3},{\"op\":\"polyline\",\"points\":[[140,405],[174,367],[216,367],[244,405],[244,457],[216,496],[174,496],[140,457],[140,405]]},{\"op\":\"polyline\",\"points\":[[199,252],[230,214],[280,214],[309,252],[309,305],[280,343],[230,343],[199,305],[199,252]]},{\"op\":\"polyline\",\"points\":[[839,252],[870,214],[920,214],[949,252],[949,305],[920,343],[870,343],[839,305],[839,252]]},{\"op\":\"pen\",\"color\":\"#FFA31A\",\"width\":4},{\"op\":\"rectangle\",\"x\":64,\"y\":575,\"w\":24,\"h\":102},{\"op\":\"ellipse\",\"cx\":98,\"cy\":635,\"rx\":10,\"ry\":25},{\"op\":\"pen\",\"color\":\"#FFC83D\",\"width\":3},{\"op\":\"dot\",\"x\":117,\"y\":663,\"r\":7},{\"op\":\"dot\",\"x\":127,\"y\":648,\"r\":5},{\"op\":\"dot\",\"x\":770,\"y\":637,\"r\":9},{\"op\":\"dot\",\"x\":781,\"y\":619,\"r\":7},{\"op\":\"pen\",\"color\":\"#F7F7F7\",\"width\":3},{\"op\":\"ellipse\",\"cx\":736,\"cy\":624,\"rx\":10,\"ry\":32},{\"op\":\"ellipse\",\"cx\":746,\"cy\":631,\"rx\":6,\"ry\":28},{\"op\":\"pen\",\"color\":\"#A04CFF\",\"width\":2},{\"op\":\"dot\",\"x\":756,\"y\":627,\"r\":4},{\"op\":\"dot\",\"x\":111,\"y\":611,\"r\":4}]}",
+      "status": "rendered",
+      "attempts": 3,
+      "pngPrompt": "TURTLE PNG DRAW STEP.\nThe attached image is terminal object top_edge_jagged_artifacts.\nObject description: Bad Request\nReview the draft Turtle program below and return the final drawing program that should be rendered to PNG.\nPreserve accurate silhouette, colors, holes, and visible internal details. Coordinates are normalized from 0 to 1000 with top-left origin.\nAllowed commands: pen, move, line, polyline, polygon, rectangle, ellipse, dot. Use at most 200 commands.\nDRAFT TURTLE PROGRAM:\n{\"version\":1,\"background\":\"transparent\",\"penColor\":\"#F5A313\",\"penWidth\":4,\"commands\":[{\"op\":\"pen\",\"color\":\"#F5A313\",\"width\":4},{\"op\":\"polygon\",\"points\":[[140,405],[174,367],[216,367],[244,405],[244,457],[216,496],[174,496],[140,457]]},{\"op\":\"polygon\",\"points\":[[199,252],[230,214],[280,214],[309,252],[309,305],[280,343],[230,343],[199,305]]},{\"op\":\"polygon\",\"points\":[[839,252],[870,214],[920,214],[949,252],[949,305],[920,343],[870,343],[839,305]]},{\"op\":\"polygon\",\"points\":[[816,305],[841,286],[865,286],[881,314],[881,371],[857,390],[826,390],[816,362]]},{\"op\":\"pen\",\"color\":\"#E38900\",\"width\":3},{\"op\":\"polyline\",\"points\":[[140,405],[174,367],[216,367],[244,405],[244,457],[216,496],[174,496],[140,457],[140,405]]},{\"op\":\"polyline\",\"points\":[[199,252],[230,214],[280,214],[309,252],[309,305],[280,343],[230,343],[199,305],[199,252]]},{\"op\":\"polyline\",\"points\":[[839,252],[870,214],[920,214],[949,252],[949,305],[920,343],[870,343],[839,305],[839,252]]},{\"op\":\"pen\",\"color\":\"#FFA31A\",\"width\":4},{\"op\":\"rectangle\",\"x\":64,\"y\":575,\"w\":24,\"h\":102},{\"op\":\"ellipse\",\"cx\":98,\"cy\":635,\"rx\":10,\"ry\":25},{\"op\":\"pen\",\"color\":\"#FFC83D\",\"width\":3},{\"op\":\"dot\",\"x\":117,\"y\":663,\"r\":7},{\"op\":\"dot\",\"x\":127,\"y\":648,\"r\":5},{\"op\":\"dot\",\"x\":770,\"y\":637,\"r\":9},{\"op\":\"dot\",\"x\":781,\"y\":619,\"r\":7},{\"op\":\"pen\",\"color\":\"#F7F7F7\",\"width\":3},{\"op\":\"ellipse\",\"cx\":736,\"cy\":624,\"rx\":10,\"ry\":32},{\"op\":\"ellipse\",\"cx\":746,\"cy\":631,\"rx\":6,\"ry\":28},{\"op\":\"pen\",\"color\":\"#A04CFF\",\"width\":2},{\"op\":\"dot\",\"x\":756,\"y\":627,\"r\":4},{\"op\":\"dot\",\"x\":111,\"y\":611,\"r\":4}]}\nAnswer ONLY with the final JSON object. Do not include Markdown or Python.",
+      "pngProgram": "{\"version\":1,\"background\":\"transparent\",\"penColor\":\"#F5A313\",\"penWidth\":3,\"commands\":[{\"op\":\"pen\",\"color\":\"#F5A313\",\"width\":3},{\"op\":\"polygon\",\"points\":[[122,196],[155,174],[196,174],[227,196],[227,235],[196,257],[155,257],[122,235]]},{\"op\":\"polygon\",\"points\":[[177,116],[214,84],[262,84],[299,116],[299,163],[262,196],[214,196],[177,163]]},{\"op\":\"polygon\",\"points\":[[742,116],[779,84],[827,84],[864,116],[864,163],[827,196],[779,196],[742,163]]},{\"op\":\"polygon\",\"points\":[[699,145],[731,126],[763,126],[782,154],[782,191],[763,210],[731,210],[699,191]]},{\"op\":\"pen\",\"color\":\"#E38800\",\"width\":2},{\"op\":\"polyline\",\"points\":[[122,196],[155,174],[196,174],[227,196],[227,235],[196,257],[155,257],[122,235],[122,196]]},{\"op\":\"polyline\",\"points\":[[177,116],[214,84],[262,84],[299,116],[299,163],[262,196],[214,196],[177,163],[177,116]]},{\"op\":\"polyline\",\"points\":[[742,116],[779,84],[827,84],[864,116],[864,163],[827,196],[779,196],[742,163],[742,116]]},{\"op\":\"polyline\",\"points\":[[699,145],[731,126],[763,126],[782,154],[782,191],[763,210],[731,210],[699,191],[699,145]]},{\"op\":\"pen\",\"color\":\"#FFA31A\",\"width\":3},{\"op\":\"dot\",\"x\":56,\"y\":214,\"r\":16},{\"op\":\"dot\",\"x\":78,\"y\":222,\"r\":14},{\"op\":\"dot\",\"x\":105,\"y\":186,\"r\":6},{\"op\":\"pen\",\"color\":\"#F7F7F7\",\"width\":2},{\"op\":\"polygon\",\"points\":[[629,188],[647,195],[647,238],[629,230]]},{\"op\":\"polygon\",\"points\":[[668,186],[683,190],[687,234],[672,240],[665,225]]},{\"op\":\"pen\",\"color\":\"#FFD84A\",\"width\":2},{\"op\":\"dot\",\"x\":692,\"y\":212,\"r\":8},{\"op\":\"pen\",\"color\":\"#A04CFF\",\"width\":2},{\"op\":\"dot\",\"x\":661,\"y\":217,\"r\":3}]}",
+      "programPath": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011_members/next_pass_03_question_number_text_11_members/next_pass_49_top_edge_jagged_artifact.turtle.json",
+      "renderedImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011_members/next_pass_03_question_number_text_11_members/next_pass_49_top_edge_jagged_artifact.turtle.png",
+      "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0011_members/next_pass_03_question_number_text_11_members/next_pass_49_top_edge_jagged_artifact.turtle.provenance.json"
+    }
+  },
+  "memberGoal": "any",
+  "memberFill": "median",
+  "allCallsModel": "enullm-8801-copilot_gpt-5.3-codex",
+  "describerModel": "",
+  "plannerModel": "",
+  "outlinerModel": "",
+  "extractorModel": "",
+  "turtleModel": "",
+  "turtlePngModel": "",
+  "captionModel": "",
+  "describerPromptSelection": "workspace",
+  "plannerPromptSelection": "workspace",
+  "outlinerPromptSelection": "workspace",
+  "extractorPromptSelection": "workspace",
+  "turtlePromptSelection": "workspace",
+  "turtlePngPromptSelection": "workspace",
+  "pipeForkSelections": {
+    "inventory": "both",
+    "prompts": "baseline",
+    "routes": "both"
+  },
+  "pipeForkHistory": [
+    {
+      "runId": "mthkwu3f-8xmkr",
+      "fork": "inventory",
+      "label": "Both",
+      "selection": "both",
+      "at": "2026-08-31T18:36:01.501Z",
+      "detail": "input image: 36 of 38 hierarchy entries continue"
+    },
+    {
+      "runId": "mthkxbbi-dxbo6",
+      "fork": "inventory",
+      "label": "Both",
+      "selection": "both",
+      "at": "2026-08-31T18:36:09.681Z",
+      "detail": "input image: 36 of 38 hierarchy entries continue"
+    },
+    {
+      "runId": "mthkxbbi-dxbo6",
+      "fork": "prompts",
+      "label": "Baseline",
+      "selection": "baseline",
+      "at": "2026-08-31T18:36:09.681Z",
+      "detail": "input image: 0 LLM rewrite(s), 36 baseline prompt(s) available"
+    },
+    {
+      "runId": "mthkxj9u-5ac33",
+      "fork": "inventory",
+      "label": "Both",
+      "selection": "both",
+      "at": "2026-08-31T18:36:20.016Z",
+      "detail": "input image: 36 of 38 hierarchy entries continue"
+    },
+    {
+      "runId": "mthkxj9u-5ac33",
+      "fork": "prompts",
+      "label": "Baseline",
+      "selection": "baseline",
+      "at": "2026-08-31T18:36:20.016Z",
+      "detail": "input image: 0 LLM rewrite(s), 36 baseline prompt(s) available"
+    },
+    {
+      "runId": "mthky5xm-vql3a",
+      "fork": "inventory",
+      "label": "Both",
+      "selection": "both",
+      "at": "2026-08-31T18:36:49.381Z",
+      "detail": "input image: 36 of 38 hierarchy entries continue"
+    },
+    {
+      "runId": "mthky5xm-vql3a",
+      "fork": "prompts",
+      "label": "Baseline",
+      "selection": "baseline",
+      "at": "2026-08-31T18:36:49.381Z",
+      "detail": "input image: 0 LLM rewrite(s), 36 baseline prompt(s) available"
+    },
+    {
+      "runId": "mthkzp76-bj9vz",
+      "fork": "inventory",
+      "label": "Both",
+      "selection": "both",
+      "at": "2026-08-31T18:38:00.999Z",
+      "detail": "input image: 36 of 38 hierarchy entries continue"
+    },
+    {
+      "runId": "mthkzp76-bj9vz",
+      "fork": "prompts",
+      "label": "Baseline",
+      "selection": "baseline",
+      "at": "2026-08-31T18:38:00.999Z",
+      "detail": "input image: 0 LLM rewrite(s), 36 baseline prompt(s) available"
+    },
+    {
+      "runId": "mthkzp76-bj9vz",
+      "fork": "routes",
+      "label": "Both",
+      "selection": "both",
+      "at": "2026-08-31T18:38:35.362Z",
+      "detail": "input image: 36 object(s) entered Both"
+    },
+    {
+      "runId": "mthl1dpq-55kct",
+      "fork": "inventory",
+      "label": "Both",
+      "selection": "both",
+      "at": "2026-08-31T18:39:19.466Z",
+      "detail": "input image: 36 of 38 hierarchy entries continue"
+    },
+    {
+      "runId": "mthl1dpq-55kct",
+      "fork": "prompts",
+      "label": "Baseline",
+      "selection": "baseline",
+      "at": "2026-08-31T18:39:19.466Z",
+      "detail": "input image: 0 LLM rewrite(s), 36 baseline prompt(s) available"
+    },
+    {
+      "runId": "mthl1dpq-55kct",
+      "fork": "routes",
+      "label": "Both",
+      "selection": "both",
+      "at": "2026-08-31T18:39:19.619Z",
+      "detail": "input image: 36 object(s) entered Both"
+    }
+  ],
+  "selectedPipeFork": "inventory",
+  "pipeParentView": {
+    "inventory": "sub_objects",
+    "prompts": "llm_rewrite",
+    "routes": "direct_from_scene"
+  },
+  "selectedRecursiveInventoryId": "",
+  "collapsedLeftGalleries": {
+    "extractedImages": false,
+    "selectedImages": false,
+    "objects:0": false,
+    "backgrounds:0": false,
+    "objects:1": false,
+    "backgrounds:1": false,
+    "objects:2": false,
+    "backgrounds:2": false
+  },
+  "recursiveAutomation": {
+    "describer": true,
+    "planner": true,
+    "outliner": true,
+    "extractor": true,
+    "turtle": true,
+    "turtlePng": true,
+    "advanceLevels": true,
+    "enlargeSubobjects": true
+  },
+  "llmCallConcurrency": {
+    "describer": null,
+    "planner": null,
+    "outliner": null,
+    "extractor": null,
+    "turtle": null,
+    "turtlePng": null
+  },
+  "llmCallMetrics": {
+    "describer": {
+      "completed": 127,
+      "totalDurationMs": 6758063.099999696
+    },
+    "planner": {
+      "completed": 110,
+      "totalDurationMs": 4630250.400000274
+    },
+    "outliner": {
+      "completed": 739,
+      "totalDurationMs": 73856865.00000018
+    },
+    "extractor": {
+      "completed": 221,
+      "totalDurationMs": 14669420.500000536
+    },
+    "turtle": {
+      "completed": 6,
+      "totalDurationMs": 586681.4000000358
+    },
+    "turtlePng": {
+      "completed": 15,
+      "totalDurationMs": 892974.8000000119
+    }
+  },
+  "totalLlmConcurrency": 19,
+  "manualWorkerHold": false,
+  "autoClearData": true,
+  "autoClearAlgorithm": false,
+  "autoNext77": true,
+  "collapsedMap": {
+    "intake": true,
+    "config": false,
+    "player": true,
+    "prepass": true,
+    "inputs": true,
+    "userpick": false,
+    "gallery": false,
+    "output": true,
+    "trail": true,
+    "members": true,
+    "finish": true,
+    "memberDescription": true
+  },
+  "pinnedMap": {},
+  "stateShards": {
+    "memberInventories": "member_inventories.json",
+    "modelResponseCache": "model_response_cache.json"
+  }
+}

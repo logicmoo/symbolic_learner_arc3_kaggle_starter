@@ -1,0 +1,156 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004_members/scene_after_46.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004_members/scene_after_46.provenance.json",
+  "createdAt": "2026-09-01T17:34:01.398690Z",
+  "operation": "remove_object_from_scene",
+  "dimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 33.9,
+    "sceneIndex": 14,
+    "videoFrameIndex": 1017
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004.provenance.json"
+  },
+  "source": {
+    "objectName": "bubble_group",
+    "cutout": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004_members/cut_46_bubble_group.png",
+    "fillInstructions": {
+      "description": "Removing the bubble rims and highlights reveals uninterrupted underlying panel content at each bubble location: cyan/teal water gradients in upper areas, parts of the pineapple/sea region on the right, and pale sandy seafloor with subtle speckling in lower areas. No new object appears; each bubble hole should be filled by direct continuation of whatever scene pixels surround that bubble segment.",
+      "colors": [
+        "#22B9D6",
+        "#1FA7C8",
+        "#79D8E8",
+        "#DDE7CF",
+        "#C9D5B8",
+        "#F2EEDC"
+      ],
+      "continueEdges": [
+        "Continue local underwater gradients smoothly through each removed ring segment in the upper-left and right clusters",
+        "Preserve any nearby contour lines (pineapple edges, seabed horizon transitions, or soft background boundaries) straight through former bubble positions",
+        "Maintain sandy texture continuity in lower bubbles, including fine grain/speckle and soft shading variation",
+        "Blend edge anti-aliasing softly so no circular seam remains where bubble outlines were"
+      ],
+      "texture": "Match existing scene texture: soft cartoon gradients in water, gentle matte sand grain on seafloor, and clean illustrated edges."
+    }
+  },
+  "transform": {
+    "fill": "median",
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004.png",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "verified": true
+    },
+    "removedBox": [
+      245,
+      119,
+      636,
+      417
+    ],
+    "maskScale": 4,
+    "fillInstructions": {
+      "description": "Removing the bubble rims and highlights reveals uninterrupted underlying panel content at each bubble location: cyan/teal water gradients in upper areas, parts of the pineapple/sea region on the right, and pale sandy seafloor with subtle speckling in lower areas. No new object appears; each bubble hole should be filled by direct continuation of whatever scene pixels surround that bubble segment.",
+      "colors": [
+        "#22B9D6",
+        "#1FA7C8",
+        "#79D8E8",
+        "#DDE7CF",
+        "#C9D5B8",
+        "#F2EEDC"
+      ],
+      "continueEdges": [
+        "Continue local underwater gradients smoothly through each removed ring segment in the upper-left and right clusters",
+        "Preserve any nearby contour lines (pineapple edges, seabed horizon transitions, or soft background boundaries) straight through former bubble positions",
+        "Maintain sandy texture continuity in lower bubbles, including fine grain/speckle and soft shading variation",
+        "Blend edge anti-aliasing softly so no circular seam remains where bubble outlines were"
+      ],
+      "texture": "Match existing scene texture: soft cartoon gradients in water, gentle matte sand grain on seafloor, and clean illustrated edges."
+    },
+    "imageGeneration": {
+      "renderer": "median"
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:29.906006Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004_members/scene_after_46.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0004.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          245,
+          119,
+          636,
+          417
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Removing the bubble rims and highlights reveals uninterrupted underlying panel content at each bubble location: cyan/teal water gradients in upper areas, parts of the pineapple/sea region on the right, and pale sandy seafloor with subtle speckling in lower areas. No new object appears; each bubble hole should be filled by direct continuation of whatever scene pixels surround that bubble segment.",
+          "colors": [
+            "#22B9D6",
+            "#1FA7C8",
+            "#79D8E8",
+            "#DDE7CF",
+            "#C9D5B8",
+            "#F2EEDC"
+          ],
+          "continueEdges": [
+            "Continue local underwater gradients smoothly through each removed ring segment in the upper-left and right clusters",
+            "Preserve any nearby contour lines (pineapple edges, seabed horizon transitions, or soft background boundaries) straight through former bubble positions",
+            "Maintain sandy texture continuity in lower bubbles, including fine grain/speckle and soft shading variation",
+            "Blend edge anti-aliasing softly so no circular seam remains where bubble outlines were"
+          ],
+          "texture": "Match existing scene texture: soft cartoon gradients in water, gentle matte sand grain on seafloor, and clean illustrated edges."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:34:01.398690Z"
+    }
+  ]
+}

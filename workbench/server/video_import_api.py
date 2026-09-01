@@ -13,6 +13,7 @@ have the rights to import is the caller's responsibility.
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import hashlib
 import io
@@ -26,6 +27,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
+import zipfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any, Iterator
@@ -34,8 +36,11 @@ from fastapi import APIRouter, Body, File, Form, HTTPException, Request, UploadF
 from fastapi.responses import Response, StreamingResponse
 
 from arc3_play_api import (
+    _all_game_dirs,
+    _curated_games_container,
     _game_slug,
     _game_write_dir,
+    _iter_recording_dirs,
     _next_ranked_saved_dir_name,
     _safe_workspace_child,
     _utc_now,
@@ -48,17 +53,126 @@ from resource_relationships import relationship_ids
 from workspace_credentials import resolve_workspace_credential
 
 router = APIRouter(prefix="/video-import", tags=["video-import"])
+_PAGE_STATE_SHARDS = {
+    "memberInventories": "member_inventories.json",
+    "modelResponseCache": "model_response_cache.json",
+}
+_page_state_locks: dict[str, threading.RLock] = {}
+_page_state_locks_guard = threading.Lock()
+_data_layout_lock = threading.RLock()
+_migrated_data_roots: set[Path] = set()
+
+
+def _page_state_lock(workspace_id: str) -> threading.RLock:
+    with _page_state_locks_guard:
+        return _page_state_locks.setdefault(workspace_id, threading.RLock())
+
+
+def _atomic_json_write(path: Path, value: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
+    try:
+        temporary.write_text(json.dumps(value, indent=2), encoding="utf-8")
+        temporary.replace(path)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 _VIDEO_SUFFIXES = {".mp4", ".webm", ".mkv", ".mov", ".avi", ".m4v"}
+_IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif"}
+_IMAGE_ARCHIVE_MAX_FILES = 2_000
+_IMAGE_ARCHIVE_MAX_ENTRY_BYTES = 64 * 1024 * 1024
+_IMAGE_ARCHIVE_MAX_TOTAL_BYTES = 1024 * 1024 * 1024
+_CURATED_DATA_EXCLUDES = {"videoimports", "recordings", "importables"}
 
 # Running/finished frame-extraction jobs, polled for the progress bar.
 _extract_jobs: dict[str, dict[str, Any]] = {}
 _video_meta_locks: dict[Path, threading.Lock] = {}
 _video_meta_locks_guard = threading.Lock()
+_MEDIAMTX_IMAGE = "bluenviron/mediamtx:1.20.1"
+_MEDIAMTX_CONTAINER = "workbench-mediamtx"
+_STREAM_SOURCE_SCHEMES = {"http", "https", "rtsp", "rtmp", "rtmps", "srt"}
+
+
+def _video_frame_source_id(root: Path, video_path: Path) -> str:
+    relative = video_path.parent.resolve().relative_to(root.resolve()).as_posix()
+    digest = hashlib.sha256(relative.encode("utf-8")).hexdigest()[:8]
+    return f"{_slug(video_path.parent.name)}-{digest}"
+
+
+def _rewrite_data_paths(paths: list[Path], replacements: list[tuple[str, str]]) -> None:
+    for base in paths:
+        if not base.is_dir():
+            continue
+        for path in base.rglob("*.json"):
+            source = path.read_text(encoding="utf-8")
+            migrated = source
+            for old, new in replacements:
+                migrated = migrated.replace(old, new)
+            if migrated != source:
+                path.write_text(migrated, encoding="utf-8")
 
 
 def _imports_root(root: Path) -> Path:
-    return root / "data" / "VideoImports"
+    resolved_root = root.resolve()
+    canonical = root / "data" / "video_import"
+    legacy = root / "data" / "VideoImports"
+    vision_root = root / "data" / "vision_frames"
+    with _data_layout_lock:
+        if resolved_root in _migrated_data_roots:
+            return canonical
+        replacements = [
+            ("data/VideoImports/", "data/video_import/"),
+            ("data/Recordings/", "data/arc3_games/recordings/"),
+            ("data/importables/", "data/arc3_games/importables/"),
+        ]
+        if legacy.is_dir() and not canonical.exists():
+            legacy.rename(canonical)
+        canonical.mkdir(parents=True, exist_ok=True)
+        for child in list(canonical.iterdir()):
+            frames_dir = child / "frames"
+            video_path = next(
+                (
+                    entry
+                    for entry in child.iterdir()
+                    if entry.is_file() and entry.suffix.lower() in _VIDEO_SUFFIXES
+                ),
+                None,
+            ) if child.is_dir() else None
+            if video_path is None or not frames_dir.is_dir():
+                continue
+            destination = vision_root / "video" / _video_frame_source_id(root, video_path)
+            if not destination.exists():
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                frames_dir.rename(destination)
+                replacements.append(
+                    (
+                        f"data/video_import/{child.name}/frames/",
+                        f"data/vision_frames/video/{destination.name}/",
+                    )
+                )
+        curated_root = root / "data" / "arc3_games" / "curated"
+        if curated_root.is_dir():
+            replacements.extend(
+                (
+                    f"data/{child.name}/",
+                    f"data/arc3_games/curated/{child.name}/",
+                )
+                for child in curated_root.iterdir()
+                if child.is_dir()
+            )
+        _rewrite_data_paths([canonical, vision_root], replacements)
+        _migrated_data_roots.add(resolved_root)
+    return canonical
+
+
+def _vision_frames_root(root: Path) -> Path:
+    path = root / "data" / "vision_frames"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def _video_frames_dir(root: Path, video_path: Path) -> Path:
+    return _vision_frames_root(root) / "video" / _video_frame_source_id(root, video_path)
 
 
 def _slug(value: str) -> str:
@@ -535,7 +649,7 @@ def _update_catalog_for_video(root: Path, video_path: Path, updates: dict[str, A
 
 @router.get("/importables")
 def list_importables(workspaceId: str) -> dict[str, Any]:
-    """Loose video files dropped by hand into data/VideoImports/importables/.
+    """Loose video files dropped by hand into data/video_import/importables/.
 
     These are raw drops with no metadata yet; picking one in the UI starts
     the normal import process on it (copy into its own shelf + video.json)."""
@@ -557,27 +671,84 @@ def list_importables(workspaceId: str) -> dict[str, Any]:
 @router.get("/page-state")
 def get_page_state(workspaceId: str) -> dict[str, Any]:
     """The page's exact-state JSON, stored beside the image repository."""
-    path = _imports_root(_workspace_root(workspaceId)) / "page_state.json"
-    if not path.is_file():
-        return {"state": None}
-    try:
-        return {"state": json.loads(path.read_text(encoding="utf-8"))}
-    except (OSError, json.JSONDecodeError):
-        return {"state": None}
+    container = _imports_root(_workspace_root(workspaceId))
+    path = container / "page_state.json"
+    with _page_state_lock(workspaceId):
+        if not path.is_file():
+            return {"state": None}
+        try:
+            state = json.loads(path.read_text(encoding="utf-8"))
+            shards = state.pop("stateShards", {})
+            if isinstance(shards, dict):
+                shard_root = container / "page_state"
+                for key, filename in _PAGE_STATE_SHARDS.items():
+                    if shards.get(key) != filename:
+                        continue
+                    shard_path = shard_root / filename
+                    if shard_path.is_file():
+                        state[key] = json.loads(shard_path.read_text(encoding="utf-8"))
+            return {"state": state}
+        except (OSError, json.JSONDecodeError):
+            return {"state": None}
 
 
 @router.post("/page-state")
-def save_page_state(payload: dict[str, Any]) -> dict[str, Any]:
-    """Persist the page's exact-state JSON into data/VideoImports/page_state.json."""
+async def save_page_state(request: Request) -> dict[str, Any]:
+    """Persist the page's exact-state JSON into data/video_import/page_state.json."""
+    try:
+        payload = await asyncio.to_thread(json.loads, await request.body())
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise HTTPException(status_code=400, detail="page state must be valid JSON") from error
+    return await asyncio.to_thread(_save_page_state_payload, payload)
+
+
+def _compact_page_state(state: dict[str, Any]) -> dict[str, Any]:
+    cache = state.get("modelResponseCache")
+    if not isinstance(cache, dict):
+        return state
+    allowed = {
+        "modelId",
+        "text",
+        "latencyMs",
+        "inputTokens",
+        "outputTokens",
+        "responseId",
+        "backendId",
+    }
+    for entry in cache.values():
+        if not isinstance(entry, dict):
+            continue
+        payload = entry.get("payload")
+        if isinstance(payload, dict):
+            entry["payload"] = {
+                key: value for key, value in payload.items() if key in allowed
+            }
+    return state
+
+
+def _save_page_state_payload(payload: dict[str, Any]) -> dict[str, Any]:
     workspace_id = str(payload.get("workspaceId") or "")
     state = payload.get("state")
     if not workspace_id or not isinstance(state, dict):
         raise HTTPException(status_code=400, detail="workspaceId and a state object are required")
+    state = _compact_page_state(state)
     container = _imports_root(_workspace_root(workspace_id))
-    container.mkdir(parents=True, exist_ok=True)
     path = container / "page_state.json"
-    path.write_text(json.dumps(state, indent=2), encoding="utf-8")
-    return {"saved": True, "path": str(path)}
+    with _page_state_lock(workspace_id):
+        manifest = dict(state)
+        shard_root = container / "page_state"
+        for key, filename in _PAGE_STATE_SHARDS.items():
+            _atomic_json_write(shard_root / filename, manifest.pop(key, {}))
+        manifest["stateShards"] = dict(_PAGE_STATE_SHARDS)
+        _atomic_json_write(path, manifest)
+    return {
+        "saved": True,
+        "path": str(path),
+        "shards": {
+            key: str((shard_root / filename).resolve())
+            for key, filename in _PAGE_STATE_SHARDS.items()
+        },
+    }
 
 
 @router.post("/select-degenerate")
@@ -628,7 +799,9 @@ def list_videos(workspaceId: str) -> dict[str, Any]:
     def collect(directory: Path) -> None:
         for entry in sorted(directory.iterdir()):
             if entry.is_file() and entry.suffix.lower() in _VIDEO_SUFFIXES:
-                frames_dir = directory / "frames"
+                canonical_frames = _video_frames_dir(root, entry)
+                legacy_frames = directory / "frames"
+                frames_dir = canonical_frames if canonical_frames.is_dir() else legacy_frames
                 frames = sorted(frames_dir.glob("frame_*.png")) if frames_dir.is_dir() else []
                 meta_path = directory / "video.json"
                 meta: dict[str, Any] = {}
@@ -670,7 +843,7 @@ def list_videos(workspaceId: str) -> dict[str, Any]:
 
 @router.post("/download")
 def download_video(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
-    """Download one video URL into data/VideoImports/<slug>/.
+    """Download one video URL into data/video_import/<slug>/.
 
     The caller supplies the URL and is responsible for having the rights to
     the content it names. `quality` picks the yt-dlp format ceiling (480p
@@ -795,7 +968,7 @@ def _probe_duration_seconds(video_path: Path) -> float | None:
 def import_file(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
     """Import a movie already on disk: a workspace-relative or absolute path.
 
-    The file is copied into data/VideoImports/<slug>/ so every imported video
+    The file is copied into data/video_import/<slug>/ so every imported video
     lives in one place with its metadata."""
     workspace_id = str(body.get("workspaceId") or "")
     raw_path = str(body.get("path") or "").strip().strip('"')
@@ -851,7 +1024,7 @@ async def upload_video(
     """Receive a video file uploaded from the browser.
 
     Uploads land in their own importables/ shelf
-    (data/VideoImports/importables/<slug>/video.<ext>) so hand-sent files are
+    (data/video_import/importables/<slug>/video.<ext>) so hand-sent files are
     grouped apart from URL downloads, while still appearing in the video list."""
     root = _workspace_root(workspaceId)
     original = Path(str(file.filename or "upload.mp4")).name
@@ -895,6 +1068,118 @@ async def upload_video(
         "downloadedAt": _utc_now(),
     })
     return result
+
+
+def _import_image_archive(
+    workspace_id: str,
+    filename: str,
+    file_object: Any,
+) -> dict[str, Any]:
+    from PIL import Image  # noqa: PLC0415
+
+    root = _workspace_root(workspace_id)
+    archive_id = _slug(Path(filename).stem or "image-archive")
+    output_dir = _vision_frames_root(root) / "image_archives" / archive_id
+    if output_dir.exists():
+        output_dir = output_dir.parent.with_name(
+            f"{archive_id}-{uuid.uuid4().hex[:6]}"
+        ) / "frames"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        archive = zipfile.ZipFile(file_object)
+    except (OSError, zipfile.BadZipFile) as error:
+        raise HTTPException(status_code=400, detail="uploaded file is not a valid ZIP archive") from error
+    with archive:
+        entries = [
+            entry
+            for entry in archive.infolist()
+            if not entry.is_dir() and Path(entry.filename).suffix.lower() in _IMAGE_SUFFIXES
+        ]
+        entries.sort(key=lambda entry: entry.filename.lower())
+        if not entries:
+            raise HTTPException(status_code=400, detail="ZIP archive contains no supported images")
+        if len(entries) > _IMAGE_ARCHIVE_MAX_FILES:
+            raise HTTPException(
+                status_code=413,
+                detail=f"ZIP archive contains more than {_IMAGE_ARCHIVE_MAX_FILES} images",
+            )
+        total_bytes = sum(entry.file_size for entry in entries)
+        if total_bytes > _IMAGE_ARCHIVE_MAX_TOTAL_BYTES:
+            raise HTTPException(status_code=413, detail="ZIP archive image data exceeds 1 GiB")
+        frames: list[dict[str, Any]] = []
+        for index, entry in enumerate(entries):
+            if entry.file_size > _IMAGE_ARCHIVE_MAX_ENTRY_BYTES:
+                raise HTTPException(
+                    status_code=413,
+                    detail=f"ZIP image '{entry.filename}' exceeds 64 MiB",
+                )
+            if entry.compress_size and entry.file_size / entry.compress_size > 200:
+                raise HTTPException(
+                    status_code=413,
+                    detail=f"ZIP image '{entry.filename}' has an unsafe compression ratio",
+                )
+            try:
+                raw = archive.read(entry)
+                with Image.open(io.BytesIO(raw)) as image:
+                    image.load()
+                    output_path = output_dir / f"frame_{index:06d}.png"
+                    provenance = _save_image_with_provenance(
+                        root,
+                        image.convert("RGBA"),
+                        output_path,
+                        operation="import_image_archive_frame",
+                        source={
+                            "archiveName": filename,
+                            "archiveEntry": entry.filename,
+                            "frameIndex": index,
+                        },
+                        image_format="PNG",
+                    )
+            except (OSError, ValueError) as error:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"ZIP entry '{entry.filename}' is not a valid image",
+                ) from error
+            frames.append(
+                {
+                    "path": output_path.relative_to(root).as_posix(),
+                    "index": index,
+                    "atSeconds": float(index),
+                    "scene": index + 1,
+                    "provenance": provenance["provenance"],
+                }
+            )
+    manifest_path = output_dir.parent / "archive_import.json"
+    _atomic_json_write(
+        manifest_path,
+        {
+            "archiveName": filename,
+            "frames": frames,
+            "importedAt": _utc_now(),
+        },
+    )
+    return {
+        "archive": filename,
+        "frames": frames,
+        "manifest": manifest_path.relative_to(root).as_posix(),
+    }
+
+
+@router.post("/image-archive/upload")
+async def upload_image_archive(
+    workspaceId: str = Form(...),
+    file: UploadFile = File(...),
+) -> dict[str, Any]:
+    filename = file.filename or "images.zip"
+    if Path(filename).suffix.lower() != ".zip":
+        raise HTTPException(status_code=400, detail="image archive must be a .zip file")
+    await file.seek(0)
+    return await asyncio.to_thread(
+        _import_image_archive,
+        workspaceId,
+        filename,
+        file.file,
+    )
 
 
 @router.get("/stream")
@@ -1081,7 +1366,7 @@ def extract_frames(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
         from PIL import Image  # noqa: PLC0415
 
         started = time.monotonic()
-        frames_dir = video_path.parent / "frames"
+        frames_dir = _video_frames_dir(root, video_path)
         if frames_dir.is_dir():
             shutil.rmtree(frames_dir, ignore_errors=True)
         frames_dir.mkdir(parents=True, exist_ok=True)
@@ -1255,7 +1540,7 @@ def frame_at_cursor(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
         from PIL import Image  # noqa: PLC0415
     except ImportError as error:
         raise HTTPException(status_code=500, detail="imageio/PIL are not installed in the server environment") from error
-    frames_dir = video_path.parent / "frames"
+    frames_dir = _video_frames_dir(root, video_path)
     frames_dir.mkdir(parents=True, exist_ok=True)
     reader = imageio.get_reader(str(video_path))
     try:
@@ -1289,6 +1574,412 @@ def frame_at_cursor(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
     }
 
 
+def _normalized_outline_points(
+    raw: Any,
+    label: str,
+    width: int,
+    height: int,
+) -> list[tuple[int, int]]:
+    points: list[tuple[int, int]] = []
+    if not isinstance(raw, list):
+        return points
+    for index, point in enumerate(raw):
+        if not isinstance(point, (list, tuple)) or len(point) != 2:
+            continue
+        try:
+            x = int(round(float(point[0])))
+            y = int(round(float(point[1])))
+        except (TypeError, ValueError, OverflowError) as error:
+            raise HTTPException(
+                status_code=400,
+                detail=f"{label} point {index + 1} is not numeric",
+            ) from error
+        if not 0 <= x < width or not 0 <= y < height:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    f"{label} point {index + 1} ({x}, {y}) is outside the "
+                    f"{width}x{height} Outliner coordinate space"
+                ),
+            )
+        points.append((x, y))
+    return points
+
+
+def _normalized_outline_geometry(
+    body: dict[str, Any],
+    width: int,
+    height: int,
+) -> tuple[list[list[tuple[int, int]]], list[list[tuple[int, int]]]]:
+    polygons: list[list[tuple[int, int]]] = []
+    polygons_raw = body.get("polygons")
+    if isinstance(polygons_raw, list):
+        polygons = [
+            points
+            for index, raw in enumerate(polygons_raw)
+            if len(
+                points := _normalized_outline_points(
+                    raw,
+                    f"polygon {index + 1}",
+                    width,
+                    height,
+                )
+            )
+            >= 3
+        ]
+    polygon_raw = body.get("polygon")
+    if not polygons and isinstance(polygon_raw, list):
+        points = _normalized_outline_points(polygon_raw, "polygon", width, height)
+        if len(points) >= 3:
+            polygons = [points]
+    box_raw = body.get("box")
+    if not polygons and isinstance(box_raw, list) and len(box_raw) == 4:
+        try:
+            bx0, by0, bx1, by1 = (
+                int(round(float(value))) for value in box_raw
+            )
+        except (TypeError, ValueError, OverflowError) as error:
+            raise HTTPException(status_code=400, detail="box coordinates must be numeric") from error
+        bx0, bx1 = sorted((bx0, bx1))
+        by0, by1 = sorted((by0, by1))
+        if bx0 < 0 or by0 < 0 or bx1 > width or by1 > height:
+            raise HTTPException(
+                status_code=409,
+                detail=f"box is outside the {width}x{height} Outliner coordinate space",
+            )
+        polygons = [[(bx0, by0), (bx1, by0), (bx1, by1), (bx0, by1)]]
+    if not polygons:
+        raise HTTPException(
+            status_code=400,
+            detail="polygons (each >= 3 [x, y] points), polygon, or box is required",
+        )
+    holes_raw = body.get("holes")
+    holes = (
+        [
+            points
+            for index, raw in enumerate(holes_raw)
+            if len(
+                points := _normalized_outline_points(
+                    raw,
+                    f"hole {index + 1}",
+                    width,
+                    height,
+                )
+            )
+            >= 3
+        ]
+        if isinstance(holes_raw, list)
+        else []
+    )
+    return polygons, holes
+
+
+def _outline_geometry_document(
+    polygons: list[list[tuple[int, int]]],
+    holes: list[list[tuple[int, int]]],
+) -> dict[str, list[list[list[int]]]]:
+    return {
+        "polygons": [[[x, y] for x, y in points] for points in polygons],
+        "holes": [[[x, y] for x, y in points] for points in holes],
+    }
+
+
+def _outline_geometry_hash(
+    polygons: list[list[tuple[int, int]]],
+    holes: list[list[tuple[int, int]]],
+) -> str:
+    encoded = json.dumps(
+        _outline_geometry_document(polygons, holes),
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _outline_mask(
+    polygons: list[list[tuple[int, int]]],
+    holes: list[list[tuple[int, int]]],
+    width: int,
+    height: int,
+    image_module: Any,
+    image_draw_module: Any,
+) -> Any:
+    scale = 4
+    mask_large = image_module.new("L", (width * scale, height * scale), 0)
+    draw = image_draw_module.Draw(mask_large)
+    for points in polygons:
+        draw.polygon([(x * scale, y * scale) for x, y in points], fill=255)
+    for points in holes:
+        draw.polygon([(x * scale, y * scale) for x, y in points], fill=0)
+    return mask_large.resize((width, height), image_module.Resampling.LANCZOS)
+
+
+@router.post("/planner-visualization")
+def planner_visualization(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    """Draw Planner order numbers on the exact image used for planning."""
+    workspace_id = str(body.get("workspaceId") or "")
+    image_rel = str(body.get("image") or "")
+    labels_raw = body.get("labels")
+    if not workspace_id or not image_rel or not isinstance(labels_raw, list):
+        raise HTTPException(
+            status_code=400,
+            detail="workspaceId, image, and labels are required",
+        )
+    root = _workspace_root(workspace_id)
+    try:
+        image_path = _safe_workspace_child(root, image_rel)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    if not image_path.is_file():
+        raise HTTPException(status_code=404, detail=f"image not found: {image_rel}")
+    try:
+        from PIL import Image, ImageDraw, ImageFont  # noqa: PLC0415
+    except ImportError as error:
+        raise HTTPException(status_code=500, detail="PIL is not installed") from error
+    visualization = Image.open(image_path).convert("RGBA")
+    width, height = visualization.size
+    labels: list[dict[str, Any]] = []
+    for index, value in enumerate(labels_raw):
+        record = value if isinstance(value, dict) else {}
+        point = record.get("point")
+        if not isinstance(point, list) or len(point) != 2:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Planner label {index + 1} requires point [x, y]",
+            )
+        try:
+            x, y = (int(round(float(coordinate))) for coordinate in point)
+            number = int(record.get("number"))
+        except (TypeError, ValueError, OverflowError) as error:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Planner label {index + 1} has invalid coordinates or number",
+            ) from error
+        if not 0 <= x < width or not 0 <= y < height:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Planner label {index + 1} is outside the {width}x{height} image",
+            )
+        if number < 1:
+            raise HTTPException(status_code=400, detail="Planner label numbers must be positive")
+        labels.append(
+            {
+                "object": str(record.get("object") or ""),
+                "number": number,
+                "point": [x, y],
+            }
+        )
+    draw = ImageDraw.Draw(visualization, "RGBA")
+    radius = max(12, min(28, round(min(width, height) * 0.035)))
+    try:
+        font = ImageFont.truetype("DejaVuSans-Bold.ttf", radius)
+    except OSError:
+        font = ImageFont.load_default()
+    for label in labels:
+        x, y = label["point"]
+        draw.ellipse(
+            (x - radius, y - radius, x + radius, y + radius),
+            fill=(5, 13, 20, 220),
+            outline=(255, 230, 0, 255),
+            width=max(2, radius // 6),
+        )
+        draw.text(
+            (x, y),
+            str(label["number"]),
+            fill=(255, 255, 255, 255),
+            font=font,
+            anchor="mm",
+        )
+    output_dir = image_path.parent / f"{image_path.stem}_planner"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    digest = hashlib.sha256(
+        json.dumps(labels, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    output_path = output_dir / f"order_{digest[:12]}.png"
+    provenance = _save_image_with_provenance(
+        root,
+        visualization,
+        output_path,
+        operation="visualize_planner_order",
+        parent_image=image_path,
+        transform={"labels": labels, "plannerHash": digest},
+        image_format="PNG",
+    )
+    return {
+        "visualizationImage": output_path.relative_to(root).as_posix(),
+        "provenance": provenance["provenance"],
+        "plannerHash": digest,
+        "dimensions": {"width": width, "height": height},
+        "labels": labels,
+    }
+
+
+@router.post("/outline-verification")
+def outline_verification(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    """Rasterize and verify Outliner geometry and Turtle trace before extraction."""
+    workspace_id = str(body.get("workspaceId") or "")
+    image_rel = str(body.get("image") or "")
+    name = str(body.get("name") or "object")
+    trace_raw = body.get("traceTurtle")
+    if not workspace_id or not image_rel or not isinstance(trace_raw, list):
+        raise HTTPException(
+            status_code=400,
+            detail="workspaceId, image, and traceTurtle are required",
+        )
+    root = _workspace_root(workspace_id)
+    try:
+        image_path = _safe_workspace_child(root, image_rel)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    if not image_path.is_file():
+        raise HTTPException(status_code=404, detail=f"image not found: {image_rel}")
+    try:
+        from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont  # noqa: PLC0415
+    except ImportError as error:
+        raise HTTPException(status_code=500, detail="PIL is not installed") from error
+    source = Image.open(image_path).convert("RGBA")
+    width, height = source.size
+    polygons, holes = _normalized_outline_geometry(body, width, height)
+    mask = _outline_mask(polygons, holes, width, height, Image, ImageDraw)
+    bbox = mask.point(lambda alpha: 255 if alpha > 1 else 0).getbbox()
+    if not bbox:
+        raise HTTPException(status_code=400, detail="Outliner geometry produced an empty mask")
+    trace_paths: list[list[tuple[int, int]]] = []
+    current_path: list[tuple[int, int]] = []
+    normalized_trace: list[dict[str, int | str]] = []
+    for index, value in enumerate(trace_raw):
+        record = value if isinstance(value, dict) else {}
+        operation = str(record.get("op") or "").lower()
+        if operation not in {"move", "line"}:
+            raise HTTPException(
+                status_code=400,
+                detail=f"traceTurtle command {index + 1} must be move or line",
+            )
+        try:
+            normalized_x = int(round(float(record.get("x"))))
+            normalized_y = int(round(float(record.get("y"))))
+        except (TypeError, ValueError, OverflowError) as error:
+            raise HTTPException(
+                status_code=400,
+                detail=f"traceTurtle command {index + 1} has invalid coordinates",
+            ) from error
+        if not 0 <= normalized_x <= 1000 or not 0 <= normalized_y <= 1000:
+            raise HTTPException(
+                status_code=409,
+                detail=f"traceTurtle command {index + 1} is outside normalized 0..1000 space",
+            )
+        point = (
+            round(normalized_x * max(0, width - 1) / 1000),
+            round(normalized_y * max(0, height - 1) / 1000),
+        )
+        if operation == "move":
+            if len(current_path) >= 2:
+                trace_paths.append(current_path)
+            current_path = [point]
+        elif current_path:
+            current_path.append(point)
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="traceTurtle must begin with a move command",
+            )
+        normalized_trace.append(
+            {"op": operation, "x": normalized_x, "y": normalized_y}
+        )
+    if len(current_path) >= 2:
+        trace_paths.append(current_path)
+    if not trace_paths or sum(len(path) for path in trace_paths) < 3:
+        raise HTTPException(
+            status_code=400,
+            detail="traceTurtle requires at least one move and two line points",
+        )
+    trace_mask = Image.new("L", (width, height), 0)
+    trace_draw = ImageDraw.Draw(trace_mask)
+    trace_width = max(2, round(min(width, height) * 0.006))
+    for points in trace_paths:
+        trace_draw.line(points, fill=255, width=trace_width, joint="curve")
+    tolerance = max(3, min(15, round(min(width, height) * 0.012)))
+    kernel = tolerance * 2 + 1
+    solid_mask = mask.point(lambda alpha: 255 if alpha >= 128 else 0)
+    boundary = ImageChops.difference(
+        solid_mask.filter(ImageFilter.MaxFilter(kernel)),
+        solid_mask.filter(ImageFilter.MinFilter(kernel)),
+    )
+    boundary_near = boundary.filter(ImageFilter.MaxFilter(kernel))
+    trace_near = trace_mask.filter(ImageFilter.MaxFilter(kernel))
+    trace_pixels = sum(trace_mask.histogram()[1:])
+    boundary_pixels = sum(boundary.histogram()[1:])
+    trace_on_boundary = sum(ImageChops.multiply(trace_mask, boundary_near).histogram()[1:])
+    boundary_covered = sum(ImageChops.multiply(boundary, trace_near).histogram()[1:])
+    trace_agreement = trace_on_boundary / trace_pixels if trace_pixels else 0.0
+    boundary_coverage = boundary_covered / boundary_pixels if boundary_pixels else 0.0
+    if trace_agreement < 0.70 or boundary_coverage < 0.45:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Outliner Turtle trace does not agree with the extraction boundary "
+                f"(trace agreement {trace_agreement:.1%}, boundary coverage {boundary_coverage:.1%})"
+            ),
+        )
+    tint = Image.new("RGBA", source.size, (0, 255, 128, 0))
+    tint.putalpha(mask.point(lambda alpha: round(alpha * 0.28)))
+    visualization = Image.alpha_composite(source, tint)
+    draw = ImageDraw.Draw(visualization, "RGBA")
+    outline_width = max(2, round(min(width, height) * 0.005))
+    for points in polygons:
+        draw.line(points + [points[0]], fill=(255, 40, 180, 255), width=outline_width, joint="curve")
+    for points in holes:
+        draw.line(points + [points[0]], fill=(255, 150, 0, 255), width=outline_width, joint="curve")
+    for points in trace_paths:
+        draw.line(points, fill=(0, 235, 255, 255), width=outline_width, joint="curve")
+    planner_number = body.get("plannerNumber")
+    if planner_number is not None:
+        x = round((bbox[0] + bbox[2]) / 2)
+        y = round((bbox[1] + bbox[3]) / 2)
+        radius = max(12, min(28, round(min(width, height) * 0.035)))
+        try:
+            font = ImageFont.truetype("DejaVuSans-Bold.ttf", radius)
+        except OSError:
+            font = ImageFont.load_default()
+        draw.ellipse(
+            (x - radius, y - radius, x + radius, y + radius),
+            fill=(5, 13, 20, 220),
+            outline=(255, 230, 0, 255),
+            width=max(2, radius // 6),
+        )
+        draw.text((x, y), str(planner_number), fill="white", font=font, anchor="mm")
+    geometry_hash = _outline_geometry_hash(polygons, holes)
+    output_dir = image_path.parent / f"{image_path.stem}_outlines"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_path = output_dir / f"verify_{_slug(name)[:24]}_{geometry_hash[:12]}.png"
+    transform = {
+        **_outline_geometry_document(polygons, holes),
+        "traceTurtle": normalized_trace,
+        "geometryHash": geometry_hash,
+        "traceAgreement": round(trace_agreement, 4),
+        "boundaryCoverage": round(boundary_coverage, 4),
+    }
+    provenance = _save_image_with_provenance(
+        root,
+        visualization,
+        output_path,
+        operation="verify_outliner_trace",
+        parent_image=image_path,
+        source={"objectName": name},
+        transform=transform,
+        image_format="PNG",
+    )
+    return {
+        "verificationImage": output_path.relative_to(root).as_posix(),
+        "provenance": provenance["provenance"],
+        "geometryHash": geometry_hash,
+        "dimensions": {"width": width, "height": height},
+        "traceAgreement": transform["traceAgreement"],
+        "boundaryCoverage": transform["boundaryCoverage"],
+        "verified": True,
+    }
+
+
 @router.post("/member-cut")
 def member_cut(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
     """Cut one identified member out of a scene as a precise alpha PNG: the
@@ -1299,10 +1990,6 @@ def member_cut(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
     image_rel = str(body.get("image") or "")
     name = str(body.get("name") or "member")
     step = max(1, int(body.get("step") or 1))
-    polygons_raw = body.get("polygons")
-    holes_raw = body.get("holes")
-    polygon_raw = body.get("polygon")
-    box_raw = body.get("box")
     outline_source_rel = str(body.get("outlineSourceImage") or "")
     outline_source_dimensions = body.get("outlineSourceDimensions")
     if not workspace_id or not image_rel:
@@ -1369,51 +2056,30 @@ def member_cut(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
                 )
         alignment["verified"] = True
 
-    def normalized_polygon(raw: Any, label: str) -> list[tuple[int, int]]:
-        points: list[tuple[int, int]] = []
-        if not isinstance(raw, list):
-            return points
-        for index, point in enumerate(raw):
-            if isinstance(point, (list, tuple)) and len(point) == 2:
-                try:
-                    x = int(round(float(point[0])))
-                    y = int(round(float(point[1])))
-                except (TypeError, ValueError, OverflowError) as error:
-                    raise HTTPException(status_code=400, detail=f"{label} point {index + 1} is not numeric") from error
-                if not 0 <= x < width or not 0 <= y < height:
-                    raise HTTPException(
-                        status_code=409,
-                        detail=f"{label} point {index + 1} ({x}, {y}) is outside the {width}x{height} Outliner coordinate space",
-                    )
-                points.append((x, y))
-        return points
-
-    polygons: list[list[tuple[int, int]]] = []
-    if isinstance(polygons_raw, list):
-        polygons = [points for index, raw in enumerate(polygons_raw) if len(points := normalized_polygon(raw, f"polygon {index + 1}")) >= 3]
-    if not polygons and isinstance(polygon_raw, list):
-        points = normalized_polygon(polygon_raw, "polygon")
-        if len(points) >= 3:
-            polygons = [points]
-    if not polygons and isinstance(box_raw, list) and len(box_raw) == 4:
-        bx0, by0, bx1, by1 = (int(round(float(value))) for value in box_raw)
-        bx0, bx1 = sorted((bx0, bx1))
-        by0, by1 = sorted((by0, by1))
-        if bx0 < 0 or by0 < 0 or bx1 > width or by1 > height:
-            raise HTTPException(status_code=409, detail=f"box is outside the {width}x{height} Outliner coordinate space")
-        polygons = [[(bx0, by0), (bx1, by0), (bx1, by1), (bx0, by1)]]
-    if not polygons:
-        raise HTTPException(status_code=400, detail="polygons (each >= 3 [x, y] points), polygon, or box is required")
-    holes = [points for index, raw in enumerate(holes_raw) if len(points := normalized_polygon(raw, f"hole {index + 1}")) >= 3] if isinstance(holes_raw, list) else []
-
+    polygons, holes = _normalized_outline_geometry(body, width, height)
     scale = 4
-    mask_large = Image.new("L", (width * scale, height * scale), 0)
-    draw = ImageDraw.Draw(mask_large)
-    for points in polygons:
-        draw.polygon([(x * scale, y * scale) for x, y in points], fill=255)
-    for points in holes:
-        draw.polygon([(x * scale, y * scale) for x, y in points], fill=0)
-    mask = mask_large.resize((width, height), Image.Resampling.LANCZOS)
+    mask = _outline_mask(polygons, holes, width, height, Image, ImageDraw)
+    geometry_hash = _outline_geometry_hash(polygons, holes)
+    verification_rel = str(body.get("outlineVerificationImage") or "")
+    verification_hash = str(body.get("outlineGeometryHash") or "")
+    if verification_rel:
+        try:
+            verification_path = _safe_workspace_child(root, verification_rel)
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+        verification_provenance = _read_image_provenance(verification_path)
+        recorded_hash = str(
+            ((verification_provenance or {}).get("transform") or {}).get("geometryHash")
+            or ""
+        )
+        if not verification_path.is_file() or recorded_hash != geometry_hash or verification_hash != geometry_hash:
+            raise HTTPException(
+                status_code=409,
+                detail="Outliner verification artifact does not match extraction geometry",
+            )
+        alignment["verificationImage"] = verification_rel
+        alignment["geometryHash"] = geometry_hash
+        alignment["traceVerified"] = True
     bbox = mask.point(lambda alpha: 255 if alpha > 1 else 0).getbbox()
     if not bbox or (bbox[2] - bbox[0]) < 2 or (bbox[3] - bbox[1]) < 2:
         raise HTTPException(status_code=400, detail=f"polygon too small after clamping to {width}x{height}")
@@ -2022,6 +2688,589 @@ def clear_video_captions(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
     return {"captions": [], "captionSource": None}
 
 
+def _scene_marker_limit(value: Any) -> int | None:
+    if value is None or value == "":
+        return None
+    try:
+        limit = int(value)
+    except (TypeError, ValueError) as error:
+        raise HTTPException(status_code=400, detail="maxMarkers must be an integer") from error
+    if limit <= 0:
+        return None
+    return min(10_000, limit)
+
+
+def _scene_detection_float(
+    value: Any,
+    *,
+    default: float,
+    minimum: float,
+    maximum: float,
+    label: str,
+) -> float:
+    try:
+        result = default if value is None or value == "" else float(value)
+    except (TypeError, ValueError) as error:
+        raise HTTPException(status_code=400, detail=f"{label} must be numeric") from error
+    if not minimum <= result <= maximum:
+        raise HTTPException(
+            status_code=400,
+            detail=f"{label} must be between {minimum:g} and {maximum:g}",
+        )
+    return result
+
+
+def _docker_command(*arguments: str, timeout: float = 30.0) -> subprocess.CompletedProcess[str]:
+    executable = shutil.which("docker")
+    if not executable:
+        raise HTTPException(status_code=503, detail="Docker is required to run the MediaMTX stream router")
+    return subprocess.run(
+        [executable, *arguments],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=timeout,
+        check=False,
+    )
+
+
+def _media_router_running() -> bool:
+    result = _docker_command(
+        "inspect",
+        "--format",
+        "{{.State.Running}}",
+        _MEDIAMTX_CONTAINER,
+    )
+    return result.returncode == 0 and result.stdout.strip().lower() == "true"
+
+
+def _stream_router_urls(host: str, stream_id: str) -> dict[str, str]:
+    stream_id = _slug(stream_id)
+    return {
+        "publishWhip": f"http://{host}:8889/{stream_id}/whip",
+        "publishRtmp": f"rtmp://{host}:1935/{stream_id}",
+        "watchWhep": f"http://{host}:8889/{stream_id}/whep",
+        "watchHls": f"http://{host}:8888/{stream_id}/index.m3u8",
+        "sourceHls": f"http://{host}:8888/{stream_id}/index.m3u8",
+    }
+
+
+@router.get("/stream-router")
+def stream_router_status(
+    request: Request,
+    streamId: str = "workbench",
+    publicHost: str = "",
+) -> dict[str, Any]:
+    host = publicHost.strip() or request.url.hostname or "127.0.0.1"
+    return {
+        "running": _media_router_running(),
+        "container": _MEDIAMTX_CONTAINER,
+        "image": _MEDIAMTX_IMAGE,
+        "streamId": _slug(streamId),
+        "urls": _stream_router_urls(host, streamId),
+    }
+
+
+@router.post("/stream-router/start")
+def start_stream_router(body: dict[str, Any] = Body(default={})) -> dict[str, Any]:
+    if _media_router_running():
+        return {"running": True, "started": False, "container": _MEDIAMTX_CONTAINER}
+    inspect = _docker_command("inspect", _MEDIAMTX_CONTAINER)
+    if inspect.returncode == 0:
+        result = _docker_command("start", _MEDIAMTX_CONTAINER, timeout=60)
+    else:
+        result = _docker_command(
+            "run",
+            "--detach",
+            "--name",
+            _MEDIAMTX_CONTAINER,
+            "--restart",
+            "unless-stopped",
+            "-e",
+            "MTX_API=yes",
+            "-p",
+            "1935:1935",
+            "-p",
+            "8554:8554",
+            "-p",
+            "8888:8888",
+            "-p",
+            "8889:8889",
+            "-p",
+            "8189:8189/udp",
+            "-p",
+            "8890:8890/udp",
+            "-p",
+            "9997:9997",
+            _MEDIAMTX_IMAGE,
+            timeout=180,
+        )
+    if result.returncode != 0:
+        raise HTTPException(
+            status_code=502,
+            detail=result.stderr.strip() or result.stdout.strip() or "MediaMTX failed to start",
+        )
+    return {
+        "running": True,
+        "started": True,
+        "container": _MEDIAMTX_CONTAINER,
+        "image": _MEDIAMTX_IMAGE,
+    }
+
+
+@router.post("/stream-router/stop")
+def stop_stream_router() -> dict[str, Any]:
+    if not _media_router_running():
+        return {"running": False, "stopped": False, "container": _MEDIAMTX_CONTAINER}
+    result = _docker_command("stop", "--time", "10", _MEDIAMTX_CONTAINER, timeout=30)
+    if result.returncode != 0:
+        raise HTTPException(
+            status_code=502,
+            detail=result.stderr.strip() or result.stdout.strip() or "MediaMTX failed to stop",
+        )
+    return {"running": False, "stopped": True, "container": _MEDIAMTX_CONTAINER}
+
+
+def _stream_source_url(value: Any) -> str:
+    source_url = str(value or "").strip()
+    parsed = urllib.parse.urlparse(source_url)
+    if parsed.scheme.lower() not in _STREAM_SOURCE_SCHEMES or not parsed.netloc:
+        raise HTTPException(
+            status_code=400,
+            detail="sourceUrl must use http, https, rtsp, rtmp, rtmps, or srt",
+        )
+    return source_url
+
+
+def _resolve_stream_source(source_url: str) -> str:
+    host = (urllib.parse.urlparse(source_url).hostname or "").lower()
+    if host not in {"youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be"}:
+        return source_url
+    try:
+        import yt_dlp  # noqa: PLC0415
+    except ImportError as error:
+        raise RuntimeError("yt-dlp is required to consume a YouTube video URL") from error
+    options = {
+        "format": "bestvideo[height<=720]/best[height<=720]/best",
+        "noplaylist": True,
+        "quiet": True,
+        "no_warnings": True,
+        "skip_download": True,
+    }
+    with yt_dlp.YoutubeDL(options) as downloader:
+        info = downloader.extract_info(source_url, download=False)
+    resolved = str(info.get("url") or "").strip() if isinstance(info, dict) else ""
+    if not resolved:
+        raise RuntimeError("yt-dlp returned no playable video endpoint")
+    return resolved
+
+
+def _arc_recording_images(recording_dir: Path) -> list[Path]:
+    images: list[tuple[int, Path]] = []
+    root_image = recording_dir / "image.png"
+    if root_image.is_file():
+        images.append((-1, root_image))
+    for child in recording_dir.iterdir() if recording_dir.is_dir() else []:
+        image = child / "image.png"
+        if not child.is_dir() or not image.is_file():
+            continue
+        try:
+            ordinal = int(child.name)
+        except ValueError:
+            continue
+        images.append((ordinal, image))
+    return [path for _, path in sorted(images, key=lambda item: item[0])]
+
+
+def _natural_path_key(path: Path) -> tuple[Any, ...]:
+    return tuple(
+        int(part) if part.isdigit() else part.lower()
+        for segment in path.parts
+        for part in re.split(r"(\d+)", segment)
+        if part
+    )
+
+
+def _curated_source_images(root: Path, source_dir: Path) -> list[Path]:
+    curated_root = _curated_games_container(root).resolve()
+    resolved = source_dir.resolve()
+    try:
+        resolved.relative_to(curated_root)
+    except ValueError as error:
+        raise HTTPException(
+            status_code=400,
+            detail="curated source must be under data/arc3_games/curated/",
+        ) from error
+    images = [
+        path
+        for path in resolved.rglob("*")
+        if path.is_file() and path.suffix.lower() in _IMAGE_SUFFIXES
+    ]
+    return sorted(images, key=lambda path: _natural_path_key(path.relative_to(resolved)))
+
+
+@router.get("/curated-image-sources")
+def list_curated_image_sources(workspaceId: str) -> dict[str, Any]:
+    root = _workspace_root(workspaceId)
+    data_root = _curated_games_container(root)
+    sources: list[dict[str, Any]] = []
+    if data_root.is_dir():
+        for source_dir in sorted(
+            (entry for entry in data_root.iterdir() if entry.is_dir()),
+            key=lambda path: path.name.lower(),
+        ):
+            if source_dir.name.lower() in _CURATED_DATA_EXCLUDES:
+                continue
+            images = _curated_source_images(root, source_dir)
+            if not images:
+                continue
+            sources.append(
+                {
+                    "path": source_dir.relative_to(root).as_posix(),
+                    "label": source_dir.name,
+                    "frames": len(images),
+                    "preview": images[0].relative_to(root).as_posix(),
+                }
+            )
+    return {"sources": sources}
+
+
+@router.post("/curated-image-sources/import")
+def import_curated_image_source(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    from PIL import Image  # noqa: PLC0415
+
+    workspace_id = str(body.get("workspaceId") or "")
+    source_rel = str(body.get("source") or "")
+    if not workspace_id or not source_rel:
+        raise HTTPException(status_code=400, detail="workspaceId and source are required")
+    root = _workspace_root(workspace_id)
+    try:
+        source_dir = _safe_workspace_child(root, source_rel)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    if not source_dir.is_dir():
+        raise HTTPException(status_code=404, detail=f"curated image source not found: {source_rel}")
+    source_images = _curated_source_images(root, source_dir)
+    if not source_images:
+        raise HTTPException(status_code=400, detail="curated source contains no supported images")
+    output_dir = _vision_frames_root(root) / "curated_data" / _slug(source_rel)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    frames: list[dict[str, Any]] = []
+    for index, source_path in enumerate(source_images):
+        output_path = output_dir / f"frame_{index:06d}.png"
+        with Image.open(source_path) as image:
+            provenance = _save_image_with_provenance(
+                root,
+                image.convert("RGBA"),
+                output_path,
+                operation="import_curated_data_frame",
+                parent_image=source_path,
+                source={
+                    "curatedSource": source_rel,
+                    "sourceImage": source_path.relative_to(root).as_posix(),
+                    "frameIndex": index,
+                },
+                image_format="PNG",
+            )
+        frames.append(
+            {
+                "path": output_path.relative_to(root).as_posix(),
+                "index": index,
+                "atSeconds": float(index),
+                "scene": index + 1,
+                "provenance": provenance["provenance"],
+            }
+        )
+    manifest_path = output_dir.parent / "curated_import.json"
+    _atomic_json_write(
+        manifest_path,
+        {"source": source_rel, "frames": frames, "importedAt": _utc_now()},
+    )
+    return {
+        "source": source_rel,
+        "frames": frames,
+        "manifest": manifest_path.relative_to(root).as_posix(),
+    }
+
+
+@router.get("/arc-recordings")
+def list_arc_recordings(workspaceId: str) -> dict[str, Any]:
+    root = _workspace_root(workspaceId)
+    recordings: list[dict[str, Any]] = []
+    for game_root in _all_game_dirs(root):
+        for recording_dir in _iter_recording_dirs(game_root):
+            images = _arc_recording_images(recording_dir)
+            if not images:
+                continue
+            manifest_path = recording_dir / "recording.json"
+            try:
+                manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                manifest = {}
+            recordings.append(
+                {
+                    "path": recording_dir.relative_to(root).as_posix(),
+                    "gameId": str(manifest.get("game_id") or game_root.name),
+                    "level": manifest.get("level"),
+                    "frames": len(images),
+                    "preview": images[0].relative_to(root).as_posix(),
+                    "updatedAt": manifest.get("updated_at"),
+                }
+            )
+    recordings.sort(key=lambda item: (item["gameId"], item["path"]))
+    return {"recordings": recordings}
+
+
+@router.post("/arc-recordings/import")
+def import_arc_recording(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    from PIL import Image  # noqa: PLC0415
+
+    workspace_id = str(body.get("workspaceId") or "")
+    recording_rel = str(body.get("recording") or "")
+    if not workspace_id or not recording_rel:
+        raise HTTPException(status_code=400, detail="workspaceId and recording are required")
+    root = _workspace_root(workspace_id)
+    try:
+        recording_dir = _safe_workspace_child(root, recording_rel)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    if not recording_dir.is_dir() or not (recording_dir / "recording.json").is_file():
+        raise HTTPException(status_code=404, detail=f"ARC recording not found: {recording_rel}")
+    try:
+        recording_manifest = json.loads(
+            (recording_dir / "recording.json").read_text(encoding="utf-8")
+        )
+    except (OSError, json.JSONDecodeError) as error:
+        raise HTTPException(status_code=400, detail="ARC recording manifest is invalid") from error
+    recording_moves = (
+        recording_manifest.get("moves")
+        if isinstance(recording_manifest.get("moves"), list)
+        else []
+    )
+    source_images = _arc_recording_images(recording_dir)
+    if not source_images:
+        raise HTTPException(status_code=400, detail="ARC recording contains no image sequence")
+    output_dir = _vision_frames_root(root) / "arc_recordings" / _slug(recording_rel)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    frames: list[dict[str, Any]] = []
+    for index, source_path in enumerate(source_images):
+        output_path = output_dir / f"frame_{index:06d}.png"
+        node_state_path = source_path.parent / "state.json"
+        try:
+            node_state = json.loads(node_state_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            node_state = {}
+        move_count = 0 if source_path.parent == recording_dir else index
+        move_list = [
+            dict(move)
+            for move in recording_moves[:move_count]
+            if isinstance(move, dict)
+        ]
+        with Image.open(source_path) as image:
+            provenance = _save_image_with_provenance(
+                root,
+                image.convert("RGBA"),
+                output_path,
+                operation="import_arc_playback_frame",
+                parent_image=source_path,
+                source={
+                    "arcRecording": recording_rel,
+                    "arcFrame": source_path.relative_to(recording_dir).as_posix(),
+                    "frameIndex": index,
+                    "moveCount": len(move_list),
+                    "moveList": move_list,
+                    "incomingAction": node_state.get("incoming_action"),
+                    "actionData": node_state.get("action_data"),
+                    "actionPath": node_state.get("action_path") or [],
+                    "gameState": node_state.get("state"),
+                    "level": node_state.get("level"),
+                    "observation": node_state.get("observation"),
+                },
+                image_format="PNG",
+            )
+        frames.append(
+            {
+                "path": output_path.relative_to(root).as_posix(),
+                "index": index,
+                "atSeconds": float(index),
+                "scene": index + 1,
+                "provenance": provenance["provenance"],
+            }
+        )
+    manifest_path = output_dir.parent / "recording_import.json"
+    _atomic_json_write(
+        manifest_path,
+        {
+            "sourceRecording": recording_rel,
+            "frames": frames,
+            "importedAt": _utc_now(),
+        },
+    )
+    return {
+        "recording": recording_rel,
+        "frames": frames,
+        "manifest": manifest_path.relative_to(root).as_posix(),
+    }
+
+
+@router.post("/stream-scenes")
+def detect_stream_scenes(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    """Consume a standard external video stream and save frames at scene changes."""
+    workspace_id = str(body.get("workspaceId") or "")
+    if not workspace_id:
+        raise HTTPException(status_code=400, detail="workspaceId is required")
+    source_url = _stream_source_url(body.get("sourceUrl"))
+    stream_id = _slug(str(body.get("streamId") or "external-stream"))
+    threshold = _scene_detection_float(
+        body.get("threshold"),
+        default=28.0,
+        minimum=0.1,
+        maximum=255.0,
+        label="threshold",
+    )
+    samples_per_second = _scene_detection_float(
+        body.get("samplesPerSecond"),
+        default=4.0,
+        minimum=0.25,
+        maximum=30.0,
+        label="samplesPerSecond",
+    )
+    min_scene_gap_seconds = _scene_detection_float(
+        body.get("minSceneGapSeconds"),
+        default=0.5,
+        minimum=0.0,
+        maximum=60.0,
+        label="minSceneGapSeconds",
+    )
+    max_scenes = _scene_marker_limit(body.get("maxScenes"))
+    max_seconds = _scene_detection_float(
+        body.get("maxSeconds"),
+        default=0.0,
+        minimum=0.0,
+        maximum=86_400.0,
+        label="maxSeconds",
+    )
+    root = _workspace_root(workspace_id)
+    output_dir = _vision_frames_root(root) / "live_streams" / stream_id
+    output_dir.mkdir(parents=True, exist_ok=True)
+    job_id = uuid.uuid4().hex[:12]
+    job: dict[str, Any] = {
+        "id": job_id,
+        "state": "running",
+        "done": 0,
+        "total": 0,
+        "elapsedSeconds": 0.0,
+        "etaSeconds": None,
+        "frames": [],
+        "markers": [],
+        "error": None,
+        "sourceUrl": source_url,
+        "streamId": stream_id,
+    }
+    _extract_jobs[job_id] = job
+
+    def work() -> None:
+        import imageio  # noqa: PLC0415
+        import numpy as np  # noqa: PLC0415
+        from PIL import Image  # noqa: PLC0415
+
+        started = time.monotonic()
+        reader = None
+        try:
+            resolved_source_url = _resolve_stream_source(source_url)
+            reader = imageio.get_reader(resolved_source_url)
+            metadata = reader.get_meta_data()
+            fps = float(metadata.get("fps") or 24.0)
+            sample_step = max(1, round(fps / samples_per_second))
+            previous: Any = None
+            last_marker_seconds = float("-inf")
+            scene_index = 0
+            for index, frame in enumerate(reader):
+                if job.get("cancel"):
+                    break
+                at_seconds = index / fps
+                if max_seconds and at_seconds >= max_seconds:
+                    break
+                if index % sample_step:
+                    continue
+                small = np.asarray(frame, dtype=np.int16)[::4, ::4]
+                score = (
+                    float(np.abs(small - previous).mean())
+                    if previous is not None and small.shape == previous.shape
+                    else threshold
+                )
+                if (
+                    score >= threshold
+                    and at_seconds - last_marker_seconds >= min_scene_gap_seconds
+                ):
+                    scene_index += 1
+                    path = output_dir / f"scene_{scene_index:06d}_{int(round(at_seconds * 1000)):012d}.png"
+                    provenance = _save_image_with_provenance(
+                        root,
+                        Image.fromarray(frame),
+                        path,
+                        operation="capture_stream_scene",
+                        source={
+                            "sourceStreamUrl": source_url,
+                            "streamId": stream_id,
+                            "atSeconds": round(at_seconds, 3),
+                            "scene": scene_index,
+                        },
+                        image_format="PNG",
+                    )
+                    marker = {"atSeconds": round(at_seconds, 2), "score": round(score, 1)}
+                    frame_row = {
+                        "path": path.relative_to(root).as_posix(),
+                        "index": scene_index - 1,
+                        "atSeconds": round(at_seconds, 2),
+                        "scene": scene_index,
+                        "provenance": provenance["provenance"],
+                    }
+                    job["markers"] = [*job["markers"], marker]
+                    job["frames"] = [*job["frames"], frame_row]
+                    job["done"] = scene_index
+                    last_marker_seconds = at_seconds
+                    if max_scenes is not None and scene_index >= max_scenes:
+                        break
+                previous = small
+                job["elapsedSeconds"] = round(time.monotonic() - started, 1)
+            elapsed = time.monotonic() - started
+            manifest_path = output_dir.parent / "stream.json"
+            _atomic_json_write(
+                manifest_path,
+                {
+                    "sourceUrl": source_url,
+                    "streamId": stream_id,
+                    "frames": job["frames"],
+                    "markers": job["markers"],
+                    "interrupted": bool(job.get("cancel")),
+                    "elapsedSeconds": round(elapsed, 1),
+                    "updatedAt": _utc_now(),
+                },
+            )
+            job.update(
+                {
+                    "state": "done",
+                    "elapsedSeconds": round(elapsed, 1),
+                    "interrupted": bool(job.get("cancel")),
+                    "manifest": manifest_path.relative_to(root).as_posix(),
+                }
+            )
+        except Exception as error:  # noqa: BLE001 - surfaced through job status
+            job.update({"state": "error", "error": str(error)})
+        finally:
+            if reader is not None:
+                reader.close()
+
+    threading.Thread(
+        target=work,
+        name=f"video-stream-scenes-{job_id}",
+        daemon=True,
+    ).start()
+    return {"jobId": job_id, "streamId": stream_id, "sourceUrl": source_url}
+
+
 @router.post("/scenes")
 def detect_scenes(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
     """Detect scene changes and save them as timeline markers.
@@ -2035,9 +3284,29 @@ def detect_scenes(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
     video_rel = str(body.get("video") or "")
     if not workspace_id or not video_rel:
         raise HTTPException(status_code=400, detail="workspaceId and video are required")
-    threshold = float(body.get("threshold") or 28.0)
+    threshold = _scene_detection_float(
+        body.get("threshold"),
+        default=28.0,
+        minimum=0.1,
+        maximum=255.0,
+        label="threshold",
+    )
+    samples_per_second = _scene_detection_float(
+        body.get("samplesPerSecond"),
+        default=4.0,
+        minimum=0.25,
+        maximum=30.0,
+        label="samplesPerSecond",
+    )
+    min_scene_gap_seconds = _scene_detection_float(
+        body.get("minSceneGapSeconds"),
+        default=0.5,
+        minimum=0.0,
+        maximum=60.0,
+        label="minSceneGapSeconds",
+    )
     start_seconds = max(0.0, float(body.get("startSeconds") or 0.0))
-    max_markers = max(1, min(400, int(body.get("maxMarkers") or 120)))
+    max_markers = _scene_marker_limit(body.get("maxMarkers"))
     root, video_path = _resolve_video(workspace_id, video_rel)
     try:
         import imageio  # noqa: F401, PLC0415
@@ -2074,9 +3343,16 @@ def detect_scenes(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
             reader = imageio.get_reader(str(video_path))
             try:
                 fps = float(reader.get_meta_data().get("fps") or 24.0)
-                sample_step = max(1, round(fps / 4.0))  # ~4 samples per second
+                sample_step = max(1, round(fps / samples_per_second))
                 first_index = int(start_seconds * fps)
                 previous: Any = None
+                last_marker_seconds = max(
+                    (
+                        float(marker.get("atSeconds") or 0.0)
+                        for marker in kept
+                    ),
+                    default=float("-inf"),
+                )
                 for index, frame in enumerate(reader):
                     if job.get("cancel"):
                         break
@@ -2085,9 +3361,14 @@ def detect_scenes(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
                     small = np.asarray(frame, dtype=np.int16)[::4, ::4]
                     if previous is not None and small.shape == previous.shape:
                         score = float(np.abs(small - previous).mean())
-                        if score >= threshold:
-                            markers.append({"atSeconds": round(index / fps, 2), "score": round(score, 1)})
-                            if len(markers) >= max_markers:
+                        at_seconds = index / fps
+                        if (
+                            score >= threshold
+                            and at_seconds - last_marker_seconds >= min_scene_gap_seconds
+                        ):
+                            markers.append({"atSeconds": round(at_seconds, 2), "score": round(score, 1)})
+                            last_marker_seconds = at_seconds
+                            if max_markers is not None and len(markers) >= max_markers:
                                 break
                     previous = small
                     elapsed = time.monotonic() - started
@@ -2118,6 +3399,9 @@ def detect_scenes(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
                 "elapsedSeconds": round(elapsed, 1),
                 "secondsPerVideoSecond": round(elapsed / window, 4) if window else None,
                 "threshold": threshold,
+                "samplesPerSecond": samples_per_second,
+                "minSceneGapSeconds": min_scene_gap_seconds,
+                "maxMarkers": max_markers,
                 "at": _utc_now(),
             }
             try:
@@ -2386,7 +3670,7 @@ _BUILTIN_FILTERS = [
 @router.get("/filters")
 def list_filters(workspaceId: str) -> dict[str, Any]:
     """The loadable filter catalog: built-ins, published customs, and any
-    .cube LUTs dropped into data/VideoImports/luts/ (e.g. from LUT sites)."""
+    .cube LUTs dropped into data/video_import/luts/ (e.g. from LUT sites)."""
     root = _workspace_root(workspaceId)
     path = _filters_path(root)
     published: list[dict[str, Any]] = []

@@ -1,0 +1,380 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/scene_after_10_members/scene_after_25_members/scene_after_45_members/scene_after_69_members/next_pass_97_right_side_play_icon.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/scene_after_10_members/scene_after_25_members/scene_after_45_members/scene_after_69_members/next_pass_97_right_side_play_icon.provenance.json",
+  "createdAt": "2026-09-01T19:43:14.237225Z",
+  "operation": "enlarge_object_for_analysis",
+  "dimensions": {
+    "width": 412,
+    "height": 753
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 64.833,
+    "sceneIndex": 26,
+    "videoFrameIndex": 1945
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/scene_after_10_members/scene_after_25_members/scene_after_45_members/scene_after_69_members/cut_97_right_side_play_icon.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/scene_after_10_members/scene_after_25_members/scene_after_45_members/scene_after_69_members/cut_97_right_side_play_icon.provenance.json"
+  },
+  "source": {
+    "objectName": "right_side_play_icon"
+  },
+  "transform": {
+    "sourceDimensions": {
+      "width": 28,
+      "height": 59
+    },
+    "scale": 11,
+    "resizedDimensions": {
+      "width": 308,
+      "height": 649
+    },
+    "padding": {
+      "left": 52,
+      "top": 52,
+      "right": 52,
+      "bottom": 52
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:32.704688Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/scene_after_10.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          497,
+          242,
+          565,
+          351
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the carrot body and leafy tip is the central panel’s green shrub background with soft cartoon shading; the leaf area overlaps darker/medium green bush tones, while the carrot body overlaps lighter olive-green foliage and subtle branch-like contour lines.",
+          "colors": [
+            "#6E8B5E",
+            "#7C9666",
+            "#5E7D52",
+            "#4E6A47"
+          ],
+          "continueEdges": [
+            "Continue the bush outline curves from left and right through the removed carrot region.",
+            "Reconnect soft foliage contour lines and shadow transitions interrupted by the carrot body.",
+            "Blend the darker green cluster behind the leaf contour into surrounding mid-green shrub textures.",
+            "Do not extend Bugs Bunny hand/finger edges into the hole; keep character edges intact at occlusion boundaries."
+          ],
+          "texture": "Flat 2D cartoon foliage texture with soft airbrushed gradients and thin darker line-art contours."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:23:03.133676Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/scene_after_10_members/scene_after_25.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/scene_after_10.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          332,
+          100,
+          543,
+          395
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind Bugs Bunny, the central panel continues as a cartoon forest scene: layered bushes (green and reddish-brown), a distant green hill with a blue sky strip at the top, and a vertical dark tree-trunk band near the character’s center-right side. The area behind the torso/legs is mostly muted olive ground and shrub tones; behind ears/head it transitions to hill and sky.",
+          "colors": [
+            "#6E8B5E",
+            "#8FA36F",
+            "#A65A3E",
+            "#7A3F33",
+            "#4E6F4A",
+            "#2E3A2F",
+            "#6F8452",
+            "#7FA2C8"
+          ],
+          "continueEdges": [
+            "Continue the top horizon/hill contour smoothly behind both ears and head.",
+            "Reconnect bush boundaries from left orange-brown shrub into right green shrub across the removed silhouette.",
+            "Extend the vertical dark tree-trunk stripe through the center-right body region with consistent width.",
+            "Carry the lower ground line behind legs/feet with gentle left-to-right slope and matching shading."
+          ],
+          "texture": "Flat 2D cartoon paint with soft brush-like foliage shapes, low-frequency shading gradients, and crisp inked edge transitions between shrubs, hill, trunk, and sky."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:28:01.899848Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/scene_after_10_members/scene_after_25_members/scene_after_45.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/scene_after_10_members/scene_after_25.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          212,
+          101,
+          649,
+          420
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed forest-scene paint layer, the inset reveals a simpler underlayer inside the rounded panel: a mostly flat muted olive/khaki field with slight shading variation, while Bugs Bunny and carrot silhouettes remain as foreground cutouts over it. No detailed trees, bushes, or hills should continue after this removal.",
+          "colors": [
+            "#8A8968",
+            "#7E7D5F",
+            "#747457",
+            "#6B6C52",
+            "#5F6149"
+          ],
+          "continueEdges": [
+            "Continue the inner rounded-panel boundary cleanly with the same inset matte right up to the border.",
+            "Preserve the Bugs/carrot hole boundary as a hard foreground edge with no color bleed into character pixels.",
+            "Blend remaining fill smoothly across former forest regions so there are no seams where bush/tree contours used to be."
+          ],
+          "texture": "Low-detail cartoon underpaint: mostly flat tone with very soft vignette-like shading and minimal grain."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:33:34.684721Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/scene_after_10_members/scene_after_25_members/scene_after_45_members/scene_after_69.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/scene_after_10_members/scene_after_25_members/scene_after_45.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          12,
+          402,
+          38,
+          429
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Fill the removed icon area with the underlying blue gradient background from the left side of the frame. The region should continue the smooth radial-like blue transition with slightly darker blue toward the outer edge and brighter blue toward the center-right direction of the frame.",
+          "colors": [
+            "#1C7FEA",
+            "#2289F0",
+            "#2A95F5",
+            "#3AA5FB"
+          ],
+          "continueEdges": [
+            "Continue the local left-side vertical gradient smoothly through the removed rounded-square area.",
+            "Maintain the soft brightness increase toward the frame center (rightward) with no hard boundary where the icon was.",
+            "Keep color transitions continuous with adjacent pixels above, below, and both sides of the removed icon."
+          ],
+          "texture": "Clean, flat digital gradient with no grain, outlines, or symbol detail."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T19:24:25.924459Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/scene_after_10_members/scene_after_25_members/scene_after_45_members/scene_after_69_members/cut_97_right_side_play_icon.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 28,
+        "height": 59
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/scene_after_10_members/scene_after_25_members/scene_after_45_members/scene_after_69.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          818,
+          398,
+          846,
+          457
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              820,
+              404
+            ],
+            [
+              822,
+              401
+            ],
+            [
+              825,
+              400
+            ],
+            [
+              838,
+              400
+            ],
+            [
+              841,
+              401
+            ],
+            [
+              843,
+              404
+            ],
+            [
+              843,
+              450
+            ],
+            [
+              841,
+              453
+            ],
+            [
+              838,
+              454
+            ],
+            [
+              825,
+              454
+            ],
+            [
+              822,
+              453
+            ],
+            [
+              820,
+              450
+            ]
+          ],
+          [
+            [
+              827,
+              422
+            ],
+            [
+              827,
+              432
+            ],
+            [
+              834,
+              427
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T19:43:14.215076Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/scene_after_10_members/scene_after_25_members/scene_after_45_members/scene_after_69_members/next_pass_97_right_side_play_icon.png",
+      "operation": "enlarge_object_for_analysis",
+      "dimensions": {
+        "width": 412,
+        "height": 753
+      },
+      "transform": {
+        "sourceDimensions": {
+          "width": 28,
+          "height": 59
+        },
+        "scale": 11,
+        "resizedDimensions": {
+          "width": 308,
+          "height": 649
+        },
+        "padding": {
+          "left": 52,
+          "top": 52,
+          "right": 52,
+          "bottom": 52
+        }
+      },
+      "createdAt": "2026-09-01T19:43:14.237225Z"
+    }
+  ]
+}

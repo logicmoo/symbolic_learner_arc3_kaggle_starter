@@ -4,7 +4,7 @@ Hosts real ARC3 environments inside the workbench server so a person can
 enumerate games, pick one, and play it move by move in the web UI. Every
 move is recorded as a B1->B2 consumable setup directory:
 
-    <workspace>/data/Recordings/<game>/saved_<NNN>/
+    <workspace>/data/arc3_games/<game>/saved_<NNN>/
         image.png            initial frame for this attempt
         state.json           initial state payload
         recording.json       ordered move manifest for this attempt dir
@@ -99,22 +99,130 @@ _RANKED_SAVED_DIR_RE = re.compile(r"^saved_(?P<rank>\d+)$")
 # instead of just recording.json). Still recognized when reading existing
 # workspaces and when computing the next rank, but never written anymore.
 _RANKED_LEVEL_DIR_RE = re.compile(r"^level_(?P<level>[^_]+)_(?P<rank>\d+)$")
-_DATA_ROOT_NON_GAME_DIRS = {"recordings", "importables"}
+_DATA_ROOT_NON_GAME_DIRS = {
+    "arc3_games",
+    "recordings",
+    "importables",
+    "video_import",
+    "videoimports",
+    "vision_frames",
+}
+_data_layout_lock = threading.RLock()
+_migrated_arc3_roots: set[Path] = set()
+
+
+def _file_digest(path: Path) -> bytes:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        while chunk := handle.read(1024 * 1024):
+            digest.update(chunk)
+    return digest.digest()
+
+
+def _merge_legacy_tree(source: Path, destination: Path) -> None:
+    destination.mkdir(parents=True, exist_ok=True)
+    for entry in list(source.iterdir()):
+        target = destination / entry.name
+        if entry.is_dir():
+            _merge_legacy_tree(entry, target)
+            continue
+        if not target.exists():
+            entry.rename(target)
+            continue
+        if (
+            entry.stat().st_size == target.stat().st_size
+            and _file_digest(entry) == _file_digest(target)
+        ):
+            entry.unlink()
+            continue
+        raise RuntimeError(
+            f"cannot merge legacy ARC3 data; conflicting files: {entry} and {target}"
+        )
+    source.rmdir()
+
+
+def _migrate_arc3_games_root(root: Path) -> Path:
+    resolved_root = root.resolve()
+    data_root = root / "data"
+    canonical = data_root / "arc3_games"
+    recordings = canonical / "recordings"
+    importables = canonical / "importables"
+    curated = canonical / "curated"
+    legacy_recordings = data_root / "Recordings"
+    legacy_importables = data_root / "importables"
+    with _data_layout_lock:
+        if resolved_root in _migrated_arc3_roots:
+            return recordings
+        canonical.mkdir(parents=True, exist_ok=True)
+        if legacy_recordings.is_dir():
+            if recordings.exists():
+                _merge_legacy_tree(legacy_recordings, recordings)
+            else:
+                legacy_recordings.rename(recordings)
+        if legacy_importables.is_dir():
+            if importables.exists():
+                _merge_legacy_tree(legacy_importables, importables)
+            else:
+                legacy_importables.rename(importables)
+        curated.mkdir(parents=True, exist_ok=True)
+        for candidate in list(data_root.iterdir()) if data_root.is_dir() else []:
+            if (
+                not candidate.is_dir()
+                or candidate.name.lower() in _DATA_ROOT_NON_GAME_DIRS
+            ):
+                continue
+            if any(candidate.rglob("recording.json")) or (candidate / "savepoints.json").is_file():
+                destination = recordings / candidate.name
+            elif any(
+                    path.suffix.lower() in {".png", ".jpg", ".jpeg", ".webp"}
+                    for path in candidate.rglob("*")
+                    if path.is_file()
+                ):
+                destination = curated / candidate.name
+            else:
+                continue
+            if not destination.exists():
+                candidate.rename(destination)
+        replacements = (
+            ("data/Recordings/", "data/arc3_games/recordings/"),
+            ("data/importables/", "data/arc3_games/importables/"),
+        )
+        for pattern in ("recording.json", "savepoints.json", "state.json"):
+            for path in canonical.rglob(pattern):
+                source = path.read_text(encoding="utf-8")
+                migrated = source
+                for old, new in replacements:
+                    migrated = migrated.replace(old, new)
+                if migrated != source:
+                    path.write_text(migrated, encoding="utf-8")
+        _migrated_arc3_roots.add(resolved_root)
+    return recordings
+
+
+def _importables_container(root: Path) -> Path:
+    _migrate_arc3_games_root(root)
+    return root / "data" / "arc3_games" / "importables"
+
+
+def _curated_games_container(root: Path) -> Path:
+    _migrate_arc3_games_root(root)
+    return root / "data" / "arc3_games" / "curated"
 
 
 def _games_container(root: Path) -> Path:
-    """The canonical home for every game's recordings: data/Recordings/<game>/.
+    """The canonical home for recordings: data/arc3_games/recordings/<game>/.
 
     All NEW recordings (live play sessions and imports alike) are written
     here. Some games may still have artifacts at the older, pre-reorg
     data/<game>/ location -- see _game_dirs_for()/_all_game_dirs(), which
     read both locations so nothing already on disk is hidden from listings.
     """
-    return root / "data" / "Recordings"
+    return root / "data" / "arc3_games" / "recordings"
 
 
 def _game_write_dir(root: Path, game_dir: str) -> Path:
     """Where a specific game's new recordings/savepoints are written."""
+    _migrate_arc3_games_root(root)
     return _games_container(root) / game_dir
 
 
@@ -128,7 +236,11 @@ def _safe_workspace_child(root: Path, relative: str) -> Path:
 
 def _game_dirs_for(root: Path, game_dir: str) -> list[Path]:
     """Every existing directory for one game: new location first, then legacy."""
-    candidates = [_game_write_dir(root, game_dir), root / "data" / game_dir]
+    candidates = [
+        _game_write_dir(root, game_dir),
+        root / "data" / "Recordings" / game_dir,
+        root / "data" / game_dir,
+    ]
     seen: set[Path] = set()
     result: list[Path] = []
     for candidate in candidates:
@@ -140,11 +252,10 @@ def _game_dirs_for(root: Path, game_dir: str) -> list[Path]:
 
 
 def _all_game_dirs(root: Path) -> list[Path]:
-    """Every per-game directory under data/, new (Recordings/<game>) and
-    legacy (data/<game>) locations combined, deduplicated."""
+    """Every per-game recording directory, including legacy locations."""
     seen: set[Path] = set()
     result: list[Path] = []
-    recordings_root = _games_container(root)
+    recordings_root = _migrate_arc3_games_root(root)
     if recordings_root.is_dir():
         for path in recordings_root.iterdir():
             if path.is_dir() and path.resolve() not in seen:
@@ -327,7 +438,7 @@ class PlaySession:
         self.recording = True
         # Optional per-session override of where recordings/savepoints are
         # written (relative to workspace_root); None means the default
-        # data/Recordings/<game>/ location. See set_recordings_path().
+        # data/arc3_games/recordings/<game>/ location. See set_recordings_path().
         self.recordings_root: Path | None = None
         if recordings_path:
             self.set_recordings_path(recordings_path)
@@ -358,7 +469,7 @@ class PlaySession:
     def _recordings_container(self) -> Path:
         """Where this session currently writes new level dirs/savepoints.json:
         the custom override if one was set, else the default
-        data/Recordings/<game>/ location."""
+        data/arc3_games/recordings/<game>/ location."""
         if self.recordings_root is not None:
             return self.recordings_root
         return _game_write_dir(self.workspace_root, self.game_dir)
@@ -1062,7 +1173,7 @@ def _sniff_recording_head(path: Path) -> str | None:
 
 
 def _list_recording_files(root: Path) -> list[dict[str, Any]]:
-    data_root = root / "data" / "importables"
+    data_root = _importables_container(root)
     if not data_root.is_dir():
         return []
     found: list[dict[str, Any]] = []
@@ -1083,7 +1194,7 @@ def _list_recording_files(root: Path) -> list[dict[str, Any]]:
             }
         )
     # Official agent release-runs: <game>/<timestamp>/workspace/log.txt (+ its
-    # own bundled arclog.py parser), one level below data/importables/release-runs/.
+    # own bundled arclog.py parser), below data/arc3_games/importables/release-runs/.
     release_root = data_root / "release-runs"
     if release_root.is_dir():
         for game_dir in sorted(p for p in release_root.iterdir() if p.is_dir()):
@@ -1117,7 +1228,7 @@ def _purge_prior_import(root: Path, game_dir: str, rel_path: str) -> int:
 
     Makes re-importing idempotent: clicking Import again on a file that was
     already converted replaces its artifacts instead of piling up duplicates.
-    Checks both the new (data/Recordings/<game>) and legacy (data/<game>)
+    Checks the canonical data/arc3_games/recordings/<game> and legacy data/<game>
     locations, since an earlier import may predate this fix.
     """
     removed = 0
@@ -2379,7 +2490,7 @@ def read_session(session_id: str) -> dict[str, Any]:
 def set_session_recordings_path(session_id: str, body: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
     """Override where THIS session's future level dirs/savepoints.json are
     written (relative to the workspace root), or reset to the default
-    data/Recordings/<game>/ location by passing an empty/missing path. Takes
+    data/arc3_games/recordings/<game>/ location by passing an empty/missing path. Takes
     effect starting with the next level dir (a new attempt/level transition);
     nothing already written on disk is moved."""
     session = _get_session(session_id)

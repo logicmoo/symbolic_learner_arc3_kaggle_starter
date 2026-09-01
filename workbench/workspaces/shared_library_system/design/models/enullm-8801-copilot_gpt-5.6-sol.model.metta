@@ -119,9 +119,12 @@
     ))
     (owned_by github-copilot)
     (provider github-copilot)
+    (codex_supplier null)
     (backing_model gpt-5.6-sol)
-    (connected false)
-    (active_workers ([]))
+    (connected true)
+    (active_workers ([]
+      worker-copilot-4
+    ))
     (route_targets ([]))
     (routing_mode on_demand)
     (on_demand true)
@@ -340,9 +343,12 @@
     ))
     (owned_by github-copilot)
     (provider github-copilot)
+    (codex_supplier null)
     (backing_model gpt-5.6-sol)
-    (connected false)
-    (active_workers ([]))
+    (connected true)
+    (active_workers ([]
+      worker-copilot-4
+    ))
     (route_targets ([]))
     (routing_mode on_demand)
     (on_demand true)

@@ -1,0 +1,463 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0018_members/scene_after_07_members/cut_47_question_number_text_18.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0018_members/scene_after_07_members/cut_47_question_number_text_18.provenance.json",
+  "createdAt": "2026-09-01T17:31:57.377377Z",
+  "operation": "extract_object_cutout",
+  "dimensions": {
+    "width": 49,
+    "height": 51
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0018.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 142.2,
+    "sceneIndex": 56,
+    "videoFrameIndex": 4266
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0018_members/scene_after_07.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0018_members/scene_after_07.provenance.json"
+  },
+  "source": {
+    "objectName": "question_number_text_18"
+  },
+  "transform": {
+    "inputDimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0018_members/scene_after_07.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0018.png",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "verified": true
+    },
+    "cropBox": [
+      27,
+      16,
+      76,
+      67
+    ],
+    "maskScale": 4,
+    "polygons": [
+      [
+        [
+          28,
+          22
+        ],
+        [
+          39,
+          22
+        ],
+        [
+          39,
+          61
+        ],
+        [
+          28,
+          61
+        ]
+      ],
+      [
+        [
+          46,
+          20
+        ],
+        [
+          56,
+          18
+        ],
+        [
+          66,
+          20
+        ],
+        [
+          72,
+          27
+        ],
+        [
+          72,
+          35
+        ],
+        [
+          68,
+          41
+        ],
+        [
+          72,
+          47
+        ],
+        [
+          73,
+          56
+        ],
+        [
+          67,
+          63
+        ],
+        [
+          56,
+          65
+        ],
+        [
+          46,
+          63
+        ],
+        [
+          40,
+          56
+        ],
+        [
+          41,
+          47
+        ],
+        [
+          45,
+          41
+        ],
+        [
+          41,
+          35
+        ],
+        [
+          41,
+          27
+        ]
+      ]
+    ],
+    "holes": [
+      [
+        [
+          50,
+          25
+        ],
+        [
+          56,
+          24
+        ],
+        [
+          61,
+          26
+        ],
+        [
+          63,
+          30
+        ],
+        [
+          62,
+          34
+        ],
+        [
+          57,
+          36
+        ],
+        [
+          51,
+          35
+        ],
+        [
+          49,
+          31
+        ]
+      ],
+      [
+        [
+          49,
+          47
+        ],
+        [
+          56,
+          45
+        ],
+        [
+          63,
+          47
+        ],
+        [
+          65,
+          53
+        ],
+        [
+          63,
+          58
+        ],
+        [
+          56,
+          60
+        ],
+        [
+          49,
+          58
+        ],
+        [
+          47,
+          53
+        ]
+      ]
+    ]
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0018.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:40.485480Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0018_members/scene_after_07.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0018.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0018.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          546,
+          204,
+          816,
+          331
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed glasses rims and bridge is Sadness’s face/hair detail: light-blue skin across the upper cheeks and nose bridge, the visible eye regions (white sclera, blue irises, black pupils, thin eyelid lines), and blue hair strands near the upper rim areas. The center bridge area should restore smooth nose/face shading between the eyes.",
+          "colors": [
+            "#7EC8FF",
+            "#5BAEF2",
+            "#EAF4FF",
+            "#6E8FE8",
+            "#2A2A3A",
+            "#2C77C7",
+            "#1C4FA3"
+          ],
+          "continueEdges": [
+            "Continue facial blue gradient across both rim paths and the bridge with no hard ring remnants",
+            "Preserve eye contours through crossed rim areas: circular sclera edges, iris rings, pupil centers, and eyelid lines",
+            "Extend nearby hair strand flow where the top/outer rim intersected hair",
+            "Maintain soft cheek-to-nose shading transitions between left and right lens areas"
+          ],
+          "texture": "Soft animated skin shading with smooth gradients, crisp eye-line art, and fine hair-strand texture at the upper perimeter."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:22:47.863346Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0018_members/scene_after_07_members/cut_47_question_number_text_18.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 49,
+        "height": 51
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0018_members/scene_after_07.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0018.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          27,
+          16,
+          76,
+          67
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              28,
+              22
+            ],
+            [
+              39,
+              22
+            ],
+            [
+              39,
+              61
+            ],
+            [
+              28,
+              61
+            ]
+          ],
+          [
+            [
+              46,
+              20
+            ],
+            [
+              56,
+              18
+            ],
+            [
+              66,
+              20
+            ],
+            [
+              72,
+              27
+            ],
+            [
+              72,
+              35
+            ],
+            [
+              68,
+              41
+            ],
+            [
+              72,
+              47
+            ],
+            [
+              73,
+              56
+            ],
+            [
+              67,
+              63
+            ],
+            [
+              56,
+              65
+            ],
+            [
+              46,
+              63
+            ],
+            [
+              40,
+              56
+            ],
+            [
+              41,
+              47
+            ],
+            [
+              45,
+              41
+            ],
+            [
+              41,
+              35
+            ],
+            [
+              41,
+              27
+            ]
+          ]
+        ],
+        "holes": [
+          [
+            [
+              50,
+              25
+            ],
+            [
+              56,
+              24
+            ],
+            [
+              61,
+              26
+            ],
+            [
+              63,
+              30
+            ],
+            [
+              62,
+              34
+            ],
+            [
+              57,
+              36
+            ],
+            [
+              51,
+              35
+            ],
+            [
+              49,
+              31
+            ]
+          ],
+          [
+            [
+              49,
+              47
+            ],
+            [
+              56,
+              45
+            ],
+            [
+              63,
+              47
+            ],
+            [
+              65,
+              53
+            ],
+            [
+              63,
+              58
+            ],
+            [
+              56,
+              60
+            ],
+            [
+              49,
+              58
+            ],
+            [
+              47,
+              53
+            ]
+          ]
+        ]
+      },
+      "createdAt": "2026-09-01T17:31:57.377377Z"
+    }
+  ]
+}

@@ -1,0 +1,369 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0022_planner/order_cf7dc08e54c6.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0022_planner/order_cf7dc08e54c6.provenance.json",
+  "createdAt": "2026-09-01T20:03:04.883132Z",
+  "operation": "visualize_planner_order",
+  "dimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0022.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 173.1,
+    "sceneIndex": 68,
+    "videoFrameIndex": 5193
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0022.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0022.provenance.json"
+  },
+  "source": {},
+  "transform": {
+    "labels": [
+      {
+        "object": "question_number_text_22",
+        "number": 1,
+        "point": [
+          42,
+          31
+        ]
+      },
+      {
+        "object": "question_number_badge",
+        "number": 2,
+        "point": [
+          45,
+          45
+        ]
+      },
+      {
+        "object": "quiz_logo_text",
+        "number": 3,
+        "point": [
+          809,
+          20
+        ]
+      },
+      {
+        "object": "quiz_logo_circle",
+        "number": 4,
+        "point": [
+          812,
+          35
+        ]
+      },
+      {
+        "object": "bolt_nose",
+        "number": 5,
+        "point": [
+          381,
+          166
+        ]
+      },
+      {
+        "object": "bolt_collar_tag",
+        "number": 6,
+        "point": [
+          361,
+          270
+        ]
+      },
+      {
+        "object": "bolt_lightning_mark",
+        "number": 7,
+        "point": [
+          447,
+          222
+        ]
+      },
+      {
+        "object": "bolt_left_ear",
+        "number": 8,
+        "point": [
+          301,
+          132
+        ]
+      },
+      {
+        "object": "bolt_right_ear",
+        "number": 9,
+        "point": [
+          389,
+          124
+        ]
+      },
+      {
+        "object": "bolt_tail",
+        "number": 10,
+        "point": [
+          518,
+          125
+        ]
+      },
+      {
+        "object": "bolt_character",
+        "number": 11,
+        "point": [
+          410,
+          235
+        ]
+      },
+      {
+        "object": "main_character_card",
+        "number": 12,
+        "point": [
+          240,
+          120
+        ]
+      },
+      {
+        "object": "title_text_guess_the",
+        "number": 13,
+        "point": [
+          210,
+          34
+        ]
+      },
+      {
+        "object": "title_text_animated_character",
+        "number": 14,
+        "point": [
+          500,
+          34
+        ]
+      },
+      {
+        "object": "left_side_text_fun_quiz_questions",
+        "number": 15,
+        "point": [
+          22,
+          240
+        ]
+      },
+      {
+        "object": "right_side_text_fun_quiz_questions",
+        "number": 16,
+        "point": [
+          798,
+          240
+        ]
+      },
+      {
+        "object": "left_side_play_icon",
+        "number": 17,
+        "point": [
+          22,
+          384
+        ]
+      },
+      {
+        "object": "right_side_play_icon",
+        "number": 18,
+        "point": [
+          798,
+          384
+        ]
+      },
+      {
+        "object": "blue_background",
+        "number": 19,
+        "point": [
+          427,
+          460
+        ]
+      }
+    ],
+    "plannerHash": "cf7dc08e54c60a46d47c24f5eebd2332d7c53077d315c613c5bc0b205a1b1863"
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0022.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:43.372632Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0022_planner/order_cf7dc08e54c6.png",
+      "operation": "visualize_planner_order",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "labels": [
+          {
+            "object": "question_number_text_22",
+            "number": 1,
+            "point": [
+              42,
+              31
+            ]
+          },
+          {
+            "object": "question_number_badge",
+            "number": 2,
+            "point": [
+              45,
+              45
+            ]
+          },
+          {
+            "object": "quiz_logo_text",
+            "number": 3,
+            "point": [
+              809,
+              20
+            ]
+          },
+          {
+            "object": "quiz_logo_circle",
+            "number": 4,
+            "point": [
+              812,
+              35
+            ]
+          },
+          {
+            "object": "bolt_nose",
+            "number": 5,
+            "point": [
+              381,
+              166
+            ]
+          },
+          {
+            "object": "bolt_collar_tag",
+            "number": 6,
+            "point": [
+              361,
+              270
+            ]
+          },
+          {
+            "object": "bolt_lightning_mark",
+            "number": 7,
+            "point": [
+              447,
+              222
+            ]
+          },
+          {
+            "object": "bolt_left_ear",
+            "number": 8,
+            "point": [
+              301,
+              132
+            ]
+          },
+          {
+            "object": "bolt_right_ear",
+            "number": 9,
+            "point": [
+              389,
+              124
+            ]
+          },
+          {
+            "object": "bolt_tail",
+            "number": 10,
+            "point": [
+              518,
+              125
+            ]
+          },
+          {
+            "object": "bolt_character",
+            "number": 11,
+            "point": [
+              410,
+              235
+            ]
+          },
+          {
+            "object": "main_character_card",
+            "number": 12,
+            "point": [
+              240,
+              120
+            ]
+          },
+          {
+            "object": "title_text_guess_the",
+            "number": 13,
+            "point": [
+              210,
+              34
+            ]
+          },
+          {
+            "object": "title_text_animated_character",
+            "number": 14,
+            "point": [
+              500,
+              34
+            ]
+          },
+          {
+            "object": "left_side_text_fun_quiz_questions",
+            "number": 15,
+            "point": [
+              22,
+              240
+            ]
+          },
+          {
+            "object": "right_side_text_fun_quiz_questions",
+            "number": 16,
+            "point": [
+              798,
+              240
+            ]
+          },
+          {
+            "object": "left_side_play_icon",
+            "number": 17,
+            "point": [
+              22,
+              384
+            ]
+          },
+          {
+            "object": "right_side_play_icon",
+            "number": 18,
+            "point": [
+              798,
+              384
+            ]
+          },
+          {
+            "object": "blue_background",
+            "number": 19,
+            "point": [
+              427,
+              460
+            ]
+          }
+        ],
+        "plannerHash": "cf7dc08e54c60a46d47c24f5eebd2332d7c53077d315c613c5bc0b205a1b1863"
+      },
+      "createdAt": "2026-09-01T20:03:04.883132Z"
+    }
+  ]
+}

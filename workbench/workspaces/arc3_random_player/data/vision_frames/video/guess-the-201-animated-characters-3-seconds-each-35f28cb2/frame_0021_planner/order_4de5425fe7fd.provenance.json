@@ -1,0 +1,401 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0021_planner/order_4de5425fe7fd.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0021_planner/order_4de5425fe7fd.provenance.json",
+  "createdAt": "2026-09-01T20:03:05.020219Z",
+  "operation": "visualize_planner_order",
+  "dimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0021.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 165.4,
+    "sceneIndex": 65,
+    "videoFrameIndex": 4962
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0021.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0021.provenance.json"
+  },
+  "source": {},
+  "transform": {
+    "labels": [
+      {
+        "object": "olaf_twig_hair",
+        "number": 1,
+        "point": [
+          493,
+          124
+        ]
+      },
+      {
+        "object": "olaf_carrot_nose",
+        "number": 2,
+        "point": [
+          481,
+          177
+        ]
+      },
+      {
+        "object": "olaf_coal_buttons",
+        "number": 3,
+        "point": [
+          490,
+          313
+        ]
+      },
+      {
+        "object": "candle_lights",
+        "number": 4,
+        "point": [
+          339,
+          319
+        ]
+      },
+      {
+        "object": "olaf_character",
+        "number": 5,
+        "point": [
+          476,
+          226
+        ]
+      },
+      {
+        "object": "left_wooden_railing",
+        "number": 6,
+        "point": [
+          254,
+          210
+        ]
+      },
+      {
+        "object": "right_wooden_railing",
+        "number": 7,
+        "point": [
+          559,
+          210
+        ]
+      },
+      {
+        "object": "snowy_stairway",
+        "number": 8,
+        "point": [
+          429,
+          344
+        ]
+      },
+      {
+        "object": "icy_background_snowfield",
+        "number": 9,
+        "point": [
+          431,
+          104
+        ]
+      },
+      {
+        "object": "question_number_text_21",
+        "number": 10,
+        "point": [
+          34,
+          28
+        ]
+      },
+      {
+        "object": "question_badge_circle",
+        "number": 11,
+        "point": [
+          50,
+          45
+        ]
+      },
+      {
+        "object": "quiz_logo_text",
+        "number": 12,
+        "point": [
+          804,
+          20
+        ]
+      },
+      {
+        "object": "quiz_logo_circle",
+        "number": 13,
+        "point": [
+          819,
+          24
+        ]
+      },
+      {
+        "object": "title_text_guess_the",
+        "number": 14,
+        "point": [
+          235,
+          34
+        ]
+      },
+      {
+        "object": "title_text_animated_character",
+        "number": 15,
+        "point": [
+          520,
+          34
+        ]
+      },
+      {
+        "object": "left_side_play_icon",
+        "number": 16,
+        "point": [
+          26,
+          392
+        ]
+      },
+      {
+        "object": "right_side_play_icon",
+        "number": 17,
+        "point": [
+          828,
+          392
+        ]
+      },
+      {
+        "object": "left_side_text_fun_quiz_questions",
+        "number": 18,
+        "point": [
+          23,
+          246
+        ]
+      },
+      {
+        "object": "right_side_text_fun_quiz_questions",
+        "number": 19,
+        "point": [
+          829,
+          246
+        ]
+      },
+      {
+        "object": "main_image_card",
+        "number": 20,
+        "point": [
+          430,
+          240
+        ]
+      },
+      {
+        "object": "blue_gradient_background",
+        "number": 21,
+        "point": [
+          427,
+          445
+        ]
+      }
+    ],
+    "plannerHash": "4de5425fe7fd3ba308ff5f1bb13d9ac361742740c6a93c6a6cfe85263190c181"
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0021.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:42.662587Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0021_planner/order_4de5425fe7fd.png",
+      "operation": "visualize_planner_order",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "labels": [
+          {
+            "object": "olaf_twig_hair",
+            "number": 1,
+            "point": [
+              493,
+              124
+            ]
+          },
+          {
+            "object": "olaf_carrot_nose",
+            "number": 2,
+            "point": [
+              481,
+              177
+            ]
+          },
+          {
+            "object": "olaf_coal_buttons",
+            "number": 3,
+            "point": [
+              490,
+              313
+            ]
+          },
+          {
+            "object": "candle_lights",
+            "number": 4,
+            "point": [
+              339,
+              319
+            ]
+          },
+          {
+            "object": "olaf_character",
+            "number": 5,
+            "point": [
+              476,
+              226
+            ]
+          },
+          {
+            "object": "left_wooden_railing",
+            "number": 6,
+            "point": [
+              254,
+              210
+            ]
+          },
+          {
+            "object": "right_wooden_railing",
+            "number": 7,
+            "point": [
+              559,
+              210
+            ]
+          },
+          {
+            "object": "snowy_stairway",
+            "number": 8,
+            "point": [
+              429,
+              344
+            ]
+          },
+          {
+            "object": "icy_background_snowfield",
+            "number": 9,
+            "point": [
+              431,
+              104
+            ]
+          },
+          {
+            "object": "question_number_text_21",
+            "number": 10,
+            "point": [
+              34,
+              28
+            ]
+          },
+          {
+            "object": "question_badge_circle",
+            "number": 11,
+            "point": [
+              50,
+              45
+            ]
+          },
+          {
+            "object": "quiz_logo_text",
+            "number": 12,
+            "point": [
+              804,
+              20
+            ]
+          },
+          {
+            "object": "quiz_logo_circle",
+            "number": 13,
+            "point": [
+              819,
+              24
+            ]
+          },
+          {
+            "object": "title_text_guess_the",
+            "number": 14,
+            "point": [
+              235,
+              34
+            ]
+          },
+          {
+            "object": "title_text_animated_character",
+            "number": 15,
+            "point": [
+              520,
+              34
+            ]
+          },
+          {
+            "object": "left_side_play_icon",
+            "number": 16,
+            "point": [
+              26,
+              392
+            ]
+          },
+          {
+            "object": "right_side_play_icon",
+            "number": 17,
+            "point": [
+              828,
+              392
+            ]
+          },
+          {
+            "object": "left_side_text_fun_quiz_questions",
+            "number": 18,
+            "point": [
+              23,
+              246
+            ]
+          },
+          {
+            "object": "right_side_text_fun_quiz_questions",
+            "number": 19,
+            "point": [
+              829,
+              246
+            ]
+          },
+          {
+            "object": "main_image_card",
+            "number": 20,
+            "point": [
+              430,
+              240
+            ]
+          },
+          {
+            "object": "blue_gradient_background",
+            "number": 21,
+            "point": [
+              427,
+              445
+            ]
+          }
+        ],
+        "plannerHash": "4de5425fe7fd3ba308ff5f1bb13d9ac361742740c6a93c6a6cfe85263190c181"
+      },
+      "createdAt": "2026-09-01T20:03:05.020219Z"
+    }
+  ]
+}

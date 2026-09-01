@@ -160,16 +160,15 @@ def test_member_gallery_has_two_stage_runner_with_inspectable_prompts() -> None:
     assert "MAX_RECURSIVE_OBJECT_DEPTH = 9" in source
     assert "(inventory.depth || 0) < MAX_RECURSIVE_OBJECT_DEPTH" in source
     assert "descriptionPrompt: inventoryPrompt" in source
-    description_section = source.index('section("memberDescription", "SCENE OBJECTS TEXTUAL DESCRIPTION"')
     extraction_section = source.index('section("members", "SCENE OBJECT VISUALS · RECURSIVE DESCRIBER / PLANNER / OUTLINER / EXTRACTOR"')
-    assert description_section < extraction_section
+    assert 'section("memberDescription", "SCENE OBJECTS TEXTUAL DESCRIPTION"' not in source
+    assert extraction_section > 0
     assert "video-import-member-tabs" not in source
     assert 'role="tablist"' not in source
     assert 'role="tabpanel"' not in source
-    assert "PROMPT + TEXT OUTPUT" in source
     assert "PROMPTS + IMAGE OUTPUTS" in source
-    assert "Exact textual-description prompt" in source
-    assert "Exact textual-description output" in source
+    assert "Exact Describer prompt" in source
+    assert "Exact Describer output" in source
     assert "Call LLM · Describe selected input images" in source
     assert "Call LLM · Planner" in source
     assert "Call LLM · Outliner" in source
@@ -190,17 +189,15 @@ def test_member_gallery_has_two_stage_runner_with_inspectable_prompts() -> None:
     assert "clearPreTurtleLeaves" in source
     assert "activeTurtleArtifact.rawProgram" in source
     assert 'className="video-import-member-prompt-editor"' in source
-    assert source.count('className="video-import-member-prompt-disclosure"') == 6
+    assert source.count('className="video-import-member-prompt-disclosure"') == 5
     assert "video-import-member-prompt-disclosure" in styles
-    assert "<textarea value={memberDescriptionPrompt}" in source
     assert "<textarea value={memberOrderPrompt}" in source
     assert "<textarea value={memberOutlinerPrompt}" in source
     assert "<textarea value={memberExtractorPrompt}" in source
     assert "<textarea value={turtlePrompt}" in source
     assert "<textarea value={turtlePngPrompt}" in source
-    assert 'ariaLabel="Scene objects description model"' in source
-    assert source.index('ariaLabel="Scene objects description model"') < source.index("<textarea value={memberDescriptionPrompt}")
-    assert source.index("<textarea value={memberDescriptionPrompt}") < source.index("Call LLM · Describe selected input images")
+    assert "D · DESCRIBER" in source
+    assert "Call LLM · Describe selected input images" in source
     assert '{{goal}}' in source
     assert '{{alreadyExtracted}}' in source
     assert "renderMemberDescriptionPrompt" in source
@@ -216,10 +213,32 @@ def test_member_gallery_has_two_stage_runner_with_inspectable_prompts() -> None:
     assert "One shared reconstruction template." in source
     planner_prompt = source[source.index("const DEFAULT_MEMBER_ORDER_PROMPT"):source.index("const DEFAULT_MEMBER_OUTLINER_PROMPT")]
     assert "cutoutInstructions" not in planner_prompt
-    assert "Answer ONLY with JSON: {\\\"order\\\"" in planner_prompt
+    assert '\\"order\\":[\\"exact object name\\"' in planner_prompt
+    assert '\\"touching\\":[{\\"objects\\"' in planner_prompt
+    assert '\\"occlusions\\":[{\\"occluder\\"' in planner_prompt
+    assert '\\"containments\\":[{\\"container\\"' in planner_prompt
+    assert "every contained object before its container" in planner_prompt
+    assert "parsePlannerRelationships" in source
+    assert "migratePlannerPrompt" in source
+    assert "setMemberOrderPrompt(migratePlannerPrompt(s.memberOrderPrompt))" in source
+    assert "plannerTouching: relationships.touching" in source
+    assert "plannerOcclusions: relationships.occlusions" in source
+    assert "plannerContainments: relationships.containments" in source
+    assert "parsePlannerLabels" in source
+    assert "planner-visualization" in source
+    assert "PLANNER NUMBERED ORDER PREVIEW" in source
+    assert "outline-verification" in source
+    assert "outlineVerificationImage: thing.outlineVerificationImage" in source
+    assert "VERIFIED TRACE · agreement" in source
+    assert "video-import-verification-gallery" in styles
+    assert "Touching: none declared." in source
+    assert "Occlusions: none declared." in source
+    assert "Containments: none declared." in source
     outliner_prompt = source[source.index("const DEFAULT_MEMBER_OUTLINER_PROMPT"):source.index("const DEFAULT_RECURSIVE_EXTRACTOR_PROMPT")]
     assert "polygons" in outliner_prompt
     assert "holes" in outliner_prompt
+    assert "{{plannerRelationships}}" in outliner_prompt
+    assert "containedBy:" in source
     assert "one object per call" in source.lower()
     assert "const scenePath = inventory.sourceImage" in source
     assert "outlineRecursiveThing" in source
@@ -258,7 +277,6 @@ def test_member_gallery_has_two_stage_runner_with_inspectable_prompts() -> None:
     assert "const scenePath = frame.path" in source
     assert "sourceImage: scenePath" in source
     assert "inputImage: inputPath" in source
-    assert "INPUT IMAGE SENT TO MODEL" in source
     assert "/player/asset?path=" not in source
     assert "/asset?path=${encodeURIComponent(path)}" in source
     assert "Could not load checked probe image:" not in source
@@ -268,8 +286,7 @@ def test_member_gallery_has_two_stage_runner_with_inspectable_prompts() -> None:
     assert "model.capabilities?.vision === true" in source
     assert "formatDetectedJson" in source
     assert "```(?:json)?" in source
-    assert "Textual-description output · JSON formatted" in source
-    assert "Raw model output" in source
+    assert "Describer output · JSON formatted" in source
     assert "No enabled vision-capable model" in source
     assert "Enable their backend in Models" in source
     assert "automaticVideoModelId" in source
@@ -298,6 +315,8 @@ def test_member_gallery_has_two_stage_runner_with_inspectable_prompts() -> None:
     assert "onClear={clearSelectedImages}" in source
     assert "affectedInventoryIds" in source
     assert "modelResponseCacheRef.current = remainingCache" in source
+    assert "compactCachedModelPayload" in source
+    assert "compactModelResponseCache" in source
     assert "delete imageProvenanceCacheRef.current[path]" in source
     assert "setPinnedImageContext" in source
     assert "their recursive metadata" in source
@@ -440,7 +459,7 @@ def test_member_gallery_has_two_stage_runner_with_inspectable_prompts() -> None:
     assert "LAST IMAGE DESCRIBER OUTPUT" in source
     assert "video-import-image-hover-context" in source
     assert "ALL LLM CALLS" in source
-    assert "Warm workers fan out ready jobs across the configured capacity." in source
+    assert "slots stay available for other stages in either direction." in source
     assert "ACTIVE WORKER" in source
     assert "video-import-llm-call-metrics" in source
     assert "PENDING" in source
@@ -449,8 +468,7 @@ def test_member_gallery_has_two_stage_runner_with_inspectable_prompts() -> None:
     assert "performance.now() - startedAt" in source
     assert "llmCallMetrics" in source
     assert "llmStageProgress" in source
-    assert "futureImageObligations" in source
-    assert "including work not yet admitted to a worker" in source
+    assert "ready, but still waiting for a worker" in source
     assert ".video-import-llm-call-metrics" in styles
     assert '" has-workers"' in source
     assert ".video-import-llm-call-row > button.has-workers" in styles
@@ -465,7 +483,7 @@ def test_member_gallery_has_two_stage_runner_with_inspectable_prompts() -> None:
     assert "before restarting an LLM server" in source
     assert ".video-import-worker-hold.is-held" in styles
     assert "noneLabel={`<use global" in source
-    assert "use full global capacity" in source
+    assert "reserve cross-stage capacity" in source
     assert "Math.ceil(totalLlmConcurrency / 3)" not in source
     assert "queuedDescriptionTasks" in source
     assert "orderedDescriptionTasks.slice(0, descriptionConcurrency)" not in source
@@ -488,7 +506,12 @@ def test_member_gallery_has_two_stage_runner_with_inspectable_prompts() -> None:
     assert "scheduler.waiters.findIndex" not in source
     assert "bestUtilization" in source
     assert "downstreamWaiting" not in source
-    assert "use full global capacity" in source
+    assert "reserve cross-stage capacity" in source
+    assert "LLM_STAGE_RESERVE_FRACTION = 0.30" in source
+    assert "LLM_STAGE_RESERVE_MIN = 5" in source
+    assert "LLM_STAGE_ORDER" in source
+    assert "bestRoundRobinDistance" in source
+    assert "scheduler.lastGrantedIndex" in source
     assert "cooperativeRetryOrder" in source
     assert "retryReserve = Math.min(2" in source
     assert "automaticStagesRunningRef" in source
@@ -529,7 +552,9 @@ def test_member_gallery_has_two_stage_runner_with_inspectable_prompts() -> None:
     assert "flex: 0 1 min(720px, calc(50vw - 16px))" in styles
     automation = source.index('className="video-import-recursive-automation"')
     split = source.index('aria-label="Video Import pipeline forks"')
-    assert source.index('section("memberDescription", "SCENE OBJECTS TEXTUAL DESCRIPTION"') < automation < split
+    assert 'section("memberDescription", "SCENE OBJECTS TEXTUAL DESCRIPTION"' not in source
+    assert automation < split
+    assert source.index('section("config", "JSON CONFIG"') > source.index('section("finish", "TURTLE / IMPORT GAME"')
     assert "grid-column: 1 / -1; grid-row: 1" in styles
 
 
@@ -552,6 +577,35 @@ def test_scene_object_flow_is_recursive_describer_planner_outliner_extractor_tre
     assert '{selected && (\n        <section className="video-import-pipe-board"' not in source
     assert 'className="video-import-scene-object-workspace"' in source
     assert 'className="video-import-pipe-column"' in source
+    assert "frame extraction stopped: no completed scene list yet; scene detection continues to the end" in source
+    assert "stopped: frame extraction is starved while scene detection continues to the end" in source
+    assert "scene threshold" in source
+    assert "samples/s" in source
+    assert "min gap" in source
+    assert 'placeholder="until end"' in source
+    assert "■ Stop scene scan" in source
+    assert "scene scan stop requested; detected markers will be preserved" in source
+    assert "■ Stop frame extraction" in source
+    assert "frame extraction stop requested; completed frames will be preserved" in source
+    assert "ARC playbacks…" in source
+    assert "move-list provenance" in source
+    assert "Publish (WHIP)" in source
+    assert "Watch (HLS)" in source
+    assert "Consume stream + detect scenes" in source
+    assert "Paste HLS, RTSP, RTMP, SRT, or HTTP video/podcast stream URL" in source
+    assert "YouTube / HLS / RTSP / RTMP / SRT / video URL or local movie path" in source
+    assert "Consume URL + detect scenes" in source
+    assert "⇪ Upload movie / image ZIP…" in source
+    assert 'accept="video/*,.zip,application/zip"' in source
+    assert '"image-archive/upload"' in source
+    assert "Extracted Images source" in source
+    assert "frameSources.filter" in source
+    assert "Current video above" in source
+    assert "Curated data ·" in source
+    assert "curated-image-sources/import" in source
+    assert "ARC3 PLAYER / RECORDING SOURCE" in source
+    assert "<EmbeddedArc3PlayPage" in source
+    assert "onRecordingChanged={refreshArcRecordings}" in source
     assert source.index('className="video-import-pipe-board"') < source.index('section("members", "SCENE OBJECT VISUALS · RECURSIVE DESCRIBER / PLANNER / OUTLINER / EXTRACTOR"')
     assert ".video-import-scene-object-workspace" in styles
     assert "grid-column: 1; grid-row: 2 / 5" in styles

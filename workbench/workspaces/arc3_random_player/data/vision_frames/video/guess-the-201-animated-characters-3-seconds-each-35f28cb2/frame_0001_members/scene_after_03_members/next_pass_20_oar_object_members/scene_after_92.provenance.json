@@ -1,0 +1,376 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/scene_after_03_members/next_pass_20_oar_object_members/scene_after_92.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/scene_after_03_members/next_pass_20_oar_object_members/scene_after_92.provenance.json",
+  "createdAt": "2026-09-01T19:42:01.231177Z",
+  "operation": "remove_object_from_scene",
+  "dimensions": {
+    "width": 870,
+    "height": 814
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 10.7,
+    "sceneIndex": 5,
+    "videoFrameIndex": 321
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/scene_after_03_members/next_pass_20_oar_object.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/scene_after_03_members/next_pass_20_oar_object.provenance.json"
+  },
+  "source": {
+    "objectName": "upper_right_rounded_fragment",
+    "cutout": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/scene_after_03_members/next_pass_20_oar_object_members/cut_92_upper_right_rounded_frag.png",
+    "fillInstructions": {
+      "description": "The fragment sits on an otherwise empty black canvas, so removing it reveals uniform black background throughout the cutout area.",
+      "colors": [
+        "#000000"
+      ],
+      "continueEdges": [
+        "Continue the surrounding solid black field seamlessly from all sides of the removed shape",
+        "No internal lines or gradients need continuation"
+      ],
+      "texture": "Flat, textureless fill with no visible pattern or noise"
+    }
+  },
+  "transform": {
+    "fill": "median",
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/scene_after_03_members/next_pass_20_oar_object.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/scene_after_03_members/next_pass_20_oar_object.png",
+      "dimensions": {
+        "width": 870,
+        "height": 814
+      },
+      "verified": true
+    },
+    "removedBox": [
+      557,
+      59,
+      816,
+      165
+    ],
+    "maskScale": 4,
+    "fillInstructions": {
+      "description": "The fragment sits on an otherwise empty black canvas, so removing it reveals uniform black background throughout the cutout area.",
+      "colors": [
+        "#000000"
+      ],
+      "continueEdges": [
+        "Continue the surrounding solid black field seamlessly from all sides of the removed shape",
+        "No internal lines or gradients need continuation"
+      ],
+      "texture": "Flat, textureless fill with no visible pattern or noise"
+    },
+    "imageGeneration": {
+      "renderer": "median"
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:28.116745Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/scene_after_03.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          256,
+          97,
+          635,
+          434
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Fill the removed Moana silhouette with the central card’s ocean backdrop: bright turquoise-to-cyan water with flowing, curved wave streaks and soft highlight patches. Reconstruct the water continuously across the former face/torso/hair area so it matches surrounding motion-like swirls. Where the character previously occluded it, continue the wooden oar segment diagonally from lower-left toward upper-right with consistent tan wood grain and lighting, aligned to the visible oar pieces above her head and at her left side.",
+          "colors": [
+            "#18B8D4",
+            "#1AA9CB",
+            "#1598C0",
+            "#0F87B2",
+            "#49D6E8",
+            "#C99A6A"
+          ],
+          "continueEdges": [
+            "Continue cyan wave streaks from left interior panel through center-right behind former hair mass.",
+            "Extend soft white/aqua water highlights across the chest/face area to match nearby ripple direction.",
+            "Maintain the diagonal oar trajectory (bottom-left to top-right) through the removed shoulder/hand zone, preserving width and wood texture continuity.",
+            "Keep all reconstruction inside the rounded-rectangle card boundaries and preserve existing border edge contrast."
+          ],
+          "texture": "Medium-detail aquatic texture with layered painterly swirls, subtle blur gradients, and speckled light reflections; smooth, fibrous wood grain on the oar."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:21:32.177582Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/scene_after_03_members/cut_20_oar_object.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 375,
+        "height": 347
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/scene_after_03.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          224,
+          97,
+          599,
+          444
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              226,
+              431
+            ],
+            [
+              234,
+              418
+            ],
+            [
+              251,
+              395
+            ],
+            [
+              270,
+              371
+            ],
+            [
+              289,
+              347
+            ],
+            [
+              309,
+              323
+            ],
+            [
+              329,
+              299
+            ],
+            [
+              349,
+              275
+            ],
+            [
+              367,
+              255
+            ],
+            [
+              380,
+              250
+            ],
+            [
+              389,
+              257
+            ],
+            [
+              386,
+              270
+            ],
+            [
+              370,
+              291
+            ],
+            [
+              350,
+              315
+            ],
+            [
+              330,
+              339
+            ],
+            [
+              310,
+              363
+            ],
+            [
+              290,
+              387
+            ],
+            [
+              271,
+              411
+            ],
+            [
+              254,
+              432
+            ],
+            [
+              241,
+              441
+            ],
+            [
+              231,
+              441
+            ]
+          ],
+          [
+            [
+              488,
+              99
+            ],
+            [
+              566,
+              99
+            ],
+            [
+              585,
+              106
+            ],
+            [
+              596,
+              118
+            ],
+            [
+              593,
+              132
+            ],
+            [
+              576,
+              141
+            ],
+            [
+              541,
+              145
+            ],
+            [
+              506,
+              143
+            ],
+            [
+              485,
+              135
+            ],
+            [
+              475,
+              123
+            ],
+            [
+              479,
+              109
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-01T17:23:39.333760Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/scene_after_03_members/next_pass_20_oar_object.png",
+      "operation": "enlarge_object_for_analysis",
+      "dimensions": {
+        "width": 870,
+        "height": 814
+      },
+      "transform": {
+        "sourceDimensions": {
+          "width": 375,
+          "height": 347
+        },
+        "scale": 2,
+        "resizedDimensions": {
+          "width": 750,
+          "height": 694
+        },
+        "padding": {
+          "left": 60,
+          "top": 60,
+          "right": 60,
+          "bottom": 60
+        }
+      },
+      "createdAt": "2026-09-01T17:23:39.424688Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/scene_after_03_members/next_pass_20_oar_object_members/scene_after_92.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 870,
+        "height": 814
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/scene_after_03_members/next_pass_20_oar_object.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0001_members/scene_after_03_members/next_pass_20_oar_object.png",
+          "dimensions": {
+            "width": 870,
+            "height": 814
+          },
+          "verified": true
+        },
+        "removedBox": [
+          557,
+          59,
+          816,
+          165
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "The fragment sits on an otherwise empty black canvas, so removing it reveals uniform black background throughout the cutout area.",
+          "colors": [
+            "#000000"
+          ],
+          "continueEdges": [
+            "Continue the surrounding solid black field seamlessly from all sides of the removed shape",
+            "No internal lines or gradients need continuation"
+          ],
+          "texture": "Flat, textureless fill with no visible pattern or noise"
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T19:42:01.231177Z"
+    }
+  ]
+}

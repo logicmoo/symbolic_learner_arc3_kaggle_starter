@@ -1,0 +1,156 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16.provenance.json",
+  "createdAt": "2026-09-01T17:23:18.101179Z",
+  "operation": "remove_object_from_scene",
+  "dimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 41.633,
+    "sceneIndex": 17,
+    "videoFrameIndex": 1249
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005.provenance.json"
+  },
+  "source": {
+    "objectName": "energy_light_streak",
+    "cutout": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/cut_16_energy_light_streak.png",
+    "fillInstructions": {
+      "description": "Behind the removed cyan/white glow, the central card continues as a dark neon scene: deep blue-violet background with soft magenta/cyan bloom, plus the fighter’s underlying lower-arm/jacket area where the streak crosses her body. Reconstruct a smooth continuation of the character’s muted skin/jacket shading and the card’s ambient purple-blue lighting so no bright streak remains.",
+      "colors": [
+        "#0A0F2A",
+        "#1A1F4A",
+        "#2C2B6E",
+        "#4C3F8E",
+        "#6E5FA8",
+        "#2E7FAE"
+      ],
+      "continueEdges": [
+        "Extend the dark purple-blue background gradient from above and below straight through the removed band.",
+        "Continue small soft bokeh/light specks visible near the streak boundaries across the gap with similar blur and spacing.",
+        "Carry the character edge transitions (arm/jacket contour and shadow boundaries) across the removed area to keep limb and clothing shapes coherent.",
+        "Preserve the card’s lower atmospheric haze as subtle, low-contrast cyan-violet tint, but without any concentrated bright beam core."
+      ],
+      "texture": "Soft cinematic neon haze with gentle grain/bokeh and smooth gradient blending; semi-gloss character shading where the streak crossed the arm/jacket."
+    }
+  },
+  "transform": {
+    "fill": "median",
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005.png",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "verified": true
+    },
+    "removedBox": [
+      222,
+      244,
+      643,
+      387
+    ],
+    "maskScale": 4,
+    "fillInstructions": {
+      "description": "Behind the removed cyan/white glow, the central card continues as a dark neon scene: deep blue-violet background with soft magenta/cyan bloom, plus the fighter’s underlying lower-arm/jacket area where the streak crosses her body. Reconstruct a smooth continuation of the character’s muted skin/jacket shading and the card’s ambient purple-blue lighting so no bright streak remains.",
+      "colors": [
+        "#0A0F2A",
+        "#1A1F4A",
+        "#2C2B6E",
+        "#4C3F8E",
+        "#6E5FA8",
+        "#2E7FAE"
+      ],
+      "continueEdges": [
+        "Extend the dark purple-blue background gradient from above and below straight through the removed band.",
+        "Continue small soft bokeh/light specks visible near the streak boundaries across the gap with similar blur and spacing.",
+        "Carry the character edge transitions (arm/jacket contour and shadow boundaries) across the removed area to keep limb and clothing shapes coherent.",
+        "Preserve the card’s lower atmospheric haze as subtle, low-contrast cyan-violet tint, but without any concentrated bright beam core."
+      ],
+      "texture": "Soft cinematic neon haze with gentle grain/bokeh and smooth gradient blending; semi-gloss character shading where the streak crossed the arm/jacket."
+    },
+    "imageGeneration": {
+      "renderer": "median"
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:30.576049Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005_members/scene_after_16.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0005.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          222,
+          244,
+          643,
+          387
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed cyan/white glow, the central card continues as a dark neon scene: deep blue-violet background with soft magenta/cyan bloom, plus the fighter’s underlying lower-arm/jacket area where the streak crosses her body. Reconstruct a smooth continuation of the character’s muted skin/jacket shading and the card’s ambient purple-blue lighting so no bright streak remains.",
+          "colors": [
+            "#0A0F2A",
+            "#1A1F4A",
+            "#2C2B6E",
+            "#4C3F8E",
+            "#6E5FA8",
+            "#2E7FAE"
+          ],
+          "continueEdges": [
+            "Extend the dark purple-blue background gradient from above and below straight through the removed band.",
+            "Continue small soft bokeh/light specks visible near the streak boundaries across the gap with similar blur and spacing.",
+            "Carry the character edge transitions (arm/jacket contour and shadow boundaries) across the removed area to keep limb and clothing shapes coherent.",
+            "Preserve the card’s lower atmospheric haze as subtle, low-contrast cyan-violet tint, but without any concentrated bright beam core."
+          ],
+          "texture": "Soft cinematic neon haze with gentle grain/bokeh and smooth gradient blending; semi-gloss character shading where the streak crossed the arm/jacket."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:23:18.101179Z"
+    }
+  ]
+}

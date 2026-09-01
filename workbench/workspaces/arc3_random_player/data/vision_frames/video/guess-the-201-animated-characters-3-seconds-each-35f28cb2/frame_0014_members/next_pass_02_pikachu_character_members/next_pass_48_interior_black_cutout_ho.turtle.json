@@ -1,0 +1,197 @@
+{
+  "kind": "turtle_program",
+  "version": 1,
+  "sourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0014_members/next_pass_02_pikachu_character_members/next_pass_48_interior_black_cutout_ho.png",
+  "subjectName": "interior_black_cutout_hole",
+  "modelId": "enullm-8801-copilot_gpt-5.3-codex",
+  "prompt": "TURTLE PNG DRAW STEP.\nThe attached image is terminal object interior_black_cutout_hole.\nObject description: Bad Request\nReview the draft Turtle program below and return the final drawing program that should be rendered to PNG.\nPreserve accurate silhouette, colors, holes, and visible internal details. Coordinates are normalized from 0 to 1000 with top-left origin.\nAllowed commands: pen, move, line, polyline, polygon, rectangle, ellipse, dot. Use at most 200 commands.\nDRAFT TURTLE PROGRAM:\n{\"version\":1,\"background\":\"transparent\",\"penColor\":\"#000000\",\"penWidth\":4,\"commands\":[{\"op\":\"polygon\",\"points\":[[0,0],[1000,0],[1000,230],[965,325],[930,430],[900,500],[860,560],[790,615],[700,655],[610,680],[520,690],[440,680],[360,650],[290,605],[230,545],[185,470],[165,390],[170,315],[200,245],[250,185],[305,135],[350,90],[385,40],[400,0]]},{\"op\":\"polygon\",\"points\":[[385,40],[420,95],[455,150],[485,220],[500,295],[495,370],[470,440],[430,500],[380,545],[325,575],[280,555],[250,500],[240,430],[250,350],[275,275],[310,205],[345,140],[375,85]]}]}\nAnswer ONLY with the final JSON object. Do not include Markdown or Python.",
+  "rawModelOutput": "{\"version\":1,\"background\":\"transparent\",\"penColor\":\"#000000\",\"penWidth\":1,\"commands\":[{\"op\":\"pen\",\"color\":\"#000000\",\"width\":1},{\"op\":\"polygon\",\"points\":[[292,71],[404,72],[520,74],[642,75],[756,78],[835,92],[873,124],[885,178],[883,250],[873,321],[863,387],[851,451],[833,516],[804,579],[759,633],[692,673],[609,693],[520,699],[436,694],[362,673],[299,638],[247,593],[206,544],[176,491],[157,432],[150,369],[152,307],[164,249],[187,197],[220,151],[254,113]]},{\"op\":\"polygon\",\"points\":[[797,170],[814,154],[834,161],[839,192],[834,230],[824,263],[808,289],[794,279],[793,244],[794,206]]}]}",
+  "program": {
+    "version": 1,
+    "background": "transparent",
+    "penColor": "#000000",
+    "penWidth": 1,
+    "commands": [
+      {
+        "op": "pen",
+        "color": "#000000",
+        "width": 1
+      },
+      {
+        "op": "polygon",
+        "points": [
+          [
+            292,
+            71
+          ],
+          [
+            404,
+            72
+          ],
+          [
+            520,
+            74
+          ],
+          [
+            642,
+            75
+          ],
+          [
+            756,
+            78
+          ],
+          [
+            835,
+            92
+          ],
+          [
+            873,
+            124
+          ],
+          [
+            885,
+            178
+          ],
+          [
+            883,
+            250
+          ],
+          [
+            873,
+            321
+          ],
+          [
+            863,
+            387
+          ],
+          [
+            851,
+            451
+          ],
+          [
+            833,
+            516
+          ],
+          [
+            804,
+            579
+          ],
+          [
+            759,
+            633
+          ],
+          [
+            692,
+            673
+          ],
+          [
+            609,
+            693
+          ],
+          [
+            520,
+            699
+          ],
+          [
+            436,
+            694
+          ],
+          [
+            362,
+            673
+          ],
+          [
+            299,
+            638
+          ],
+          [
+            247,
+            593
+          ],
+          [
+            206,
+            544
+          ],
+          [
+            176,
+            491
+          ],
+          [
+            157,
+            432
+          ],
+          [
+            150,
+            369
+          ],
+          [
+            152,
+            307
+          ],
+          [
+            164,
+            249
+          ],
+          [
+            187,
+            197
+          ],
+          [
+            220,
+            151
+          ],
+          [
+            254,
+            113
+          ]
+        ]
+      },
+      {
+        "op": "polygon",
+        "points": [
+          [
+            797,
+            170
+          ],
+          [
+            814,
+            154
+          ],
+          [
+            834,
+            161
+          ],
+          [
+            839,
+            192
+          ],
+          [
+            834,
+            230
+          ],
+          [
+            824,
+            263
+          ],
+          [
+            808,
+            289
+          ],
+          [
+            794,
+            279
+          ],
+          [
+            793,
+            244
+          ],
+          [
+            794,
+            206
+          ]
+        ]
+      }
+    ]
+  },
+  "createdAt": "2026-09-01T19:28:17.084095Z"
+}

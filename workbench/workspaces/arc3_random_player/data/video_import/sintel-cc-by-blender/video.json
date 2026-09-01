@@ -1,0 +1,822 @@
+{
+  "title": "Sintel (CC-BY Blender)",
+  "source": "https://www.youtube.com/watch?v=eRsGyueVLvQ",
+  "duration": 888,
+  "uploader": "Blender",
+  "downloaded_at": "2026-08-28T03:46:00.120056Z",
+  "scenes": [
+    {
+      "atSeconds": 4.75,
+      "score": 39.6
+    },
+    {
+      "atSeconds": 5.0,
+      "score": 40.7
+    },
+    {
+      "atSeconds": 6.5,
+      "score": 37.5
+    },
+    {
+      "atSeconds": 6.75,
+      "score": 39.8
+    },
+    {
+      "atSeconds": 7.0,
+      "score": 33.9
+    },
+    {
+      "atSeconds": 31.5,
+      "score": 36.3
+    },
+    {
+      "atSeconds": 42.25,
+      "score": 36.9
+    },
+    {
+      "atSeconds": 42.5,
+      "score": 50.5
+    },
+    {
+      "atSeconds": 43.25,
+      "score": 66.1
+    },
+    {
+      "atSeconds": 43.5,
+      "score": 69.0
+    },
+    {
+      "atSeconds": 43.75,
+      "score": 51.3
+    },
+    {
+      "atSeconds": 44.0,
+      "score": 45.4
+    },
+    {
+      "atSeconds": 44.25,
+      "score": 78.1
+    },
+    {
+      "atSeconds": 44.5,
+      "score": 48.0
+    },
+    {
+      "atSeconds": 44.75,
+      "score": 33.6
+    },
+    {
+      "atSeconds": 45.0,
+      "score": 90.0
+    },
+    {
+      "atSeconds": 45.25,
+      "score": 83.6
+    },
+    {
+      "atSeconds": 45.5,
+      "score": 107.6
+    },
+    {
+      "atSeconds": 45.75,
+      "score": 94.7
+    },
+    {
+      "atSeconds": 46.0,
+      "score": 98.4
+    },
+    {
+      "atSeconds": 46.25,
+      "score": 37.4
+    },
+    {
+      "atSeconds": 46.5,
+      "score": 36.5
+    },
+    {
+      "atSeconds": 46.75,
+      "score": 51.1
+    },
+    {
+      "atSeconds": 47.0,
+      "score": 34.2
+    },
+    {
+      "atSeconds": 47.25,
+      "score": 55.2
+    },
+    {
+      "atSeconds": 47.5,
+      "score": 65.3
+    },
+    {
+      "atSeconds": 47.75,
+      "score": 45.8
+    },
+    {
+      "atSeconds": 48.0,
+      "score": 49.3
+    },
+    {
+      "atSeconds": 48.25,
+      "score": 46.4
+    },
+    {
+      "atSeconds": 48.5,
+      "score": 53.7
+    },
+    {
+      "atSeconds": 48.75,
+      "score": 68.5
+    },
+    {
+      "atSeconds": 49.5,
+      "score": 49.5
+    },
+    {
+      "atSeconds": 49.75,
+      "score": 52.0
+    },
+    {
+      "atSeconds": 50.5,
+      "score": 33.1
+    },
+    {
+      "atSeconds": 50.75,
+      "score": 36.5
+    },
+    {
+      "atSeconds": 51.75,
+      "score": 44.3
+    },
+    {
+      "atSeconds": 52.0,
+      "score": 38.2
+    },
+    {
+      "atSeconds": 52.25,
+      "score": 53.0
+    },
+    {
+      "atSeconds": 52.5,
+      "score": 58.1
+    },
+    {
+      "atSeconds": 52.75,
+      "score": 45.3
+    },
+    {
+      "atSeconds": 53.0,
+      "score": 51.9
+    },
+    {
+      "atSeconds": 53.75,
+      "score": 49.0
+    },
+    {
+      "atSeconds": 54.0,
+      "score": 64.3
+    },
+    {
+      "atSeconds": 54.25,
+      "score": 62.5
+    },
+    {
+      "atSeconds": 55.0,
+      "score": 75.1
+    },
+    {
+      "atSeconds": 55.25,
+      "score": 52.6
+    },
+    {
+      "atSeconds": 55.5,
+      "score": 58.4
+    },
+    {
+      "atSeconds": 55.75,
+      "score": 52.4
+    },
+    {
+      "atSeconds": 56.0,
+      "score": 62.7
+    },
+    {
+      "atSeconds": 56.25,
+      "score": 85.3
+    },
+    {
+      "atSeconds": 56.5,
+      "score": 48.1
+    },
+    {
+      "atSeconds": 56.75,
+      "score": 44.2
+    },
+    {
+      "atSeconds": 57.0,
+      "score": 37.8
+    },
+    {
+      "atSeconds": 57.25,
+      "score": 86.1
+    },
+    {
+      "atSeconds": 57.75,
+      "score": 35.2
+    },
+    {
+      "atSeconds": 58.0,
+      "score": 43.0
+    },
+    {
+      "atSeconds": 58.25,
+      "score": 46.4
+    },
+    {
+      "atSeconds": 58.5,
+      "score": 49.5
+    },
+    {
+      "atSeconds": 58.75,
+      "score": 50.2
+    },
+    {
+      "atSeconds": 59.0,
+      "score": 40.9
+    },
+    {
+      "atSeconds": 59.25,
+      "score": 31.5
+    },
+    {
+      "atSeconds": 59.5,
+      "score": 72.4
+    },
+    {
+      "atSeconds": 60.0,
+      "score": 35.4
+    },
+    {
+      "atSeconds": 60.75,
+      "score": 57.7
+    },
+    {
+      "atSeconds": 62.25,
+      "score": 44.7
+    },
+    {
+      "atSeconds": 62.5,
+      "score": 49.4
+    },
+    {
+      "atSeconds": 63.5,
+      "score": 44.7
+    },
+    {
+      "atSeconds": 63.75,
+      "score": 39.4
+    },
+    {
+      "atSeconds": 64.0,
+      "score": 30.8
+    },
+    {
+      "atSeconds": 64.5,
+      "score": 35.9
+    },
+    {
+      "atSeconds": 64.75,
+      "score": 80.2
+    },
+    {
+      "atSeconds": 65.0,
+      "score": 38.6
+    },
+    {
+      "atSeconds": 65.25,
+      "score": 79.8
+    },
+    {
+      "atSeconds": 65.5,
+      "score": 44.4
+    },
+    {
+      "atSeconds": 65.75,
+      "score": 45.0
+    },
+    {
+      "atSeconds": 68.25,
+      "score": 56.8
+    },
+    {
+      "atSeconds": 69.5,
+      "score": 57.8
+    },
+    {
+      "atSeconds": 74.25,
+      "score": 46.8
+    },
+    {
+      "atSeconds": 81.5,
+      "score": 54.1
+    },
+    {
+      "atSeconds": 86.0,
+      "score": 59.0
+    },
+    {
+      "atSeconds": 88.75,
+      "score": 42.9
+    },
+    {
+      "atSeconds": 101.25,
+      "score": 125.3
+    },
+    {
+      "atSeconds": 109.5,
+      "score": 31.9
+    },
+    {
+      "atSeconds": 134.25,
+      "score": 49.2
+    },
+    {
+      "atSeconds": 138.25,
+      "score": 45.9
+    },
+    {
+      "atSeconds": 156.0,
+      "score": 74.6
+    },
+    {
+      "atSeconds": 162.25,
+      "score": 78.8
+    },
+    {
+      "atSeconds": 175.5,
+      "score": 36.3
+    },
+    {
+      "atSeconds": 176.5,
+      "score": 63.6
+    },
+    {
+      "atSeconds": 177.25,
+      "score": 38.2
+    },
+    {
+      "atSeconds": 177.5,
+      "score": 50.8
+    },
+    {
+      "atSeconds": 177.75,
+      "score": 62.9
+    },
+    {
+      "atSeconds": 179.0,
+      "score": 36.6
+    },
+    {
+      "atSeconds": 179.25,
+      "score": 44.1
+    },
+    {
+      "atSeconds": 179.5,
+      "score": 48.4
+    },
+    {
+      "atSeconds": 179.75,
+      "score": 47.9
+    },
+    {
+      "atSeconds": 180.0,
+      "score": 44.5
+    },
+    {
+      "atSeconds": 180.25,
+      "score": 68.9
+    },
+    {
+      "atSeconds": 180.5,
+      "score": 38.4
+    },
+    {
+      "atSeconds": 180.75,
+      "score": 51.4
+    },
+    {
+      "atSeconds": 182.25,
+      "score": 77.4
+    },
+    {
+      "atSeconds": 182.5,
+      "score": 38.2
+    },
+    {
+      "atSeconds": 182.75,
+      "score": 37.1
+    },
+    {
+      "atSeconds": 183.0,
+      "score": 40.9
+    },
+    {
+      "atSeconds": 183.25,
+      "score": 43.0
+    },
+    {
+      "atSeconds": 183.5,
+      "score": 42.5
+    },
+    {
+      "atSeconds": 183.75,
+      "score": 43.0
+    },
+    {
+      "atSeconds": 184.0,
+      "score": 45.4
+    },
+    {
+      "atSeconds": 184.25,
+      "score": 43.9
+    },
+    {
+      "atSeconds": 184.5,
+      "score": 61.5
+    },
+    {
+      "atSeconds": 186.75,
+      "score": 53.5
+    },
+    {
+      "atSeconds": 188.0,
+      "score": 34.7
+    },
+    {
+      "atSeconds": 188.25,
+      "score": 41.7
+    },
+    {
+      "atSeconds": 188.5,
+      "score": 47.6
+    },
+    {
+      "atSeconds": 188.75,
+      "score": 49.7
+    },
+    {
+      "atSeconds": 189.0,
+      "score": 52.0
+    },
+    {
+      "atSeconds": 189.25,
+      "score": 46.8
+    },
+    {
+      "atSeconds": 189.5,
+      "score": 37.4
+    },
+    {
+      "atSeconds": 190.0,
+      "score": 68.3
+    },
+    {
+      "atSeconds": 192.0,
+      "score": 76.0
+    },
+    {
+      "atSeconds": 194.75,
+      "score": 62.5
+    },
+    {
+      "atSeconds": 196.5,
+      "score": 62.8
+    },
+    {
+      "atSeconds": 197.75,
+      "score": 62.9
+    },
+    {
+      "atSeconds": 203.25,
+      "score": 65.7
+    },
+    {
+      "atSeconds": 205.25,
+      "score": 63.1
+    },
+    {
+      "atSeconds": 206.25,
+      "score": 33.4
+    },
+    {
+      "atSeconds": 212.0,
+      "score": 55.1
+    },
+    {
+      "atSeconds": 212.5,
+      "score": 35.8
+    },
+    {
+      "atSeconds": 212.75,
+      "score": 30.3
+    },
+    {
+      "atSeconds": 215.0,
+      "score": 58.2
+    },
+    {
+      "atSeconds": 219.5,
+      "score": 50.7
+    },
+    {
+      "atSeconds": 239.75,
+      "score": 30.2
+    },
+    {
+      "atSeconds": 240.0,
+      "score": 32.2
+    },
+    {
+      "atSeconds": 240.25,
+      "score": 34.6
+    },
+    {
+      "atSeconds": 240.5,
+      "score": 35.2
+    },
+    {
+      "atSeconds": 240.75,
+      "score": 34.7
+    },
+    {
+      "atSeconds": 241.0,
+      "score": 33.9
+    },
+    {
+      "atSeconds": 248.25,
+      "score": 89.9
+    },
+    {
+      "atSeconds": 248.5,
+      "score": 57.9
+    },
+    {
+      "atSeconds": 248.75,
+      "score": 53.8
+    },
+    {
+      "atSeconds": 249.0,
+      "score": 49.2
+    },
+    {
+      "atSeconds": 249.25,
+      "score": 59.0
+    },
+    {
+      "atSeconds": 249.5,
+      "score": 44.7
+    },
+    {
+      "atSeconds": 249.75,
+      "score": 49.9
+    },
+    {
+      "atSeconds": 250.0,
+      "score": 41.4
+    },
+    {
+      "atSeconds": 250.25,
+      "score": 36.2
+    },
+    {
+      "atSeconds": 250.5,
+      "score": 64.5
+    },
+    {
+      "atSeconds": 250.75,
+      "score": 45.2
+    },
+    {
+      "atSeconds": 251.0,
+      "score": 63.6
+    },
+    {
+      "atSeconds": 251.25,
+      "score": 56.3
+    },
+    {
+      "atSeconds": 251.5,
+      "score": 54.8
+    },
+    {
+      "atSeconds": 251.75,
+      "score": 46.6
+    },
+    {
+      "atSeconds": 252.0,
+      "score": 63.5
+    },
+    {
+      "atSeconds": 252.25,
+      "score": 42.0
+    },
+    {
+      "atSeconds": 252.5,
+      "score": 38.2
+    },
+    {
+      "atSeconds": 252.75,
+      "score": 41.5
+    },
+    {
+      "atSeconds": 253.0,
+      "score": 69.5
+    },
+    {
+      "atSeconds": 253.25,
+      "score": 31.2
+    },
+    {
+      "atSeconds": 253.5,
+      "score": 41.5
+    },
+    {
+      "atSeconds": 253.75,
+      "score": 51.9
+    },
+    {
+      "atSeconds": 254.0,
+      "score": 56.9
+    },
+    {
+      "atSeconds": 254.25,
+      "score": 46.9
+    },
+    {
+      "atSeconds": 254.5,
+      "score": 43.9
+    },
+    {
+      "atSeconds": 254.75,
+      "score": 74.1
+    },
+    {
+      "atSeconds": 255.0,
+      "score": 48.5
+    },
+    {
+      "atSeconds": 255.25,
+      "score": 54.7
+    },
+    {
+      "atSeconds": 255.5,
+      "score": 66.5
+    },
+    {
+      "atSeconds": 255.75,
+      "score": 57.2
+    },
+    {
+      "atSeconds": 256.0,
+      "score": 82.0
+    },
+    {
+      "atSeconds": 256.25,
+      "score": 31.9
+    },
+    {
+      "atSeconds": 256.5,
+      "score": 44.4
+    },
+    {
+      "atSeconds": 256.75,
+      "score": 61.6
+    },
+    {
+      "atSeconds": 257.0,
+      "score": 52.8
+    },
+    {
+      "atSeconds": 257.25,
+      "score": 50.0
+    },
+    {
+      "atSeconds": 257.5,
+      "score": 35.2
+    },
+    {
+      "atSeconds": 258.0,
+      "score": 39.6
+    },
+    {
+      "atSeconds": 258.25,
+      "score": 43.1
+    },
+    {
+      "atSeconds": 258.5,
+      "score": 46.7
+    },
+    {
+      "atSeconds": 258.75,
+      "score": 46.0
+    },
+    {
+      "atSeconds": 259.0,
+      "score": 39.5
+    },
+    {
+      "atSeconds": 259.25,
+      "score": 78.5
+    },
+    {
+      "atSeconds": 263.5,
+      "score": 67.0
+    },
+    {
+      "atSeconds": 264.75,
+      "score": 40.0
+    },
+    {
+      "atSeconds": 265.0,
+      "score": 37.0
+    },
+    {
+      "atSeconds": 265.75,
+      "score": 56.0
+    },
+    {
+      "atSeconds": 266.0,
+      "score": 32.2
+    },
+    {
+      "atSeconds": 267.25,
+      "score": 39.7
+    },
+    {
+      "atSeconds": 267.5,
+      "score": 39.8
+    },
+    {
+      "atSeconds": 267.75,
+      "score": 41.3
+    },
+    {
+      "atSeconds": 270.5,
+      "score": 49.8
+    },
+    {
+      "atSeconds": 270.75,
+      "score": 36.9
+    },
+    {
+      "atSeconds": 271.0,
+      "score": 31.2
+    },
+    {
+      "atSeconds": 271.75,
+      "score": 95.3
+    },
+    {
+      "atSeconds": 273.5,
+      "score": 78.2
+    },
+    {
+      "atSeconds": 274.0,
+      "score": 31.8
+    },
+    {
+      "atSeconds": 274.5,
+      "score": 30.7
+    },
+    {
+      "atSeconds": 275.75,
+      "score": 97.6
+    },
+    {
+      "atSeconds": 279.0,
+      "score": 89.8
+    },
+    {
+      "atSeconds": 279.25,
+      "score": 47.5
+    },
+    {
+      "atSeconds": 279.5,
+      "score": 40.4
+    }
+  ],
+  "lastScenes": {
+    "count": 200,
+    "elapsedSeconds": 10.3,
+    "secondsPerVideoSecond": 0.0116,
+    "threshold": 30.0,
+    "at": "2026-08-28T03:46:33.852130Z"
+  },
+  "lastExtract": {
+    "count": 62,
+    "elapsedSeconds": 29.8,
+    "secondsPerFrame": 0.481,
+    "at": "2026-08-28T20:53:03.389796Z"
+  }
+}

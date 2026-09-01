@@ -1,0 +1,159 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0017_members/scene_after_82.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0017_members/scene_after_82.provenance.json",
+  "createdAt": "2026-09-01T19:41:32.984851Z",
+  "operation": "remove_object_from_scene",
+  "dimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0017.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 134.433,
+    "sceneIndex": 53,
+    "videoFrameIndex": 4033
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0017.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0017.provenance.json"
+  },
+  "source": {
+    "objectName": "remy_whiskers",
+    "cutout": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0017_members/cut_82_remy_whiskers.png",
+    "fillInstructions": {
+      "description": "Behind the removed whiskers, the surface is primarily Remy’s gray-blue snout and cheek fur with fine directional hair texture, plus small stretches of the blue card background where whisker tips extend off the face. Lower whiskers cross into slightly darker muzzle/mouth-adjacent shading before returning to fur.",
+      "colors": [
+        "#4E606A",
+        "#5C6F79",
+        "#6D7F88",
+        "#8A99A3",
+        "#3E67BC",
+        "#4F7ED9",
+        "#2F313A"
+      ],
+      "continueEdges": [
+        "Continue the snout fur flow diagonally from upper-left to lower-right across each whisker gap.",
+        "Preserve the curved muzzle highlight-to-shadow transition around the nose base.",
+        "Extend the blue background gradient smoothly where right-side whisker tips project beyond the face.",
+        "Maintain the darker mouth-adjacent contour under the lower whisker group without adding new hard lines."
+      ],
+      "texture": "Soft, short fur strands with subtle luminance variation on the muzzle; smooth airbrushed blue gradient in background; gentle anti-aliased character edge transitions."
+    }
+  },
+  "transform": {
+    "fill": "median",
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0017.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0017.png",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "verified": true
+    },
+    "removedBox": [
+      358,
+      96,
+      652,
+      336
+    ],
+    "maskScale": 4,
+    "fillInstructions": {
+      "description": "Behind the removed whiskers, the surface is primarily Remy’s gray-blue snout and cheek fur with fine directional hair texture, plus small stretches of the blue card background where whisker tips extend off the face. Lower whiskers cross into slightly darker muzzle/mouth-adjacent shading before returning to fur.",
+      "colors": [
+        "#4E606A",
+        "#5C6F79",
+        "#6D7F88",
+        "#8A99A3",
+        "#3E67BC",
+        "#4F7ED9",
+        "#2F313A"
+      ],
+      "continueEdges": [
+        "Continue the snout fur flow diagonally from upper-left to lower-right across each whisker gap.",
+        "Preserve the curved muzzle highlight-to-shadow transition around the nose base.",
+        "Extend the blue background gradient smoothly where right-side whisker tips project beyond the face.",
+        "Maintain the darker mouth-adjacent contour under the lower whisker group without adding new hard lines."
+      ],
+      "texture": "Soft, short fur strands with subtle luminance variation on the muzzle; smooth airbrushed blue gradient in background; gentle anti-aliased character edge transitions."
+    },
+    "imageGeneration": {
+      "renderer": "median"
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0017.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:39.765890Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0017_members/scene_after_82.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0017.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0017.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          358,
+          96,
+          652,
+          336
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed whiskers, the surface is primarily Remy’s gray-blue snout and cheek fur with fine directional hair texture, plus small stretches of the blue card background where whisker tips extend off the face. Lower whiskers cross into slightly darker muzzle/mouth-adjacent shading before returning to fur.",
+          "colors": [
+            "#4E606A",
+            "#5C6F79",
+            "#6D7F88",
+            "#8A99A3",
+            "#3E67BC",
+            "#4F7ED9",
+            "#2F313A"
+          ],
+          "continueEdges": [
+            "Continue the snout fur flow diagonally from upper-left to lower-right across each whisker gap.",
+            "Preserve the curved muzzle highlight-to-shadow transition around the nose base.",
+            "Extend the blue background gradient smoothly where right-side whisker tips project beyond the face.",
+            "Maintain the darker mouth-adjacent contour under the lower whisker group without adding new hard lines."
+          ],
+          "texture": "Soft, short fur strands with subtle luminance variation on the muzzle; smooth airbrushed blue gradient in background; gentle anti-aliased character edge transitions."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T19:41:32.984851Z"
+    }
+  ]
+}

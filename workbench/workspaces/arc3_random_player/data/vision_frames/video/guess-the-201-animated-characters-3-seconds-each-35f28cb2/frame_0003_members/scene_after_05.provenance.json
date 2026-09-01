@@ -1,0 +1,141 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0003_members/scene_after_05.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0003_members/scene_after_05.provenance.json",
+  "createdAt": "2026-09-01T17:21:32.725506Z",
+  "operation": "remove_object_from_scene",
+  "dimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0003.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 26.2,
+    "sceneIndex": 11,
+    "videoFrameIndex": 786
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0003.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0003.provenance.json"
+  },
+  "source": {
+    "objectName": "scooby_doo_character",
+    "cutout": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0003_members/cut_05_scooby_doo_character.png",
+    "fillInstructions": {
+      "description": "Behind Scooby-Doo is the interior of the central rounded white panel: a clean, nearly uniform white fill with very subtle compression noise and no scene details. The removed area should be inpainted as flat panel white so the center remains blank.",
+      "colors": [
+        "#FDFDFD",
+        "#FAFAFA",
+        "#F7F7F7"
+      ],
+      "continueEdges": [
+        "Continue the panel’s uniform white interior seamlessly through the entire hole.",
+        "At the lower clipped contour where the character meets the panel boundary, keep the fill aligned with the same interior white up to that edge; do not introduce new outlines or shadows."
+      ],
+      "texture": "Mostly flat solid fill; extremely light JPEG grain/compression mottling only."
+    }
+  },
+  "transform": {
+    "fill": "median",
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0003.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0003.png",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "verified": true
+    },
+    "removedBox": [
+      374,
+      105,
+      534,
+      425
+    ],
+    "maskScale": 4,
+    "fillInstructions": {
+      "description": "Behind Scooby-Doo is the interior of the central rounded white panel: a clean, nearly uniform white fill with very subtle compression noise and no scene details. The removed area should be inpainted as flat panel white so the center remains blank.",
+      "colors": [
+        "#FDFDFD",
+        "#FAFAFA",
+        "#F7F7F7"
+      ],
+      "continueEdges": [
+        "Continue the panel’s uniform white interior seamlessly through the entire hole.",
+        "At the lower clipped contour where the character meets the panel boundary, keep the fill aligned with the same interior white up to that edge; do not introduce new outlines or shadows."
+      ],
+      "texture": "Mostly flat solid fill; extremely light JPEG grain/compression mottling only."
+    },
+    "imageGeneration": {
+      "renderer": "median"
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0003.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:29.317196Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0003_members/scene_after_05.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0003.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0003.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          374,
+          105,
+          534,
+          425
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind Scooby-Doo is the interior of the central rounded white panel: a clean, nearly uniform white fill with very subtle compression noise and no scene details. The removed area should be inpainted as flat panel white so the center remains blank.",
+          "colors": [
+            "#FDFDFD",
+            "#FAFAFA",
+            "#F7F7F7"
+          ],
+          "continueEdges": [
+            "Continue the panel’s uniform white interior seamlessly through the entire hole.",
+            "At the lower clipped contour where the character meets the panel boundary, keep the fill aligned with the same interior white up to that edge; do not introduce new outlines or shadows."
+          ],
+          "texture": "Mostly flat solid fill; extremely light JPEG grain/compression mottling only."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:21:32.725506Z"
+    }
+  ]
+}

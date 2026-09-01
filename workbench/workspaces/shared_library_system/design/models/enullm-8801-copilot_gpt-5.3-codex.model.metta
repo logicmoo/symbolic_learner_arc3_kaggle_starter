@@ -104,9 +104,22 @@
     ))
     (owned_by github-copilot)
     (provider github-copilot)
+    (codex_supplier copilot)
     (backing_model gpt-5.3-codex)
-    (connected false)
-    (active_workers ([]))
+    (connected true)
+    (active_workers ([]
+      worker-copilot-12
+      worker-copilot-13
+      worker-copilot-14
+      worker-copilot-15
+      worker-copilot-16
+      worker-copilot-17
+      worker-copilot-18
+      worker-copilot-6
+      worker-copilot-7
+      worker-copilot-8
+      worker-copilot-9
+    ))
     (route_targets ([]))
     (routing_mode on_demand)
     (on_demand true)
@@ -298,9 +311,22 @@
     ))
     (owned_by github-copilot)
     (provider github-copilot)
+    (codex_supplier copilot)
     (backing_model gpt-5.3-codex)
-    (connected false)
-    (active_workers ([]))
+    (connected true)
+    (active_workers ([]
+      worker-copilot-12
+      worker-copilot-13
+      worker-copilot-14
+      worker-copilot-15
+      worker-copilot-16
+      worker-copilot-17
+      worker-copilot-18
+      worker-copilot-6
+      worker-copilot-7
+      worker-copilot-8
+      worker-copilot-9
+    ))
     (route_targets ([]))
     (routing_mode on_demand)
     (on_demand true)

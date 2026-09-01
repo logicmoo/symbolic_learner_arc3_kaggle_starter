@@ -116,6 +116,7 @@
     ))
     (owned_by github-copilot)
     (provider github-copilot)
+    (codex_supplier null)
     (backing_model gemini-3.7-flash)
     (connected true)
     (active_workers ([]
@@ -334,6 +335,7 @@
     ))
     (owned_by github-copilot)
     (provider github-copilot)
+    (codex_supplier null)
     (backing_model gemini-3.7-flash)
     (connected true)
     (active_workers ([]

@@ -1,0 +1,147 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010_members/scene_after_11.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010_members/scene_after_11.provenance.json",
+  "createdAt": "2026-09-01T17:23:03.492842Z",
+  "operation": "remove_object_from_scene",
+  "dimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 80.3,
+    "sceneIndex": 32,
+    "videoFrameIndex": 2409
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010.provenance.json"
+  },
+  "source": {
+    "objectName": "question_number_text_10",
+    "cutout": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010_members/cut_11_question_number_text_10.png",
+    "fillInstructions": {
+      "description": "Fill the removed '10' with the same orange badge interior so the circle reads as continuous: a smooth orange gradient with a lighter yellow-orange highlight toward the upper-left and slightly deeper orange toward the lower-right.",
+      "colors": [
+        "#F4A11A",
+        "#F29A10",
+        "#EE8E06",
+        "#E78300"
+      ],
+      "continueEdges": [
+        "Continue the badge’s radial/diagonal orange gradient seamlessly through both digit shapes and the inner hole of the '0'.",
+        "Preserve local luminance flow from surrounding orange pixels at each digit boundary (no hard seams or outlines).",
+        "Do not introduce new edges; only the existing smooth badge shading should pass through the removed text area."
+      ],
+      "texture": "Clean, flat vector-like fill with very subtle soft gradient; no grain or pattern."
+    }
+  },
+  "transform": {
+    "fill": "median",
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010.png",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "verified": true
+    },
+    "removedBox": [
+      27,
+      15,
+      79,
+      69
+    ],
+    "maskScale": 4,
+    "fillInstructions": {
+      "description": "Fill the removed '10' with the same orange badge interior so the circle reads as continuous: a smooth orange gradient with a lighter yellow-orange highlight toward the upper-left and slightly deeper orange toward the lower-right.",
+      "colors": [
+        "#F4A11A",
+        "#F29A10",
+        "#EE8E06",
+        "#E78300"
+      ],
+      "continueEdges": [
+        "Continue the badge’s radial/diagonal orange gradient seamlessly through both digit shapes and the inner hole of the '0'.",
+        "Preserve local luminance flow from surrounding orange pixels at each digit boundary (no hard seams or outlines).",
+        "Do not introduce new edges; only the existing smooth badge shading should pass through the removed text area."
+      ],
+      "texture": "Clean, flat vector-like fill with very subtle soft gradient; no grain or pattern."
+    },
+    "imageGeneration": {
+      "renderer": "median"
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:34.187676Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010_members/scene_after_11.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0010.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          27,
+          15,
+          79,
+          69
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Fill the removed '10' with the same orange badge interior so the circle reads as continuous: a smooth orange gradient with a lighter yellow-orange highlight toward the upper-left and slightly deeper orange toward the lower-right.",
+          "colors": [
+            "#F4A11A",
+            "#F29A10",
+            "#EE8E06",
+            "#E78300"
+          ],
+          "continueEdges": [
+            "Continue the badge’s radial/diagonal orange gradient seamlessly through both digit shapes and the inner hole of the '0'.",
+            "Preserve local luminance flow from surrounding orange pixels at each digit boundary (no hard seams or outlines).",
+            "Do not introduce new edges; only the existing smooth badge shading should pass through the removed text area."
+          ],
+          "texture": "Clean, flat vector-like fill with very subtle soft gradient; no grain or pattern."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:23:03.492842Z"
+    }
+  ]
+}

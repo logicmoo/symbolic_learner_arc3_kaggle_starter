@@ -1,0 +1,695 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/scene_after_17_members/scene_after_38_members/cut_82_inset_pink_red_backgroun.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/scene_after_17_members/scene_after_38_members/cut_82_inset_pink_red_backgroun.provenance.json",
+  "createdAt": "2026-09-01T19:26:52.880904Z",
+  "operation": "extract_object_cutout",
+  "dimensions": {
+    "width": 468,
+    "height": 291
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 126.7,
+    "sceneIndex": 50,
+    "videoFrameIndex": 3801
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/scene_after_17_members/scene_after_38.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/scene_after_17_members/scene_after_38.provenance.json"
+  },
+  "source": {
+    "objectName": "inset_pink_red_background"
+  },
+  "transform": {
+    "inputDimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/scene_after_17_members/scene_after_38.png",
+      "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016.png",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "verified": true
+    },
+    "cropBox": [
+      197,
+      101,
+      665,
+      392
+    ],
+    "maskScale": 4,
+    "polygons": [
+      [
+        [
+          223,
+          103
+        ],
+        [
+          638,
+          103
+        ],
+        [
+          651,
+          109
+        ],
+        [
+          659,
+          121
+        ],
+        [
+          662,
+          135
+        ],
+        [
+          662,
+          357
+        ],
+        [
+          659,
+          371
+        ],
+        [
+          651,
+          383
+        ],
+        [
+          638,
+          389
+        ],
+        [
+          223,
+          389
+        ],
+        [
+          210,
+          383
+        ],
+        [
+          202,
+          371
+        ],
+        [
+          199,
+          357
+        ],
+        [
+          199,
+          135
+        ],
+        [
+          202,
+          121
+        ],
+        [
+          210,
+          109
+        ]
+      ]
+    ],
+    "holes": [
+      [
+        [
+          338,
+          109
+        ],
+        [
+          381,
+          105
+        ],
+        [
+          432,
+          104
+        ],
+        [
+          485,
+          107
+        ],
+        [
+          533,
+          114
+        ],
+        [
+          567,
+          128
+        ],
+        [
+          584,
+          150
+        ],
+        [
+          588,
+          178
+        ],
+        [
+          584,
+          203
+        ],
+        [
+          570,
+          224
+        ],
+        [
+          555,
+          235
+        ],
+        [
+          550,
+          252
+        ],
+        [
+          561,
+          267
+        ],
+        [
+          571,
+          286
+        ],
+        [
+          571,
+          309
+        ],
+        [
+          560,
+          327
+        ],
+        [
+          541,
+          336
+        ],
+        [
+          516,
+          338
+        ],
+        [
+          491,
+          333
+        ],
+        [
+          474,
+          321
+        ],
+        [
+          456,
+          321
+        ],
+        [
+          442,
+          334
+        ],
+        [
+          420,
+          343
+        ],
+        [
+          394,
+          346
+        ],
+        [
+          367,
+          344
+        ],
+        [
+          347,
+          334
+        ],
+        [
+          334,
+          318
+        ],
+        [
+          322,
+          318
+        ],
+        [
+          307,
+          328
+        ],
+        [
+          288,
+          338
+        ],
+        [
+          268,
+          339
+        ],
+        [
+          257,
+          330
+        ],
+        [
+          258,
+          311
+        ],
+        [
+          271,
+          294
+        ],
+        [
+          287,
+          280
+        ],
+        [
+          301,
+          271
+        ],
+        [
+          303,
+          255
+        ],
+        [
+          292,
+          241
+        ],
+        [
+          281,
+          222
+        ],
+        [
+          277,
+          201
+        ],
+        [
+          279,
+          176
+        ],
+        [
+          290,
+          153
+        ],
+        [
+          309,
+          132
+        ],
+        [
+          327,
+          119
+        ]
+      ]
+    ]
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:38.921502Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/scene_after_17.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          283,
+          242,
+          516,
+          372
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed tricycle, the central inset should continue with Stewie’s body where it is directly behind the bike (red overalls/torso area, small yellow sleeve/hand-adjacent regions, and a small light-blue shoe area), transitioning to the pink-red inset backdrop in exposed gaps around the character. The fill should preserve the original cartoon shading and black outline style.",
+          "colors": [
+            "#F83D73",
+            "#DB0A4F",
+            "#B1073B",
+            "#D73A2C",
+            "#F5D36A",
+            "#C8D8E8"
+          ],
+          "continueEdges": [
+            "Extend Stewie’s red overall contours and interior shading bands smoothly through the removed frame/fork and wheel regions",
+            "Continue nearby black character outline strokes with the same line weight where body edges pass behind the tricycle",
+            "Blend the inset background gradient from darker red (lower/right) to brighter pink (mid/upper) across open spaces revealed by wheel and frame removal",
+            "Preserve soft ground-shadow tint in the lower inset where visible adjacent to the rear-wheel area"
+          ],
+          "texture": "Flat 2D cartoon fill with clean inked outlines, smooth cel-style color regions, and gentle airbrushed background gradient."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:23:19.029394Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/scene_after_17_members/scene_after_38.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/scene_after_17.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          339,
+          109,
+          562,
+          371
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind Stewie, the central inset continues as a smooth pink-to-red radial backdrop with brighter hot-pink near center and deeper magenta/red toward the edges, plus a darker maroon floor-like band along the lower portion of the inset.",
+          "colors": [
+            "#FF4F8E",
+            "#F53A7B",
+            "#E91E63",
+            "#C2185B",
+            "#8E1B4A",
+            "#6F153D"
+          ],
+          "continueEdges": [
+            "Continue the radial glow centered behind the character so brightness transitions smoothly outward to darker red edges.",
+            "Extend the lower dark maroon horizontal ground/shadow band across the bottom where Stewie’s body was.",
+            "Preserve soft gradient blending with no hard seams where the silhouette is removed.",
+            "Do not introduce character outlines; keep only the clean inset background shading continuity."
+          ],
+          "texture": "Clean, soft digital gradient with slight vignette falloff and minimal texture/noise."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:28:39.009807Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/scene_after_17_members/scene_after_38_members/cut_82_inset_pink_red_backgroun.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 468,
+        "height": 291
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016_members/scene_after_17_members/scene_after_38.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0016.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          197,
+          101,
+          665,
+          392
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              223,
+              103
+            ],
+            [
+              638,
+              103
+            ],
+            [
+              651,
+              109
+            ],
+            [
+              659,
+              121
+            ],
+            [
+              662,
+              135
+            ],
+            [
+              662,
+              357
+            ],
+            [
+              659,
+              371
+            ],
+            [
+              651,
+              383
+            ],
+            [
+              638,
+              389
+            ],
+            [
+              223,
+              389
+            ],
+            [
+              210,
+              383
+            ],
+            [
+              202,
+              371
+            ],
+            [
+              199,
+              357
+            ],
+            [
+              199,
+              135
+            ],
+            [
+              202,
+              121
+            ],
+            [
+              210,
+              109
+            ]
+          ]
+        ],
+        "holes": [
+          [
+            [
+              338,
+              109
+            ],
+            [
+              381,
+              105
+            ],
+            [
+              432,
+              104
+            ],
+            [
+              485,
+              107
+            ],
+            [
+              533,
+              114
+            ],
+            [
+              567,
+              128
+            ],
+            [
+              584,
+              150
+            ],
+            [
+              588,
+              178
+            ],
+            [
+              584,
+              203
+            ],
+            [
+              570,
+              224
+            ],
+            [
+              555,
+              235
+            ],
+            [
+              550,
+              252
+            ],
+            [
+              561,
+              267
+            ],
+            [
+              571,
+              286
+            ],
+            [
+              571,
+              309
+            ],
+            [
+              560,
+              327
+            ],
+            [
+              541,
+              336
+            ],
+            [
+              516,
+              338
+            ],
+            [
+              491,
+              333
+            ],
+            [
+              474,
+              321
+            ],
+            [
+              456,
+              321
+            ],
+            [
+              442,
+              334
+            ],
+            [
+              420,
+              343
+            ],
+            [
+              394,
+              346
+            ],
+            [
+              367,
+              344
+            ],
+            [
+              347,
+              334
+            ],
+            [
+              334,
+              318
+            ],
+            [
+              322,
+              318
+            ],
+            [
+              307,
+              328
+            ],
+            [
+              288,
+              338
+            ],
+            [
+              268,
+              339
+            ],
+            [
+              257,
+              330
+            ],
+            [
+              258,
+              311
+            ],
+            [
+              271,
+              294
+            ],
+            [
+              287,
+              280
+            ],
+            [
+              301,
+              271
+            ],
+            [
+              303,
+              255
+            ],
+            [
+              292,
+              241
+            ],
+            [
+              281,
+              222
+            ],
+            [
+              277,
+              201
+            ],
+            [
+              279,
+              176
+            ],
+            [
+              290,
+              153
+            ],
+            [
+              309,
+              132
+            ],
+            [
+              327,
+              119
+            ]
+          ]
+        ]
+      },
+      "createdAt": "2026-09-01T19:26:52.880904Z"
+    }
+  ]
+}
