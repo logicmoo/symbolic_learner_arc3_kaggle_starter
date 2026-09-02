@@ -345,8 +345,7 @@ const hasAlignedOutline = (thing: MemberInventoryThing) => Boolean(
 );
 const hasVisualizedPlan = (inventory: MemberInventory) => Boolean(
   inventory.extractionOrder?.length
-  && (inventory.plannerLabels?.length || 0) > 0
-  && inventory.plannerVisualizationImage
+  && inventory.parallelGroups?.length
 );
 
 // Per-object "what does it need next" indicator, derived from live state.
@@ -507,34 +506,24 @@ const DEFAULT_MEMBER_DECOMPOSITION_PROMPT = [
   "{\"objects_with_sub_objects\":{\"face\":{\"description\":\"visible face and location\",\"visibility\":\"visible\",\"sub_objects\":{\"left_eye\":{\"description\":\"visible left eye\",\"visibility\":\"visible\",\"countIndex\":1,\"countTotal\":2,\"sub_objects\":{}},\"right_eye\":{\"description\":\"right eye hidden by hair\",\"visibility\":\"hidden\",\"hidden_reason\":\"occluded by hair\",\"occluded_by\":[\"hair\"],\"countIndex\":2,\"countTotal\":2,\"sub_objects\":{}}}}}}",
 ].join("\n");
 const DEFAULT_MEMBER_ORDER_PROMPT = [
-  "OBJECT EXTRACTION PLANNER.",
-  "Use the textual description and attached image to declare the visible relationships among every listed direct child object, then order their extraction.",
-  "Always remove every sub-object before its parent object so removing a whole does not erase parts that still need extraction.",
-  "Declare every pair of listed objects whose visible boundaries physically touch. Touching is symmetric; do not report objects that are merely near each other.",
-  "Declare every directed occlusion where one listed object visibly covers any part of another. Name the foreground object as occluder and the covered object as occluded.",
-  "Declare every directed containment where the complete visible extent of one listed object is spatially inside another listed object's boundary. Name the enclosing object as container and the inner object as contained. Do not call partial overlap or ordinary touching containment.",
-  "Order every occluder before the object it occludes, and every contained object before its container. Remove foreground objects first and the farthest background objects last.",
-  "List first, before any other object, every object that is not occluded at all — no listed object covers any part of it. These fully-unoccluded objects are pure foreground, depend on nothing being removed first, and can be extracted immediately and in parallel with each other; keep their relative order among themselves free.",
-  "Also partition every object into ordered parallel GROUPS (waves) that can be worked on together. Group 1 is exactly the objects that are not occluded at all right now. After all of group 1 is removed, some previously-covered objects become fully unoccluded because their only occluders are now gone — those form group 2. Repeat: each later group is the set of objects that become fully unoccluded once every earlier group has been removed. Every object inside a single group must be mutually independent — none occludes, contains, or is a sub-object or parent of another object in the SAME group — so all objects in one group can be extracted in parallel. Earlier groups must be fully removed before any object in a later group. Every object appears in exactly one group, and flattening the groups in order must equal the extraction order.",
-  "Use every object name exactly once.",
-  "Do not outline objects and do not return polygons, coordinates, masks, or cutout instructions. Outliner handles that separately, one object at a time.",
-  "TEXTUAL DESCRIPTION:",
-  "{{textualDescription}}",
+  "PARALLEL EXTRACTION PLANNER.",
+  "Look at the attached image and the listed objects. Your ONLY job is to partition every listed object into ordered GROUPS (waves) for extraction.",
+  "Objects in the SAME group can be lifted (extracted) in parallel because none of them covers/occludes, contains, or is a part/parent of another object in that same group.",
+  "Group 1 = objects not covered by any other listed object (pure foreground); they can be removed first, together. Each later group = objects that become fully uncovered only after every earlier group is removed. Earlier groups are removed before later ones.",
+  "Every listed object must appear in exactly one group, using its exact name exactly once.",
+  "Do nothing else: no ordering rationale, no relationships, no touching/occlusion/containment, no coordinates, no labels, no outlines.",
   "OBJECTS:",
   "{{objects}}",
-  "NUMBER LABEL COORDINATE SPACE: width={{imageWidth}}, height={{imageHeight}}. Give one point [x,y] visibly inside each exact object so the workbench can draw its extraction-order number on the object.",
-  "Always include touching, occlusions, containments, and labels as arrays, using [] only when that relationship type has no entries.",
-  "Answer ONLY with JSON: {\"touching\":[{\"objects\":[\"exact object name\",\"exact object name\"],\"contact\":\"what visibly touches where\"}],\"occlusions\":[{\"occluder\":\"foreground exact object name\",\"occluded\":\"covered exact object name\",\"region\":\"what part is covered\"}],\"containments\":[{\"container\":\"enclosing exact object name\",\"contained\":\"fully inner exact object name\",\"evidence\":\"how its complete visible extent is inside\"}],\"order\":[\"exact object name\",...],\"groups\":[[\"exact object name\",...],...],\"labels\":[{\"object\":\"exact object name\",\"number\":1,\"point\":[x,y]}],\"reasoning\":[\"why this relationship-aware order\",...]}",
+  "Answer ONLY with JSON: {\"groups\":[[\"exact object name\",...],...]}",
 ].join("\n");
 const migratePlannerPrompt = (value: string) => (
-  value.startsWith("OBJECT EXTRACTION PLANNER.")
-  && (
-    !value.includes('"touching"')
-    || !value.includes('"occlusions"')
-    || !value.includes('"containments"')
-    || !value.includes('"labels"')
-    || !value.includes('"groups"')
-  )
+  // Force the simplified groups-only planner whenever the saved prompt is an
+  // older variant (old header, or still asks for anything beyond "groups").
+  !value.startsWith("PARALLEL EXTRACTION PLANNER.")
+  || value.includes('"touching"')
+  || value.includes('"occlusions"')
+  || value.includes('"labels"')
+  || value.includes('"order"')
     ? DEFAULT_MEMBER_ORDER_PROMPT
     : value
 );
@@ -4048,60 +4037,48 @@ export function VideoImportPage({
      const orderOutput = typeof payload.text === "string" ? payload.text.trim() : "";
      const formatted = formatDetectedJson(orderOutput);
      const parsed = formatted.detected ? JSON.parse(formatted.text) as Record<string, unknown> : {};
-     const requestedOrder = Array.isArray(parsed.order) ? parsed.order.map(String) : [];
-     const byName = new Map(inventory.things.map((thing) => [thing.name.toLowerCase(), thing]));
-     const orderedNames = requestedOrder
-       .map((name) => byName.get(name.toLowerCase())?.name || "")
-       .filter((name, index, names) => Boolean(name) && names.indexOf(name) === index);
-     if (!orderedNames.length) {
-       const failed = { ...planning, orderOutput, orderError: "Planner returned no recognized object order.", status: "failed" as const, retryAfter: Date.now() + LLM_RETRY_DELAY_MS, attempts: (inventory.attempts || 0) + 1 };
-       storeMemberInventory(failed);
-       scheduleRetry();
-       return null;
+     // Simplified planner: it returns ONLY parallel-extraction groups. Match the
+     // returned names to the described objects; any object the planner omitted is
+     // appended as a final group so nothing is lost. No order/labels/relationships.
+     const byName = new Map(inventory.things.map((thing) => [thing.name.toLowerCase(), thing.name]));
+     const rawGroups: unknown = parsed.groups ?? (parsed as Record<string, unknown>).parallelGroups ?? (parsed as Record<string, unknown>).waves;
+     const seen = new Set<string>();
+     const parallelGroups: string[][] = [];
+     if (Array.isArray(rawGroups)) {
+       for (const wave of rawGroups) {
+         const names = Array.isArray(wave) ? wave : [wave];
+         const group: string[] = [];
+         for (const value of names) {
+           const key = String(typeof value === "string" ? value : (value as Record<string, unknown>)?.name || "").trim().toLowerCase();
+           const name = byName.get(key);
+           if (!name || seen.has(name)) continue;
+           seen.add(name);
+           group.push(name);
+         }
+         if (group.length) parallelGroups.push(group);
+       }
      }
-     const omitted = inventory.things.map((thing) => thing.name).filter((name) => !orderedNames.includes(name));
-     const relationships = parsePlannerRelationships(parsed, inventory.things);
-     const initialOrder = [...orderedNames, ...omitted];
-     const groupResult = parsePlannerGroups(parsed, initialOrder, inventory.things, relationships.occlusions, relationships.containments);
-     const parallelGroups = groupResult.groups;
-     const extractionOrder = parallelGroups.length ? parallelGroups.flat() : initialOrder;
-     const labelResult = parsePlannerLabels(parsed, inventory.things, extractionOrder, plannerDimensions);
-     // Tolerate a partial label set instead of throwing (which retried the slow
-     // planner call forever). The model sometimes labels an extra object (e.g.
-     // the background) or names one differently than the Describer, leaving a few
-     // objects unlabelled. Labels only drive the numbered preview, not extraction,
-     // so proceed with whatever valid labels we have.
-     if (labelResult.labels.length !== extractionOrder.length) {
-       labelResult.warnings.push(`Planner labelled ${labelResult.labels.length}/${extractionOrder.length} object(s); proceeding with the labelled ones.`);
-     }
-     const visualization = labelResult.labels.length
-       ? await api("planner-visualization", {
-         workspaceId,
-         image: inventory.sourceImage,
-         labels: labelResult.labels,
-       })
-       : { visualizationImage: "" };
-     const orderWarnings = [
-       omitted.length ? `Planner omitted ${omitted.length} object(s) from order; appended last.` : "",
-       ...relationships.warnings,
-       ...groupResult.warnings,
-       ...labelResult.warnings,
-     ].filter(Boolean);
+     const omitted = inventory.things.map((thing) => thing.name).filter((name) => !seen.has(name));
+     if (omitted.length) parallelGroups.push(omitted);
+     const extractionOrder = parallelGroups.flat();
+     const orderWarnings = omitted.length
+       ? [`Planner omitted ${omitted.length} object(s); appended as a final parallel group.`]
+       : [];
      const completed: MemberInventory = {
        ...planning,
        orderOutput,
        extractionOrder,
        parallelGroups,
-       plannerTouching: relationships.touching,
-       plannerOcclusions: relationships.occlusions,
-       plannerContainments: relationships.containments,
-       plannerLabels: labelResult.labels,
-       plannerVisualizationImage: String(visualization.visualizationImage || ""),
+       plannerTouching: [],
+       plannerOcclusions: [],
+       plannerContainments: [],
+       plannerLabels: [],
+       plannerVisualizationImage: "",
        orderError: orderWarnings.length ? orderWarnings.join(" ") : undefined,
        status: "done",
      };
      storeMemberInventory(completed);
-     say(`P${inventory.depth || 0} ${inventory.subjectName || "input"}: ordered ${inventory.things.length} extraction(s) in ${parallelGroups.length} parallel group(s)`);
+     say(`P${inventory.depth || 0} ${inventory.subjectName || "input"}: ${inventory.things.length} object(s) in ${parallelGroups.length} parallel group(s)`);
      return completed;
     } catch (reason) {
      const message = reason instanceof Error ? reason.message : String(reason);
