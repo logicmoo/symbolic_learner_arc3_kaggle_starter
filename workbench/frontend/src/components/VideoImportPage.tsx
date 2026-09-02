@@ -386,13 +386,14 @@ const isAutoPolicy = (value: string): value is AutoPolicy =>
   value === "reserve" || value === "greedy" || value === "fair";
 // Fixed worker counts 1..19 shade from light red (1) to the reddest (19).
 const describeConcurrencyOption = (id: string): ColoredTagDescription => {
-  if (id === "reserve") return { label: "auto · reserve cross-stage capacity", groupKey: "0-auto", groupLabel: "AUTO POLICY", tags: [{ text: "auto", color: "#27dcc2" }] };
-  if (id === "greedy") return { label: "auto · greedy (use all free workers)", groupKey: "0-auto", groupLabel: "AUTO POLICY", tags: [{ text: "auto", color: "#e6ad45" }] };
-  if (id === "fair") return { label: "auto · fair share (even split across stages)", groupKey: "0-auto", groupLabel: "AUTO POLICY", tags: [{ text: "auto", color: "#7bd88f" }] };
+  if (id === "reserve") return { label: "auto · reserve cross-stage capacity", groupKey: "0-auto", groupLabel: "AUTO POLICY", tags: [{ text: "auto", color: "#27dcc2" }], rowColor: "#0e2b28", rowTextColor: "#d6faf3" };
+  if (id === "greedy") return { label: "auto · greedy (use all free workers)", groupKey: "0-auto", groupLabel: "AUTO POLICY", tags: [{ text: "auto", color: "#e6ad45" }], rowColor: "#2b230f", rowTextColor: "#ffe6b3" };
+  if (id === "fair") return { label: "auto · fair share (even split across stages)", groupKey: "0-auto", groupLabel: "AUTO POLICY", tags: [{ text: "auto", color: "#7bd88f" }], rowColor: "#12251a", rowTextColor: "#c9f5d8" };
   const n = Number(id) || 1;
   const t = Math.max(0, Math.min(1, (n - 1) / (CONCURRENCY_MAX_FIXED - 1)));
   const lightness = Math.round(84 - t * 38); // 1 -> ~84% (light red), 19 -> ~46% (reddest)
-  return { label: `${n} worker${n === 1 ? "" : "s"}`, groupKey: "1-count", groupLabel: "FIXED MAX", tags: [{ text: String(n), color: `hsl(0, 90%, ${lightness}%)` }] };
+  const rowColor = `hsl(0, 90%, ${lightness}%)`;
+  return { label: `${n} worker${n === 1 ? "" : "s"}`, groupKey: "1-count", groupLabel: "FIXED MAX", tags: [{ text: String(n), color: lightness > 60 ? "#7a0f0f" : "#ffd9d9" }], rowColor, rowTextColor: lightness > 60 ? "#3a0a0a" : "#ffffff" };
 };
 const emptyLlmCallMetrics = (): LlmCallMetrics => ({
   describer: { completed: 0, totalDurationMs: 0 },
@@ -6272,6 +6273,8 @@ export function VideoImportPage({
                     ids={CONCURRENCY_OPTION_IDS}
                     ariaLabel={`${label} max processes`}
                     describe={describeConcurrencyOption}
+                    closedWidth="11ch"
+                    openWidth="30ch"
                     onOpen={() => setExpandedCallPrompt(type)}
                     onChange={(value) => { setCallConcurrency(type, isAutoPolicy(value) ? value : Number(value)); setExpandedCallPrompt(type); }}
                   />

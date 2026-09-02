@@ -8,6 +8,8 @@ export type ColoredTagDescription = {
   groupLabel: string;
   tags: ColoredTag[];
   disabled?: boolean;
+  rowColor?: string;
+  rowTextColor?: string;
 };
 
 export function ColoredTagCombobox({
@@ -20,6 +22,8 @@ export function ColoredTagCombobox({
   onChange,
   onOpen,
   disabled,
+  closedWidth,
+  openWidth,
 }: {
   value: string;
   ids: string[];
@@ -30,6 +34,8 @@ export function ColoredTagCombobox({
   onChange: (value: string) => void;
   onOpen?: () => void;
   disabled?: boolean;
+  closedWidth?: string;
+  openWidth?: string;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
@@ -62,7 +68,7 @@ export function ColoredTagCombobox({
     </span>
   ));
   return (
-    <div className="colored-combobox" ref={ref}>
+    <div className="colored-combobox" ref={ref} style={closedWidth ? { width: closedWidth } : undefined}>
       <button
         type="button"
         className="colored-combobox-button"
@@ -70,6 +76,7 @@ export function ColoredTagCombobox({
         aria-haspopup="listbox"
         aria-expanded={open}
         disabled={disabled}
+        style={current?.rowColor ? { background: current.rowColor, color: current.rowTextColor, borderColor: current.rowColor } : undefined}
         onClick={() => setOpen((currentOpen) => {
           if (!currentOpen) onOpen?.();
           return !currentOpen;
@@ -80,7 +87,7 @@ export function ColoredTagCombobox({
         <span className="colored-combobox-caret">▾</span>
       </button>
       {open && (
-        <div className="colored-combobox-menu" role="listbox">
+        <div className="colored-combobox-menu" role="listbox" style={openWidth ? { minWidth: openWidth } : undefined}>
           {allowNone && (
             <button
               type="button"
@@ -105,6 +112,7 @@ export function ColoredTagCombobox({
                     aria-selected={id === value}
                     disabled={description.disabled}
                     className={`colored-combobox-option${id === value ? " is-selected" : ""}`}
+                    style={description.rowColor ? { background: description.rowColor, color: description.rowTextColor } : undefined}
                     onClick={() => { onChange(id); setOpen(false); }}
                   >
                     <span className="colored-combobox-option-label">{description.label}</span>
