@@ -478,7 +478,7 @@
 }
 .video-import-llm-global-row,
 .video-import-llm-call-row {
-  display: grid; grid-template-columns: minmax(150px, auto) minmax(210px, auto) minmax(240px, 1fr) minmax(170px, auto) minmax(220px, 0.8fr);
+  display: grid; grid-template-columns: minmax(140px, auto) minmax(250px, 1.3fr) auto minmax(170px, 1fr) minmax(200px, 1fr);
   align-items: end; gap: 6px;
 }
 .video-import-llm-global-row {
@@ -510,7 +510,7 @@
   border-color: #e6ad45; color: #ffe09a; background: #4a3210; box-shadow: 0 0 7px #e6ad4588;
 }
 .video-import-llm-call-metrics {
-  align-self: stretch; display: grid; grid-template-columns: repeat(3, minmax(56px, 1fr));
+  align-self: stretch; display: grid; grid-template-columns: repeat(4, minmax(46px, 1fr));
   border: 1px solid #263b46; border-radius: 3px; background: #071016;
 }
 .video-import-llm-call-metrics > span {
