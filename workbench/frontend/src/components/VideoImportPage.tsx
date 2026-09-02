@@ -3682,8 +3682,9 @@ export function VideoImportPage({
           }, (timeoutSeconds + 15) * 1000);
         }),
       ]);
-    } finally {
-      if (clientTimer !== undefined) window.clearTimeout(clientTimer);
+      // Count COMPLETED (and its duration) only on a real success. Failed or
+      // aborted/timed-out calls must NOT inflate the completed total — otherwise
+      // a dropped worker (4->3) shows up as "completed" when it actually failed.
       const durationMs = performance.now() - startedAt;
       setLlmCallMetrics((current) => ({
         ...current,
@@ -3692,6 +3693,8 @@ export function VideoImportPage({
           totalDurationMs: current[callType].totalDurationMs + durationMs,
         },
       }));
+    } finally {
+      if (clientTimer !== undefined) window.clearTimeout(clientTimer);
       release();
     }
     const entry: CachedModelResponse = {
