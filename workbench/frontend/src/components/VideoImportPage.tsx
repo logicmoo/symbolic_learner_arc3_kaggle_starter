@@ -322,9 +322,8 @@ type LlmCallConcurrency = {
 };
 type LlmCallMetric = { completed: number; totalDurationMs: number };
 type LlmCallMetrics = Record<keyof LlmCallConcurrency, LlmCallMetric>;
-const LLM_STAGE_RESERVE_MIN = 1;
+const LLM_STAGE_MIN_PER_STAGE = 5;
 const LLM_STAGE_RESERVE_MAX = 6;
-const LLM_STAGE_RESERVE_FRACTION = 0.30;
 const LLM_STAGE_ORDER: Array<keyof LlmCallConcurrency> = [
   "describer",
   "planner",
@@ -2831,7 +2830,7 @@ export function VideoImportPage({
   const llmStageReserve = Math.min(
     Math.max(0, totalLlmConcurrency - 1),
     LLM_STAGE_RESERVE_MAX,
-    Math.max(LLM_STAGE_RESERVE_MIN, Math.ceil(totalLlmConcurrency * LLM_STAGE_RESERVE_FRACTION)),
+    Math.max(1, totalLlmConcurrency - LLM_STAGE_MIN_PER_STAGE),
   );
   const llmPerStageCeiling = Math.max(1, totalLlmConcurrency - llmStageReserve);
   const autoPolicyLimit = (policy: AutoPolicy) => {
