@@ -36,7 +36,7 @@
   background: transparent;
 }
 .video-import-human-nav button {
-  flex: 0 0 15%;
+  flex: 1 1 0;
   box-sizing: border-box;
   min-width: 0;
   min-height: 54px;
