@@ -19,8 +19,8 @@ export const USER_UI_PREFERENCES_CHANGED_EVENT = "workbench:user-ui-preferences-
 
 export const DEFAULT_USER_UI_PREFERENCES: UserUiPreferences = {
   resourceSourceFileControlsPlacement: "above",
-  pageUiToolsVisible: false,
-  generationsVisible: false,
+  pageUiToolsVisible: true,
+  generationsVisible: true,
   generationsView: "fullest",
 };
 
@@ -34,14 +34,8 @@ function parseUserUiPreferences(source: string | null): UserUiPreferences {
     return {
       resourceSourceFileControlsPlacement:
         candidate.resourceSourceFileControlsPlacement === "below" ? "below" : "above",
-      pageUiToolsVisible:
-        typeof candidate.pageUiToolsVisible === "boolean"
-          ? candidate.pageUiToolsVisible
-          : DEFAULT_USER_UI_PREFERENCES.pageUiToolsVisible,
-      generationsVisible:
-        typeof candidate.generationsVisible === "boolean"
-          ? candidate.generationsVisible
-          : DEFAULT_USER_UI_PREFERENCES.generationsVisible,
+      pageUiToolsVisible: candidate.pageUiToolsVisible !== false,
+      generationsVisible: candidate.generationsVisible !== false,
       generationsView:
         candidate.generationsView === "full" || candidate.generationsView === "compact"
           ? candidate.generationsView

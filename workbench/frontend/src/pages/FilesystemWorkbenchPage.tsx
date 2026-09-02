@@ -1231,7 +1231,7 @@ export function FilesystemWorkbenchPage() {
     return isWorkbenchTheme(saved) ? saved : "midnight";
   });
   const [debugUiEnabled, setDebugUiEnabled] = useState(
-    () => localStorage.getItem("workbench.debugUiEnabled") === "true",
+    () => localStorage.getItem("workbench.debugUiEnabled") !== "false",
   );
   const [workspaceResourceCountingEnabled, setWorkspaceResourceCountingEnabled] =
     useState(() => {
