@@ -1,0 +1,167 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000000_outlines/verify_lower_left_maroon_block_2acad749aa02.png",
+  "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000000_outlines/verify_lower_left_maroon_block_2acad749aa02.provenance.json",
+  "createdAt": "2026-09-02T06:48:36.008086Z",
+  "operation": "verify_outliner_trace",
+  "dimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "originalDimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "root": {
+    "firstSeenImage": "data/arc3_games/recordings/ls20/saved_004/image.png",
+    "dimensions": {
+      "width": 640,
+      "height": 640
+    }
+  },
+  "parent": {
+    "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000000.png",
+    "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000000.provenance.json"
+  },
+  "source": {
+    "objectName": "lower_left_maroon_block"
+  },
+  "transform": {
+    "polygons": [
+      [
+        [
+          90,
+          470
+        ],
+        [
+          139,
+          470
+        ],
+        [
+          139,
+          499
+        ],
+        [
+          90,
+          499
+        ]
+      ]
+    ],
+    "holes": [],
+    "traceTurtle": [
+      {
+        "op": "move",
+        "x": 141,
+        "y": 736
+      },
+      {
+        "op": "line",
+        "x": 218,
+        "y": 736
+      },
+      {
+        "op": "line",
+        "x": 218,
+        "y": 781
+      },
+      {
+        "op": "line",
+        "x": 141,
+        "y": 781
+      },
+      {
+        "op": "line",
+        "x": 141,
+        "y": 736
+      }
+    ],
+    "geometryHash": "2acad749aa0238921518fcf2a8f285d2fa079a8410ee5d053e95d06a39e20a2b",
+    "traceAgreement": 1.0,
+    "boundaryCoverage": 1.0
+  },
+  "lineage": [
+    {
+      "image": "data/arc3_games/recordings/ls20/saved_004/image.png",
+      "operation": "legacy_source",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T06:25:03.496329Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000000.png",
+      "operation": "import_arc_playback_frame",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T06:25:03.503589Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000000_outlines/verify_lower_left_maroon_block_2acad749aa02.png",
+      "operation": "verify_outliner_trace",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {
+        "polygons": [
+          [
+            [
+              90,
+              470
+            ],
+            [
+              139,
+              470
+            ],
+            [
+              139,
+              499
+            ],
+            [
+              90,
+              499
+            ]
+          ]
+        ],
+        "holes": [],
+        "traceTurtle": [
+          {
+            "op": "move",
+            "x": 141,
+            "y": 736
+          },
+          {
+            "op": "line",
+            "x": 218,
+            "y": 736
+          },
+          {
+            "op": "line",
+            "x": 218,
+            "y": 781
+          },
+          {
+            "op": "line",
+            "x": 141,
+            "y": 781
+          },
+          {
+            "op": "line",
+            "x": 141,
+            "y": 736
+          }
+        ],
+        "geometryHash": "2acad749aa0238921518fcf2a8f285d2fa079a8410ee5d053e95d06a39e20a2b",
+        "traceAgreement": 1.0,
+        "boundaryCoverage": 1.0
+      },
+      "createdAt": "2026-09-02T06:48:36.008086Z"
+    }
+  ]
+}

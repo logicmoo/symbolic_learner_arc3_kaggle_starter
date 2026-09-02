@@ -1,0 +1,167 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000026_outlines/verify_lower_center_green_cente_8dc0e9492db8.png",
+  "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000026_outlines/verify_lower_center_green_cente_8dc0e9492db8.provenance.json",
+  "createdAt": "2026-09-02T02:23:45.183689Z",
+  "operation": "verify_outliner_trace",
+  "dimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "originalDimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "root": {
+    "firstSeenImage": "data/arc3_games/recordings/ls20/saved_005/25/image.png",
+    "dimensions": {
+      "width": 640,
+      "height": 640
+    }
+  },
+  "parent": {
+    "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000026.png",
+    "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000026.provenance.json"
+  },
+  "source": {
+    "objectName": "lower_center_green_center_dot"
+  },
+  "transform": {
+    "polygons": [
+      [
+        [
+          350,
+          520
+        ],
+        [
+          359,
+          520
+        ],
+        [
+          359,
+          529
+        ],
+        [
+          350,
+          529
+        ]
+      ]
+    ],
+    "holes": [],
+    "traceTurtle": [
+      {
+        "op": "move",
+        "x": 548,
+        "y": 814
+      },
+      {
+        "op": "line",
+        "x": 562,
+        "y": 814
+      },
+      {
+        "op": "line",
+        "x": 562,
+        "y": 827
+      },
+      {
+        "op": "line",
+        "x": 548,
+        "y": 827
+      },
+      {
+        "op": "line",
+        "x": 548,
+        "y": 814
+      }
+    ],
+    "geometryHash": "8dc0e9492db812724cf58eaf063ef8310af56be4615b3021e1a3d6f1c358c96b",
+    "traceAgreement": 1.0,
+    "boundaryCoverage": 1.0
+  },
+  "lineage": [
+    {
+      "image": "data/arc3_games/recordings/ls20/saved_005/25/image.png",
+      "operation": "legacy_source",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:19.307926Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000026.png",
+      "operation": "import_arc_playback_frame",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:19.318458Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000026_outlines/verify_lower_center_green_cente_8dc0e9492db8.png",
+      "operation": "verify_outliner_trace",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {
+        "polygons": [
+          [
+            [
+              350,
+              520
+            ],
+            [
+              359,
+              520
+            ],
+            [
+              359,
+              529
+            ],
+            [
+              350,
+              529
+            ]
+          ]
+        ],
+        "holes": [],
+        "traceTurtle": [
+          {
+            "op": "move",
+            "x": 548,
+            "y": 814
+          },
+          {
+            "op": "line",
+            "x": 562,
+            "y": 814
+          },
+          {
+            "op": "line",
+            "x": 562,
+            "y": 827
+          },
+          {
+            "op": "line",
+            "x": 548,
+            "y": 827
+          },
+          {
+            "op": "line",
+            "x": 548,
+            "y": 814
+          }
+        ],
+        "geometryHash": "8dc0e9492db812724cf58eaf063ef8310af56be4615b3021e1a3d6f1c358c96b",
+        "traceAgreement": 1.0,
+        "boundaryCoverage": 1.0
+      },
+      "createdAt": "2026-09-02T02:23:45.183689Z"
+    }
+  ]
+}

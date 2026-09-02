@@ -1,0 +1,167 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000039_outlines/verify_blue_edge_mark_right_mid_21a4c7796a17.png",
+  "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000039_outlines/verify_blue_edge_mark_right_mid_21a4c7796a17.provenance.json",
+  "createdAt": "2026-09-02T02:28:50.041399Z",
+  "operation": "verify_outliner_trace",
+  "dimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "originalDimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "root": {
+    "firstSeenImage": "data/arc3_games/recordings/ls20/saved_005/38/image.png",
+    "dimensions": {
+      "width": 640,
+      "height": 640
+    }
+  },
+  "parent": {
+    "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000039.png",
+    "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000039.provenance.json"
+  },
+  "source": {
+    "objectName": "blue_edge_mark_right_mid_vertical"
+  },
+  "transform": {
+    "polygons": [
+      [
+        [
+          520,
+          250
+        ],
+        [
+          530,
+          250
+        ],
+        [
+          530,
+          300
+        ],
+        [
+          520,
+          300
+        ]
+      ]
+    ],
+    "holes": [],
+    "traceTurtle": [
+      {
+        "op": "move",
+        "x": 814,
+        "y": 391
+      },
+      {
+        "op": "line",
+        "x": 829,
+        "y": 391
+      },
+      {
+        "op": "line",
+        "x": 829,
+        "y": 469
+      },
+      {
+        "op": "line",
+        "x": 814,
+        "y": 469
+      },
+      {
+        "op": "line",
+        "x": 814,
+        "y": 391
+      }
+    ],
+    "geometryHash": "21a4c7796a17599c4b1c53889c163af3afd9a1da7b3a44c814d71b74e1e1558f",
+    "traceAgreement": 1.0,
+    "boundaryCoverage": 1.0
+  },
+  "lineage": [
+    {
+      "image": "data/arc3_games/recordings/ls20/saved_005/38/image.png",
+      "operation": "legacy_source",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:20.066440Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000039.png",
+      "operation": "import_arc_playback_frame",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:20.075926Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000039_outlines/verify_blue_edge_mark_right_mid_21a4c7796a17.png",
+      "operation": "verify_outliner_trace",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {
+        "polygons": [
+          [
+            [
+              520,
+              250
+            ],
+            [
+              530,
+              250
+            ],
+            [
+              530,
+              300
+            ],
+            [
+              520,
+              300
+            ]
+          ]
+        ],
+        "holes": [],
+        "traceTurtle": [
+          {
+            "op": "move",
+            "x": 814,
+            "y": 391
+          },
+          {
+            "op": "line",
+            "x": 829,
+            "y": 391
+          },
+          {
+            "op": "line",
+            "x": 829,
+            "y": 469
+          },
+          {
+            "op": "line",
+            "x": 814,
+            "y": 469
+          },
+          {
+            "op": "line",
+            "x": 814,
+            "y": 391
+          }
+        ],
+        "geometryHash": "21a4c7796a17599c4b1c53889c163af3afd9a1da7b3a44c814d71b74e1e1558f",
+        "traceAgreement": 1.0,
+        "boundaryCoverage": 1.0
+      },
+      "createdAt": "2026-09-02T02:28:50.041399Z"
+    }
+  ]
+}

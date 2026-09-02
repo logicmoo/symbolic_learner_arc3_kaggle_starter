@@ -1,0 +1,837 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_001/frame_move_000012_outlines/verify_green_creature_body_19fbf5d26946.png",
+  "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_001/frame_move_000012_outlines/verify_green_creature_body_19fbf5d26946.provenance.json",
+  "createdAt": "2026-09-02T00:48:52.103011Z",
+  "operation": "verify_outliner_trace",
+  "dimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "originalDimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "root": {
+    "firstSeenImage": "data/arc3_games/recordings/ls20/saved_001/11/image.png",
+    "dimensions": {
+      "width": 640,
+      "height": 640
+    }
+  },
+  "parent": {
+    "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_001/frame_move_000012.png",
+    "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_001/frame_move_000012.provenance.json"
+  },
+  "source": {
+    "objectName": "green_creature_body"
+  },
+  "transform": {
+    "polygons": [
+      [
+        [
+          320,
+          80
+        ],
+        [
+          410,
+          80
+        ],
+        [
+          410,
+          170
+        ],
+        [
+          390,
+          170
+        ],
+        [
+          390,
+          250
+        ],
+        [
+          540,
+          250
+        ],
+        [
+          540,
+          500
+        ],
+        [
+          190,
+          500
+        ],
+        [
+          190,
+          400
+        ],
+        [
+          140,
+          400
+        ],
+        [
+          140,
+          250
+        ],
+        [
+          340,
+          250
+        ],
+        [
+          340,
+          170
+        ],
+        [
+          320,
+          170
+        ]
+      ]
+    ],
+    "holes": [
+      [
+        [
+          330,
+          90
+        ],
+        [
+          390,
+          90
+        ],
+        [
+          390,
+          170
+        ],
+        [
+          330,
+          170
+        ]
+      ],
+      [
+        [
+          340,
+          170
+        ],
+        [
+          390,
+          170
+        ],
+        [
+          390,
+          190
+        ],
+        [
+          340,
+          190
+        ]
+      ],
+      [
+        [
+          210,
+          310
+        ],
+        [
+          220,
+          310
+        ],
+        [
+          220,
+          320
+        ],
+        [
+          230,
+          320
+        ],
+        [
+          230,
+          330
+        ],
+        [
+          220,
+          330
+        ],
+        [
+          220,
+          340
+        ],
+        [
+          210,
+          340
+        ],
+        [
+          210,
+          330
+        ],
+        [
+          200,
+          330
+        ],
+        [
+          200,
+          320
+        ],
+        [
+          210,
+          320
+        ]
+      ],
+      [
+        [
+          210,
+          330
+        ],
+        [
+          220,
+          330
+        ],
+        [
+          220,
+          340
+        ],
+        [
+          210,
+          340
+        ]
+      ]
+    ],
+    "traceTurtle": [
+      {
+        "op": "move",
+        "x": 500,
+        "y": 125
+      },
+      {
+        "op": "line",
+        "x": 641,
+        "y": 125
+      },
+      {
+        "op": "line",
+        "x": 641,
+        "y": 266
+      },
+      {
+        "op": "line",
+        "x": 609,
+        "y": 266
+      },
+      {
+        "op": "line",
+        "x": 609,
+        "y": 391
+      },
+      {
+        "op": "line",
+        "x": 844,
+        "y": 391
+      },
+      {
+        "op": "line",
+        "x": 844,
+        "y": 781
+      },
+      {
+        "op": "line",
+        "x": 297,
+        "y": 781
+      },
+      {
+        "op": "line",
+        "x": 297,
+        "y": 625
+      },
+      {
+        "op": "line",
+        "x": 219,
+        "y": 625
+      },
+      {
+        "op": "line",
+        "x": 219,
+        "y": 391
+      },
+      {
+        "op": "line",
+        "x": 531,
+        "y": 391
+      },
+      {
+        "op": "line",
+        "x": 531,
+        "y": 266
+      },
+      {
+        "op": "line",
+        "x": 500,
+        "y": 266
+      },
+      {
+        "op": "line",
+        "x": 500,
+        "y": 125
+      },
+      {
+        "op": "move",
+        "x": 516,
+        "y": 141
+      },
+      {
+        "op": "line",
+        "x": 609,
+        "y": 141
+      },
+      {
+        "op": "line",
+        "x": 609,
+        "y": 266
+      },
+      {
+        "op": "line",
+        "x": 516,
+        "y": 266
+      },
+      {
+        "op": "line",
+        "x": 516,
+        "y": 141
+      },
+      {
+        "op": "move",
+        "x": 531,
+        "y": 266
+      },
+      {
+        "op": "line",
+        "x": 609,
+        "y": 266
+      },
+      {
+        "op": "line",
+        "x": 609,
+        "y": 297
+      },
+      {
+        "op": "line",
+        "x": 531,
+        "y": 297
+      },
+      {
+        "op": "line",
+        "x": 531,
+        "y": 266
+      },
+      {
+        "op": "move",
+        "x": 328,
+        "y": 484
+      },
+      {
+        "op": "line",
+        "x": 344,
+        "y": 484
+      },
+      {
+        "op": "line",
+        "x": 344,
+        "y": 500
+      },
+      {
+        "op": "line",
+        "x": 359,
+        "y": 500
+      },
+      {
+        "op": "line",
+        "x": 359,
+        "y": 516
+      },
+      {
+        "op": "line",
+        "x": 344,
+        "y": 516
+      },
+      {
+        "op": "line",
+        "x": 344,
+        "y": 531
+      },
+      {
+        "op": "line",
+        "x": 328,
+        "y": 531
+      },
+      {
+        "op": "line",
+        "x": 328,
+        "y": 516
+      },
+      {
+        "op": "line",
+        "x": 313,
+        "y": 516
+      },
+      {
+        "op": "line",
+        "x": 313,
+        "y": 500
+      },
+      {
+        "op": "line",
+        "x": 328,
+        "y": 500
+      },
+      {
+        "op": "line",
+        "x": 328,
+        "y": 484
+      },
+      {
+        "op": "move",
+        "x": 328,
+        "y": 516
+      },
+      {
+        "op": "line",
+        "x": 344,
+        "y": 516
+      },
+      {
+        "op": "line",
+        "x": 344,
+        "y": 531
+      },
+      {
+        "op": "line",
+        "x": 328,
+        "y": 531
+      },
+      {
+        "op": "line",
+        "x": 328,
+        "y": 516
+      }
+    ],
+    "geometryHash": "19fbf5d26946715f311491a7fbd26b944eec4596e495294c2c3dd9407d45b289",
+    "traceAgreement": 0.9837,
+    "boundaryCoverage": 1.0
+  },
+  "lineage": [
+    {
+      "image": "data/arc3_games/recordings/ls20/saved_001/11/image.png",
+      "operation": "legacy_source",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T00:25:11.970482Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_001/frame_move_000012.png",
+      "operation": "import_arc_playback_frame",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T00:25:11.979614Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_001/frame_move_000012_outlines/verify_green_creature_body_19fbf5d26946.png",
+      "operation": "verify_outliner_trace",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {
+        "polygons": [
+          [
+            [
+              320,
+              80
+            ],
+            [
+              410,
+              80
+            ],
+            [
+              410,
+              170
+            ],
+            [
+              390,
+              170
+            ],
+            [
+              390,
+              250
+            ],
+            [
+              540,
+              250
+            ],
+            [
+              540,
+              500
+            ],
+            [
+              190,
+              500
+            ],
+            [
+              190,
+              400
+            ],
+            [
+              140,
+              400
+            ],
+            [
+              140,
+              250
+            ],
+            [
+              340,
+              250
+            ],
+            [
+              340,
+              170
+            ],
+            [
+              320,
+              170
+            ]
+          ]
+        ],
+        "holes": [
+          [
+            [
+              330,
+              90
+            ],
+            [
+              390,
+              90
+            ],
+            [
+              390,
+              170
+            ],
+            [
+              330,
+              170
+            ]
+          ],
+          [
+            [
+              340,
+              170
+            ],
+            [
+              390,
+              170
+            ],
+            [
+              390,
+              190
+            ],
+            [
+              340,
+              190
+            ]
+          ],
+          [
+            [
+              210,
+              310
+            ],
+            [
+              220,
+              310
+            ],
+            [
+              220,
+              320
+            ],
+            [
+              230,
+              320
+            ],
+            [
+              230,
+              330
+            ],
+            [
+              220,
+              330
+            ],
+            [
+              220,
+              340
+            ],
+            [
+              210,
+              340
+            ],
+            [
+              210,
+              330
+            ],
+            [
+              200,
+              330
+            ],
+            [
+              200,
+              320
+            ],
+            [
+              210,
+              320
+            ]
+          ],
+          [
+            [
+              210,
+              330
+            ],
+            [
+              220,
+              330
+            ],
+            [
+              220,
+              340
+            ],
+            [
+              210,
+              340
+            ]
+          ]
+        ],
+        "traceTurtle": [
+          {
+            "op": "move",
+            "x": 500,
+            "y": 125
+          },
+          {
+            "op": "line",
+            "x": 641,
+            "y": 125
+          },
+          {
+            "op": "line",
+            "x": 641,
+            "y": 266
+          },
+          {
+            "op": "line",
+            "x": 609,
+            "y": 266
+          },
+          {
+            "op": "line",
+            "x": 609,
+            "y": 391
+          },
+          {
+            "op": "line",
+            "x": 844,
+            "y": 391
+          },
+          {
+            "op": "line",
+            "x": 844,
+            "y": 781
+          },
+          {
+            "op": "line",
+            "x": 297,
+            "y": 781
+          },
+          {
+            "op": "line",
+            "x": 297,
+            "y": 625
+          },
+          {
+            "op": "line",
+            "x": 219,
+            "y": 625
+          },
+          {
+            "op": "line",
+            "x": 219,
+            "y": 391
+          },
+          {
+            "op": "line",
+            "x": 531,
+            "y": 391
+          },
+          {
+            "op": "line",
+            "x": 531,
+            "y": 266
+          },
+          {
+            "op": "line",
+            "x": 500,
+            "y": 266
+          },
+          {
+            "op": "line",
+            "x": 500,
+            "y": 125
+          },
+          {
+            "op": "move",
+            "x": 516,
+            "y": 141
+          },
+          {
+            "op": "line",
+            "x": 609,
+            "y": 141
+          },
+          {
+            "op": "line",
+            "x": 609,
+            "y": 266
+          },
+          {
+            "op": "line",
+            "x": 516,
+            "y": 266
+          },
+          {
+            "op": "line",
+            "x": 516,
+            "y": 141
+          },
+          {
+            "op": "move",
+            "x": 531,
+            "y": 266
+          },
+          {
+            "op": "line",
+            "x": 609,
+            "y": 266
+          },
+          {
+            "op": "line",
+            "x": 609,
+            "y": 297
+          },
+          {
+            "op": "line",
+            "x": 531,
+            "y": 297
+          },
+          {
+            "op": "line",
+            "x": 531,
+            "y": 266
+          },
+          {
+            "op": "move",
+            "x": 328,
+            "y": 484
+          },
+          {
+            "op": "line",
+            "x": 344,
+            "y": 484
+          },
+          {
+            "op": "line",
+            "x": 344,
+            "y": 500
+          },
+          {
+            "op": "line",
+            "x": 359,
+            "y": 500
+          },
+          {
+            "op": "line",
+            "x": 359,
+            "y": 516
+          },
+          {
+            "op": "line",
+            "x": 344,
+            "y": 516
+          },
+          {
+            "op": "line",
+            "x": 344,
+            "y": 531
+          },
+          {
+            "op": "line",
+            "x": 328,
+            "y": 531
+          },
+          {
+            "op": "line",
+            "x": 328,
+            "y": 516
+          },
+          {
+            "op": "line",
+            "x": 313,
+            "y": 516
+          },
+          {
+            "op": "line",
+            "x": 313,
+            "y": 500
+          },
+          {
+            "op": "line",
+            "x": 328,
+            "y": 500
+          },
+          {
+            "op": "line",
+            "x": 328,
+            "y": 484
+          },
+          {
+            "op": "move",
+            "x": 328,
+            "y": 516
+          },
+          {
+            "op": "line",
+            "x": 344,
+            "y": 516
+          },
+          {
+            "op": "line",
+            "x": 344,
+            "y": 531
+          },
+          {
+            "op": "line",
+            "x": 328,
+            "y": 531
+          },
+          {
+            "op": "line",
+            "x": 328,
+            "y": 516
+          }
+        ],
+        "geometryHash": "19fbf5d26946715f311491a7fbd26b944eec4596e495294c2c3dd9407d45b289",
+        "traceAgreement": 0.9837,
+        "boundaryCoverage": 1.0
+      },
+      "createdAt": "2026-09-02T00:48:52.103011Z"
+    }
+  ]
+}

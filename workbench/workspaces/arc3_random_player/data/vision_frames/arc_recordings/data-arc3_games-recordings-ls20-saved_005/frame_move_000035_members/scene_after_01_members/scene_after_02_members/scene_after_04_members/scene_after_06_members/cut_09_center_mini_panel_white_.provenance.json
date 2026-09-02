@@ -1,0 +1,409 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_members/scene_after_01_members/scene_after_02_members/scene_after_04_members/scene_after_06_members/cut_09_center_mini_panel_white_.png",
+  "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_members/scene_after_01_members/scene_after_02_members/scene_after_04_members/scene_after_06_members/cut_09_center_mini_panel_white_.provenance.json",
+  "createdAt": "2026-09-02T04:41:47.838494Z",
+  "operation": "extract_object_cutout",
+  "dimensions": {
+    "width": 33,
+    "height": 33
+  },
+  "originalDimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "root": {
+    "firstSeenImage": "data/arc3_games/recordings/ls20/saved_005/34/image.png",
+    "dimensions": {
+      "width": 640,
+      "height": 640
+    }
+  },
+  "parent": {
+    "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_members/scene_after_01_members/scene_after_02_members/scene_after_04_members/scene_after_06.png",
+    "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_members/scene_after_01_members/scene_after_02_members/scene_after_04_members/scene_after_06.provenance.json"
+  },
+  "source": {
+    "objectName": "center_mini_panel_white_pixel"
+  },
+  "transform": {
+    "inputDimensions": {
+      "width": 640,
+      "height": 640
+    },
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_members/scene_after_01_members/scene_after_02_members/scene_after_04_members/scene_after_06.png",
+      "outlineSourceImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035.png",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "verified": true,
+      "verificationImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_outlines/verify_center_mini_panel_white__90d67f452ca3.png",
+      "geometryHash": "90d67f452ca3c2b700555c609d5758adc5228fe8d94e3b58b71084381510271a",
+      "traceVerified": true
+    },
+    "cropBox": [
+      349,
+      309,
+      382,
+      342
+    ],
+    "maskScale": 4,
+    "polygons": [
+      [
+        [
+          350,
+          310
+        ],
+        [
+          379,
+          310
+        ],
+        [
+          379,
+          339
+        ],
+        [
+          350,
+          339
+        ]
+      ]
+    ],
+    "holes": [
+      [
+        [
+          360,
+          312
+        ],
+        [
+          369,
+          312
+        ],
+        [
+          369,
+          329
+        ],
+        [
+          360,
+          329
+        ]
+      ],
+      [
+        [
+          350,
+          320
+        ],
+        [
+          359,
+          320
+        ],
+        [
+          359,
+          329
+        ],
+        [
+          350,
+          329
+        ]
+      ]
+    ]
+  },
+  "lineage": [
+    {
+      "image": "data/arc3_games/recordings/ls20/saved_005/34/image.png",
+      "operation": "legacy_source",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:19.794636Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035.png",
+      "operation": "import_arc_playback_frame",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:19.808137Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_members/scene_after_01.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035.png",
+          "outlineSourceImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035.png",
+          "dimensions": {
+            "width": 640,
+            "height": 640
+          },
+          "verified": true,
+          "verificationImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_outlines/verify_top_left_red_sign_glyph_8ff21b09f2c4.png",
+          "geometryHash": "8ff21b09f2c4a6f7ea74d9451eee18bd4c2607a4192eccce09113da3053994c7",
+          "traceVerified": true
+        },
+        "removedBox": [
+          89,
+          59,
+          123,
+          93
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "The removed glyph reveals the sign tile’s flat interior: a uniform light-gray fill matching the surrounding pixels inside the top-left gray tile.",
+          "colors": [
+            "#B0B0B0"
+          ],
+          "continueEdges": [
+            "Continue the light-gray tile interior seamlessly across the entire removed glyph polygon with no breaks or outlines."
+          ],
+          "texture": "None (solid flat pixel fill, no gradient or pattern)."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-02T04:33:28.420801Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_members/scene_after_01_members/scene_after_02.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_members/scene_after_01.png",
+          "outlineSourceImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035.png",
+          "dimensions": {
+            "width": 640,
+            "height": 640
+          },
+          "verified": true,
+          "verificationImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_outlines/verify_upper_left_green_center__f0b06f427aaf.png",
+          "geometryHash": "f0b06f427aafaeef947e14108f41afdae7aaa7235f7f027b610f3fef1968f898",
+          "traceVerified": true
+        },
+        "removedBox": [
+          199,
+          161,
+          213,
+          175
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Fill the removed center-dot area with the same solid dark-gray interior of the surrounding upper-left square detail so the inset reads as a uniform gray tile.",
+          "colors": [
+            "#606060"
+          ],
+          "continueEdges": [
+            "Continue the dark-gray interior horizontally from the left and right sides of the hole.",
+            "Continue the dark-gray interior vertically from the top and bottom sides of the hole.",
+            "Preserve the outer border and silhouette of the surrounding gray square detail unchanged."
+          ],
+          "texture": "Flat, uniform pixel-art fill (no gradient, no noise)."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-02T04:35:30.410291Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_members/scene_after_01_members/scene_after_02_members/scene_after_04.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_members/scene_after_01_members/scene_after_02.png",
+          "outlineSourceImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035.png",
+          "dimensions": {
+            "width": 640,
+            "height": 640
+          },
+          "verified": true,
+          "verificationImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_outlines/verify_center_mini_panel_black__f9ea0a62400e.png",
+          "geometryHash": "f9ea0a62400ee623f4ac697ff3edd2ea25e3f1d0e9e3553c27ffe0bafb5bd112",
+          "traceVerified": true
+        },
+        "removedBox": [
+          359,
+          311,
+          373,
+          335
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Fill the removed black interior mark with the mini panel’s interior base fill so the inside of the cyan-framed panel reads as continuous light fill behind the symbol.",
+          "colors": [
+            "#E6E6E6"
+          ],
+          "continueEdges": [
+            "Continue the panel’s interior light-fill region seamlessly across x=360..370, y=312..332.",
+            "Keep the cyan frame boundary unchanged around the mini panel.",
+            "Preserve the adjacent maroon interior mark edge as a clean vertical boundary where it meets the restored light fill."
+          ],
+          "texture": "Flat solid pixel fill (no gradient/no dithering)."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-02T04:37:18.634684Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_members/scene_after_01_members/scene_after_02_members/scene_after_04_members/scene_after_06.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_members/scene_after_01_members/scene_after_02_members/scene_after_04.png",
+          "outlineSourceImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035.png",
+          "dimensions": {
+            "width": 640,
+            "height": 640
+          },
+          "verified": true,
+          "verificationImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_outlines/verify_center_mini_panel_red_ma_152728b3fede.png",
+          "geometryHash": "152728b3feded9f78fc4be986d2025bca08ae795199372ae18ccaef84bf0639b",
+          "traceVerified": true
+        },
+        "removedBox": [
+          349,
+          319,
+          363,
+          333
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "The removed dark-red interior pixel block should be replaced by the mini panel’s interior base fill so the inside of the cyan-framed panel reads as a continuous light fill.",
+          "colors": [
+            "#D9D9D9"
+          ],
+          "continueEdges": [
+            "Continue the light interior fill seamlessly across the removed 10x10 region (350..360, 320..330).",
+            "Preserve the cyan frame boundary around the panel unchanged.",
+            "Keep a clean vertical boundary with the adjacent black interior mark where they touch."
+          ],
+          "texture": "Flat solid pixel fill (no gradient, no dithering)."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-02T04:39:11.261574Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_members/scene_after_01_members/scene_after_02_members/scene_after_04_members/scene_after_06_members/cut_09_center_mini_panel_white_.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 33,
+        "height": 33
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 640,
+          "height": 640
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_members/scene_after_01_members/scene_after_02_members/scene_after_04_members/scene_after_06.png",
+          "outlineSourceImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035.png",
+          "dimensions": {
+            "width": 640,
+            "height": 640
+          },
+          "verified": true,
+          "verificationImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_outlines/verify_center_mini_panel_white__90d67f452ca3.png",
+          "geometryHash": "90d67f452ca3c2b700555c609d5758adc5228fe8d94e3b58b71084381510271a",
+          "traceVerified": true
+        },
+        "cropBox": [
+          349,
+          309,
+          382,
+          342
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              350,
+              310
+            ],
+            [
+              379,
+              310
+            ],
+            [
+              379,
+              339
+            ],
+            [
+              350,
+              339
+            ]
+          ]
+        ],
+        "holes": [
+          [
+            [
+              360,
+              312
+            ],
+            [
+              369,
+              312
+            ],
+            [
+              369,
+              329
+            ],
+            [
+              360,
+              329
+            ]
+          ],
+          [
+            [
+              350,
+              320
+            ],
+            [
+              359,
+              320
+            ],
+            [
+              359,
+              329
+            ],
+            [
+              350,
+              329
+            ]
+          ]
+        ]
+      },
+      "createdAt": "2026-09-02T04:41:47.838494Z"
+    }
+  ]
+}

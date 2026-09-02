@@ -1,0 +1,421 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000008_planner/order_b29cd565d721.png",
+  "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000008_planner/order_b29cd565d721.provenance.json",
+  "createdAt": "2026-09-02T01:24:22.498715Z",
+  "operation": "visualize_planner_order",
+  "dimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "originalDimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "root": {
+    "firstSeenImage": "data/arc3_games/recordings/ls20/saved_005/7/image.png",
+    "dimensions": {
+      "width": 640,
+      "height": 640
+    }
+  },
+  "parent": {
+    "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000008.png",
+    "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000008.provenance.json"
+  },
+  "source": {},
+  "transform": {
+    "labels": [
+      {
+        "object": "top_left_maroon_sign_symbol",
+        "number": 1,
+        "point": [
+          102,
+          66
+        ]
+      },
+      {
+        "object": "upper_mid_left_green_center_dot",
+        "number": 2,
+        "point": [
+          205,
+          176
+        ]
+      },
+      {
+        "object": "center_dark_symbol_pixels",
+        "number": 3,
+        "point": [
+          354,
+          318
+        ]
+      },
+      {
+        "object": "lower_mid_green_center_dot",
+        "number": 4,
+        "point": [
+          355,
+          523
+        ]
+      },
+      {
+        "object": "bottom_left_white_sign_symbol",
+        "number": 5,
+        "point": [
+          35,
+          565
+        ]
+      },
+      {
+        "object": "upper_mid_gray_cap",
+        "number": 6,
+        "point": [
+          250,
+          165
+        ]
+      },
+      {
+        "object": "upper_mid_maroon_block",
+        "number": 7,
+        "point": [
+          250,
+          185
+        ]
+      },
+      {
+        "object": "upper_mid_left_gray_square_detail",
+        "number": 8,
+        "point": [
+          195,
+          165
+        ]
+      },
+      {
+        "object": "blue_edge_accent_marks",
+        "number": 9,
+        "point": [
+          470,
+          190
+        ]
+      },
+      {
+        "object": "center_left_black_marker",
+        "number": 10,
+        "point": [
+          255,
+          320
+        ]
+      },
+      {
+        "object": "center_cyan_detail_tile",
+        "number": 11,
+        "point": [
+          345,
+          315
+        ]
+      },
+      {
+        "object": "lower_mid_gray_square_detail",
+        "number": 12,
+        "point": [
+          345,
+          515
+        ]
+      },
+      {
+        "object": "top_left_gray_sign_tile",
+        "number": 13,
+        "point": [
+          86,
+          46
+        ]
+      },
+      {
+        "object": "bottom_ui_green_fill_segment",
+        "number": 14,
+        "point": [
+          132,
+          620
+        ]
+      },
+      {
+        "object": "bottom_ui_cyan_button_1",
+        "number": 15,
+        "point": [
+          568,
+          620
+        ]
+      },
+      {
+        "object": "bottom_ui_cyan_button_2",
+        "number": 16,
+        "point": [
+          598,
+          620
+        ]
+      },
+      {
+        "object": "bottom_ui_cyan_button_3",
+        "number": 17,
+        "point": [
+          628,
+          620
+        ]
+      },
+      {
+        "object": "bottom_ui_dark_track",
+        "number": 18,
+        "point": [
+          420,
+          620
+        ]
+      },
+      {
+        "object": "bottom_left_gray_sign_tile",
+        "number": 19,
+        "point": [
+          18,
+          538
+        ]
+      },
+      {
+        "object": "main_green_creature_body",
+        "number": 20,
+        "point": [
+          300,
+          120
+        ]
+      },
+      {
+        "object": "left_gray_vertical_panel",
+        "number": 21,
+        "point": [
+          20,
+          260
+        ]
+      },
+      {
+        "object": "yellow_background",
+        "number": 22,
+        "point": [
+          500,
+          20
+        ]
+      }
+    ],
+    "plannerHash": "b29cd565d7216e24195f15ff3698816eed091e35245f33af0e70564ae9d2c080"
+  },
+  "lineage": [
+    {
+      "image": "data/arc3_games/recordings/ls20/saved_005/7/image.png",
+      "operation": "legacy_source",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:18.523570Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000008.png",
+      "operation": "import_arc_playback_frame",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:18.532589Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000008_planner/order_b29cd565d721.png",
+      "operation": "visualize_planner_order",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {
+        "labels": [
+          {
+            "object": "top_left_maroon_sign_symbol",
+            "number": 1,
+            "point": [
+              102,
+              66
+            ]
+          },
+          {
+            "object": "upper_mid_left_green_center_dot",
+            "number": 2,
+            "point": [
+              205,
+              176
+            ]
+          },
+          {
+            "object": "center_dark_symbol_pixels",
+            "number": 3,
+            "point": [
+              354,
+              318
+            ]
+          },
+          {
+            "object": "lower_mid_green_center_dot",
+            "number": 4,
+            "point": [
+              355,
+              523
+            ]
+          },
+          {
+            "object": "bottom_left_white_sign_symbol",
+            "number": 5,
+            "point": [
+              35,
+              565
+            ]
+          },
+          {
+            "object": "upper_mid_gray_cap",
+            "number": 6,
+            "point": [
+              250,
+              165
+            ]
+          },
+          {
+            "object": "upper_mid_maroon_block",
+            "number": 7,
+            "point": [
+              250,
+              185
+            ]
+          },
+          {
+            "object": "upper_mid_left_gray_square_detail",
+            "number": 8,
+            "point": [
+              195,
+              165
+            ]
+          },
+          {
+            "object": "blue_edge_accent_marks",
+            "number": 9,
+            "point": [
+              470,
+              190
+            ]
+          },
+          {
+            "object": "center_left_black_marker",
+            "number": 10,
+            "point": [
+              255,
+              320
+            ]
+          },
+          {
+            "object": "center_cyan_detail_tile",
+            "number": 11,
+            "point": [
+              345,
+              315
+            ]
+          },
+          {
+            "object": "lower_mid_gray_square_detail",
+            "number": 12,
+            "point": [
+              345,
+              515
+            ]
+          },
+          {
+            "object": "top_left_gray_sign_tile",
+            "number": 13,
+            "point": [
+              86,
+              46
+            ]
+          },
+          {
+            "object": "bottom_ui_green_fill_segment",
+            "number": 14,
+            "point": [
+              132,
+              620
+            ]
+          },
+          {
+            "object": "bottom_ui_cyan_button_1",
+            "number": 15,
+            "point": [
+              568,
+              620
+            ]
+          },
+          {
+            "object": "bottom_ui_cyan_button_2",
+            "number": 16,
+            "point": [
+              598,
+              620
+            ]
+          },
+          {
+            "object": "bottom_ui_cyan_button_3",
+            "number": 17,
+            "point": [
+              628,
+              620
+            ]
+          },
+          {
+            "object": "bottom_ui_dark_track",
+            "number": 18,
+            "point": [
+              420,
+              620
+            ]
+          },
+          {
+            "object": "bottom_left_gray_sign_tile",
+            "number": 19,
+            "point": [
+              18,
+              538
+            ]
+          },
+          {
+            "object": "main_green_creature_body",
+            "number": 20,
+            "point": [
+              300,
+              120
+            ]
+          },
+          {
+            "object": "left_gray_vertical_panel",
+            "number": 21,
+            "point": [
+              20,
+              260
+            ]
+          },
+          {
+            "object": "yellow_background",
+            "number": 22,
+            "point": [
+              500,
+              20
+            ]
+          }
+        ],
+        "plannerHash": "b29cd565d7216e24195f15ff3698816eed091e35245f33af0e70564ae9d2c080"
+      },
+      "createdAt": "2026-09-02T01:24:22.498715Z"
+    }
+  ]
+}

@@ -1,0 +1,175 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000015_outlines/verify_right_mid_maroon_block_f8e6d882e7ea.png",
+  "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000015_outlines/verify_right_mid_maroon_block_f8e6d882e7ea.provenance.json",
+  "createdAt": "2026-09-02T01:58:04.715334Z",
+  "operation": "verify_outliner_trace",
+  "dimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "originalDimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "root": {
+    "firstSeenImage": "data/arc3_games/recordings/ls20/saved_005/14/image.png",
+    "dimensions": {
+      "width": 640,
+      "height": 640
+    }
+  },
+  "parent": {
+    "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000015.png",
+    "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000015.provenance.json"
+  },
+  "source": {
+    "objectName": "right_mid_maroon_block"
+  },
+  "transform": {
+    "polygons": [
+      [
+        [
+          570,
+          320
+        ],
+        [
+          620,
+          320
+        ],
+        [
+          620,
+          380
+        ],
+        [
+          570,
+          380
+        ],
+        [
+          570,
+          320
+        ]
+      ]
+    ],
+    "holes": [],
+    "traceTurtle": [
+      {
+        "op": "move",
+        "x": 891,
+        "y": 500
+      },
+      {
+        "op": "line",
+        "x": 969,
+        "y": 500
+      },
+      {
+        "op": "line",
+        "x": 969,
+        "y": 594
+      },
+      {
+        "op": "line",
+        "x": 891,
+        "y": 594
+      },
+      {
+        "op": "line",
+        "x": 891,
+        "y": 500
+      }
+    ],
+    "geometryHash": "f8e6d882e7eaa82c2c3c23f9b3bf73cd89ab80e5d1307418bc1b51c7aa8906e4",
+    "traceAgreement": 1.0,
+    "boundaryCoverage": 1.0
+  },
+  "lineage": [
+    {
+      "image": "data/arc3_games/recordings/ls20/saved_005/14/image.png",
+      "operation": "legacy_source",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:18.837813Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000015.png",
+      "operation": "import_arc_playback_frame",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:18.851213Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000015_outlines/verify_right_mid_maroon_block_f8e6d882e7ea.png",
+      "operation": "verify_outliner_trace",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {
+        "polygons": [
+          [
+            [
+              570,
+              320
+            ],
+            [
+              620,
+              320
+            ],
+            [
+              620,
+              380
+            ],
+            [
+              570,
+              380
+            ],
+            [
+              570,
+              320
+            ]
+          ]
+        ],
+        "holes": [],
+        "traceTurtle": [
+          {
+            "op": "move",
+            "x": 891,
+            "y": 500
+          },
+          {
+            "op": "line",
+            "x": 969,
+            "y": 500
+          },
+          {
+            "op": "line",
+            "x": 969,
+            "y": 594
+          },
+          {
+            "op": "line",
+            "x": 891,
+            "y": 594
+          },
+          {
+            "op": "line",
+            "x": 891,
+            "y": 500
+          }
+        ],
+        "geometryHash": "f8e6d882e7eaa82c2c3c23f9b3bf73cd89ab80e5d1307418bc1b51c7aa8906e4",
+        "traceAgreement": 1.0,
+        "boundaryCoverage": 1.0
+      },
+      "createdAt": "2026-09-02T01:58:04.715334Z"
+    }
+  ]
+}

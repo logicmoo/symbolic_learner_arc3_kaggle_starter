@@ -1,0 +1,581 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000038_planner/order_dcfb813faebc.png",
+  "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000038_planner/order_dcfb813faebc.provenance.json",
+  "createdAt": "2026-09-02T01:28:26.215177Z",
+  "operation": "visualize_planner_order",
+  "dimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "originalDimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "root": {
+    "firstSeenImage": "data/arc3_games/recordings/ls20/saved_005/37/image.png",
+    "dimensions": {
+      "width": 640,
+      "height": 640
+    }
+  },
+  "parent": {
+    "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000038.png",
+    "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000038.provenance.json"
+  },
+  "source": {},
+  "transform": {
+    "labels": [
+      {
+        "object": "top_left_red_glyph",
+        "number": 1,
+        "point": [
+          102,
+          66
+        ]
+      },
+      {
+        "object": "upper_left_green_center_dot",
+        "number": 2,
+        "point": [
+          200,
+          174
+        ]
+      },
+      {
+        "object": "center_mini_panel_black_mark",
+        "number": 3,
+        "point": [
+          352,
+          322
+        ]
+      },
+      {
+        "object": "center_mini_panel_red_mark",
+        "number": 4,
+        "point": [
+          360,
+          322
+        ]
+      },
+      {
+        "object": "center_mini_panel_white_fill",
+        "number": 5,
+        "point": [
+          354,
+          314
+        ]
+      },
+      {
+        "object": "lower_mid_green_center_dot",
+        "number": 6,
+        "point": [
+          360,
+          524
+        ]
+      },
+      {
+        "object": "bottom_left_red_sign_glyph",
+        "number": 7,
+        "point": [
+          40,
+          565
+        ]
+      },
+      {
+        "object": "left_mid_gray_cap",
+        "number": 8,
+        "point": [
+          150,
+          356
+        ]
+      },
+      {
+        "object": "left_mid_red_block",
+        "number": 9,
+        "point": [
+          150,
+          382
+        ]
+      },
+      {
+        "object": "upper_left_gray_square_detail",
+        "number": 10,
+        "point": [
+          195,
+          165
+        ]
+      },
+      {
+        "object": "center_mini_panel_cyan_border",
+        "number": 11,
+        "point": [
+          345,
+          315
+        ]
+      },
+      {
+        "object": "blue_segment_left_outer_vertical",
+        "number": 12,
+        "point": [
+          82,
+          370
+        ]
+      },
+      {
+        "object": "blue_segment_left_mid_horizontal",
+        "number": 13,
+        "point": [
+          205,
+          342
+        ]
+      },
+      {
+        "object": "blue_segment_center_upper_vertical",
+        "number": 14,
+        "point": [
+          332,
+          220
+        ]
+      },
+      {
+        "object": "blue_segment_center_right_horizontal",
+        "number": 15,
+        "point": [
+          405,
+          302
+        ]
+      },
+      {
+        "object": "blue_segment_upper_right_horizontal",
+        "number": 16,
+        "point": [
+          480,
+          192
+        ]
+      },
+      {
+        "object": "blue_segment_right_upper_vertical",
+        "number": 17,
+        "point": [
+          522,
+          270
+        ]
+      },
+      {
+        "object": "blue_segment_center_lower_vertical",
+        "number": 18,
+        "point": [
+          292,
+          420
+        ]
+      },
+      {
+        "object": "blue_segment_right_lower_vertical",
+        "number": 19,
+        "point": [
+          492,
+          420
+        ]
+      },
+      {
+        "object": "center_black_marker",
+        "number": 20,
+        "point": [
+          255,
+          320
+        ]
+      },
+      {
+        "object": "top_left_gray_face_panel",
+        "number": 21,
+        "point": [
+          86,
+          46
+        ]
+      },
+      {
+        "object": "lower_mid_gray_square_detail",
+        "number": 22,
+        "point": [
+          355,
+          515
+        ]
+      },
+      {
+        "object": "bottom_ui_cyan_button_1",
+        "number": 23,
+        "point": [
+          568,
+          620
+        ]
+      },
+      {
+        "object": "bottom_ui_cyan_button_2",
+        "number": 24,
+        "point": [
+          598,
+          620
+        ]
+      },
+      {
+        "object": "bottom_ui_cyan_button_3",
+        "number": 25,
+        "point": [
+          628,
+          620
+        ]
+      },
+      {
+        "object": "bottom_ui_green_fill_segment",
+        "number": 26,
+        "point": [
+          200,
+          620
+        ]
+      },
+      {
+        "object": "bottom_ui_dark_track",
+        "number": 27,
+        "point": [
+          500,
+          620
+        ]
+      },
+      {
+        "object": "bottom_left_gray_sign_tile",
+        "number": 28,
+        "point": [
+          18,
+          538
+        ]
+      },
+      {
+        "object": "bottom_ui_light_gray_frame",
+        "number": 29,
+        "point": [
+          125,
+          605
+        ]
+      },
+      {
+        "object": "green_creature_body",
+        "number": 30,
+        "point": [
+          300,
+          120
+        ]
+      },
+      {
+        "object": "left_gray_wall",
+        "number": 31,
+        "point": [
+          20,
+          260
+        ]
+      },
+      {
+        "object": "yellow_background",
+        "number": 32,
+        "point": [
+          500,
+          20
+        ]
+      }
+    ],
+    "plannerHash": "dcfb813faebcdb8d0a61358dc41217534de1636cd678bbc90ab7fd12cb2ee64c"
+  },
+  "lineage": [
+    {
+      "image": "data/arc3_games/recordings/ls20/saved_005/37/image.png",
+      "operation": "legacy_source",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:20.022878Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000038.png",
+      "operation": "import_arc_playback_frame",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:20.033588Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000038_planner/order_dcfb813faebc.png",
+      "operation": "visualize_planner_order",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {
+        "labels": [
+          {
+            "object": "top_left_red_glyph",
+            "number": 1,
+            "point": [
+              102,
+              66
+            ]
+          },
+          {
+            "object": "upper_left_green_center_dot",
+            "number": 2,
+            "point": [
+              200,
+              174
+            ]
+          },
+          {
+            "object": "center_mini_panel_black_mark",
+            "number": 3,
+            "point": [
+              352,
+              322
+            ]
+          },
+          {
+            "object": "center_mini_panel_red_mark",
+            "number": 4,
+            "point": [
+              360,
+              322
+            ]
+          },
+          {
+            "object": "center_mini_panel_white_fill",
+            "number": 5,
+            "point": [
+              354,
+              314
+            ]
+          },
+          {
+            "object": "lower_mid_green_center_dot",
+            "number": 6,
+            "point": [
+              360,
+              524
+            ]
+          },
+          {
+            "object": "bottom_left_red_sign_glyph",
+            "number": 7,
+            "point": [
+              40,
+              565
+            ]
+          },
+          {
+            "object": "left_mid_gray_cap",
+            "number": 8,
+            "point": [
+              150,
+              356
+            ]
+          },
+          {
+            "object": "left_mid_red_block",
+            "number": 9,
+            "point": [
+              150,
+              382
+            ]
+          },
+          {
+            "object": "upper_left_gray_square_detail",
+            "number": 10,
+            "point": [
+              195,
+              165
+            ]
+          },
+          {
+            "object": "center_mini_panel_cyan_border",
+            "number": 11,
+            "point": [
+              345,
+              315
+            ]
+          },
+          {
+            "object": "blue_segment_left_outer_vertical",
+            "number": 12,
+            "point": [
+              82,
+              370
+            ]
+          },
+          {
+            "object": "blue_segment_left_mid_horizontal",
+            "number": 13,
+            "point": [
+              205,
+              342
+            ]
+          },
+          {
+            "object": "blue_segment_center_upper_vertical",
+            "number": 14,
+            "point": [
+              332,
+              220
+            ]
+          },
+          {
+            "object": "blue_segment_center_right_horizontal",
+            "number": 15,
+            "point": [
+              405,
+              302
+            ]
+          },
+          {
+            "object": "blue_segment_upper_right_horizontal",
+            "number": 16,
+            "point": [
+              480,
+              192
+            ]
+          },
+          {
+            "object": "blue_segment_right_upper_vertical",
+            "number": 17,
+            "point": [
+              522,
+              270
+            ]
+          },
+          {
+            "object": "blue_segment_center_lower_vertical",
+            "number": 18,
+            "point": [
+              292,
+              420
+            ]
+          },
+          {
+            "object": "blue_segment_right_lower_vertical",
+            "number": 19,
+            "point": [
+              492,
+              420
+            ]
+          },
+          {
+            "object": "center_black_marker",
+            "number": 20,
+            "point": [
+              255,
+              320
+            ]
+          },
+          {
+            "object": "top_left_gray_face_panel",
+            "number": 21,
+            "point": [
+              86,
+              46
+            ]
+          },
+          {
+            "object": "lower_mid_gray_square_detail",
+            "number": 22,
+            "point": [
+              355,
+              515
+            ]
+          },
+          {
+            "object": "bottom_ui_cyan_button_1",
+            "number": 23,
+            "point": [
+              568,
+              620
+            ]
+          },
+          {
+            "object": "bottom_ui_cyan_button_2",
+            "number": 24,
+            "point": [
+              598,
+              620
+            ]
+          },
+          {
+            "object": "bottom_ui_cyan_button_3",
+            "number": 25,
+            "point": [
+              628,
+              620
+            ]
+          },
+          {
+            "object": "bottom_ui_green_fill_segment",
+            "number": 26,
+            "point": [
+              200,
+              620
+            ]
+          },
+          {
+            "object": "bottom_ui_dark_track",
+            "number": 27,
+            "point": [
+              500,
+              620
+            ]
+          },
+          {
+            "object": "bottom_left_gray_sign_tile",
+            "number": 28,
+            "point": [
+              18,
+              538
+            ]
+          },
+          {
+            "object": "bottom_ui_light_gray_frame",
+            "number": 29,
+            "point": [
+              125,
+              605
+            ]
+          },
+          {
+            "object": "green_creature_body",
+            "number": 30,
+            "point": [
+              300,
+              120
+            ]
+          },
+          {
+            "object": "left_gray_wall",
+            "number": 31,
+            "point": [
+              20,
+              260
+            ]
+          },
+          {
+            "object": "yellow_background",
+            "number": 32,
+            "point": [
+              500,
+              20
+            ]
+          }
+        ],
+        "plannerHash": "dcfb813faebcdb8d0a61358dc41217534de1636cd678bbc90ab7fd12cb2ee64c"
+      },
+      "createdAt": "2026-09-02T01:28:26.215177Z"
+    }
+  ]
+}

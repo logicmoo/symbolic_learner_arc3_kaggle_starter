@@ -1,0 +1,148 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000037_members/scene_after_11.png",
+  "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000037_members/scene_after_11.provenance.json",
+  "createdAt": "2026-09-02T04:43:04.938287Z",
+  "operation": "remove_object_from_scene",
+  "dimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "originalDimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "root": {
+    "firstSeenImage": "data/arc3_games/recordings/ls20/saved_005/36/image.png",
+    "dimensions": {
+      "width": 640,
+      "height": 640
+    }
+  },
+  "parent": {
+    "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000037.png",
+    "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000037.provenance.json"
+  },
+  "source": {
+    "objectName": "top_left_maroon_sign_glyph",
+    "cutout": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000037_members/cut_11_top_left_maroon_sign_gly.png",
+    "fillInstructions": {
+      "description": "The removed maroon glyph reveals the sign tile’s interior fill: a uniform light-gray field continuous with the surrounding tile interior.",
+      "colors": [
+        "#B0B0B0"
+      ],
+      "continueEdges": [
+        "Continue the light-gray interior from the left side of the hole across to the right.",
+        "Continue the light-gray interior from above the hole down through it.",
+        "No border or outline passes through this region; keep the tile border unchanged outside the hole."
+      ],
+      "texture": "Flat solid pixel fill, no gradient or dithering."
+    }
+  },
+  "transform": {
+    "fill": "median",
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000037.png",
+      "outlineSourceImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000037.png",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "verified": true,
+      "verificationImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000037_outlines/verify_top_left_maroon_sign_gly_866779089b72.png",
+      "geometryHash": "866779089b72288115e89be76dcf0acbe9b8e9cb747b32f4060cff3b615d12a2",
+      "traceVerified": true
+    },
+    "removedBox": [
+      99,
+      59,
+      123,
+      93
+    ],
+    "maskScale": 4,
+    "fillInstructions": {
+      "description": "The removed maroon glyph reveals the sign tile’s interior fill: a uniform light-gray field continuous with the surrounding tile interior.",
+      "colors": [
+        "#B0B0B0"
+      ],
+      "continueEdges": [
+        "Continue the light-gray interior from the left side of the hole across to the right.",
+        "Continue the light-gray interior from above the hole down through it.",
+        "No border or outline passes through this region; keep the tile border unchanged outside the hole."
+      ],
+      "texture": "Flat solid pixel fill, no gradient or dithering."
+    },
+    "imageGeneration": {
+      "renderer": "median"
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/arc3_games/recordings/ls20/saved_005/36/image.png",
+      "operation": "legacy_source",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:19.971272Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000037.png",
+      "operation": "import_arc_playback_frame",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:19.984291Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000037_members/scene_after_11.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000037.png",
+          "outlineSourceImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000037.png",
+          "dimensions": {
+            "width": 640,
+            "height": 640
+          },
+          "verified": true,
+          "verificationImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000037_outlines/verify_top_left_maroon_sign_gly_866779089b72.png",
+          "geometryHash": "866779089b72288115e89be76dcf0acbe9b8e9cb747b32f4060cff3b615d12a2",
+          "traceVerified": true
+        },
+        "removedBox": [
+          99,
+          59,
+          123,
+          93
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "The removed maroon glyph reveals the sign tile’s interior fill: a uniform light-gray field continuous with the surrounding tile interior.",
+          "colors": [
+            "#B0B0B0"
+          ],
+          "continueEdges": [
+            "Continue the light-gray interior from the left side of the hole across to the right.",
+            "Continue the light-gray interior from above the hole down through it.",
+            "No border or outline passes through this region; keep the tile border unchanged outside the hole."
+          ],
+          "texture": "Flat solid pixel fill, no gradient or dithering."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-02T04:43:04.938287Z"
+    }
+  ]
+}

@@ -1,0 +1,175 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000047_outlines/verify_top_row_maroon_block_58b950f1f707.png",
+  "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000047_outlines/verify_top_row_maroon_block_58b950f1f707.provenance.json",
+  "createdAt": "2026-09-02T02:48:12.875968Z",
+  "operation": "verify_outliner_trace",
+  "dimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "originalDimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "root": {
+    "firstSeenImage": "data/arc3_games/recordings/ls20/saved_005/46/image.png",
+    "dimensions": {
+      "width": 640,
+      "height": 640
+    }
+  },
+  "parent": {
+    "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000047.png",
+    "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000047.provenance.json"
+  },
+  "source": {
+    "objectName": "top_row_maroon_block"
+  },
+  "transform": {
+    "polygons": [
+      [
+        [
+          190,
+          70
+        ],
+        [
+          240,
+          70
+        ],
+        [
+          240,
+          100
+        ],
+        [
+          190,
+          100
+        ],
+        [
+          190,
+          70
+        ]
+      ]
+    ],
+    "holes": [],
+    "traceTurtle": [
+      {
+        "op": "move",
+        "x": 297,
+        "y": 109
+      },
+      {
+        "op": "line",
+        "x": 375,
+        "y": 109
+      },
+      {
+        "op": "line",
+        "x": 375,
+        "y": 156
+      },
+      {
+        "op": "line",
+        "x": 297,
+        "y": 156
+      },
+      {
+        "op": "line",
+        "x": 297,
+        "y": 109
+      }
+    ],
+    "geometryHash": "58b950f1f7072ebd6472c98e39d0ec0508b547e339008afda4bf35cae1e3d6da",
+    "traceAgreement": 1.0,
+    "boundaryCoverage": 1.0
+  },
+  "lineage": [
+    {
+      "image": "data/arc3_games/recordings/ls20/saved_005/46/image.png",
+      "operation": "legacy_source",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:20.404006Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000047.png",
+      "operation": "import_arc_playback_frame",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:20.413864Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000047_outlines/verify_top_row_maroon_block_58b950f1f707.png",
+      "operation": "verify_outliner_trace",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {
+        "polygons": [
+          [
+            [
+              190,
+              70
+            ],
+            [
+              240,
+              70
+            ],
+            [
+              240,
+              100
+            ],
+            [
+              190,
+              100
+            ],
+            [
+              190,
+              70
+            ]
+          ]
+        ],
+        "holes": [],
+        "traceTurtle": [
+          {
+            "op": "move",
+            "x": 297,
+            "y": 109
+          },
+          {
+            "op": "line",
+            "x": 375,
+            "y": 109
+          },
+          {
+            "op": "line",
+            "x": 375,
+            "y": 156
+          },
+          {
+            "op": "line",
+            "x": 297,
+            "y": 156
+          },
+          {
+            "op": "line",
+            "x": 297,
+            "y": 109
+          }
+        ],
+        "geometryHash": "58b950f1f7072ebd6472c98e39d0ec0508b547e339008afda4bf35cae1e3d6da",
+        "traceAgreement": 1.0,
+        "boundaryCoverage": 1.0
+      },
+      "createdAt": "2026-09-02T02:48:12.875968Z"
+    }
+  ]
+}

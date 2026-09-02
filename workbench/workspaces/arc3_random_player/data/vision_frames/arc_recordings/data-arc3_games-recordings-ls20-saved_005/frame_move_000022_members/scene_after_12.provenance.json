@@ -1,0 +1,145 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000022_members/scene_after_12.png",
+  "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000022_members/scene_after_12.provenance.json",
+  "createdAt": "2026-09-02T04:43:06.110765Z",
+  "operation": "remove_object_from_scene",
+  "dimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "originalDimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "root": {
+    "firstSeenImage": "data/arc3_games/recordings/ls20/saved_005/21/image.png",
+    "dimensions": {
+      "width": 640,
+      "height": 640
+    }
+  },
+  "parent": {
+    "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000022.png",
+    "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000022.provenance.json"
+  },
+  "source": {
+    "objectName": "top_left_maroon_sign_glyph",
+    "cutout": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000022_members/cut_12_top_left_maroon_sign_gly.png",
+    "fillInstructions": {
+      "description": "The removed maroon glyph area should be filled by the sign tile’s interior light-gray fill, continuous with the surrounding tile pixels around the glyph. No separate background object is exposed; this is an in-tile replacement.",
+      "colors": [
+        "#B6B6B6"
+      ],
+      "continueEdges": [
+        "Continue the uniform top-left sign tile interior color across the full glyph cutout",
+        "Preserve the straight pixel-grid transitions at the glyph boundary so the tile remains a flat square fill"
+      ],
+      "texture": "Flat pixel-art solid fill (no gradient, no pattern)."
+    }
+  },
+  "transform": {
+    "fill": "median",
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000022.png",
+      "outlineSourceImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000022.png",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "verified": true,
+      "verificationImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000022_outlines/verify_top_left_maroon_sign_gly_177c9f93e676.png",
+      "geometryHash": "177c9f93e67619333dc637d763fecfa1ecfa08c44cfaaf9510329ee213cd235f",
+      "traceVerified": true
+    },
+    "removedBox": [
+      99,
+      59,
+      133,
+      93
+    ],
+    "maskScale": 4,
+    "fillInstructions": {
+      "description": "The removed maroon glyph area should be filled by the sign tile’s interior light-gray fill, continuous with the surrounding tile pixels around the glyph. No separate background object is exposed; this is an in-tile replacement.",
+      "colors": [
+        "#B6B6B6"
+      ],
+      "continueEdges": [
+        "Continue the uniform top-left sign tile interior color across the full glyph cutout",
+        "Preserve the straight pixel-grid transitions at the glyph boundary so the tile remains a flat square fill"
+      ],
+      "texture": "Flat pixel-art solid fill (no gradient, no pattern)."
+    },
+    "imageGeneration": {
+      "renderer": "median"
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/arc3_games/recordings/ls20/saved_005/21/image.png",
+      "operation": "legacy_source",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:19.137992Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000022.png",
+      "operation": "import_arc_playback_frame",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:19.150731Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000022_members/scene_after_12.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000022.png",
+          "outlineSourceImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000022.png",
+          "dimensions": {
+            "width": 640,
+            "height": 640
+          },
+          "verified": true,
+          "verificationImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000022_outlines/verify_top_left_maroon_sign_gly_177c9f93e676.png",
+          "geometryHash": "177c9f93e67619333dc637d763fecfa1ecfa08c44cfaaf9510329ee213cd235f",
+          "traceVerified": true
+        },
+        "removedBox": [
+          99,
+          59,
+          133,
+          93
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "The removed maroon glyph area should be filled by the sign tile’s interior light-gray fill, continuous with the surrounding tile pixels around the glyph. No separate background object is exposed; this is an in-tile replacement.",
+          "colors": [
+            "#B6B6B6"
+          ],
+          "continueEdges": [
+            "Continue the uniform top-left sign tile interior color across the full glyph cutout",
+            "Preserve the straight pixel-grid transitions at the glyph boundary so the tile remains a flat square fill"
+          ],
+          "texture": "Flat pixel-art solid fill (no gradient, no pattern)."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-02T04:43:06.110765Z"
+    }
+  ]
+}

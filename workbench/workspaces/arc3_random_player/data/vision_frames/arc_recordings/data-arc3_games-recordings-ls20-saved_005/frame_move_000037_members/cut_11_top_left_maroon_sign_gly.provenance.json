@@ -1,0 +1,185 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000037_members/cut_11_top_left_maroon_sign_gly.png",
+  "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000037_members/cut_11_top_left_maroon_sign_gly.provenance.json",
+  "createdAt": "2026-09-02T04:43:04.521144Z",
+  "operation": "extract_object_cutout",
+  "dimensions": {
+    "width": 24,
+    "height": 34
+  },
+  "originalDimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "root": {
+    "firstSeenImage": "data/arc3_games/recordings/ls20/saved_005/36/image.png",
+    "dimensions": {
+      "width": 640,
+      "height": 640
+    }
+  },
+  "parent": {
+    "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000037.png",
+    "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000037.provenance.json"
+  },
+  "source": {
+    "objectName": "top_left_maroon_sign_glyph"
+  },
+  "transform": {
+    "inputDimensions": {
+      "width": 640,
+      "height": 640
+    },
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000037.png",
+      "outlineSourceImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000037.png",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "verified": true,
+      "verificationImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000037_outlines/verify_top_left_maroon_sign_gly_866779089b72.png",
+      "geometryHash": "866779089b72288115e89be76dcf0acbe9b8e9cb747b32f4060cff3b615d12a2",
+      "traceVerified": true
+    },
+    "cropBox": [
+      99,
+      59,
+      123,
+      93
+    ],
+    "maskScale": 4,
+    "polygons": [
+      [
+        [
+          100,
+          60
+        ],
+        [
+          120,
+          60
+        ],
+        [
+          120,
+          90
+        ],
+        [
+          100,
+          90
+        ],
+        [
+          100,
+          80
+        ],
+        [
+          110,
+          80
+        ],
+        [
+          110,
+          70
+        ],
+        [
+          100,
+          70
+        ]
+      ]
+    ],
+    "holes": []
+  },
+  "lineage": [
+    {
+      "image": "data/arc3_games/recordings/ls20/saved_005/36/image.png",
+      "operation": "legacy_source",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:19.971272Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000037.png",
+      "operation": "import_arc_playback_frame",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:19.984291Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000037_members/cut_11_top_left_maroon_sign_gly.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 24,
+        "height": 34
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 640,
+          "height": 640
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000037.png",
+          "outlineSourceImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000037.png",
+          "dimensions": {
+            "width": 640,
+            "height": 640
+          },
+          "verified": true,
+          "verificationImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000037_outlines/verify_top_left_maroon_sign_gly_866779089b72.png",
+          "geometryHash": "866779089b72288115e89be76dcf0acbe9b8e9cb747b32f4060cff3b615d12a2",
+          "traceVerified": true
+        },
+        "cropBox": [
+          99,
+          59,
+          123,
+          93
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              100,
+              60
+            ],
+            [
+              120,
+              60
+            ],
+            [
+              120,
+              90
+            ],
+            [
+              100,
+              90
+            ],
+            [
+              100,
+              80
+            ],
+            [
+              110,
+              80
+            ],
+            [
+              110,
+              70
+            ],
+            [
+              100,
+              70
+            ]
+          ]
+        ],
+        "holes": []
+      },
+      "createdAt": "2026-09-02T04:43:04.521144Z"
+    }
+  ]
+}

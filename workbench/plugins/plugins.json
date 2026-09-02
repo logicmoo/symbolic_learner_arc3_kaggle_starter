@@ -44,6 +44,11 @@
       "path": "coplex_stdpy/plugin.json",
       "scan": "startup",
       "enabled": true
+    },
+    "codex_cli": {
+      "path": "codex_cli/plugin.json",
+      "scan": "startup",
+      "enabled": true
     }
   },
   "pluginsFound_Help": "Auto-maintained: every discovered plugin is recorded here. Set enabled: false (or scan: disabled) to keep one unloaded; scan says when to rescan its config."

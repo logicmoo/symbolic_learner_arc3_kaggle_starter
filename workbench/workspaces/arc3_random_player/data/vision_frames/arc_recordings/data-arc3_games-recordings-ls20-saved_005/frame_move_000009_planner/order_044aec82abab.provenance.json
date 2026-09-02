@@ -1,0 +1,389 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000009_planner/order_044aec82abab.png",
+  "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000009_planner/order_044aec82abab.provenance.json",
+  "createdAt": "2026-09-02T01:18:00.071382Z",
+  "operation": "visualize_planner_order",
+  "dimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "originalDimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "root": {
+    "firstSeenImage": "data/arc3_games/recordings/ls20/saved_005/8/image.png",
+    "dimensions": {
+      "width": 640,
+      "height": 640
+    }
+  },
+  "parent": {
+    "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000009.png",
+    "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000009.provenance.json"
+  },
+  "source": {},
+  "transform": {
+    "labels": [
+      {
+        "object": "top_left_maroon_glyph",
+        "number": 1,
+        "point": [
+          108,
+          70
+        ]
+      },
+      {
+        "object": "center_mini_tile_black_mark",
+        "number": 2,
+        "point": [
+          360,
+          316
+        ]
+      },
+      {
+        "object": "center_mini_tile_maroon_mark",
+        "number": 3,
+        "point": [
+          370,
+          324
+        ]
+      },
+      {
+        "object": "lower_mid_green_center",
+        "number": 4,
+        "point": [
+          360,
+          520
+        ]
+      },
+      {
+        "object": "bottom_left_white_glyph",
+        "number": 5,
+        "point": [
+          50,
+          580
+        ]
+      },
+      {
+        "object": "top_left_gray_tile",
+        "number": 6,
+        "point": [
+          90,
+          50
+        ]
+      },
+      {
+        "object": "upper_left_gray_cap",
+        "number": 7,
+        "point": [
+          200,
+          155
+        ]
+      },
+      {
+        "object": "upper_left_maroon_block",
+        "number": 8,
+        "point": [
+          200,
+          180
+        ]
+      },
+      {
+        "object": "blue_accent_segments",
+        "number": 9,
+        "point": [
+          495,
+          195
+        ]
+      },
+      {
+        "object": "center_black_marker",
+        "number": 10,
+        "point": [
+          265,
+          320
+        ]
+      },
+      {
+        "object": "center_cyan_mini_tile",
+        "number": 11,
+        "point": [
+          345,
+          315
+        ]
+      },
+      {
+        "object": "lower_mid_gray_square",
+        "number": 12,
+        "point": [
+          355,
+          515
+        ]
+      },
+      {
+        "object": "bottom_right_cyan_square_1",
+        "number": 13,
+        "point": [
+          565,
+          620
+        ]
+      },
+      {
+        "object": "bottom_right_cyan_square_2",
+        "number": 14,
+        "point": [
+          595,
+          620
+        ]
+      },
+      {
+        "object": "bottom_right_cyan_square_3",
+        "number": 15,
+        "point": [
+          625,
+          620
+        ]
+      },
+      {
+        "object": "bottom_dark_ui_bar",
+        "number": 16,
+        "point": [
+          300,
+          620
+        ]
+      },
+      {
+        "object": "bottom_left_gray_tile",
+        "number": 17,
+        "point": [
+          20,
+          540
+        ]
+      },
+      {
+        "object": "main_green_maze_body",
+        "number": 18,
+        "point": [
+          300,
+          120
+        ]
+      },
+      {
+        "object": "left_gray_wall",
+        "number": 19,
+        "point": [
+          20,
+          200
+        ]
+      },
+      {
+        "object": "yellow_background",
+        "number": 20,
+        "point": [
+          45,
+          20
+        ]
+      }
+    ],
+    "plannerHash": "044aec82ababebf82aad46996916a003e9a6d2f002a252c292505ddf2e69fb2c"
+  },
+  "lineage": [
+    {
+      "image": "data/arc3_games/recordings/ls20/saved_005/8/image.png",
+      "operation": "legacy_source",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:18.560084Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000009.png",
+      "operation": "import_arc_playback_frame",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:18.574190Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000009_planner/order_044aec82abab.png",
+      "operation": "visualize_planner_order",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {
+        "labels": [
+          {
+            "object": "top_left_maroon_glyph",
+            "number": 1,
+            "point": [
+              108,
+              70
+            ]
+          },
+          {
+            "object": "center_mini_tile_black_mark",
+            "number": 2,
+            "point": [
+              360,
+              316
+            ]
+          },
+          {
+            "object": "center_mini_tile_maroon_mark",
+            "number": 3,
+            "point": [
+              370,
+              324
+            ]
+          },
+          {
+            "object": "lower_mid_green_center",
+            "number": 4,
+            "point": [
+              360,
+              520
+            ]
+          },
+          {
+            "object": "bottom_left_white_glyph",
+            "number": 5,
+            "point": [
+              50,
+              580
+            ]
+          },
+          {
+            "object": "top_left_gray_tile",
+            "number": 6,
+            "point": [
+              90,
+              50
+            ]
+          },
+          {
+            "object": "upper_left_gray_cap",
+            "number": 7,
+            "point": [
+              200,
+              155
+            ]
+          },
+          {
+            "object": "upper_left_maroon_block",
+            "number": 8,
+            "point": [
+              200,
+              180
+            ]
+          },
+          {
+            "object": "blue_accent_segments",
+            "number": 9,
+            "point": [
+              495,
+              195
+            ]
+          },
+          {
+            "object": "center_black_marker",
+            "number": 10,
+            "point": [
+              265,
+              320
+            ]
+          },
+          {
+            "object": "center_cyan_mini_tile",
+            "number": 11,
+            "point": [
+              345,
+              315
+            ]
+          },
+          {
+            "object": "lower_mid_gray_square",
+            "number": 12,
+            "point": [
+              355,
+              515
+            ]
+          },
+          {
+            "object": "bottom_right_cyan_square_1",
+            "number": 13,
+            "point": [
+              565,
+              620
+            ]
+          },
+          {
+            "object": "bottom_right_cyan_square_2",
+            "number": 14,
+            "point": [
+              595,
+              620
+            ]
+          },
+          {
+            "object": "bottom_right_cyan_square_3",
+            "number": 15,
+            "point": [
+              625,
+              620
+            ]
+          },
+          {
+            "object": "bottom_dark_ui_bar",
+            "number": 16,
+            "point": [
+              300,
+              620
+            ]
+          },
+          {
+            "object": "bottom_left_gray_tile",
+            "number": 17,
+            "point": [
+              20,
+              540
+            ]
+          },
+          {
+            "object": "main_green_maze_body",
+            "number": 18,
+            "point": [
+              300,
+              120
+            ]
+          },
+          {
+            "object": "left_gray_wall",
+            "number": 19,
+            "point": [
+              20,
+              200
+            ]
+          },
+          {
+            "object": "yellow_background",
+            "number": 20,
+            "point": [
+              45,
+              20
+            ]
+          }
+        ],
+        "plannerHash": "044aec82ababebf82aad46996916a003e9a6d2f002a252c292505ddf2e69fb2c"
+      },
+      "createdAt": "2026-09-02T01:18:00.071382Z"
+    }
+  ]
+}

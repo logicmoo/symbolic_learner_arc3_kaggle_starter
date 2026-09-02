@@ -1,0 +1,40 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/arc3_games/curated/SILO_1/parent_image.jpg",
+  "provenance": "data/arc3_games/curated/SILO_1/parent_image.provenance.json",
+  "createdAt": "2026-09-02T00:18:36.024826Z",
+  "operation": "legacy_source",
+  "dimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "originalDimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "root": {
+    "firstSeenImage": "data/arc3_games/curated/SILO_1/parent_image.jpg",
+    "dimensions": {
+      "width": 640,
+      "height": 640
+    }
+  },
+  "parent": null,
+  "source": {
+    "path": "data/arc3_games/curated/SILO_1/parent_image.jpg"
+  },
+  "transform": {},
+  "lineage": [
+    {
+      "image": "data/arc3_games/curated/SILO_1/parent_image.jpg",
+      "operation": "legacy_source",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T00:18:36.024826Z"
+    }
+  ]
+}

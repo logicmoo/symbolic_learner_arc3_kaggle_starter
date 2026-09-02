@@ -1,0 +1,549 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000032_planner/order_b354f313cf30.png",
+  "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000032_planner/order_b354f313cf30.provenance.json",
+  "createdAt": "2026-09-02T01:25:42.155448Z",
+  "operation": "visualize_planner_order",
+  "dimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "originalDimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "root": {
+    "firstSeenImage": "data/arc3_games/recordings/ls20/saved_005/31/image.png",
+    "dimensions": {
+      "width": 640,
+      "height": 640
+    }
+  },
+  "parent": {
+    "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000032.png",
+    "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000032.provenance.json"
+  },
+  "source": {},
+  "transform": {
+    "labels": [
+      {
+        "object": "center_panel_black_mark",
+        "number": 1,
+        "point": [
+          352,
+          320
+        ]
+      },
+      {
+        "object": "center_panel_red_mark",
+        "number": 2,
+        "point": [
+          361,
+          321
+        ]
+      },
+      {
+        "object": "upper_left_green_center_dot",
+        "number": 3,
+        "point": [
+          202,
+          163
+        ]
+      },
+      {
+        "object": "lower_center_green_center_dot",
+        "number": 4,
+        "point": [
+          352,
+          523
+        ]
+      },
+      {
+        "object": "top_left_red_glyph",
+        "number": 5,
+        "point": [
+          101,
+          62
+        ]
+      },
+      {
+        "object": "bottom_left_red_glyph",
+        "number": 6,
+        "point": [
+          31,
+          551
+        ]
+      },
+      {
+        "object": "upper_left_gray_square_detail",
+        "number": 7,
+        "point": [
+          200,
+          160
+        ]
+      },
+      {
+        "object": "lower_center_gray_square_detail",
+        "number": 8,
+        "point": [
+          350,
+          520
+        ]
+      },
+      {
+        "object": "center_cyan_frame_panel",
+        "number": 9,
+        "point": [
+          346,
+          321
+        ]
+      },
+      {
+        "object": "mid_left_black_marker",
+        "number": 10,
+        "point": [
+          255,
+          330
+        ]
+      },
+      {
+        "object": "upper_right_blue_strip",
+        "number": 11,
+        "point": [
+          448,
+          193
+        ]
+      },
+      {
+        "object": "center_vertical_blue_strip",
+        "number": 12,
+        "point": [
+          332,
+          230
+        ]
+      },
+      {
+        "object": "right_mid_vertical_blue_strip",
+        "number": 13,
+        "point": [
+          492,
+          260
+        ]
+      },
+      {
+        "object": "center_right_horizontal_blue_strip",
+        "number": 14,
+        "point": [
+          400,
+          302
+        ]
+      },
+      {
+        "object": "left_mid_horizontal_blue_strip",
+        "number": 15,
+        "point": [
+          200,
+          342
+        ]
+      },
+      {
+        "object": "left_mid_vertical_blue_strip",
+        "number": 16,
+        "point": [
+          82,
+          360
+        ]
+      },
+      {
+        "object": "center_lower_vertical_blue_strip",
+        "number": 17,
+        "point": [
+          292,
+          410
+        ]
+      },
+      {
+        "object": "right_lower_vertical_blue_strip",
+        "number": 18,
+        "point": [
+          492,
+          410
+        ]
+      },
+      {
+        "object": "left_lower_gray_cap",
+        "number": 19,
+        "point": [
+          95,
+          405
+        ]
+      },
+      {
+        "object": "left_lower_maroon_block",
+        "number": 20,
+        "point": [
+          95,
+          425
+        ]
+      },
+      {
+        "object": "top_left_gray_sign_tile",
+        "number": 21,
+        "point": [
+          100,
+          60
+        ]
+      },
+      {
+        "object": "bottom_left_gray_tile",
+        "number": 22,
+        "point": [
+          40,
+          560
+        ]
+      },
+      {
+        "object": "bottom_ui_cyan_square_1",
+        "number": 23,
+        "point": [
+          565,
+          620
+        ]
+      },
+      {
+        "object": "bottom_ui_cyan_square_2",
+        "number": 24,
+        "point": [
+          595,
+          620
+        ]
+      },
+      {
+        "object": "bottom_ui_cyan_square_3",
+        "number": 25,
+        "point": [
+          625,
+          620
+        ]
+      },
+      {
+        "object": "bottom_ui_dark_bar",
+        "number": 26,
+        "point": [
+          450,
+          620
+        ]
+      },
+      {
+        "object": "bottom_ui_green_segment",
+        "number": 27,
+        "point": [
+          200,
+          620
+        ]
+      },
+      {
+        "object": "main_green_creature_body",
+        "number": 28,
+        "point": [
+          300,
+          180
+        ]
+      },
+      {
+        "object": "left_gray_wall",
+        "number": 29,
+        "point": [
+          20,
+          250
+        ]
+      },
+      {
+        "object": "yellow_background",
+        "number": 30,
+        "point": [
+          600,
+          20
+        ]
+      }
+    ],
+    "plannerHash": "b354f313cf30c5de3292a13b5ae2c8a077e7c7756fe6f79f2ac73a190f2369d7"
+  },
+  "lineage": [
+    {
+      "image": "data/arc3_games/recordings/ls20/saved_005/31/image.png",
+      "operation": "legacy_source",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:19.552251Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000032.png",
+      "operation": "import_arc_playback_frame",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:19.561881Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000032_planner/order_b354f313cf30.png",
+      "operation": "visualize_planner_order",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {
+        "labels": [
+          {
+            "object": "center_panel_black_mark",
+            "number": 1,
+            "point": [
+              352,
+              320
+            ]
+          },
+          {
+            "object": "center_panel_red_mark",
+            "number": 2,
+            "point": [
+              361,
+              321
+            ]
+          },
+          {
+            "object": "upper_left_green_center_dot",
+            "number": 3,
+            "point": [
+              202,
+              163
+            ]
+          },
+          {
+            "object": "lower_center_green_center_dot",
+            "number": 4,
+            "point": [
+              352,
+              523
+            ]
+          },
+          {
+            "object": "top_left_red_glyph",
+            "number": 5,
+            "point": [
+              101,
+              62
+            ]
+          },
+          {
+            "object": "bottom_left_red_glyph",
+            "number": 6,
+            "point": [
+              31,
+              551
+            ]
+          },
+          {
+            "object": "upper_left_gray_square_detail",
+            "number": 7,
+            "point": [
+              200,
+              160
+            ]
+          },
+          {
+            "object": "lower_center_gray_square_detail",
+            "number": 8,
+            "point": [
+              350,
+              520
+            ]
+          },
+          {
+            "object": "center_cyan_frame_panel",
+            "number": 9,
+            "point": [
+              346,
+              321
+            ]
+          },
+          {
+            "object": "mid_left_black_marker",
+            "number": 10,
+            "point": [
+              255,
+              330
+            ]
+          },
+          {
+            "object": "upper_right_blue_strip",
+            "number": 11,
+            "point": [
+              448,
+              193
+            ]
+          },
+          {
+            "object": "center_vertical_blue_strip",
+            "number": 12,
+            "point": [
+              332,
+              230
+            ]
+          },
+          {
+            "object": "right_mid_vertical_blue_strip",
+            "number": 13,
+            "point": [
+              492,
+              260
+            ]
+          },
+          {
+            "object": "center_right_horizontal_blue_strip",
+            "number": 14,
+            "point": [
+              400,
+              302
+            ]
+          },
+          {
+            "object": "left_mid_horizontal_blue_strip",
+            "number": 15,
+            "point": [
+              200,
+              342
+            ]
+          },
+          {
+            "object": "left_mid_vertical_blue_strip",
+            "number": 16,
+            "point": [
+              82,
+              360
+            ]
+          },
+          {
+            "object": "center_lower_vertical_blue_strip",
+            "number": 17,
+            "point": [
+              292,
+              410
+            ]
+          },
+          {
+            "object": "right_lower_vertical_blue_strip",
+            "number": 18,
+            "point": [
+              492,
+              410
+            ]
+          },
+          {
+            "object": "left_lower_gray_cap",
+            "number": 19,
+            "point": [
+              95,
+              405
+            ]
+          },
+          {
+            "object": "left_lower_maroon_block",
+            "number": 20,
+            "point": [
+              95,
+              425
+            ]
+          },
+          {
+            "object": "top_left_gray_sign_tile",
+            "number": 21,
+            "point": [
+              100,
+              60
+            ]
+          },
+          {
+            "object": "bottom_left_gray_tile",
+            "number": 22,
+            "point": [
+              40,
+              560
+            ]
+          },
+          {
+            "object": "bottom_ui_cyan_square_1",
+            "number": 23,
+            "point": [
+              565,
+              620
+            ]
+          },
+          {
+            "object": "bottom_ui_cyan_square_2",
+            "number": 24,
+            "point": [
+              595,
+              620
+            ]
+          },
+          {
+            "object": "bottom_ui_cyan_square_3",
+            "number": 25,
+            "point": [
+              625,
+              620
+            ]
+          },
+          {
+            "object": "bottom_ui_dark_bar",
+            "number": 26,
+            "point": [
+              450,
+              620
+            ]
+          },
+          {
+            "object": "bottom_ui_green_segment",
+            "number": 27,
+            "point": [
+              200,
+              620
+            ]
+          },
+          {
+            "object": "main_green_creature_body",
+            "number": 28,
+            "point": [
+              300,
+              180
+            ]
+          },
+          {
+            "object": "left_gray_wall",
+            "number": 29,
+            "point": [
+              20,
+              250
+            ]
+          },
+          {
+            "object": "yellow_background",
+            "number": 30,
+            "point": [
+              600,
+              20
+            ]
+          }
+        ],
+        "plannerHash": "b354f313cf30c5de3292a13b5ae2c8a077e7c7756fe6f79f2ac73a190f2369d7"
+      },
+      "createdAt": "2026-09-02T01:25:42.155448Z"
+    }
+  ]
+}
