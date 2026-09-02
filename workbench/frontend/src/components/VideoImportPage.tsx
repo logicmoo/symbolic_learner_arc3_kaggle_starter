@@ -5243,26 +5243,32 @@ export function VideoImportPage({
   const undiscoveredSelectedRoots = selectedRootInventories.filter((inventory) => !inventory).length;
   const schedulerPending = (type: keyof LlmCallConcurrency) =>
     llmSchedulerRef.current.waiters.filter((waiter) => waiter.type === type).length;
-  const llmStageProgress: Record<keyof LlmCallConcurrency, { pending: number; completed: number }> = {
+  const llmStageProgress: Record<keyof LlmCallConcurrency, { waiting: number; pending: number; completed: number }> = {
     describer: {
-      pending: schedulerPending("describer") + undiscoveredSelectedRoots + runnableMemberInventories.filter((inventory) =>
+      waiting: schedulerPending("describer") + undiscoveredSelectedRoots + runnableMemberInventories.filter((inventory) =>
         !inventory.descriptionOutput && inventory.status !== "describing" && inventory.status !== "ordering"
+      ).length,
+      pending: undiscoveredSelectedRoots + runnableMemberInventories.filter((inventory) =>
+        !inventory.descriptionOutput || inventory.descriptionOutput.startsWith("ERROR:")
       ).length,
       completed: runnableMemberInventories.filter((inventory) =>
         Boolean(inventory.descriptionOutput) && !inventory.descriptionOutput.startsWith("ERROR:")
       ).length,
     },
     planner: {
-      pending: schedulerPending("planner") + runnableMemberInventories.filter((inventory) =>
+      waiting: schedulerPending("planner") + runnableMemberInventories.filter((inventory) =>
         Boolean(inventory.descriptionOutput)
         && inventory.things.length > 0
         && !hasVisualizedPlan(inventory)
         && inventory.status !== "ordering"
       ).length,
+      pending: runnableMemberInventories.filter((inventory) =>
+        inventory.things.length > 0 && !inventory.orderOutput && inventory.status !== "ordering"
+      ).length,
       completed: runnableMemberInventories.filter((inventory) => Boolean(inventory.orderOutput)).length,
     },
     outliner: {
-      pending: schedulerPending("outliner") + runnableMemberInventories.reduce((count, inventory) => {
+      waiting: schedulerPending("outliner") + runnableMemberInventories.reduce((count, inventory) => {
         if (!hasVisualizedPlan(inventory)) return count;
         return count + inventory.things.filter((thing) =>
           !thing.outputImages?.length
@@ -5271,28 +5277,36 @@ export function VideoImportPage({
           && retryReady(thing.outlineRetryAfter)
         ).length;
       }, 0),
+      pending: runnableMemberInventories.reduce((count, inventory) =>
+        count + inventory.things.filter((thing) => !thing.outputImages?.length && !hasAlignedOutline(thing)).length, 0),
       completed: runnableMemberInventories.reduce((count, inventory) =>
         count + inventory.things.filter(hasAlignedOutline).length, 0),
     },
     extractor: {
-      pending: schedulerPending("extractor") + runnableMemberInventories.filter((inventory) => {
+      waiting: schedulerPending("extractor") + runnableMemberInventories.filter((inventory) => {
         if (!hasVisualizedPlan(inventory) || !inventoryOutlinesReady(inventory)) return false;
         const next = nextUnextractedThing(inventory)?.thing;
         return Boolean(next && next.status !== "extracting" && retryReady(next.retryAfter));
       }).length,
+      pending: runnableMemberInventories.reduce((count, inventory) =>
+        count + inventory.things.filter((thing) => !thing.outputImages?.length).length, 0),
       completed: runnableMemberInventories.reduce((count, inventory) =>
         count + inventory.things.filter((thing) => Boolean(thing.outputImages?.length)).length, 0),
     },
     turtle: {
-      pending: schedulerPending("turtle") + turtleLeafCandidates.filter((candidate) => {
+      waiting: schedulerPending("turtle") + turtleLeafCandidates.filter((candidate) => {
         const artifact = turtleArtifacts[candidate.sourceImage];
         return !artifact || (artifact.status !== "generating" && artifact.status === "failed" && artifact.failedStage === "gen");
       }).length,
+      pending: turtleLeafCandidates.filter((candidate) => !turtleArtifacts[candidate.sourceImage]?.rawProgram).length,
       completed: Object.values(turtleArtifacts).filter((artifact) => Boolean(artifact.rawProgram)).length,
     },
     turtlePng: {
-      pending: schedulerPending("turtlePng") + Object.values(turtleArtifacts).filter((artifact) =>
+      waiting: schedulerPending("turtlePng") + Object.values(turtleArtifacts).filter((artifact) =>
         Boolean(artifact.rawProgram) && !artifact.renderedImage && artifact.status !== "drawing"
+      ).length,
+      pending: Object.values(turtleArtifacts).filter((artifact) =>
+        Boolean(artifact.rawProgram) && !artifact.renderedImage
       ).length,
       completed: Object.values(turtleArtifacts).filter((artifact) => Boolean(artifact.renderedImage)).length,
     },
@@ -6211,22 +6225,11 @@ export function VideoImportPage({
                 <em>{llmSchedulerRef.current.byType[type]} ACTIVE WORKER{llmSchedulerRef.current.byType[type] === 1 ? "" : "S"}</em>
               </button>
               <div className="video-import-llm-call-metrics" aria-label={`${label} job metrics`}>
-                <span title="Jobs whose dependencies are satisfied and which are ready, but still waiting for a worker."><b>{progress.pending}</b><small>PENDING</small></span>
+                <span title="Jobs whose dependencies are satisfied right now and are ready to run (awaiting a free worker)."><b>{progress.waiting}</b><small>WAITING</small></span>
+                <span title="Total jobs still left for this stage if every dependency were already satisfied."><b>{progress.pending}</b><small>PENDING</small></span>
                 <span><b>{completed}</b><small>COMPLETED</small></span>
                 <span title={metric.completed ? `${Math.round(averageMs)}ms average across ${metric.completed} completed job(s)` : "No completed jobs yet"}><b>{formatJobDuration(averageMs)}</b><small>AVG / JOB</small></span>
               </div>
-              <label>model
-                <ColoredTagCombobox
-                  value={model}
-                  ids={videoModelIds}
-                  ariaLabel={`${label} model`}
-                  allowNone
-                  noneLabel={`<use global${allCallsModel ? ` · ${allCallsModel}` : ""}>`}
-                  describe={describeVideoModel}
-                  onOpen={() => setExpandedCallPrompt(type)}
-                  onChange={(value) => { touchedRef.current = true; setModel(value); setExpandedCallPrompt(type); }}
-                />
-              </label>
               <label>max processes
                 <select value={concurrency ?? ""} onFocus={() => setExpandedCallPrompt(type)} onPointerDown={() => setExpandedCallPrompt(type)} onChange={(event) => { setCallConcurrency(type, event.target.value ? Number(event.target.value) : null); setExpandedCallPrompt(type); }}>
                   <option value="">&lt;auto · reserve cross-stage capacity&gt;</option>
@@ -6243,6 +6246,18 @@ export function VideoImportPage({
                   <option value="workspace">workspace-edited {type} prompt</option>
                   <option value="default">built-in default {type} prompt</option>
                 </select>
+              </label>
+              <label>model
+                <ColoredTagCombobox
+                  value={model}
+                  ids={videoModelIds}
+                  ariaLabel={`${label} model`}
+                  allowNone
+                  noneLabel={`<use global${allCallsModel ? ` · ${allCallsModel}` : ""}>`}
+                  describe={describeVideoModel}
+                  onOpen={() => setExpandedCallPrompt(type)}
+                  onChange={(value) => { touchedRef.current = true; setModel(value); setExpandedCallPrompt(type); }}
+                />
               </label>
             </div>
             );
