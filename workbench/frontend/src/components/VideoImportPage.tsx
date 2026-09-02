@@ -2130,11 +2130,13 @@ export function VideoImportPage({
     setSelectedWorkflowGalleryPaths(new Set());
     say(`Extracted Images source: ${source.label}`);
   };
-  const selectExtractedImageSource = (sourceId: string) => {
+  const selectExtractedImageSource = (sourceId: string, force = false) => {
     if (!sourceId) return;
     // Already-loaded sources (video extraction, previously imported curated /
-    // recording / stream frames) switch instantly without re-importing.
-    if (frameSources.some((candidate) => candidate.id === sourceId)) {
+    // recording / stream frames) switch instantly without re-importing --
+    // unless force is set (reinitialize), which always re-fetches so a source
+    // whose cached frame list is empty still repopulates the gallery.
+    if (!force && frameSources.some((candidate) => candidate.id === sourceId)) {
       selectFrameSource(sourceId);
       return;
     }
@@ -2174,9 +2176,10 @@ export function VideoImportPage({
     setGallery(null);
     setModelResponseCache({});
     setSelectedWorkflowGalleryPaths(new Set());
-    // (Re)load the images from the selected source.
-    selectExtractedImageSource(selectedFrameSourceId);
-    say(`reinitialized workflow: cleared caches and reloaded ${videoLabel} images`);
+    // (Re)load the images from the selected source, forcing a re-fetch so a
+    // source whose cached frame list is empty still repopulates the gallery.
+    selectExtractedImageSource(selectedFrameSourceId, true);
+    say(`reinitialized workflow: cleared caches and reloading ${videoLabel} images`);
   };
   // Option ids for the colored source combobox, in display order. The remembered
   // selection is always kept available so it survives reloads even if its
