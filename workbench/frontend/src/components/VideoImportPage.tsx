@@ -399,7 +399,7 @@ const describeTotalConcurrency = (id: string): ColoredTagDescription => {
   const n = Number(id) || 1;
   const t = Math.max(0, Math.min(1, (n - 1) / 49));
   const lightness = Math.round(84 - t * 38); // 1 -> ~84% (light red), 50 -> ~46% (reddest)
-  return { label: id, groupKey: "0", groupLabel: "TOTAL WORKERS", tags: [], rowColor: `hsl(0, 90%, ${lightness}%)` };
+  return { label: id, groupKey: "0", groupLabel: "TOTAL WORKERS", tags: [], rowColor: `hsl(0, 90%, ${lightness}%)`, rowTextColor: lightness > 58 ? "#3a0a0a" : "#ffffff" };
 };
 const emptyLlmCallMetrics = (): LlmCallMetrics => ({
   describer: { completed: 0, totalDurationMs: 0 },
