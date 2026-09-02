@@ -12,19 +12,20 @@
 /* Contained top bar: page name + long text (<=2 rows) over the subview
    buttons laid out as a full-width grid (5 buttons -> 3 rows, wide as can be). */
 .video-import-topbar {
-  display: grid; gap: 6px;
+  display: grid; gap: 4px;
   margin: 0 0 2px; padding: 6px 8px;
   border: 1px solid var(--line, #2a3742); border-radius: 6px;
   background: #071016;
 }
 .video-import-topbar-head {
-  margin: 0;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-  font: 400 10px/1.35 ui-monospace, monospace; color: #8395a0;
+  margin: 0; display: flex; flex-direction: column; gap: 1px;
 }
 .video-import-topbar-name {
-  font-weight: 700; font-size: 12px; letter-spacing: .04em;
-  color: #cfe0e6; margin-right: 6px;
+  font-weight: 700; font-size: 12px; letter-spacing: .04em; color: #cfe0e6;
+}
+.video-import-topbar-desc {
+  font: 400 10px/1.3 ui-monospace, monospace; color: #8395a0;
+  display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
 }
 .video-import-human-nav {
   display: flex;
