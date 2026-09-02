@@ -556,6 +556,9 @@ footer .footer-status {
 /* Compact page banner shared across all pages — ~1/3 of the original height.
    These override the base .resource-heading rules above (equal specificity,
    later in the cascade). */
+/* Pull page content (incl. the banner) up toward the nav/siblings — ~2/3 less
+   dead space at the top. */
+.resource-view { padding-top: 9px; }
 /* Compact contained page banner across all pages (matches the Video Import bar):
    eyebrow · title on line 1, description on line 2, same small size. Content stays
    per-page; this only standardizes size and layout. */
