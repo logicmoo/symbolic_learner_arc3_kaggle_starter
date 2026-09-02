@@ -392,8 +392,8 @@ const describeConcurrencyOption = (id: string): ColoredTagDescription => {
   const n = Number(id) || 1;
   const t = Math.max(0, Math.min(1, (n - 1) / (CONCURRENCY_MAX_FIXED - 1)));
   const lightness = Math.round(84 - t * 38); // 1 -> ~84% (light red), 19 -> ~46% (reddest)
-  const rowColor = `hsl(0, 90%, ${lightness}%)`;
-  return { label: `${n} worker${n === 1 ? "" : "s"}`, groupKey: "1-count", groupLabel: "FIXED MAX", tags: [{ text: String(n), color: lightness > 60 ? "#7a0f0f" : "#ffd9d9" }], rowColor, rowTextColor: lightness > 60 ? "#3a0a0a" : "#ffffff" };
+  const red = `hsl(0, 90%, ${lightness}%)`;
+  return { label: `${n} worker${n === 1 ? "" : "s"}`, groupKey: "1-count", groupLabel: "FIXED MAX", tags: [{ text: String(n), color: red }], rowColor: red, rowTextColor: lightness > 60 ? "#3a0a0a" : "#ffffff" };
 };
 const emptyLlmCallMetrics = (): LlmCallMetrics => ({
   describer: { completed: 0, totalDurationMs: 0 },
@@ -6273,7 +6273,7 @@ export function VideoImportPage({
                     ids={CONCURRENCY_OPTION_IDS}
                     ariaLabel={`${label} max processes`}
                     describe={describeConcurrencyOption}
-                    closedWidth="11ch"
+                    closedWidth="7ch"
                     openWidth="30ch"
                     closedShow={{ tags: true }}
                     onOpen={() => setExpandedCallPrompt(type)}
