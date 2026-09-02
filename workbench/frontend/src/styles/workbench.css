@@ -556,10 +556,25 @@ footer .footer-status {
 /* Compact page banner shared across all pages — ~1/3 of the original height.
    These override the base .resource-heading rules above (equal specificity,
    later in the cascade). */
-.resource-heading { margin: 0 auto 5px; align-items: center; }
-.resource-heading > div > span { font-size: 7px; }
+/* Compact contained page banner across all pages (matches the Video Import bar):
+   eyebrow · title on line 1, description on line 2, same small size. Content stays
+   per-page; this only standardizes size and layout. */
+.resource-heading {
+  max-width: 950px; margin: 0 auto 8px; padding: 6px 10px;
+  border: 1px solid #263945; border-radius: 6px; background: #071016;
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+}
+.resource-heading > div {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; min-width: 0;
+}
+.resource-heading > div > span {
+  font: 700 8px ui-monospace, monospace; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--cyan); flex: 0 0 auto;
+}
+.resource-heading > div > span::after { content: "·"; color: #4b5b66; margin-left: 6px; }
 .resource-heading h1 { font: 500 12px/1.1 Georgia, serif; margin: 0; }
 .resource-heading p {
-  font-size: 9px; line-height: 1.25;
+  flex-basis: 100%; width: 100%; margin: 0;
+  font-size: 9px; line-height: 1.25; color: #718793;
   display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
 }
