@@ -394,6 +394,8 @@ const describeConcurrencyOption = (id: string): ColoredTagDescription => {
   const lightness = Math.round(84 - t * 38); // 1 -> ~84% (light red), 19 -> ~46% (reddest)
   return { label: `${n} worker${n === 1 ? "" : "s"}`, groupKey: "1-count", groupLabel: "FIXED MAX", tags: [{ text: String(n), color: "var(--text)" }], rowColor: `hsl(0, 90%, ${lightness}%)` };
 };
+const TOTAL_CONCURRENCY_IDS = Array.from({ length: 50 }, (_, index) => String(index + 1));
+const describeTotalConcurrency = (id: string): ColoredTagDescription => ({ label: id, groupKey: "0", groupLabel: "TOTAL WORKERS", tags: [] });
 const emptyLlmCallMetrics = (): LlmCallMetrics => ({
   describer: { completed: 0, totalDurationMs: 0 },
   planner: { completed: 0, totalDurationMs: 0 },
@@ -6213,9 +6215,14 @@ export function VideoImportPage({
             />
           </label>
           <label>total max processes
-            <select value={totalLlmConcurrency} onChange={(event) => setTotalLlmConcurrency(Number(event.target.value))}>
-              {Array.from({ length: 50 }, (_, index) => index + 1).map((value) => <option key={value} value={value}>{value}</option>)}
-            </select>
+            <ColoredTagCombobox
+              value={String(totalLlmConcurrency)}
+              ids={TOTAL_CONCURRENCY_IDS}
+              ariaLabel="Total max processes"
+              describe={describeTotalConcurrency}
+              openWidth="12ch"
+              onChange={(value) => setTotalLlmConcurrency(Number(value) || 1)}
+            />
           </label>
           <button
             type="button"
@@ -6281,15 +6288,18 @@ export function VideoImportPage({
                 </div>
               </label>
               <label>prompt
-                <select
+                <ColoredTagCombobox
                   value={promptSelection}
-                  onFocus={() => setExpandedCallPrompt(type)}
-                  onPointerDown={() => setExpandedCallPrompt(type)}
-                  onChange={(event) => { setPromptSelection(event.target.value as PromptSelection); setExpandedCallPrompt(type); }}
-                >
-                  <option value="workspace">workspace-edited {type} prompt</option>
-                  <option value="default">built-in default {type} prompt</option>
-                </select>
+                  ids={["workspace", "default"]}
+                  ariaLabel={`${label} prompt`}
+                  describe={(id) => id === "workspace"
+                    ? { label: `workspace-edited ${type} prompt`, groupKey: "0", groupLabel: "PROMPT", tags: [{ text: "ws", color: "#27dcc2" }] }
+                    : { label: `built-in default ${type} prompt`, groupKey: "0", groupLabel: "PROMPT", tags: [{ text: "default", color: "#8aa0aa" }] }}
+                  closedShow={{ label: true }}
+                  openWidth="26ch"
+                  onOpen={() => setExpandedCallPrompt(type)}
+                  onChange={(value) => { setPromptSelection(value as PromptSelection); setExpandedCallPrompt(type); }}
+                />
               </label>
               <label>model
                 <ColoredTagCombobox
