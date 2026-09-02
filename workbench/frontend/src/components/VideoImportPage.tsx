@@ -5510,12 +5510,12 @@ export function VideoImportPage({
           <h1>Video Import 2</h1>
           <p>Rebuilt from its own build prompt (see the help tab appendix): import → timeline → the preview stack for building filter chains → probes and entity strips → materialize. Every gallery collapses, every step interrupts.</p>
         </div>
+        <nav className="video-import-human-nav" aria-label="Video Import steps">
+          {VIDEO_IMPORT_SUBVIEWS.map((entry) => (
+            <button key={entry.id} type="button" className={activeSubview === entry.id ? "is-active" : ""} aria-current={activeSubview === entry.id ? "page" : undefined} onClick={() => selectSubview(entry.id)}>{entry.label}</button>
+          ))}
+        </nav>
       </div>
-      <nav className="video-import-human-nav" aria-label="Video Import steps">
-        {VIDEO_IMPORT_SUBVIEWS.map((entry) => (
-          <button key={entry.id} type="button" className={activeSubview === entry.id ? "is-active" : ""} aria-current={activeSubview === entry.id ? "page" : undefined} onClick={() => selectSubview(entry.id)}>{entry.label}</button>
-        ))}
-      </nav>
 
       <div className="video-import-activity" role="status" aria-live="polite">
         <div className="video-import-activity-controls">
