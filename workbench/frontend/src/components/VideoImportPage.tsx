@@ -395,7 +395,12 @@ const describeConcurrencyOption = (id: string): ColoredTagDescription => {
   return { label: `${n} worker${n === 1 ? "" : "s"}`, groupKey: "1-count", groupLabel: "FIXED MAX", tags: [{ text: String(n), color: "var(--text)" }], rowColor: `hsl(0, 90%, ${lightness}%)` };
 };
 const TOTAL_CONCURRENCY_IDS = Array.from({ length: 50 }, (_, index) => String(index + 1));
-const describeTotalConcurrency = (id: string): ColoredTagDescription => ({ label: id, groupKey: "0", groupLabel: "TOTAL WORKERS", tags: [] });
+const describeTotalConcurrency = (id: string): ColoredTagDescription => {
+  const n = Number(id) || 1;
+  const t = Math.max(0, Math.min(1, (n - 1) / 49));
+  const lightness = Math.round(84 - t * 38); // 1 -> ~84% (light red), 50 -> ~46% (reddest)
+  return { label: id, groupKey: "0", groupLabel: "TOTAL WORKERS", tags: [], rowColor: `hsl(0, 90%, ${lightness}%)` };
+};
 const emptyLlmCallMetrics = (): LlmCallMetrics => ({
   describer: { completed: 0, totalDurationMs: 0 },
   planner: { completed: 0, totalDurationMs: 0 },
