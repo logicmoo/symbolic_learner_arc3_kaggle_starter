@@ -101,6 +101,13 @@
   .video-import-human-nav { grid-template-columns: 1fr; }
 }
 .video-import-note { margin: 0 18px; color: var(--accent, #4dd); }
+.video-import-games-todo {
+  margin: 8px 18px; padding: 18px; border: 1px dashed var(--line, #2a3742);
+  border-radius: 8px; background: #071016; color: #8aa0aa;
+}
+.video-import-games-todo h2 { margin: 0 0 8px; font: 500 18px Georgia, serif; color: #cfe0e6; }
+.video-import-games-todo p { margin: 4px 0; font-size: 12px; }
+.video-import-games-todo-note { color: var(--amber, #e6ad45); }
 .video-import-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 0 18px; }
 .video-import-row input[type="text"] { flex: 1; min-width: 280px; }
 .video-import-row input[type="number"] { width: 70px; margin: 0 4px; }

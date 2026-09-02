@@ -36,10 +36,11 @@ type ExtractedImageSource = {
   kind: "video" | "stream" | "arc" | "curated" | "archive" | "restored";
   frames: Frame[];
 };
-type VideoImportSubview = "sources" | "frames" | "objects" | "finish" | "advanced";
+type VideoImportSubview = "sources" | "frames" | "games" | "objects" | "finish" | "advanced";
 const VIDEO_IMPORT_SUBVIEWS: Array<{ id: VideoImportSubview; label: string }> = [
   { id: "sources", label: "1 · Sources" },
   { id: "frames", label: "2 · Frames & Filters" },
+  { id: "games", label: "Games" },
   { id: "objects", label: "3 · Objects" },
   { id: "finish", label: "4 · Finish" },
   { id: "advanced", label: "Advanced" },
@@ -6658,6 +6659,13 @@ export function VideoImportPage({
         </Section>
       )}
       </div>
+      )}
+      {activeSubview === "games" && (
+        <section className="video-import-games-todo">
+          <h2>Games</h2>
+          <p>Coming soon: convert an imported movie — its extracted frames, detected objects, and captions — into a playable ARC-style game.</p>
+          <p className="video-import-games-todo-note">Not built yet. This step will turn the pipeline output into game states and transitions.</p>
+        </section>
       )}
       {activeSubview === "advanced" && (
       <Section {...section("config", "JSON CONFIG", `the page's exact state as editable JSON${configDraft === null ? " · live" : configValid ? " · editing (applies live)" : " · INVALID JSON — keep typing"}`,
