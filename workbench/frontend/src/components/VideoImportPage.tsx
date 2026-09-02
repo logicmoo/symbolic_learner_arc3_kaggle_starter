@@ -36,13 +36,14 @@ type ExtractedImageSource = {
   kind: "video" | "stream" | "arc" | "curated" | "archive" | "restored";
   frames: Frame[];
 };
-type VideoImportSubview = "sources" | "frames" | "games" | "objects" | "finish" | "advanced";
+type VideoImportSubview = "sources" | "frames" | "games" | "objects" | "finish" | "recognition" | "advanced";
 const VIDEO_IMPORT_SUBVIEWS: Array<{ id: VideoImportSubview; label: string }> = [
   { id: "sources", label: "1 · Sources" },
   { id: "frames", label: "2 · Frames & Filters" },
-  { id: "games", label: "Games" },
-  { id: "objects", label: "3 · Objects" },
-  { id: "finish", label: "4 · Finish" },
+  { id: "games", label: "3 · Games" },
+  { id: "objects", label: "4 · Objects" },
+  { id: "finish", label: "5 · Finish" },
+  { id: "recognition", label: "6 · Recognition" },
   { id: "advanced", label: "Advanced" },
 ];
 type FilterEntry = {
@@ -6665,6 +6666,13 @@ export function VideoImportPage({
           <h2>Games</h2>
           <p>Coming soon: convert an imported movie — its extracted frames, detected objects, and captions — into a playable ARC-style game.</p>
           <p className="video-import-games-todo-note">Not built yet. This step will turn the pipeline output into game states and transitions.</p>
+        </section>
+      )}
+      {activeSubview === "recognition" && (
+        <section className="video-import-games-todo">
+          <h2>Recognition</h2>
+          <p>Coming soon: recognize objects, patterns, and rules from the finished game states and materialized artifacts.</p>
+          <p className="video-import-games-todo-note">Not built yet. This step will learn/label structure from the completed pipeline output.</p>
         </section>
       )}
       {activeSubview === "advanced" && (
