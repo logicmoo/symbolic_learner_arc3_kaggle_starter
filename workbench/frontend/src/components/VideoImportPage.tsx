@@ -311,13 +311,14 @@ type RecursiveAutomation = {
   enlargeSubobjects: boolean;
   pilotFirst: boolean;
 };
+type AutoPolicy = "reserve" | "greedy" | "fair";
 type LlmCallConcurrency = {
-  describer: number | null;
-  planner: number | null;
-  outliner: number | null;
-  extractor: number | null;
-  turtle: number | null;
-  turtlePng: number | null;
+  describer: number | AutoPolicy;
+  planner: number | AutoPolicy;
+  outliner: number | AutoPolicy;
+  extractor: number | AutoPolicy;
+  turtle: number | AutoPolicy;
+  turtlePng: number | AutoPolicy;
 };
 type LlmCallMetric = { completed: number; totalDurationMs: number };
 type LlmCallMetrics = Record<keyof LlmCallConcurrency, LlmCallMetric>;
@@ -367,12 +368,31 @@ const DEFAULT_RECURSIVE_AUTOMATION: RecursiveAutomation = {
   pilotFirst: true,
 };
 const DEFAULT_LLM_CALL_CONCURRENCY: LlmCallConcurrency = {
-  describer: null,
-  planner: null,
-  outliner: null,
-  extractor: null,
-  turtle: null,
-  turtlePng: null,
+  describer: "reserve",
+  planner: "reserve",
+  outliner: "reserve",
+  extractor: "reserve",
+  turtle: "reserve",
+  turtlePng: "reserve",
+};
+const CONCURRENCY_MAX_FIXED = 19;
+const CONCURRENCY_OPTION_IDS: string[] = [
+  "reserve",
+  "greedy",
+  "fair",
+  ...Array.from({ length: CONCURRENCY_MAX_FIXED }, (_, index) => String(index + 1)),
+];
+const isAutoPolicy = (value: string): value is AutoPolicy =>
+  value === "reserve" || value === "greedy" || value === "fair";
+// Fixed worker counts 1..19 shade from light red (1) to the reddest (19).
+const describeConcurrencyOption = (id: string): ColoredTagDescription => {
+  if (id === "reserve") return { label: "auto · reserve cross-stage capacity", groupKey: "0-auto", groupLabel: "AUTO POLICY", tags: [{ text: "auto", color: "#27dcc2" }] };
+  if (id === "greedy") return { label: "auto · greedy (use all free workers)", groupKey: "0-auto", groupLabel: "AUTO POLICY", tags: [{ text: "auto", color: "#e6ad45" }] };
+  if (id === "fair") return { label: "auto · fair share (even split across stages)", groupKey: "0-auto", groupLabel: "AUTO POLICY", tags: [{ text: "auto", color: "#7bd88f" }] };
+  const n = Number(id) || 1;
+  const t = Math.max(0, Math.min(1, (n - 1) / (CONCURRENCY_MAX_FIXED - 1)));
+  const lightness = Math.round(84 - t * 38); // 1 -> ~84% (light red), 19 -> ~46% (reddest)
+  return { label: `${n} worker${n === 1 ? "" : "s"}`, groupKey: "1-count", groupLabel: "FIXED MAX", tags: [{ text: String(n), color: `hsl(0, 90%, ${lightness}%)` }] };
 };
 const emptyLlmCallMetrics = (): LlmCallMetrics => ({
   describer: { completed: 0, totalDurationMs: 0 },
@@ -2794,16 +2814,29 @@ export function VideoImportPage({
   const toggleRecursiveAutomation = (key: keyof RecursiveAutomation) => {
     setRecursiveAutomation((current) => ({ ...current, [key]: !current[key] }));
   };
-  const setCallConcurrency = (type: keyof LlmCallConcurrency, value: number | null) => {
-    setLlmCallConcurrency((current) => ({ ...current, [type]: value === null ? null : Math.max(1, Math.min(50, Math.round(value) || 1)) }));
+  const setCallConcurrency = (type: keyof LlmCallConcurrency, value: number | AutoPolicy) => {
+    setLlmCallConcurrency((current) => ({
+      ...current,
+      [type]: typeof value === "number" ? Math.max(1, Math.min(CONCURRENCY_MAX_FIXED, Math.round(value) || 1)) : value,
+    }));
   };
   const llmStageReserve = Math.min(
     Math.max(0, totalLlmConcurrency - 1),
     Math.max(LLM_STAGE_RESERVE_MIN, Math.ceil(totalLlmConcurrency * LLM_STAGE_RESERVE_FRACTION)),
   );
   const llmPerStageCeiling = Math.max(1, totalLlmConcurrency - llmStageReserve);
+  const autoPolicyLimit = (policy: AutoPolicy) => {
+    if (policy === "greedy") return totalLlmConcurrency;
+    if (policy === "fair") {
+      const activeStages = Math.max(1, LLM_STAGE_ORDER.filter((stage) => recursiveAutomation[stage]).length);
+      return Math.max(1, Math.floor(totalLlmConcurrency / activeStages));
+    }
+    return llmPerStageCeiling;
+  };
   const effectiveCallConcurrency = (type: keyof LlmCallConcurrency) => {
-    return Math.min(llmPerStageCeiling, llmCallConcurrency[type] ?? llmPerStageCeiling);
+    const value = llmCallConcurrency[type];
+    if (typeof value === "number") return Math.min(llmPerStageCeiling, value);
+    return Math.min(totalLlmConcurrency, autoPolicyLimit(value));
   };
   const schedulerTypeLimits: Record<keyof LlmCallConcurrency, number> = {
     describer: effectiveCallConcurrency("describer"),
@@ -3183,9 +3216,11 @@ export function VideoImportPage({
       });
     }
     if (s.llmCallConcurrency && typeof s.llmCallConcurrency === "object") {
-      const restoredConcurrency = (value: unknown): number | null => value == null || value === ""
-        ? null
-        : Math.max(1, Math.min(50, Math.round(Number(value) || 1)));
+      const restoredConcurrency = (value: unknown): number | AutoPolicy => {
+        if (typeof value === "string" && isAutoPolicy(value)) return value;
+        if (value == null || value === "") return "reserve";
+        return Math.max(1, Math.min(CONCURRENCY_MAX_FIXED, Math.round(Number(value) || 1)));
+      };
       setLlmCallConcurrency({
         describer: restoredConcurrency(s.llmCallConcurrency.describer),
         planner: restoredConcurrency(s.llmCallConcurrency.planner),
@@ -6231,10 +6266,16 @@ export function VideoImportPage({
                 <span title={metric.completed ? `${Math.round(averageMs)}ms average across ${metric.completed} completed job(s)` : "No completed jobs yet"}><b>{formatJobDuration(averageMs)}</b><small>AVG / JOB</small></span>
               </div>
               <label>max processes
-                <select className="video-import-max-processes" value={concurrency ?? ""} onFocus={() => setExpandedCallPrompt(type)} onPointerDown={() => setExpandedCallPrompt(type)} onChange={(event) => { setCallConcurrency(type, event.target.value ? Number(event.target.value) : null); setExpandedCallPrompt(type); }}>
-                  <option value="">auto · reserve cross-stage capacity</option>
-                  {Array.from({ length: 50 }, (_, index) => index + 1).map((value) => <option key={value} value={value}>{value}</option>)}
-                </select>
+                <div className="video-import-max-proc-combo">
+                  <ColoredTagCombobox
+                    value={String(concurrency)}
+                    ids={CONCURRENCY_OPTION_IDS}
+                    ariaLabel={`${label} max processes`}
+                    describe={describeConcurrencyOption}
+                    onOpen={() => setExpandedCallPrompt(type)}
+                    onChange={(value) => { setCallConcurrency(type, isAutoPolicy(value) ? value : Number(value)); setExpandedCallPrompt(type); }}
+                  />
+                </div>
               </label>
               <label>prompt
                 <select
