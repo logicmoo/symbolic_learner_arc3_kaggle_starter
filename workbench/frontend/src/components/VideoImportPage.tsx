@@ -513,15 +513,18 @@ const DEFAULT_MEMBER_ORDER_PROMPT = [
   "Answer ONLY with JSON: {\"groups\":[[\"exact object name\",...],...]}",
 ].join("\n");
 const migratePlannerPrompt = (value: string) => (
-  // Force the simplified groups-only planner whenever the saved prompt is an
-  // older variant (old header, or still asks for anything beyond "groups").
-  !value.startsWith("PARALLEL EXTRACTION PLANNER.")
-  || value.includes('"touching"')
-  || value.includes('"occlusions"')
-  || value.includes('"labels"')
-  || value.includes('"order"')
-    ? DEFAULT_MEMBER_ORDER_PROMPT
-    : value
+  // The planner is now a fixed, simple system prompt. Collapse any recognizable
+  // planner prompt (old format or a superseded variant) to the current default
+  // so the system always uses it; leave a genuinely custom prompt untouched.
+  value === DEFAULT_MEMBER_ORDER_PROMPT
+    ? value
+    : (value.startsWith("PARALLEL EXTRACTION PLANNER.")
+      || value.startsWith("OBJECT EXTRACTION PLANNER.")
+      || value.includes('"groups"')
+      || value.includes('"order"')
+      || value.includes('"touching"'))
+      ? DEFAULT_MEMBER_ORDER_PROMPT
+      : value
 );
 const DEFAULT_MEMBER_OUTLINER_PROMPT = [
   "OBJECT OUTLINER.",
