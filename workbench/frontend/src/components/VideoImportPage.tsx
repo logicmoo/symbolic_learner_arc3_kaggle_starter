@@ -3916,53 +3916,41 @@ export function VideoImportPage({
   const plannerBusyRef = useRef(new Set<string>());
   const outlinerBusyRef = useRef(new Set<string>());
   const extractorBusyRef = useRef(new Set<string>());
-  // Monitor: compare the "flagged in-progress" status against the live job
-  // wrappers (busy-refs). Any item in a transient status that no wrapper owns —
-  // its job already ended without reaching a terminal state (a worker died, or a
-  // stale write resurrected the status) — is the discrepancy. We log it so it can
-  // be found out, then reset it to a re-queueable status so it re-enters the
-  // counted pipeline and is completed.
-  const reconcileStrandedJobs = () => {
-    const strays: string[] = [];
-    for (const inventory of memberInventories) {
+  const memberInventoriesRef = useRef(memberInventories);
+  memberInventoriesRef.current = memberInventories;
+  const loggedStraysRef = useRef(new Set<string>());
+  // Read-only monitor: compare the "flagged in-progress" status against the live
+  // job wrappers (busy-refs). Any item in a transient status that no wrapper owns
+  // is a discrepancy — its job ended without reaching a terminal state (a worker
+  // died, or a stale write resurrected the status). We log each newly-lost item
+  // once so it can be diagnosed. No state is mutated here: the busy-ref-based
+  // batch selection already reclaims it on the next tick, so this stays a pure
+  // observer (mutating state from the scheduler effect caused a render loop).
+  const diagnoseStrandedJobs = () => {
+    const current = new Map<string, string>();
+    for (const inventory of memberInventoriesRef.current) {
       if (inventory.status === "ordering" && !hasVisualizedPlan(inventory) && !plannerBusyRef.current.has(inventory.id)) {
-        strays.push(`planner·${inventory.subjectName || inventory.id}`);
+        current.set(`planner:${inventory.id}`, `planner·${inventory.subjectName || inventory.id}`);
       }
       inventory.things.forEach((thing, index) => {
         if (!thing.outputImages?.length && thing.status === "outlining" && !hasAlignedOutline(thing)
           && !outlinerBusyRef.current.has(`${inventory.id}:${index}`)) {
-          strays.push(`outliner·${thing.name}`);
+          current.set(`outliner:${inventory.id}:${index}`, `outliner·${thing.name}`);
         }
         if (!thing.outputImages?.length && thing.status === "extracting"
           && !extractorBusyRef.current.has(inventory.id)) {
-          strays.push(`extractor·${thing.name}`);
+          current.set(`extractor:${inventory.id}:${thing.name}`, `extractor·${thing.name}`);
         }
       });
     }
-    if (!strays.length) return;
-    say(`⟳ reclaimed ${strays.length} stranded job(s) — flagged in-progress but no worker owned them: ${strays.slice(0, 6).join(", ")}${strays.length > 6 ? "…" : ""}`);
-    setMemberInventories((current) => current.map((inventory) => {
-      let inv = inventory;
-      if (inv.status === "ordering" && !hasVisualizedPlan(inv) && !plannerBusyRef.current.has(inv.id)) {
-        inv = { ...inv, status: "done" };
-      }
-      let thingsChanged = false;
-      const things = inv.things.map((thing, index) => {
-        if (!thing.outputImages?.length && thing.status === "outlining" && !hasAlignedOutline(thing)
-          && !outlinerBusyRef.current.has(`${inv.id}:${index}`)) {
-          thingsChanged = true;
-          return { ...thing, status: "listed" as const };
-        }
-        if (!thing.outputImages?.length && thing.status === "extracting"
-          && !extractorBusyRef.current.has(inv.id)) {
-          thingsChanged = true;
-          return { ...thing, status: (hasAlignedOutline(thing) ? "outlined" : "listed") as MemberInventoryThing["status"] };
-        }
-        return thing;
-      });
-      if (thingsChanged) inv = { ...inv, things };
-      return inv;
-    }));
+    for (const key of Array.from(loggedStraysRef.current)) {
+      if (!current.has(key)) loggedStraysRef.current.delete(key);
+    }
+    const fresh = Array.from(current.entries()).filter(([key]) => !loggedStraysRef.current.has(key));
+    if (!fresh.length) return;
+    fresh.forEach(([key]) => loggedStraysRef.current.add(key));
+    const labels = fresh.map(([, label]) => label);
+    say(`⚠ LOST ${labels.length} job(s) — flagged in-progress but no worker owns them (auto-reclaiming): ${labels.slice(0, 6).join(", ")}${labels.length > 6 ? "…" : ""}`);
   };
   const planRecursiveInventory = async (inventory: MemberInventory, force = false): Promise<MemberInventory | null> => {
     if (!inventory.things.length) return { ...inventory, status: "done" };
@@ -5302,10 +5290,6 @@ export function VideoImportPage({
   };
   useEffect(() => {
     if (!restoredRef.current || workersHeld) return;
-    // Monitor pass: reclaim any item stranded in a transient status with no
-    // backing wrapper, so the discrepancy between "flagged in-progress" and
-    // "actually being processed" is found and corrected every scheduler tick.
-    reconcileStrandedJobs();
     const selectedRootsNeedDescription = frames.some((frame) => {
      if (!memberInputPaths.has(frame.path)) return false;
      if (!isInputPathActive(frame.path)) return false;
@@ -5425,7 +5409,10 @@ export function VideoImportPage({
       || recursiveAutomation.outliner || recursiveAutomation.extractor
       || recursiveAutomation.turtle || recursiveAutomation.turtlePng;
     if (!anyAutomationOn) return;
-    const timer = window.setInterval(() => setAutomaticSchedulerTick((tick) => tick + 1), 5000);
+    const timer = window.setInterval(() => {
+      diagnoseStrandedJobs();
+      setAutomaticSchedulerTick((tick) => tick + 1);
+    }, 5000);
     return () => window.clearInterval(timer);
   }, [
     workersHeld,
