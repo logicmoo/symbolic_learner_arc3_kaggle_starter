@@ -15,6 +15,7 @@ from arc3_play_api import router as arc3_play_router
 from video_import_api import router as video_import_router
 from datatype_api import router as datatype_router
 from goal_run_api import router as goal_run_router
+from jobs_api import router as jobs_router
 from mailbox_api_lib import router as mailbox_router
 from prompt_api import router as prompt_router
 from routes.artifacts import router as artifacts_router
@@ -67,6 +68,7 @@ app.include_router(arc3_play_router, prefix="/workbench")
 app.include_router(video_import_router, prefix="/workbench")
 app.include_router(datatype_router, prefix="/workbench")
 app.include_router(goal_run_router, prefix="/workbench")
+app.include_router(jobs_router, prefix="/workbench")
 app.include_router(mailbox_router, prefix="/workbench")
 app.include_router(prompt_router, prefix="/workbench")
 app.include_router(operation_router, prefix="/workbench")

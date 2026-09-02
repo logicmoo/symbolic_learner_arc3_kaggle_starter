@@ -21,11 +21,25 @@ type ResourceLink = {
   relationship: string;
 };
 
+type CacheMeta = {
+  state: "fresh" | "stale" | "building";
+  signature: string;
+  building: boolean;
+  job?: { status?: string; executor?: string | null } | null;
+};
+
 type Payload = {
   atoms: ResourceAtom[];
   links: ResourceLink[];
   relationshipFields: string[];
+  cache?: CacheMeta;
 };
+
+// Instant-load cache: the last graph seen for each workspace, kept for the
+// lifetime of the SPA so returning to the page renders immediately while a
+// fresh copy is fetched (and rebuilt on the backend if needed) in the
+// background.
+const RESOURCE_ATOMSPACE_CACHE = new Map<string, Payload>();
 
 type RelationshipView = "all" | "implementation" | "inheritance" | "dependency";
 
@@ -56,20 +70,47 @@ function atomspaceSource(atoms: ResourceAtom[], links: ResourceLink[]): string {
 export function ResourceAtomspacePage({ workspaceId }: { workspaceId: string }) {
   const [payload, setPayload] = useState<Payload | null>(null);
   const [error, setError] = useState("");
+  const [cacheMeta, setCacheMeta] = useState<CacheMeta | null>(null);
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState("all");
   const [relationshipView, setRelationshipView] = useState<RelationshipView>("all");
   const [selectedKey, setSelectedKey] = useState("");
 
   useEffect(() => {
-    setPayload(null);
+    let cancelled = false;
+    let timer: number | undefined;
+    const cached = RESOURCE_ATOMSPACE_CACHE.get(workspaceId);
+    if (cached) {
+      setPayload(cached);
+      setCacheMeta(cached.cache || null);
+      setSelectedKey(prev => prev || cached.atoms[0]?.key || "");
+    } else {
+      setPayload(null);
+      setCacheMeta(null);
+    }
     setError("");
-    void request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/resource-atomspace`)
-      .then(next => {
-        setPayload(next);
-        setSelectedKey(next.atoms[0]?.key || "");
-      })
-      .catch(reason => setError(reason instanceof Error ? reason.message : String(reason)));
+    const load = () => {
+      void request(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/resource-atomspace`)
+        .then(next => {
+          if (cancelled) return;
+          RESOURCE_ATOMSPACE_CACHE.set(workspaceId, next);
+          setPayload(next);
+          setCacheMeta(next.cache || null);
+          setSelectedKey(prev => prev || next.atoms[0]?.key || "");
+          // Keep polling while the backend is (re)building in the background.
+          if (next.cache && (next.cache.building || next.cache.state !== "fresh")) {
+            timer = window.setTimeout(load, 4000);
+          }
+        })
+        .catch(reason => {
+          if (!cancelled) setError(reason instanceof Error ? reason.message : String(reason));
+        });
+    };
+    load();
+    return () => {
+      cancelled = true;
+      if (timer) window.clearTimeout(timer);
+    };
   }, [workspaceId]);
 
   const kinds = useMemo(
@@ -114,6 +155,13 @@ export function ResourceAtomspacePage({ workspaceId }: { workspaceId: string }) 
         <b>{payload.atoms.length} atoms</b>
         <b>{payload.links.length} links</b>
         <b>{kinds.length} kinds</b>
+        {cacheMeta && cacheMeta.state !== "fresh" && (
+          <b className="resource-atomspace-cache-state" title={`signature ${cacheMeta.signature.slice(0, 12)}`}>
+            {cacheMeta.building
+              ? `rebuilding${cacheMeta.job?.executor ? ` · ${cacheMeta.job.executor}` : ""}…`
+              : "cached"}
+          </b>
+        )}
       </div>
     </div>
 

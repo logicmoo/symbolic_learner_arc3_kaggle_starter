@@ -8,11 +8,12 @@ import stat as stat_module
 import time
 import base64
 import binascii
+import hashlib
 from concurrent.futures import ThreadPoolExecutor
 from collections import Counter
-from threading import RLock
+from threading import RLock, Thread
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from fastapi import APIRouter, Body, HTTPException, Query
 from fastapi.responses import FileResponse
@@ -48,6 +49,7 @@ from workspace_inheritance import (
     workspace_metadata_path,
 )
 from resource_store import get_filesystem_provider
+from job_manager import get_job_manager
 from workspace_credentials import bootstrap_backend_credential, credential_statuses, write_workspace_credential
 
 router = APIRouter(prefix="/workspaces", tags=["workspaces"])
@@ -1227,12 +1229,10 @@ def workspace_snapshot(workspace_id: str, scope: str = Query(default="full", pat
     }
 
 
-@router.get("/{workspace_id}/resource-atomspace")
-def workspace_resource_atomspace(workspace_id: str) -> dict[str, Any]:
-    try:
-        workspace = _resolve_workspace_without_counts(workspace_id)
-        workspace_root = Path(workspace["root"])
-        resources = get_filesystem_provider()
+def _build_resource_atomspace_payload(
+    workspace: dict[str, Any], workspace_root: Path, resources: Any
+) -> dict[str, Any]:
+    if True:
         combined: dict[str, dict[str, Any]] = {}
         for layer in effective_workspace_layers(workspace_root, DEFAULT_WORKSPACES_ROOT):
             source = layer_source(layer, workspace_root)
@@ -1366,10 +1366,184 @@ def workspace_resource_atomspace(workspace_id: str) -> dict[str, Any]:
             "links": links,
             "relationshipFields": [*relationship_fields, "preferredImplementation"],
         }
+
+
+# --- Resource AtomSpace disk cache + background rebuild ------------------------
+#
+# Building the resource AtomSpace parses every JSON/MeTTa resource across all
+# effective layers and can take minutes on large workspaces, so the result is
+# cached on disk and only rebuilt when the underlying files actually change.
+# The rebuild runs as a background job (process pool by default for true
+# multi-core parsing) so the request never blocks: fresh caches are served
+# instantly, and while a rebuild runs the last cached graph is served as
+# ``stale`` (or a ``building`` placeholder when there is no cache yet).
+
+_RESOURCE_ATOMSPACE_CACHE_VERSION = 1
+_RESOURCE_ATOMSPACE_LIFECYCLES = ("design", "policies", "knowledge", "runtime")
+_RESOURCE_ATOMSPACE_RELATIONSHIP_FIELDS = [
+    "implements",
+    "implementedBy",
+    "inheritsFrom",
+    "inheritedBy",
+    "dependsOn",
+    "dependedOnBy",
+    "preferredImplementation",
+]
+
+
+def _resource_atomspace_cache_path(workspace_root: Path) -> Path:
+    # Kept outside the scanned lifecycle dirs so the cache never invalidates
+    # itself by appearing in its own change signature.
+    return workspace_root / ".workbench-cache" / "resource_atomspace.json"
+
+
+def _resource_atomspace_signature(workspace_root: Path) -> str:
+    """A cheap fingerprint (paths + mtimes + sizes) of every source file the
+    build reads, across all effective layers. Fast enough to run per request."""
+    hasher = hashlib.sha1()
+    hasher.update(f"v{_RESOURCE_ATOMSPACE_CACHE_VERSION}\n".encode())
+    entries: list[tuple[str, int, int]] = []
+    for layer in effective_workspace_layers(workspace_root, DEFAULT_WORKSPACES_ROOT):
+        for lifecycle in _RESOURCE_ATOMSPACE_LIFECYCLES:
+            root = layer / lifecycle
+            if not root.is_dir():
+                continue
+            for directory, names, filenames in os.walk(root, topdown=True):
+                names[:] = [name for name in names if name not in IGNORED_DIRECTORIES]
+                directory_path = Path(directory)
+                for filename in filenames:
+                    if Path(filename).suffix.lower() not in (".metta", ".json"):
+                        continue
+                    file_path = directory_path / filename
+                    try:
+                        info = file_path.stat()
+                    except OSError:
+                        continue
+                    entries.append((str(file_path), info.st_mtime_ns, info.st_size))
+    for path, mtime_ns, size in sorted(entries):
+        hasher.update(path.encode("utf-8", "surrogatepass"))
+        hasher.update(f"\0{mtime_ns}\0{size}\n".encode())
+    return hasher.hexdigest()
+
+
+def _read_resource_atomspace_cache(cache_path: Path) -> Optional[dict[str, Any]]:
+    try:
+        raw = cache_path.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    try:
+        data = json.loads(raw)
+    except (ValueError, json.JSONDecodeError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _write_resource_atomspace_cache(cache_path: Path, signature: str, payload: dict[str, Any]) -> None:
+    try:
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        temp_path = cache_path.with_suffix(".json.tmp")
+        temp_path.write_text(
+            json.dumps(
+                {
+                    "version": _RESOURCE_ATOMSPACE_CACHE_VERSION,
+                    "signature": signature,
+                    "payload": payload,
+                }
+            ),
+            encoding="utf-8",
+        )
+        temp_path.replace(cache_path)
+    except OSError:
+        # A cache-write failure must never break the endpoint.
+        pass
+
+
+def build_resource_atomspace_cache_entry(workspace_id: str, signature: str) -> dict[str, Any]:
+    """Top-level, picklable job target: rebuild the graph and write the disk
+    cache, returning a small summary. Runs inside a job-pool worker process."""
+    workspace = _resolve_workspace_without_counts(workspace_id)
+    workspace_root = Path(workspace["root"])
+    resources = get_filesystem_provider()
+    payload = _build_resource_atomspace_payload(workspace, workspace_root, resources)
+    # Do not persist the (potentially stale) workspace dict inside the cache;
+    # the endpoint re-attaches the fresh workspace on every response.
+    cache_payload = {key: value for key, value in payload.items() if key != "workspace"}
+    _write_resource_atomspace_cache(
+        _resource_atomspace_cache_path(workspace_root), signature, cache_payload
+    )
+    return {
+        "workspaceId": workspace_id,
+        "signature": signature,
+        "atoms": len(cache_payload.get("atoms", [])),
+        "links": len(cache_payload.get("links", [])),
+    }
+
+
+@router.get("/{workspace_id}/resource-atomspace")
+def workspace_resource_atomspace(
+    workspace_id: str, refresh: bool = False, executor: str = "process"
+) -> dict[str, Any]:
+    try:
+        workspace = _resolve_workspace_without_counts(workspace_id)
+        workspace_root = Path(workspace["root"])
+        signature = _resource_atomspace_signature(workspace_root)
+        cache_path = _resource_atomspace_cache_path(workspace_root)
+        cached = _read_resource_atomspace_cache(cache_path)
+        fresh = (
+            cached is not None
+            and cached.get("version") == _RESOURCE_ATOMSPACE_CACHE_VERSION
+            and cached.get("signature") == signature
+            and isinstance(cached.get("payload"), dict)
+        )
+        if fresh and not refresh:
+            return {
+                **cached["payload"],
+                "workspace": workspace,
+                "cache": _resource_atomspace_cache_meta("fresh", workspace_id, signature),
+            }
+
+        job = get_job_manager().submit(
+            build_resource_atomspace_cache_entry,
+            (workspace_id, signature),
+            kind="resource-atomspace",
+            title=f"Rebuild resource AtomSpace · {workspace_id}",
+            key=f"resource-atomspace:{workspace_id}",
+            executor="thread" if executor == "thread" else "process",
+            metadata={"workspaceId": workspace_id, "signature": signature},
+        )
+
+        if cached is not None and isinstance(cached.get("payload"), dict):
+            return {
+                **cached["payload"],
+                "workspace": workspace,
+                "cache": _resource_atomspace_cache_meta("stale", workspace_id, signature, job),
+            }
+        return {
+            "workspace": workspace,
+            "atoms": [],
+            "links": [],
+            "relationshipFields": list(_RESOURCE_ATOMSPACE_RELATIONSHIP_FIELDS),
+            "cache": _resource_atomspace_cache_meta("building", workspace_id, signature, job),
+        }
     except KeyError as error:
         raise HTTPException(status_code=404, detail=str(error)) from error
     except (OSError, ValueError) as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+def _resource_atomspace_cache_meta(
+    state: str, workspace_id: str, signature: str, job: Any = None
+) -> dict[str, Any]:
+    if job is None:
+        job = get_job_manager().by_key(f"resource-atomspace:{workspace_id}")
+    building = bool(job and job.status in ("queued", "running"))
+    return {
+        "state": state,
+        "signature": signature,
+        "building": building,
+        "job": job.to_dict() if job is not None else None,
+    }
+
 
 
 def _collect_shell_files(root: Path, limit: int) -> list[dict[str, Any]]:
