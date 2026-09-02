@@ -70,7 +70,7 @@
 .video-import-page[data-subview] > .video-import-scene-object-workspace {
   display: none;
 }
-.video-import-page[data-subview="games"] > [data-section="intake"],
+.video-import-page[data-subview="sources"] > [data-section="intake"],
 .video-import-page[data-subview="games"] > [data-section="arc3Player"],
 .video-import-page[data-subview="sources"] > [data-section="player"],
 .video-import-page[data-subview="frames"] > [data-section="userpick"],
