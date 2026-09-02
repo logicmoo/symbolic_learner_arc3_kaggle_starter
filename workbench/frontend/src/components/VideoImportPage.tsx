@@ -4609,6 +4609,31 @@ export function VideoImportPage({
   const jobProgress = (candidate: JobState) => candidate.total > 0
     ? Math.min(100, Math.round((candidate.done / candidate.total) * 100))
     : 0;
+  const imageSourceKindColors: Record<string, string> = {
+    video: "#4dd4c4", curated: "#e0b341", stream: "#f08a4b", arc: "#8a7dff", archive: "#c56bff", restored: "#5bd47a",
+  };
+  const imageSourceIds = [
+    "video-extraction",
+    ...curatedSources.map((source) => `curated:${source.path}`),
+    ...frameSources.filter((source) => source.id !== "video-extraction" && source.kind !== "curated").map((source) => source.id),
+  ];
+  const describeImageSource = (id: string): ColoredTagDescription => {
+    if (id === "video-extraction") {
+      const source = frameSources.find((candidate) => candidate.id === "video-extraction");
+      const count = source?.frames.length || 0;
+      return { label: `Current video · ${count} images`, groupKey: "0-video", groupLabel: "Current video", tags: [{ text: `${count} imgs`, color: imageSourceKindColors.video }], disabled: !source };
+    }
+    if (id.startsWith("curated:")) {
+      const path = id.slice("curated:".length);
+      const source = curatedSources.find((candidate) => candidate.path === path);
+      const count = source?.frames || 0;
+      return { label: `${source?.label || path} · ${count} images`, groupKey: "1-curated", groupLabel: "Curated data", tags: [{ text: `${count} imgs`, color: imageSourceKindColors.curated }, { text: "curated", color: imageSourceKindColors.curated }] };
+    }
+    const source = frameSources.find((candidate) => candidate.id === id);
+    const count = source?.frames.length || 0;
+    const kind = source?.kind || "restored";
+    return { label: `${source?.label || id} · ${count} images`, groupKey: `2-${kind}`, groupLabel: `${kind.charAt(0).toUpperCase()}${kind.slice(1)}`, tags: [{ text: `${count} imgs`, color: imageSourceKindColors[kind] || "#8aa" }, { text: kind, color: imageSourceKindColors[kind] || "#8aa" }] };
+  };
   const selectorScore = (kind: string) => { const score = ledger[`select:${kind}`] || 0; return score ? ` (${score > 0 ? "+" : ""}${score})` : ""; };
   const recursiveRootInventories = memberInventories
     .filter((inventory) => !inventory.parentInventoryId)
@@ -5607,12 +5632,16 @@ export function VideoImportPage({
             <b>Selected inputs and extracted objects</b>
             <small>Only explicitly checked input images enter the workflow.</small>
             <label>Extracted Images source
-              <select value={selectedFrameSourceId} disabled={!frameSources.length && !curatedSources.length} onChange={(event) => selectExtractedImageSource(event.target.value)}>
-                {!selectedFrameSourceId && <option value="">Choose an image source…</option>}
-                <option value="video-extraction" disabled={!frameSources.some((source) => source.id === "video-extraction")}>Current video above · {frameSources.find((source) => source.id === "video-extraction")?.frames.length || 0} images</option>
-                {curatedSources.map((source) => <option key={`curated:${source.path}`} value={`curated:${source.path}`}>Curated data · {source.label} · {source.frames} images</option>)}
-                {frameSources.filter((source) => source.id !== "video-extraction" && source.kind !== "curated").map((source) => <option key={source.id} value={source.id}>{source.label} · {source.frames.length} images</option>)}
-              </select>
+              <ColoredTagCombobox
+                value={selectedFrameSourceId}
+                ids={imageSourceIds}
+                ariaLabel="Extracted images source"
+                allowNone
+                noneLabel="Choose an image source…"
+                describe={describeImageSource}
+                disabled={!frameSources.length && !curatedSources.length}
+                onChange={selectExtractedImageSource}
+              />
             </label>
           </header>
           <div className="video-import-workflow-galleries">
