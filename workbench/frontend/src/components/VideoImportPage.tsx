@@ -6391,20 +6391,6 @@ export function VideoImportPage({
               </div>
             )}
           </nav>
-          <div className="video-import-recursive-cycle-inspector">
-          <header><span>RECURSIVE CYCLE INSPECTOR</span><b>{selectedRecursiveInventory?.subjectName || "Input image"}</b></header>
-          {selectedRecursiveInventory ? (
-            <>
-              <figure className="video-import-member-input-image"><img src={asset(selectedRecursiveInventory.sourceImage)} alt={selectedRecursiveInventory.subjectName || "input image"} /><figcaption>depth {selectedRecursiveInventory.depth || 0} · {selectedRecursiveInventory.things.length} direct child object(s)</figcaption></figure>
-              <div className="video-import-recursive-cycle-status">
-                <button type="button" onClick={() => revealRecursiveOutput(selectedRecursiveInventory.id, "members", "recursive-output")}><i>D</i><span><b>DESCRIBER</b><small>{selectedRecursiveInventory.descriptionOutput ? "complete" : "waiting"}</small></span></button>
-                <button type="button" onClick={() => revealRecursiveOutput(selectedRecursiveInventory.id, "members", "recursive-output")}><i>P</i><span><b>PLANNER</b><small>{selectedRecursiveInventory.orderOutput ? "complete" : selectedRecursiveInventory.orderError ? "retrying after error" : selectedRecursiveInventory.descriptionOutput ? "queued" : "waiting for Describer"}</small></span></button>
-                <button type="button" onClick={() => revealRecursiveOutput(selectedRecursiveInventory.id, "members", "recursive-output")}><i>O</i><span><b>OUTLINER</b><small>{selectedRecursiveInventory.things.filter(hasAlignedOutline).length}/{selectedRecursiveInventory.things.length} outlined</small></span></button>
-                <button type="button" onClick={() => revealRecursiveOutput(selectedRecursiveInventory.id, "members", "recursive-output")}><i>E</i><span><b>EXTRACTOR</b><small>{selectedRecursiveInventory.things.filter((thing) => thing.outputImages?.length).length}/{selectedRecursiveInventory.things.length} extracted</small></span></button>
-              </div>
-            </>
-          ) : <p className="hint">Call the Describer to create the root object cycle.</p>}
-          </div>
         </div>
       </section>
 
