@@ -1091,7 +1091,7 @@ const OutlineOverlay = ({
       aria-label={`Outliner geometry on original image (${status})`}
       data-outline-id={interactive ? overlayId : undefined}
     >
-      <image href={imageSrc} x={0} y={0} width={w} height={h} preserveAspectRatio="xMidYMid meet" />
+      <image href={imageSrc} x={0} y={0} width={w} height={h} preserveAspectRatio="xMidYMid meet" opacity={0.4} />
       {hasBox && (
         <rect
           x={box![0]}
