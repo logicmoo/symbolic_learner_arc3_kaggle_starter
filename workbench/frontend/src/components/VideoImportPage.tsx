@@ -5328,9 +5328,6 @@ export function VideoImportPage({
         && (
           memberInputPaths.has(inventory.framePath)
           || memberInputPaths.has(inventory.sourceImage)
-          // An already-described root stays runnable so the pipeline finishes it
-          // even if the (volatile) selection was cleared by a source/video switch.
-          || Boolean(inventory.descriptionOutput)
         ))
       .map((inventory) => inventory.id),
   );
