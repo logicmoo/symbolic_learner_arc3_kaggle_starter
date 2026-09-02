@@ -3519,7 +3519,7 @@ export function VideoImportPage({
     setOutput([]);
     setGallery(null);
     setSelectedWorkflowGalleryPaths(new Set());
-    void api("page-state", { workspaceId, state: {
+    void api("page-state", { workspaceId, clearShards: ["memberInventories", "modelResponseCache"], state: {
       ...buildSnapshotRef.current(),
       modelResponseCache: {}, memberInventories: [], members: [], memberScenes: {},
       turtleArtifacts: {}, output: [], trail: [], probes: [], gallery: null,

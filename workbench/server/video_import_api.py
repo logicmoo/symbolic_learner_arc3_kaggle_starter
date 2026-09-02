@@ -753,6 +753,10 @@ def _save_page_state_payload(payload: dict[str, Any]) -> dict[str, Any]:
     state = payload.get("state")
     if not workspace_id or not isinstance(state, dict):
         raise HTTPException(status_code=400, detail="workspaceId and a state object are required")
+    # Explicit, intentional shard clears (e.g. the "clear LLM work" button) must
+    # bypass the empty-overwrite safety guard below.
+    clear_shards_raw = payload.get("clearShards")
+    force_clear = {str(key) for key in clear_shards_raw} if isinstance(clear_shards_raw, list) else set()
     state = _compact_page_state(state)
     container = _imports_root(_workspace_root(workspace_id))
     path = container / "page_state.json"
@@ -765,14 +769,16 @@ def _save_page_state_payload(payload: dict[str, Any]) -> dict[str, Any]:
             # Data-safety guard: never let an empty/blank save overwrite an
             # existing non-empty shard. A stale or freshly-loaded browser tab
             # must not be able to wipe real member-inventory / cache work by
-            # auto-saving empty state. (To intentionally clear, delete the file.)
-            if _shard_is_empty(incoming) and _shard_file_has_data(shard_path):
+            # auto-saving empty state. An explicit clearShards request overrides
+            # this so the user can intentionally clear the work.
+            if key not in force_clear and _shard_is_empty(incoming) and _shard_file_has_data(shard_path):
                 continue
             _atomic_json_write(shard_path, incoming)
         manifest["stateShards"] = dict(_PAGE_STATE_SHARDS)
         _atomic_json_write(path, manifest)
     return {
         "saved": True,
+        "cleared": sorted(force_clear),
         "path": str(path),
         "shards": {
             key: str((shard_root / filename).resolve())
