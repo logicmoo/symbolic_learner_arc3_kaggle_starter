@@ -508,6 +508,8 @@ const DEFAULT_MEMBER_DECOMPOSITION_PROMPT = [
 const DEFAULT_MEMBER_ORDER_PROMPT = [
   "PARALLEL EXTRACTION PLANNER.",
   "Group the listed objects into ordered waves for extraction. Objects in the same group can be lifted in parallel (none covers, contains, or is part/parent of another in that group). Group 1 is the fully-visible foreground; each later group becomes liftable only after earlier groups are removed. Use every object's exact name exactly once, and output nothing else.",
+  "DESCRIPTION:",
+  "{{textualDescription}}",
   "OBJECTS:",
   "{{objects}}",
   "Answer ONLY with JSON: {\"groups\":[[\"exact object name\",...],...]}",
