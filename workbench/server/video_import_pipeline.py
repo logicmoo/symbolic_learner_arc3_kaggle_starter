@@ -52,6 +52,8 @@ from video_import_api import (
     _page_state_lock,
     _save_page_state_payload,
     get_page_state,
+    member_cut,
+    outline_verification,
 )
 
 # --------------------------------------------------------------------------- #
@@ -78,6 +80,212 @@ DEFAULT_MEMBER_DESCRIPTION_PROMPT = "\n".join([
 ])
 
 _DEFAULT_SUBJECT_CONTEXT = "This is a root input image. List its top-level objects."
+
+
+DEFAULT_MEMBER_OUTLINER_PROMPT = "\n".join([
+    "OBJECT OUTLINER.",
+    "Outline exactly ONE object in the attached current scene. Planner has already selected its order position.",
+    "Do not outline, include, or remove any other listed object.",
+    "TEXTUAL DESCRIPTION:",
+    "{{textualDescription}}",
+    "PLANNER-SELECTED OBJECT: {{nextObjectName}}",
+    "Object description: {{nextObjectDescription}}",
+    "Planner position: {{plannerPosition}} of {{plannerTotal}}",
+    "PLANNER-DECLARED CONTACT AND OCCLUSION RELATIONSHIPS FOR THIS OBJECT:",
+    "{{plannerRelationships}}",
+    "OUTLINE SOURCE IMAGE: {{outlineImage}}",
+    "PIXEL COORDINATE SPACE: width={{imageWidth}}, height={{imageHeight}}. Use x=0..{{maxX}} and y=0..{{maxY}} only.",
+    "Trace the named object's visible silhouette at pixel-edge precision in THIS current image.",
+    "Explicitly include only pixels belonging to the named object and exclude adjacent body parts, neighboring objects, shadows, and background.",
+    "Preserve disconnected visible parts as separate polygons and enclosed transparent gaps as holes. Respect occluders: trace only the visible contour and never invent hidden pixels.",
+    "For parts such as a character's chest, exclude the head, arms, hands, lower body, clothing outside the chest, and background unless truly part of the named object.",
+    "Also describe the contour clockwise and as normalized 0..1000 move/line commands in Turtle form for inspection.",
+    'Answer ONLY with JSON: {"name":"{{nextObjectName}}","polygons":[[[x,y],...]],"holes":[[[x,y],...]],"traceClockwise":["start at ...","follow edge ...","return to start"],"traceTurtle":[{"op":"move","x":0,"y":0},{"op":"line","x":0,"y":0}],"occlusion":"..."} using pixel coordinates in THIS current image.',
+    "Use polygon only as a compatibility fallback for one connected part. Use box only for a genuinely rectangular object with exact rectangular boundaries.",
+    "If this exact object is no longer visible, answer exactly: NONE",
+])
+
+DEFAULT_RECURSIVE_EXTRACTOR_PROMPT = "\n".join([
+    "SCENE OBJECT EXTRACTION AND BACKGROUND RECONSTRUCTION.",
+    "Remove exactly ONE object from the attached current image using the exact geometry already produced by Outliner.",
+    "TEXTUAL DESCRIPTION:",
+    "{{textualDescription}}",
+    "PLANNER-SELECTED NEXT OBJECT: {{nextObjectName}}",
+    "Object description: {{nextObjectDescription}}",
+    "Planner position: {{plannerPosition}} of {{plannerTotal}}",
+    "OUTLINER RESULT:",
+    "{{outline}}",
+    "Do not change the extraction order or outline another object. Outliner owns contour geometry; Extractor owns removal and reconstruction.",
+    "Describe what visually continues BEHIND the outlined object: background colors, gradients, lines, texture, and which surrounding edges should continue through the hole.",
+    'Answer ONLY with JSON: {"name":"{{nextObjectName}}","backgroundFill":{"description":"...","colors":["#RRGGBB"],"continueEdges":["..."],"texture":"..."}}.',
+])
+
+
+def render_outliner_prompt(
+    template: str,
+    textual_description: str,
+    thing: dict[str, Any],
+    position: int,
+    total: int,
+    width: int,
+    height: int,
+    planner_relationships: Any = None,
+) -> str:
+    relationships = json.dumps(planner_relationships or {}, indent=2)
+    return (
+        template.replace("{{textualDescription}}", textual_description)
+        .replace("{{nextObjectName}}", str(thing.get("name", "")))
+        .replace("{{nextObjectDescription}}", str(thing.get("description", "")))
+        .replace("{{plannerPosition}}", str(position))
+        .replace("{{plannerTotal}}", str(total))
+        .replace("{{plannerRelationships}}", relationships)
+        .replace("{{outlineImage}}", str(thing.get("outlineImage") or ""))
+        .replace("{{imageWidth}}", str(width))
+        .replace("{{imageHeight}}", str(height))
+        .replace("{{maxX}}", str(max(0, width - 1)))
+        .replace("{{maxY}}", str(max(0, height - 1)))
+    )
+
+
+def render_extractor_prompt(
+    template: str,
+    textual_description: str,
+    thing: dict[str, Any],
+    position: int,
+    total: int,
+) -> str:
+    outline = str(thing.get("outlineOutput") or thing.get("cutoutInstructions") or "Outliner result is unavailable.")
+    return (
+        template.replace("{{textualDescription}}", textual_description)
+        .replace("{{nextObjectName}}", str(thing.get("name", "")))
+        .replace("{{nextObjectDescription}}", str(thing.get("description", "")))
+        .replace("{{outline}}", outline)
+        .replace("{{cutoutInstructions}}", outline)
+        .replace("{{plannerPosition}}", str(position))
+        .replace("{{plannerTotal}}", str(total))
+    )
+
+
+def parse_outline_geometry(text: str) -> dict[str, Any]:
+    """Parse the Outliner JSON: polygons / holes / box / traceTurtle / name."""
+    match = re.search(r"\{[\s\S]*\}", text or "")
+    if not match:
+        return {}
+    try:
+        parsed = json.loads(match.group(0))
+    except (json.JSONDecodeError, ValueError):
+        return {}
+    if not isinstance(parsed, dict):
+        return {}
+
+    def _polys(value: Any) -> list[list[list[float]]]:
+        if not isinstance(value, list):
+            return []
+        return [poly for poly in value if isinstance(poly, list) and len(poly) >= 3]
+
+    polygons = _polys(parsed.get("polygons"))
+    holes = _polys(parsed.get("holes"))
+    if not polygons and isinstance(parsed.get("polygon"), list) and len(parsed["polygon"]) >= 3:
+        polygons = [parsed["polygon"]]
+    box = None
+    if isinstance(parsed.get("box"), list) and len(parsed["box"]) == 4:
+        try:
+            box = [float(v) for v in parsed["box"]]
+        except (TypeError, ValueError):
+            box = None
+    trace_turtle: list[dict[str, Any]] = []
+    if isinstance(parsed.get("traceTurtle"), list):
+        for command in parsed["traceTurtle"]:
+            if not isinstance(command, dict):
+                continue
+            try:
+                trace_turtle.append(
+                    {"op": str(command.get("op") or ""), "x": float(command.get("x")), "y": float(command.get("y"))}
+                )
+            except (TypeError, ValueError):
+                continue
+    return {
+        "name": str(parsed.get("name") or ""),
+        "polygons": polygons,
+        "holes": holes,
+        "box": box,
+        "traceTurtle": trace_turtle,
+    }
+
+
+def parse_background_fill(text: str) -> dict[str, Any]:
+    match = re.search(r"\{[\s\S]*\}", text or "")
+    if not match:
+        return {}
+    try:
+        parsed = json.loads(match.group(0))
+    except (json.JSONDecodeError, ValueError):
+        return {}
+    fill = parsed.get("backgroundFill") if isinstance(parsed, dict) else None
+    return fill if isinstance(fill, dict) else {}
+
+
+def has_aligned_outline(thing: dict[str, Any]) -> bool:
+    box = thing.get("outlineBox")
+    has_geometry = bool(thing.get("outlinePolygons")) or (isinstance(box, list) and len(box) == 4)
+    dims = thing.get("outlineDimensions") or {}
+    return bool(
+        has_geometry
+        and thing.get("outlineImage")
+        and isinstance(dims, dict)
+        and dims.get("width")
+        and dims.get("height")
+        and thing.get("outlineVerificationImage")
+        and thing.get("outlineGeometryHash")
+        and thing.get("outlineTraceAgreement") is not None
+        and thing.get("outlineBoundaryCoverage") is not None
+    )
+
+
+def has_visualized_plan(inventory: dict[str, Any]) -> bool:
+    return bool(inventory.get("extractionOrder")) and bool(inventory.get("parallelGroups"))
+
+
+def active_outline_group_names(inventory: dict[str, Any]) -> set[str] | None:
+    """The earliest parallel group that still has a thing needing an outline.
+
+    Returns None when there is no group gating to apply (0/1 groups).
+    """
+    groups = inventory.get("parallelGroups") or []
+    if len(groups) <= 1:
+        return None
+    by_name = {str(t.get("name")): t for t in inventory.get("things") or []}
+    for group in groups:
+        needs = False
+        for name in group:
+            thing = by_name.get(name)
+            if not thing:
+                continue
+            if thing.get("outputImages"):
+                continue
+            if not has_aligned_outline(thing):
+                needs = True
+                break
+        if needs:
+            return set(group)
+    return None
+
+
+def image_dimensions(root: Path, rel_path: str) -> tuple[int, int] | None:
+    candidate = (root / rel_path).resolve()
+    try:
+        candidate.relative_to(root.resolve())
+    except ValueError:
+        return None
+    if not candidate.is_file():
+        return None
+    try:
+        from PIL import Image  # noqa: PLC0415
+
+        with Image.open(candidate) as img:
+            return int(img.width), int(img.height)
+    except Exception:  # noqa: BLE001
+        return None
 
 
 def render_description_prompt(
@@ -281,10 +489,13 @@ def _describer_concurrency(state: dict[str, Any], override: int | None) -> int:
 
 
 def persist_inventory(workspace_id: str, inventory: dict[str, Any]) -> None:
-    """Read-modify-write the memberInventories shard for one inventory.
+    """Read-modify-write ONE inventory into the full page-state.
 
-    Serialized by the page-state lock so concurrent describe workers cannot lose
-    each other's updates.
+    The whole state is loaded and re-saved (with only memberInventories changed)
+    so the manifest keeps frames/models/prompts/selection intact — passing a
+    partial state to _save_page_state_payload would rewrite page_state.json down
+    to just that key. Serialized by the page-state lock so concurrent workers
+    cannot lose each other's updates.
     """
     with _page_state_lock(workspace_id):
         state = load_state(workspace_id)
@@ -294,14 +505,40 @@ def persist_inventory(workspace_id: str, inventory: dict[str, Any]) -> None:
             if isinstance(item, dict) and item.get("id") != inventory.get("id")
         ]
         inventories.append(inventory)
-        # Persist only the memberInventories shard; omit modelResponseCache so the
-        # empty-overwrite guard keeps the existing cache intact.
-        _save_page_state_payload(
-            {
-                "workspaceId": workspace_id,
-                "state": {"memberInventories": inventories},
-            }
-        )
+        state["memberInventories"] = inventories
+        _save_page_state_payload({"workspaceId": workspace_id, "state": state})
+
+
+def update_thing(
+    workspace_id: str,
+    inventory_id: str,
+    thing_name: str,
+    patch: dict[str, Any],
+    *,
+    inventory_patch: dict[str, Any] | None = None,
+    member_scenes: dict[str, Any] | None = None,
+) -> None:
+    """Patch a single thing (matched by name) within an inventory, full-state safe."""
+    with _page_state_lock(workspace_id):
+        state = load_state(workspace_id)
+        inventories = state.get("memberInventories") or []
+        for inventory in inventories:
+            if not isinstance(inventory, dict) or inventory.get("id") != inventory_id:
+                continue
+            if inventory_patch:
+                inventory.update(inventory_patch)
+            things = inventory.get("things") or []
+            for thing in things:
+                if isinstance(thing, dict) and thing.get("name") == thing_name:
+                    thing.update(patch)
+                    break
+            break
+        state["memberInventories"] = inventories
+        if member_scenes:
+            scenes = state.get("memberScenes") or {}
+            scenes.update(member_scenes)
+            state["memberScenes"] = scenes
+        _save_page_state_payload({"workspaceId": workspace_id, "state": state})
 
 
 # --------------------------------------------------------------------------- #
@@ -529,8 +766,384 @@ def run_describe(
     return summary
 
 
+def _effective_stage_model(state: dict[str, Any], key: str, override: str | None) -> str:
+    if override:
+        return override
+    return str(state.get(key) or state.get("allCallsModel") or "").strip()
+
+
+def _stage_concurrency(state: dict[str, Any], key: str, override: int | None, default: int = 2) -> int:
+    if override:
+        return max(1, int(override))
+    concurrency = state.get("llmCallConcurrency")
+    if isinstance(concurrency, dict) and concurrency.get(key):
+        try:
+            return max(1, int(concurrency[key]))
+        except (TypeError, ValueError):
+            pass
+    return default
+
+
+def run_outline(
+    workspace_id: str,
+    *,
+    model_override: str | None = None,
+    goal_override: str | None = None,
+    only_selected: bool = True,
+    concurrency_override: int | None = None,
+    stop_event: threading.Event | None = None,
+    log: Callable[[str], None] | None = None,
+    counts: dict[str, int] | None = None,
+) -> str:
+    """Outline every not-yet-outlined object, honoring parallel-group order."""
+    emit = log or (lambda _msg: None)
+    counts = counts if counts is not None else {}
+    root = _workspace_root(workspace_id)
+    state = load_state(workspace_id)
+    model_id = _effective_stage_model(state, "outlinerModel", model_override)
+    if not model_id:
+        raise RuntimeError("no outliner model configured (set outlinerModel/allCallsModel or pass --model)")
+    template = str(state.get("memberOutlinerPrompt") or "").strip()
+    if not template or state.get("outlinerPromptSelection") == "default":
+        template = DEFAULT_MEMBER_OUTLINER_PROMPT
+
+    # Build the current candidate set (group-gated) from a fresh state read.
+    candidates: list[tuple[dict[str, Any], dict[str, Any]]] = []
+    for inventory in state.get("memberInventories") or []:
+        if not isinstance(inventory, dict) or not has_visualized_plan(inventory):
+            continue
+        active_group = active_outline_group_names(inventory)
+        for thing in inventory.get("things") or []:
+            if not isinstance(thing, dict) or thing.get("outputImages"):
+                continue
+            if active_group is not None and thing.get("name") not in active_group:
+                continue
+            if has_aligned_outline(thing):
+                continue
+            candidates.append((inventory, thing))
+    if not candidates:
+        emit(f"{_ts()} nothing to outline (describe first, or all objects already outlined)")
+        return "nothing to outline"
+
+    concurrency = _stage_concurrency(state, "outliner", concurrency_override, 2)
+    counts["total"] = len(candidates)
+    counts["done"] = 0
+    counts["failed"] = 0
+    emit(f"{_ts()} outline start · {len(candidates)} object(s) · model {model_id} · concurrency {concurrency}")
+
+    def outline_one(pair: tuple[dict[str, Any], dict[str, Any]]) -> None:
+        if stop_event is not None and stop_event.is_set():
+            return
+        inventory, thing = pair
+        inventory_id = str(inventory.get("id"))
+        name = str(thing.get("name"))
+        scene_path = str(inventory.get("sourceImage") or inventory.get("framePath") or "")
+        order = inventory.get("extractionOrder") or []
+        position = order.index(name) if name in order else 0
+        total = len(order) or len(inventory.get("things") or [])
+        dims = image_dimensions(root, scene_path)
+        if not dims:
+            counts["failed"] += 1
+            emit(f"{_ts()} ✗ outline {name}: could not load {scene_path}")
+            update_thing(workspace_id, inventory_id, name, {
+                "status": "listed",
+                "outlineError": f"Could not load Outliner input image: {scene_path}",
+            })
+            return
+        width, height = dims
+        prompt = render_outliner_prompt(
+            template,
+            str(inventory.get("descriptionOutput") or inventory.get("sceneDescription") or ""),
+            {**thing, "outlineImage": scene_path},
+            position + 1,
+            total,
+            width,
+            height,
+        )
+        update_thing(workspace_id, inventory_id, name, {
+            "status": "outlining",
+            "inputImage": scene_path,
+            "outlineImage": scene_path,
+            "outlinePrompt": prompt,
+            "outlineDimensions": {"width": width, "height": height},
+        })
+        image = image_to_data_url(root, scene_path)
+        try:
+            raw = invoke_model(root, model_id, prompt, image, 120).strip()
+        except Exception as error:  # noqa: BLE001
+            counts["failed"] += 1
+            emit(f"{_ts()} ✗ outline {name}: {error}")
+            update_thing(workspace_id, inventory_id, name, {"status": "listed", "outlineError": str(error)})
+            return
+        if re.fullmatch(r"\s*none[.!]?\s*", raw, re.IGNORECASE):
+            counts["failed"] += 1
+            emit(f"{_ts()} ✗ outline {name}: Outliner could not locate this object")
+            update_thing(workspace_id, inventory_id, name, {
+                "status": "not_found",
+                "outlineOutput": raw,
+                "outlineError": "Outliner could not locate this object.",
+            })
+            return
+        geometry = parse_outline_geometry(raw)
+        polygons = geometry.get("polygons") or []
+        box = geometry.get("box")
+        trace_turtle = geometry.get("traceTurtle") or []
+        if not polygons and not box:
+            counts["failed"] += 1
+            emit(f"{_ts()} ✗ outline {name}: no usable polygons or box")
+            update_thing(workspace_id, inventory_id, name, {
+                "status": "listed", "outlineOutput": raw,
+                "outlineError": "Outliner returned no usable precise polygons or box.",
+            })
+            return
+        if not trace_turtle:
+            counts["failed"] += 1
+            emit(f"{_ts()} ✗ outline {name}: no Turtle trace to verify")
+            update_thing(workspace_id, inventory_id, name, {
+                "status": "listed", "outlineOutput": raw,
+                "outlineError": "Outliner returned no Turtle trace to verify.",
+            })
+            return
+        try:
+            verification = outline_verification({
+                "workspaceId": workspace_id,
+                "image": scene_path,
+                "name": name,
+                "polygons": polygons,
+                "holes": geometry.get("holes") or [],
+                "box": box,
+                "traceTurtle": trace_turtle,
+                "plannerNumber": position + 1,
+            })
+        except Exception as error:  # noqa: BLE001
+            counts["failed"] += 1
+            emit(f"{_ts()} ✗ outline {name}: verification failed: {error}")
+            update_thing(workspace_id, inventory_id, name, {
+                "status": "listed", "outlineOutput": raw, "outlineError": f"verification failed: {error}",
+            })
+            return
+        update_thing(workspace_id, inventory_id, name, {
+            "status": "outlined",
+            "outlineOutput": raw,
+            "outlineImage": scene_path,
+            "outlineDimensions": verification.get("dimensions") or {"width": width, "height": height},
+            "outlinePolygons": polygons,
+            "outlineHoles": geometry.get("holes") or [],
+            "outlineBox": box,
+            "outlineTraceTurtle": trace_turtle,
+            "outlineVerificationImage": str(verification.get("verificationImage") or ""),
+            "outlineGeometryHash": str(verification.get("geometryHash") or ""),
+            "outlineTraceAgreement": verification.get("traceAgreement"),
+            "outlineBoundaryCoverage": verification.get("boundaryCoverage"),
+            "cutoutInstructions": raw,
+            "outlineError": None,
+        })
+        counts["done"] += 1
+        emit(f"{_ts()} ✓ outlined {name} (position {position + 1}/{total})")
+
+    if concurrency <= 1:
+        for pair in candidates:
+            if stop_event is not None and stop_event.is_set():
+                break
+            outline_one(pair)
+    else:
+        with ThreadPoolExecutor(max_workers=concurrency) as pool:
+            list(pool.map(outline_one, candidates))
+
+    summary = f"outline complete: {counts.get('done', 0)} outlined, {counts.get('failed', 0)} failed of {counts.get('total', 0)}"
+    emit(f"{_ts()} {summary}")
+    return summary
+
+
+def run_extract(
+    workspace_id: str,
+    *,
+    model_override: str | None = None,
+    goal_override: str | None = None,
+    only_selected: bool = True,
+    concurrency_override: int | None = None,
+    stop_event: threading.Event | None = None,
+    log: Callable[[str], None] | None = None,
+    counts: dict[str, int] | None = None,
+) -> str:
+    """Extract outlined objects in group/order, removing each from the scene."""
+    emit = log or (lambda _msg: None)
+    counts = counts if counts is not None else {}
+    root = _workspace_root(workspace_id)
+    state = load_state(workspace_id)
+    model_id = _effective_stage_model(state, "extractorModel", model_override)
+    if not model_id:
+        raise RuntimeError("no extractor model configured (set extractorModel/allCallsModel or pass --model)")
+    template = str(state.get("memberExtractorPrompt") or "").strip()
+    if not template or state.get("extractorPromptSelection") == "default":
+        template = DEFAULT_RECURSIVE_EXTRACTOR_PROMPT
+    fill_mode = str(state.get("memberFill") or "transparent")
+
+    inventories = [
+        inventory
+        for inventory in (state.get("memberInventories") or [])
+        if isinstance(inventory, dict) and has_visualized_plan(inventory)
+    ]
+    # Only inventories whose pending objects are fully outlined are extractable.
+    ready = []
+    for inventory in inventories:
+        pending = [t for t in inventory.get("things") or [] if not t.get("outputImages")]
+        if pending and all(has_aligned_outline(t) for t in pending):
+            ready.append(inventory)
+    if not ready:
+        emit(f"{_ts()} nothing to extract (outline the current group first)")
+        return "nothing to extract"
+
+    scenes = dict(state.get("memberScenes") or {})
+    concurrency = _stage_concurrency(state, "extractor", concurrency_override, 2)
+    total_objects = sum(len([t for t in inv.get("things") or [] if not t.get("outputImages")]) for inv in ready)
+    counts["total"] = total_objects
+    counts["done"] = 0
+    counts["failed"] = 0
+    emit(f"{_ts()} extract start · {len(ready)} scene(s), {total_objects} object(s) · model {model_id} · concurrency {concurrency}")
+    step_lock = threading.Lock()
+    step_counter = {"n": int(state.get("memberStep") or 0)}
+
+    def next_step() -> int:
+        with step_lock:
+            step_counter["n"] += 1
+            return step_counter["n"]
+
+    def extract_inventory(inventory: dict[str, Any]) -> None:
+        inventory_id = str(inventory.get("id"))
+        order = inventory.get("extractionOrder") or [t.get("name") for t in inventory.get("things") or []]
+        by_name = {str(t.get("name")): t for t in inventory.get("things") or []}
+        scene_path = scenes.get(inventory_id) or str(inventory.get("sourceImage") or inventory.get("framePath") or "")
+        description = str(inventory.get("descriptionOutput") or inventory.get("sceneDescription") or "")
+        for position, name in enumerate(order):
+            if stop_event is not None and stop_event.is_set():
+                return
+            thing = by_name.get(name)
+            if not thing or thing.get("outputImages") or not has_aligned_outline(thing):
+                continue
+            prompt = render_extractor_prompt(template, description, thing, position + 1, len(order))
+            image = image_to_data_url(root, scene_path)
+            try:
+                raw = invoke_model(root, model_id, prompt, image, 120).strip()
+            except Exception as error:  # noqa: BLE001
+                counts["failed"] += 1
+                emit(f"{_ts()} ✗ extract {name}: {error}")
+                update_thing(workspace_id, inventory_id, name, {"status": "failed", "error": str(error)})
+                continue
+            fill_instructions = parse_background_fill(raw)
+            if not fill_instructions:
+                counts["failed"] += 1
+                emit(f"{_ts()} ✗ extract {name}: no usable backgroundFill plan")
+                update_thing(workspace_id, inventory_id, name, {
+                    "status": "failed", "error": "Extractor returned no usable backgroundFill reconstruction plan.",
+                })
+                continue
+            try:
+                cut = member_cut({
+                    "workspaceId": workspace_id,
+                    "image": scene_path,
+                    "outlineSourceImage": thing.get("outlineImage"),
+                    "outlineSourceDimensions": thing.get("outlineDimensions"),
+                    "polygons": thing.get("outlinePolygons") or [],
+                    "holes": thing.get("outlineHoles") or [],
+                    "box": thing.get("outlineBox"),
+                    "outlineVerificationImage": thing.get("outlineVerificationImage"),
+                    "outlineGeometryHash": thing.get("outlineGeometryHash"),
+                    "name": name,
+                    "step": next_step(),
+                    "fill": fill_mode,
+                    "fillInstructions": fill_instructions,
+                })
+            except Exception as error:  # noqa: BLE001
+                counts["failed"] += 1
+                emit(f"{_ts()} ✗ extract {name}: member-cut failed: {error}")
+                update_thing(workspace_id, inventory_id, name, {"status": "failed", "error": f"member-cut failed: {error}"})
+                continue
+            cutout = str(cut.get("cutout") or "")
+            new_scene = str(cut.get("scene") or scene_path)
+            scenes[inventory_id] = new_scene
+            update_thing(
+                workspace_id,
+                inventory_id,
+                name,
+                {
+                    "status": "extracted",
+                    "outputImages": [cutout],
+                    "fillInstructions": fill_instructions,
+                    "error": None,
+                },
+                inventory_patch={"status": "extracting"},
+                member_scenes={inventory_id: new_scene},
+            )
+            scene_path = new_scene
+            counts["done"] += 1
+            emit(f"{_ts()} ✓ extracted {name} ({counts['done']}/{total_objects})")
+        update_thing(workspace_id, inventory_id, name, {}, inventory_patch={"status": "done"})
+
+    if concurrency <= 1:
+        for inventory in ready:
+            if stop_event is not None and stop_event.is_set():
+                break
+            extract_inventory(inventory)
+    else:
+        with ThreadPoolExecutor(max_workers=concurrency) as pool:
+            list(pool.map(extract_inventory, ready))
+
+    summary = f"extract complete: {counts.get('done', 0)} extracted, {counts.get('failed', 0)} failed of {counts.get('total', 0)}"
+    emit(f"{_ts()} {summary}")
+    return summary
+
+
+def run_full(
+    workspace_id: str,
+    *,
+    model_override: str | None = None,
+    goal_override: str | None = None,
+    only_selected: bool = True,
+    concurrency_override: int | None = None,
+    stop_event: threading.Event | None = None,
+    log: Callable[[str], None] | None = None,
+    counts: dict[str, int] | None = None,
+) -> str:
+    """Run describe -> outline -> extract, repeating outline+extract until the
+    current parallel groups are drained (later groups unblock as earlier ones
+    are removed)."""
+    emit = log or (lambda _msg: None)
+    counts = counts if counts is not None else {}
+    common = dict(
+        model_override=model_override,
+        goal_override=goal_override,
+        only_selected=only_selected,
+        concurrency_override=concurrency_override,
+        stop_event=stop_event,
+        log=emit,
+    )
+    emit(f"{_ts()} === full pipeline: describe ===")
+    run_describe(workspace_id, counts=counts, **common)
+    if stop_event is not None and stop_event.is_set():
+        return "stopped after describe"
+    # Outline + extract advance group-by-group; loop until neither does work.
+    for round_index in range(1, 41):
+        if stop_event is not None and stop_event.is_set():
+            return f"stopped during round {round_index}"
+        emit(f"{_ts()} === full pipeline: outline (round {round_index}) ===")
+        outline_summary = run_outline(workspace_id, counts=counts, **common)
+        if stop_event is not None and stop_event.is_set():
+            return f"stopped during outline round {round_index}"
+        emit(f"{_ts()} === full pipeline: extract (round {round_index}) ===")
+        extract_summary = run_extract(workspace_id, counts=counts, **common)
+        if outline_summary.startswith("nothing") and extract_summary.startswith("nothing"):
+            break
+    summary = "full pipeline complete"
+    emit(f"{_ts()} {summary}")
+    return summary
+
+
 _STAGE_RUNNERS: dict[str, Callable[..., str]] = {
     "describe": run_describe,
+    "outline": run_outline,
+    "extract": run_extract,
+    "full": run_full,
 }
 
 

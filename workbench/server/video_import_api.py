@@ -73,7 +73,20 @@ def _atomic_json_write(path: Path, value: Any) -> None:
     temporary = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
     try:
         temporary.write_text(json.dumps(value, indent=2), encoding="utf-8")
-        temporary.replace(path)
+        # On Windows os.replace fails with WinError 5 (access denied) when another
+        # process momentarily holds the target open for reading (e.g. a concurrent
+        # GET page-state, or the headless pipeline writing while the API serves the
+        # same file). Retry the rename briefly to ride out that sharing window.
+        last_error: OSError | None = None
+        for attempt in range(10):
+            try:
+                temporary.replace(path)
+                return
+            except PermissionError as error:  # WinError 5 / 32 sharing race
+                last_error = error
+                time.sleep(0.05 * (attempt + 1))
+        if last_error is not None:
+            raise last_error
     finally:
         temporary.unlink(missing_ok=True)
 

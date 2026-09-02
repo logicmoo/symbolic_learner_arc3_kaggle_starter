@@ -3448,6 +3448,10 @@ export function VideoImportPage({
   useEffect(() => {
     if (!restoredRef.current) return;
     const timer = setTimeout(() => {
+      // While a headless server-side pipeline run owns memberInventories, the
+      // client must not autosave its (older) copy over the server's newer
+      // progress. The poller below keeps the client display in sync instead.
+      if (pipelineRunningRef.current) return;
       const state = buildSnapshot();
       // localStorage can't hold the full (cached) snapshot — store the slim one.
       try { localStorage.setItem(snapshotKey, JSON.stringify(buildSlimSnapshot())); } catch { /* quota */ }
@@ -3470,6 +3474,49 @@ export function VideoImportPage({
     try { navigator.sendBeacon?.(`${API}/page-state`, new Blob([JSON.stringify({ workspaceId, state: slim })], { type: "application/json" })); } catch { /* best effort */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // Headless server-side pipeline: poll its status so the STATUS window shows the
+  // exact same messages the server emits, and mirror the server's inventories
+  // into the display while a run is active (the server, not the tab, owns them).
+  const pipelineRunningRef = useRef(false);
+  const pipelineLogSeenRef = useRef(0);
+  const [pipelineRunStatus, setPipelineRunStatus] = useState<string>("idle");
+  useEffect(() => {
+    if (!restoredRef.current) return;
+    let cancelled = false;
+    let timer: number | undefined;
+    const poll = async () => {
+      let running = false;
+      try {
+        const res = await api(`pipeline/status?workspaceId=${encodeURIComponent(workspaceId)}`);
+        if (cancelled) return;
+        const status = String(res.status || "idle");
+        running = status === "running";
+        setPipelineRunStatus(status);
+        const lines: string[] = Array.isArray(res.log) ? res.log.map((line: unknown) => String(line)) : [];
+        // A new run resets the log; detect the shrink and replay from the start.
+        if (lines.length < pipelineLogSeenRef.current) pipelineLogSeenRef.current = 0;
+        for (let i = pipelineLogSeenRef.current; i < lines.length; i += 1) {
+          const line = lines[i].replace(/^\d\d:\d\d:\d\d\s+/, "").trim();
+          if (line) say(`⇢ ${line}`);
+        }
+        pipelineLogSeenRef.current = lines.length;
+        if (running) {
+          try {
+            const ps = await api(`page-state?workspaceId=${encodeURIComponent(workspaceId)}`);
+            const serverInv = ps?.state?.memberInventories;
+            if (!cancelled && Array.isArray(serverInv)) setMemberInventories(serverInv);
+          } catch { /* transient */ }
+        }
+      } catch { /* backend not reachable / endpoint missing — stay quiet */ }
+      finally {
+        pipelineRunningRef.current = running;
+        if (!cancelled) timer = window.setTimeout(poll, running ? 1500 : 5000);
+      }
+    };
+    void poll();
+    return () => { cancelled = true; if (timer) window.clearTimeout(timer); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspaceId]);
   const copyStateJson = () => {
     const text = JSON.stringify(buildSnapshot(), null, 2);
     void navigator.clipboard?.writeText(text).then(() => say("state JSON copied to clipboard")).catch(() => say("copy failed — state JSON logged to console"));
@@ -3548,6 +3595,26 @@ export function VideoImportPage({
       turtleArtifacts: {}, output: [], trail: [], probes: [], gallery: null,
     } }).catch(() => undefined);
     say(`cleared all LLM work (${count} cached response(s) + inventories/members/outputs); a fresh run will re-describe from scratch`);
+  };
+  // Start/stop the headless server-side pipeline. The server advances the stages
+  // and pushes status; the page just triggers and watches.
+  const startServerPipeline = async () => {
+    try {
+      pipelineLogSeenRef.current = 0;
+      const res = await api("pipeline/start", { workspaceId, stage: "describe", onlySelected: true });
+      pipelineRunningRef.current = String(res.status || "") === "running";
+      setPipelineRunStatus(String(res.status || "running"));
+      say("▶ started server pipeline (describe)");
+    } catch (reason) {
+      const message = reason instanceof Error ? reason.message : String(reason);
+      say(`✗ could not start server pipeline: ${message}`);
+    }
+  };
+  const stopServerPipeline = async () => {
+    try {
+      await api("pipeline/stop", { workspaceId });
+      say("■ requested server pipeline stop");
+    } catch { /* best effort */ }
   };
   // JSON CONFIG editor draft: null = tracking the live config. Edits apply to
   // the flow LIVE as soon as the JSON parses (debounced).
@@ -5892,6 +5959,10 @@ export function VideoImportPage({
             auto next 77
           </label>
           <button title="Copy the exact page state as JSON" disabled={false} onClick={copyStateJson}>⤓ state</button>
+          {pipelineRunStatus === "running"
+            ? <button title="Stop the headless server-side pipeline run" onClick={() => void stopServerPipeline()}>■ stop server run</button>
+            : <button title="Run describe on the server (headless — no browser needed; the STATUS log streams from the server)" onClick={() => void startServerPipeline()}>▶ run on server</button>}
+          <span className="video-import-toggle" title="Headless server pipeline status">server: {pipelineRunStatus}</span>
           <button title="Clear all LLM-produced work (cached responses, inventories, members, outputs) but keep the source images, so a fresh run re-describes from scratch" onClick={clearModelCache}>⟲ clear LLM work</button>
           <button title="Forget the saved state — next load starts clean" onClick={forgetState}>⟲ forget</button>
           <span className="video-import-status-modes" role="group" aria-label="Status log size">
