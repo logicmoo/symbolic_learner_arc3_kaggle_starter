@@ -5611,10 +5611,6 @@ export function VideoImportPage({
               <option value="">importables… ({importables.length})</option>
               {importables.map((file) => (<option key={file.path} value={file.path}>{file.name}</option>))}
             </select>
-            <select className="video-import-catalog" value="" disabled={busy} onChange={(event) => { if (event.target.value) void importArcRecording(event.target.value); }}>
-              <option value="">ARC playbacks… ({arcRecordings.length})</option>
-              {arcRecordings.map((recording) => (<option key={recording.path} value={recording.path}>{recording.gameId} · {recording.frames} frames · {recording.path}</option>))}
-            </select>
             <input value={source} placeholder="YouTube / HLS / RTSP / RTMP / SRT / video URL or local movie path" disabled={busy} onChange={(event) => setSource(event.target.value)} />
             <input className="video-import-name" value={nameDraft} placeholder="name (optional)" disabled={busy} onChange={(event) => setNameDraft(event.target.value)} />
             <select value={quality} disabled={busy} onChange={(event) => setQuality(event.target.value)}>
@@ -5660,6 +5656,17 @@ export function VideoImportPage({
                 <small>{seconds(video.duration)} · {Math.round((video.sizeBytes || 0) / (1024 * 1024))} MB · {video.frameCount || 0} frame(s){video.scenes?.length ? ` · ${video.scenes.length} scene(s)` : ""}</small>
               </button>
             ))}
+          </div>
+        </div>
+      </Section>
+
+      <Section {...section("gameImport", "IMPORT · ARC3 RECORDINGS", `${arcRecordings.length} recording(s)`)}>
+        <div className="vi2-body">
+          <div className="video-import-row">
+            <select className="video-import-catalog" value="" disabled={busy} onChange={(event) => { if (event.target.value) void importArcRecording(event.target.value); }}>
+              <option value="">ARC playbacks… ({arcRecordings.length})</option>
+              {arcRecordings.map((recording) => (<option key={recording.path} value={recording.path}>{recording.gameId} · {recording.frames} frames · {recording.path}</option>))}
+            </select>
           </div>
         </div>
       </Section>
