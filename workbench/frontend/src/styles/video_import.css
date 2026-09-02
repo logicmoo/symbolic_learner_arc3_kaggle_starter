@@ -9,6 +9,18 @@
   overflow-y: auto;
 }
 .video-import-page > * { min-width: 0; max-width: 100%; }
+/* Contained top bar: page name + subview buttons together in one bordered box. */
+.video-import-topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; flex-wrap: wrap;
+  margin: 0 0 2px; padding: 4px 6px 4px 10px;
+  border: 1px solid var(--line, #2a3742); border-radius: 6px;
+  background: #071016;
+}
+.video-import-topbar-name {
+  font: 600 12px ui-monospace, monospace; letter-spacing: .04em;
+  color: #cfe0e6; white-space: nowrap; cursor: help;
+}
 .video-import-human-nav {
   display: flex;
   flex-wrap: wrap;
@@ -22,13 +34,14 @@
   background: transparent;
 }
 .video-import-human-nav button {
-  min-width: 0;
-  padding: 4px 9px;
+  min-width: 78px;
+  padding: 3px 8px;
   border: 1px solid var(--line, #2a3742);
   border-radius: 4px;
   background: #0b1620;
   color: var(--muted, #8aa);
   font-size: 11px;
+  text-align: center;
   white-space: nowrap;
   cursor: pointer;
 }

@@ -5504,12 +5504,8 @@ export function VideoImportPage({
   // ---- render -----------------------------------------------------------------------
   return (
     <section className="resource-view video-import-page vi2" data-subview={activeSubview} onClickCapture={handleImageContextClick} onPointerMove={handleImageZoomPointer} onPointerLeave={() => { hoveredImageRef.current = null; setAltImageZoom(null); setHoverImageContext(null); }}>
-      <div className="resource-heading">
-        <div>
-          <span>KNOWLEDGE INTAKE · GENERATION 2</span>
-          <h1>Video Import 2</h1>
-          <p>Rebuilt from its own build prompt (see the help tab appendix): import → timeline → the preview stack for building filter chains → probes and entity strips → materialize. Every gallery collapses, every step interrupts.</p>
-        </div>
+      <div className="video-import-topbar">
+        <b className="video-import-topbar-name" title="Rebuilt from its own build prompt: import → timeline → preview stack for filter chains → probes and entity strips → materialize. Every gallery collapses, every step interrupts.">Video Import 2</b>
         <nav className="video-import-human-nav" aria-label="Video Import steps">
           {VIDEO_IMPORT_SUBVIEWS.map((entry) => (
             <button key={entry.id} type="button" className={activeSubview === entry.id ? "is-active" : ""} aria-current={activeSubview === entry.id ? "page" : undefined} onClick={() => selectSubview(entry.id)}>{entry.label}</button>
