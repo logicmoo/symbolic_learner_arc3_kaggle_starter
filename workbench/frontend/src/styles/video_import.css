@@ -223,10 +223,6 @@
   min-height: 22px; overflow-y: auto; scroll-behavior: smooth;
 }
 .video-import-activity-lines-wrap { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); }
-.video-import-activity-lines-hidden {
-  padding-top: 5px; border-top: 1px solid var(--line, #2a3742);
-  color: var(--muted, #718494); font-size: 11px; font-style: italic;
-}
 .video-import-status-resizer {
   height: 7px; margin-top: 1px; cursor: ns-resize;
   border-top: 1px solid var(--line, #2a3742);

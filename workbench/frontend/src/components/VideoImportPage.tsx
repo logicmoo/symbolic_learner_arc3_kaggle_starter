@@ -5544,11 +5544,10 @@ export function VideoImportPage({
             <button type="button" className={statusMode === "rows3" ? "is-active" : ""} title="Show ~3 rows" onClick={() => setStatusMode("rows3")}>3 rows</button>
             <button type="button" className={statusMode === "screen20" ? "is-active" : ""} title="20% of screen height" onClick={() => setStatusMode("screen20")}>20%</button>
           </span>
+          <button className="video-import-stop" disabled={!busy && !anyBackgroundJobRunning} onClick={stopEverything}>■ Stop</button>
         </div>
-        <div className="video-import-activity-lower">
-          {statusMode === "hidden" ? (
-            <div className="video-import-activity-lines-hidden">status log hidden — pick 3 rows / 20% to show it</div>
-          ) : (
+        {statusMode !== "hidden" && (
+          <div className="video-import-activity-lower">
             <div className="video-import-activity-lines-wrap">
               <div className="video-import-activity-lines" ref={logLinesRef} style={{ height: statusLinesHeight }}>
                 {log.map((line, index) => (
@@ -5565,9 +5564,8 @@ export function VideoImportPage({
                 onPointerUp={onStatusResizeUp}
               />
             </div>
-          )}
-          <button className="video-import-stop" disabled={!busy && !anyBackgroundJobRunning} onClick={stopEverything}>■ Stop</button>
-        </div>
+          </div>
+        )}
         {downloadJob && (
           <div className="video-import-progress video-import-status-progress" role="progressbar" aria-label="import progress" aria-valuenow={Math.round(downloadJob.percent)} aria-valuemin={0} aria-valuemax={100}>
             <div className="video-import-progress-track"><div className="video-import-progress-fill" style={{ width: `${downloadJob.state === "done" ? 100 : downloadJob.percent}%` }} /></div>
