@@ -1270,6 +1270,17 @@ const seconds = (value?: number | null) => {
   return total >= 60 ? `${Math.floor(total / 60)}m${String(total % 60).padStart(2, "0")}s` : `${total}s`;
 };
 
+// The engine/tool each background media job runs on, named in the status bar.
+const JOB_TOOLS: Record<string, string> = {
+  scenes: "imageio+numpy",
+  extract: "imageio",
+  captions: "ffmpeg + caption model",
+  trim: "imageio/ffmpeg",
+  retinter: "imageio",
+  gallery: "imageio",
+};
+const jobToolLabel = (kind: string) => JOB_TOOLS[kind] || kind;
+
 function PipeFork({ fork, title, value, disabled, onChange }: {
   fork: keyof PipeForkSelections;
   title: string;
@@ -1586,13 +1597,19 @@ export function VideoImportPage({
 
   // ---- status strip + interrupts ----------------------------------------
   const [log, setLog] = useState<Array<{ at: string; text: string }>>([]);
+  const logLinesRef = useRef<HTMLDivElement | null>(null);
   const stopRef = useRef(false);
   const activeRunsRef = useRef(0);
   const say = useCallback((text: string) => {
     const at = new Date().toLocaleTimeString([], { hour12: false });
-    setLog((current) => [...current.slice(-2), { at, text }]);
+    // Keep the full session history (capped) instead of a 3-line rolling window.
+    setLog((current) => [...current.slice(-999), { at, text }]);
     pushGlobalStatus(text, "video-import");
   }, []);
+  useEffect(() => {
+    const element = logLinesRef.current;
+    if (element) element.scrollTop = element.scrollHeight;
+  }, [log]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const run = async (label: string, work: () => Promise<string | void>) => {
@@ -1736,6 +1753,8 @@ export function VideoImportPage({
   const [videos, setVideos] = useState<Video[]>([]);
   const [selectedPath, setSelectedPath] = useState("");
   const selected = videos.find((video) => video.path === selectedPath) || null;
+  const videoLabel = selected?.title
+    || (selectedPath ? selectedPath.split("/").filter(Boolean).pop() || selectedPath : "video");
   const loadVideos = useCallback(async (pick?: string) => {
     const payload = await api(`videos?workspaceId=${encodeURIComponent(workspaceId)}`);
     const list = (payload.videos as Video[]) || [];
@@ -5384,31 +5403,31 @@ export function VideoImportPage({
           <button title="Forget the saved state — next load starts clean" onClick={forgetState}>⟲ forget</button>
         </div>
         <div className="video-import-activity-lower">
-          <div className="video-import-activity-lines">
+          <div className="video-import-activity-lines" ref={logLinesRef}>
             {log.map((line, index) => (
               <span key={`${line.at}-${index}`} className={index === log.length - 1 ? "is-current" : ""}><code>{line.at}</code> {line.text}</span>
             ))}
           </div>
           <button className="video-import-stop" disabled={!busy && !anyBackgroundJobRunning} onClick={stopEverything}>■ Stop</button>
         </div>
-      </div>
-      {error && <div className="backend-error"><b>Video import error</b><span>{error}</span></div>}
-      {visibleJobs.length > 0 && <section className="video-import-media-job-queue">
-        <header><b>MEDIA JOB QUEUE</b><small>{visibleJobs.filter((visibleJob) => visibleJob.state === "running").length} active · {visibleJobs.length} visible</small></header>
         {visibleJobs.map((visibleJob) => {
           const progress = jobProgress(visibleJob);
+          const eta = visibleJob.etaSeconds != null && Number.isFinite(visibleJob.etaSeconds)
+            ? ` · ETA ${seconds(visibleJob.etaSeconds)}`
+            : "";
           return (
-            <div key={`${visibleJob.kind}:${visibleJob.id}`} className="video-import-progress" role="progressbar" aria-label={`${visibleJob.kind} progress`} aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
+            <div key={`${visibleJob.kind}:${visibleJob.id}`} className="video-import-progress video-import-status-progress" role="progressbar" aria-label={`${visibleJob.kind} progress`} aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
               <div className="video-import-progress-track"><div className="video-import-progress-fill" style={{ width: `${visibleJob.state === "done" ? 100 : progress}%` }} /></div>
               <small>
-                {visibleJob.state === "running" && `${visibleJob.kind}: ${visibleJob.done}/${visibleJob.total} · ETA ${visibleJob.etaSeconds}s`}
-                {visibleJob.state === "done" && `${visibleJob.kind} done in ${visibleJob.elapsedSeconds}s${visibleJob.interrupted ? " (interrupted)" : ""}`}
-                {visibleJob.state === "error" && `${visibleJob.kind} failed: ${visibleJob.error}`}
+                {visibleJob.state === "running" && `${jobToolLabel(visibleJob.kind)} · ${videoLabel} — ${visibleJob.kind} ${visibleJob.done}/${visibleJob.total} · ${progress}%${eta}`}
+                {visibleJob.state === "done" && `${jobToolLabel(visibleJob.kind)} · ${videoLabel} — ${visibleJob.kind} done in ${visibleJob.elapsedSeconds}s${visibleJob.interrupted ? " (interrupted)" : ""}`}
+                {visibleJob.state === "error" && `✗ ${visibleJob.kind} failed: ${visibleJob.error}`}
               </small>
             </div>
           );
         })}
-      </section>}
+      </div>
+      {error && <div className="backend-error"><b>Video import error</b><span>{error}</span></div>}
 
       <Section {...section("intake", "INTAKE", `${videos.length} video(s) in the library`)}>
         <div className="vi2-body">

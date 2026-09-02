@@ -220,7 +220,11 @@
 .video-import-activity-lines {
   width: 100%; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 1px;
   padding-top: 5px; border-top: 1px solid var(--line, #2a3742);
+  max-height: 168px; overflow-y: auto; scroll-behavior: smooth;
 }
+.video-import-status-progress { margin-top: 4px; }
+.video-import-status-progress .video-import-progress-track { height: 12px; }
+.video-import-status-progress small { color: inherit; font-size: 11px; }
 .video-import-activity-lines span { color: var(--muted, #8aa); }
 .video-import-activity-lines span.is-current { color: inherit; }
 .video-import-activity-lines code { color: var(--muted, #8aa); margin-right: 6px; font-size: 11px; }
