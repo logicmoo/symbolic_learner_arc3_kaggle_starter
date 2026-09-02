@@ -378,6 +378,27 @@ const buildParallelGroups = (
   return { parallelGroups, extractionOrder: parallelGroups.flat(), omitted };
 };
 
+// Group-gated outlining: honor parallelGroups ordering so the Outliner is fed
+// one group (wave) at a time. The active group is the earliest group that still
+// has a thing needing an outline; later groups are blocked until the current
+// group is fully outlined (or already extracted). Returns null when there is
+// nothing to gate (no groups / a single group), meaning every thing is eligible.
+const activeOutlineGroupNames = (inventory: MemberInventory): Set<string> | null => {
+  const groups = inventory.parallelGroups;
+  if (!groups || groups.length <= 1) return null;
+  const thingByName = new Map(inventory.things.map((thing) => [thing.name, thing] as const));
+  for (const group of groups) {
+    const needsOutline = group.some((name) => {
+      const thing = thingByName.get(name);
+      if (!thing) return false;
+      if (thing.outputImages?.length) return false;
+      return !hasAlignedOutline(thing);
+    });
+    if (needsOutline) return new Set(group);
+  }
+  return null;
+};
+
 // Per-object "what does it need next" indicator, derived from live state.
 type PipelineNext = { label: string; tone: "done" | "active" | "retry" | "wait" | "error" | "lost" };
 
@@ -2967,6 +2988,8 @@ export function VideoImportPage({
       if (thing.outlineError) return retryReady(thing.outlineRetryAfter)
         ? { label: "Outline · retry", tone: "retry" }
         : { label: "Outline · cooling", tone: "error" };
+      const outlineGroup = activeOutlineGroupNames(inventory);
+      if (outlineGroup && !outlineGroup.has(thing.name)) return { label: "Outline · queued", tone: "wait" };
       return { label: "Outline", tone: "wait" };
     }
     if (thing.status === "extracting") return extractorBusyRef.current.has(inventory.id)
@@ -4046,42 +4069,6 @@ export function VideoImportPage({
   const plannerBusyRef = useRef(new Set<string>());
   const outlinerBusyRef = useRef(new Set<string>());
   const extractorBusyRef = useRef(new Set<string>());
-  const memberInventoriesRef = useRef(memberInventories);
-  memberInventoriesRef.current = memberInventories;
-  const loggedStraysRef = useRef(new Set<string>());
-  // Read-only monitor: compare the "flagged in-progress" status against the live
-  // job wrappers (busy-refs). Any item in a transient status that no wrapper owns
-  // is a discrepancy — its job ended without reaching a terminal state (a worker
-  // died, or a stale write resurrected the status). We log each newly-lost item
-  // once so it can be diagnosed. No state is mutated here: the busy-ref-based
-  // batch selection already reclaims it on the next tick, so this stays a pure
-  // observer (mutating state from the scheduler effect caused a render loop).
-  const diagnoseStrandedJobs = () => {
-    const current = new Map<string, string>();
-    for (const inventory of memberInventoriesRef.current) {
-      if (inventory.status === "ordering" && !hasVisualizedPlan(inventory) && !plannerBusyRef.current.has(inventory.id)) {
-        current.set(`planner:${inventory.id}`, `planner·${inventory.subjectName || inventory.id}`);
-      }
-      inventory.things.forEach((thing, index) => {
-        if (!thing.outputImages?.length && thing.status === "outlining" && !hasAlignedOutline(thing)
-          && !outlinerBusyRef.current.has(`${inventory.id}:${index}`)) {
-          current.set(`outliner:${inventory.id}:${index}`, `outliner·${thing.name}`);
-        }
-        if (!thing.outputImages?.length && thing.status === "extracting"
-          && !extractorBusyRef.current.has(inventory.id)) {
-          current.set(`extractor:${inventory.id}:${thing.name}`, `extractor·${thing.name}`);
-        }
-      });
-    }
-    for (const key of Array.from(loggedStraysRef.current)) {
-      if (!current.has(key)) loggedStraysRef.current.delete(key);
-    }
-    const fresh = Array.from(current.entries()).filter(([key]) => !loggedStraysRef.current.has(key));
-    if (!fresh.length) return;
-    fresh.forEach(([key]) => loggedStraysRef.current.add(key));
-    const labels = fresh.map(([, label]) => label);
-    say(`⚠ LOST ${labels.length} job(s) — flagged in-progress but no worker owns them (auto-reclaiming): ${labels.slice(0, 6).join(", ")}${labels.length > 6 ? "…" : ""}`);
-  };
   const planRecursiveInventory = async (inventory: MemberInventory, force = false): Promise<MemberInventory | null> => {
     if (!inventory.things.length) return { ...inventory, status: "done" };
     if (!force && hasVisualizedPlan(inventory)) return inventory;
@@ -4356,17 +4343,7 @@ export function VideoImportPage({
   const runRecursiveOutliner = (onlyMissing = false) =>
     run("Outlining planned objects independently", async () => {
      if (!isRunnableVisionModel(effectiveOutlinerModel)) return "pick an enabled Outliner vision model first";
-     const candidates = memberInventories.flatMap((inventory) => (hasVisualizedPlan(inventory) && (!onlyMissing || isInventoryActive(inventory)))
-       ? inventory.things.map((thing, thingIndex) => ({ inventory, thing, thingIndex })).filter(({ thing, thingIndex }) => {
-         if (thing.outputImages?.length) return false;
-         // Skip only if a worker actually owns this outline right now (busy-ref),
-         // not merely because the persisted status says "outlining" — a worker
-         // that died/gave up can strand that status with nobody working it.
-         if (onlyMissing && outlinerBusyRef.current.has(`${inventory.id}:${thingIndex}`)) return false;
-         const ready = hasAlignedOutline(thing);
-         return !onlyMissing || (!ready && retryReady(thing.outlineRetryAfter));
-       })
-       : []);
+     const candidates = collectOutlineCandidates(onlyMissing);
      if (!candidates.length) return "call Planner first or all planned objects are already outlined";
      let outlined = 0;
      const outlinerConcurrency = effectiveCallConcurrency("outliner");
@@ -5413,6 +5390,30 @@ export function VideoImportPage({
     const path = rootInputPathOf(inventory);
     return path !== undefined && pilotInputPaths.includes(path);
   };
+  // Single source of truth for "which object outlines can run right now". Both the
+  // scheduler's needs-check and the actual Outliner run use this, so they can
+  // never disagree (a mismatch caused an infinite no-op relaunch loop that froze
+  // the UI: needs=true while the run found 0 candidates because a thing was held
+  // in the busy-ref before it acquired a worker slot).
+  const collectOutlineCandidates = (onlyMissing: boolean) =>
+    memberInventories.flatMap((inventory) => {
+      if (!(hasVisualizedPlan(inventory) && (!onlyMissing || isInventoryActive(inventory)))) return [];
+      // Honor parallel-group order: only feed the Outliner the current group's
+      // objects; later groups stay blocked until this group is fully outlined.
+      const activeGroup = activeOutlineGroupNames(inventory);
+      return inventory.things
+        .map((thing, thingIndex) => ({ inventory, thing, thingIndex }))
+        .filter(({ thing, thingIndex }) => {
+          if (thing.outputImages?.length) return false;
+          if (activeGroup && !activeGroup.has(thing.name)) return false;
+          // Skip only if a worker actually owns this outline right now (busy-ref),
+          // not merely because the persisted status says "outlining" — a worker
+          // that died/gave up can strand that status with nobody working it.
+          if (onlyMissing && outlinerBusyRef.current.has(`${inventory.id}:${thingIndex}`)) return false;
+          const ready = hasAlignedOutline(thing);
+          return !onlyMissing || (!ready && retryReady(thing.outlineRetryAfter));
+        });
+    });
   useEffect(() => {
     if (!restoredRef.current || workersHeld) return;
     const selectedRootsNeedDescription = frames.some((frame) => {
@@ -5438,15 +5439,7 @@ export function VideoImportPage({
      && inventory.things.length > 0
      && !hasVisualizedPlan(inventory)
     );
-    const inventoryNeedsOutline = runnableMemberInventories.some((inventory) =>
-     isInventoryActive(inventory)
-     && hasVisualizedPlan(inventory)
-     && inventory.things.some((thing) =>
-       !thing.outputImages?.length
-       && !hasAlignedOutline(thing)
-       && retryReady(thing.outlineRetryAfter)
-     )
-    );
+    const inventoryNeedsOutline = collectOutlineCandidates(true).length > 0;
     const inventoryNeedsExtraction = runnableMemberInventories.some((inventory) =>
      isInventoryActive(inventory)
      && hasVisualizedPlan(inventory)
@@ -5522,12 +5515,13 @@ export function VideoImportPage({
   ]);
 
   // Safety heartbeat: the scheduler is normally re-evaluated whenever a stage run
-  // finishes (launch().finally bumps the tick) or a retry fires. If a worker ever
-  // dies WITHOUT running its finally (dropped promise), no tick would fire and an
-  // item stranded in a transient status could sit idle. This periodic tick makes
-  // reclaim guaranteed — a stranded item has no retryAfter, so retryReady is true
-  // and it is re-selected on the next evaluation. It never spams calls: the
-  // busy-ref-based batches are empty when everything is genuinely in-flight.
+  // finishes (a real state change re-runs the scheduler effect) or a retry fires.
+  // If a worker ever dies WITHOUT changing state (dropped promise), no re-eval
+  // would fire and an item stranded in a transient status could sit idle. This
+  // periodic tick makes reclaim guaranteed — a stranded item has no retryAfter,
+  // so retryReady is true and it is re-selected on the next evaluation. It never
+  // spams calls: the busy-ref-based batches are empty when everything is
+  // genuinely in-flight.
   useEffect(() => {
     if (workersHeld) return;
     const anyAutomationOn = recursiveAutomation.describer || recursiveAutomation.planner
@@ -5535,7 +5529,6 @@ export function VideoImportPage({
       || recursiveAutomation.turtle || recursiveAutomation.turtlePng;
     if (!anyAutomationOn) return;
     const timer = window.setInterval(() => {
-      diagnoseStrandedJobs();
       setAutomaticSchedulerTick((tick) => tick + 1);
     }, 5000);
     return () => window.clearInterval(timer);
@@ -6508,14 +6501,7 @@ export function VideoImportPage({
       <div className="video-import-scene-object-workspace">
       <div className="video-import-recursive-automation" role="toolbar" aria-label="Recursive extraction automation">
         <div className="video-import-llm-global-row">
-          <b>ALL LLM CALLS <small key={llmSchedulerVersion}>{llmSchedulerRef.current.active}/{totalLlmConcurrency} active · {llmSchedulerRef.current.waiters.length} queued</small><small>Each stage may use {llmPerStageCeiling}; {llmStageReserve} slots stay available for other stages in either direction.</small>{(() => {
-            const wrappers = plannerBusyRef.current.size + outlinerBusyRef.current.size + extractorBusyRef.current.size;
-            const slots = llmSchedulerRef.current.byType.planner + llmSchedulerRef.current.byType.outliner + llmSchedulerRef.current.byType.extractor;
-            const phantom = slots - wrappers;
-            return phantom !== 0
-              ? <em className="video-import-slot-discrepancy">⚠ P/O/E {slots} slot(s) vs {wrappers} job wrapper(s) · {phantom > 0 ? `${phantom} phantom` : `${-phantom} untracked`}</em>
-              : <small>{wrappers} P/O/E job wrapper(s)</small>;
-          })()}{restartPendingSignal && <em>RESTART PENDING · DRAINING</em>}</b>
+          <b>ALL LLM CALLS <small key={llmSchedulerVersion}>{llmSchedulerRef.current.active}/{totalLlmConcurrency} active · {llmSchedulerRef.current.waiters.length} queued</small><small>Each stage may use {llmPerStageCeiling}; {llmStageReserve} slots stay available for other stages in either direction.</small>{restartPendingSignal && <em>RESTART PENDING · DRAINING</em>}</b>
           <label>model
             <ColoredTagCombobox
               value={allCallsModel}
