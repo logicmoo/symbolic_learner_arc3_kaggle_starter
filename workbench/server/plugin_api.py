@@ -21,6 +21,7 @@ from plugin_admin import (
     initialization_report,
     json_file_exists,
     read_admin_manifest,
+    read_documentation,
     resolve_ui_pages,
     read_json_file,
     write_json_file,
@@ -767,6 +768,129 @@ def list_plugin_endpoints(plugin_id: str) -> dict[str, Any]:
         })
     endpoints.sort(key=lambda entry: entry["path"])
     return {"id": plugin_id, "prefix": prefix, "count": len(endpoints), "endpoints": endpoints}
+
+
+DOCUMENT_NAMES = ("ADMIN.md", "SETUP.md", "README.md")
+
+
+def _plugin_doc_source(item: dict[str, Any]) -> str:
+    """Return the filename of the doc that ``read_documentation`` would use, or ""."""
+
+    directory = Path(str(item.get("path") or ""))
+    declared = str((item.get("admin") or {}).get("docs") or item.get("docs") or "").strip()
+    for name in ((declared,) if declared else ()) + DOCUMENT_NAMES:
+        if name and (directory / name).is_file():
+            return name
+    return ""
+
+
+def _generate_plugin_documentation(item: dict[str, Any]) -> str:
+    """Build a manifest-backed help document for a plugin that ships no .md.
+
+    It describes how to use the admin page: the configure/admin pages the
+    plugin contributes, its route prefix, and its declared setup so the right
+    Documentation panel is never empty for a plugin.
+    """
+
+    label = str(item.get("label") or item.get("id") or "Plugin")
+    description = str(item.get("description") or "").strip()
+    summary = str(item.get("summary") or "").strip()
+    route_prefix = str(item.get("routePrefix") or "").strip()
+    admin_path = str(item.get("adminPath") or "").strip()
+    config_page = str(item.get("configPage") or "").strip()
+    pages = item.get("uiPages") if isinstance(item.get("uiPages"), list) else []
+
+    lines: list[str] = [f"# {label}", ""]
+    lines.append(
+        "> Auto-generated help. This plugin does not ship a documentation file "
+        "yet, so this page is built from its manifest. Add an `ADMIN.md` "
+        "(or point `docs` in `plugin.json` at a Markdown file) to replace it."
+    )
+    lines.append("")
+    if summary or description:
+        lines.append(summary or description)
+        lines.append("")
+
+    lines.append("## Admin pages")
+    lines.append("")
+    if pages:
+        lines.append("This plugin contributes the following pages to the workbench:")
+        lines.append("")
+        for page in pages:
+            if not isinstance(page, dict):
+                continue
+            page_label = str(page.get("label") or page.get("id") or "page")
+            kind = str(page.get("kind") or "").strip()
+            descriptor = str(page.get("descriptor") or page.get("address") or "").strip()
+            suffix = f" — `{descriptor}`" if descriptor else ""
+            kind_note = f" _({kind})_" if kind else ""
+            lines.append(f"- **{page_label}**{kind_note}{suffix}")
+        lines.append("")
+    else:
+        lines.append(
+            "This plugin exposes a single administration page rendered from its "
+            "manifest. Use it to review status, edit settings, and run the "
+            "declared maintenance actions."
+        )
+        lines.append("")
+
+    lines.append("## How to use it")
+    lines.append("")
+    lines.append(
+        "1. Open the plugin's page from the left navigation (under **PLUGINS**)."
+    )
+    lines.append(
+        "2. Review the status rows at the top for readiness and configuration state."
+    )
+    lines.append(
+        "3. Edit any settings fields and save; use the maintenance actions "
+        "(for example **Initialize plugin**) to (re)apply setup without a restart."
+    )
+    lines.append("")
+
+    if route_prefix or admin_path or config_page:
+        lines.append("## Endpoints")
+        lines.append("")
+        if route_prefix:
+            lines.append(f"- Route prefix: `{route_prefix}`")
+        if admin_path:
+            lines.append(f"- Admin descriptor: `{admin_path}` (mirrored under `/workbench{admin_path}`)")
+        if config_page:
+            lines.append(f"- Configure page: `{config_page}`")
+        lines.append("")
+
+    return "\n".join(lines).rstrip() + "\n"
+
+
+@router.get("/{plugin_id}/documentation")
+def plugin_documentation(plugin_id: str) -> dict[str, Any]:
+    """Return one plugin's documentation Markdown for the workbench doc panel.
+
+    Serves the Markdown file the plugin points at via ``docs`` in ``plugin.json``
+    (falling back to ``ADMIN.md`` / ``SETUP.md`` / ``README.md``). A plugin that
+    ships no documentation file gets a manifest-generated page describing how to
+    use its admin page, so the right-hand Documentation area is never empty.
+    """
+
+    item = next((entry for entry in _scan(register=False) if entry.get("id") == plugin_id), None)
+    if item is None:
+        raise HTTPException(status_code=404, detail=f"Unknown plugin: {plugin_id}")
+    try:
+        content = read_documentation(item)
+    except (OSError, ValueError):
+        content = ""
+    source = _plugin_doc_source(item)
+    generated = not content.strip()
+    if generated:
+        content = _generate_plugin_documentation(item)
+        source = "generated"
+    return {
+        "pluginId": plugin_id,
+        "title": str(item.get("label") or plugin_id),
+        "content": content,
+        "source": source,
+        "generated": generated,
+    }
 
 
 @router.get("")

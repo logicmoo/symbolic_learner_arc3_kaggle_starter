@@ -5090,7 +5090,9 @@ export function FilesystemWorkbenchPage() {
             >
               <HelpDocumentTabs
                 preferred={
-                  view === "goals"
+                  view === "pluginPage"
+                    ? "pluginDoc"
+                    : view === "goals"
                     ? "goals"
                     : view === "videoImport"
                       ? "videoImport"
@@ -5175,6 +5177,8 @@ export function FilesystemWorkbenchPage() {
                               )
                             : undefined
                 }
+                pluginDocId={view === "pluginPage" ? pluginPage?.pluginId : undefined}
+                pluginDocLabel={pluginPage?.pluginLabel}
               />
             </Suspense>
           ) : selectedStep ? (

@@ -2,7 +2,7 @@ import {useEffect,useState} from "react";
 import {MarkdownDocument} from "./MarkdownDocument";
 import "../styles/help_tabs.css";
 
-type HelpTab={id:string;label:string;path?:string;repositoryPath?:string};
+type HelpTab={id:string;label:string;path?:string;repositoryPath?:string;plugin?:boolean};
 type OpenedDocument={path:string;content:string};
 
 const docTabs:HelpTab[]=[
@@ -43,6 +43,13 @@ async function readRepository(path:string){
  return {path:String(payload.path),content:String(payload.content)} as OpenedDocument;
 }
 
+async function readPluginDoc(pluginId:string){
+ const response=await fetch(`/workbench/plugins/${encodeURIComponent(pluginId)}/documentation`);
+ const payload=await response.json().catch(()=>({}));
+ if(!response.ok)throw new Error(payload.detail||payload.error||response.statusText);
+ return {content:String(payload.content||""),source:String(payload.source||""),generated:Boolean(payload.generated)};
+}
+
 const repositoryPath=(path:string)=>`workbench/workspaces/shared_library_system/${path}`;
 function resolveMarkdownPath(currentPath:string,href:string){
  const clean=href.split("#",1)[0];
@@ -52,17 +59,21 @@ function resolveMarkdownPath(currentPath:string,href:string){
  return parts.join("/");
 }
 
-export function HelpDocumentTabs({preferred,context,onOpenDocs}:{preferred?:string;context?:string;onOpenDocs?:(filter:string)=>void}){
- const tabs:HelpTab[]=[{id:"contents",label:"Contents",path:"docs/contents.md"},{id:"context",label:"Context"},...docTabs];
+export function HelpDocumentTabs({preferred,context,onOpenDocs,pluginDocId,pluginDocLabel}:{preferred?:string;context?:string;onOpenDocs?:(filter:string)=>void;pluginDocId?:string;pluginDocLabel?:string}){
+ const pluginTab:HelpTab[]=pluginDocId?[{id:"pluginDoc",label:pluginDocLabel?`${pluginDocLabel} Docs`:"Plugin Docs",plugin:true}]:[];
+ const tabs:HelpTab[]=[...pluginTab,{id:"contents",label:"Contents",path:"docs/contents.md"},{id:"context",label:"Context"},...docTabs];
  const pageView=new URLSearchParams(window.location.search).get("view");
  const effectivePreferred=preferred==="overview"&&(pageView===null||pageView==="canvas")?"workflows":preferred;
- const initial=effectivePreferred&&tabs.some(tab=>tab.id===effectivePreferred)?effectivePreferred:"context";
+ const initial=effectivePreferred&&tabs.some(tab=>tab.id===effectivePreferred)?effectivePreferred:(pluginDocId?"pluginDoc":"context");
  const[active,setActive]=useState(initial),[docs,setDocs]=useState<Record<string,string>>({}),[errors,setErrors]=useState<Record<string,string>>({});
  const[opened,setOpened]=useState<OpenedDocument|null>(null),[history,setHistory]=useState<OpenedDocument[]>([]);
- useEffect(()=>{if(active==="context"||docs[active]||errors[active])return;const requested=tabs.find(tab=>tab.id===active);if(!requested)return;let cancelled=false;const pending=requested.repositoryPath?readRepository(requested.repositoryPath).then(document=>document.content):readShared(requested.path!);void pending.then(content=>{if(!cancelled)setDocs(current=>({...current,[requested.id]:content}))}).catch(reason=>{if(!cancelled)setErrors(current=>({...current,[requested.id]:String(reason)}))});return()=>{cancelled=true}},[active]);
- useEffect(()=>{if(effectivePreferred&&tabs.some(tab=>tab.id===effectivePreferred)){setActive(effectivePreferred);setOpened(null);setHistory([])}},[effectivePreferred]);
- const tab=tabs.find(item=>item.id===active)!;
- const baseDocument:OpenedDocument={path:tab.repositoryPath||(tab.path?repositoryPath(tab.path):""),content:active==="context"?(context?`\`\`\`json\n${context}\n\`\`\``:"No contextual inspector data is available for this page."):errors[active]?`> **Documentation failed to load:** ${errors[active]}`:(docs[active]||"Loading shared documentation…")};
+ // A plugin doc tab reuses one id ("pluginDoc"); drop its cache when the viewed plugin changes so it refetches.
+ useEffect(()=>{setDocs(current=>{const{pluginDoc,...rest}=current;return rest});setErrors(current=>{const{pluginDoc,...rest}=current;return rest})},[pluginDocId]);
+ useEffect(()=>{if(!tabs.some(tab=>tab.id===active))setActive(pluginDocId?"pluginDoc":"context")},[pluginDocId,active]);
+ useEffect(()=>{if(active==="context"||docs[active]||errors[active])return;const requested=tabs.find(tab=>tab.id===active);if(!requested)return;let cancelled=false;const pending=requested.plugin?(pluginDocId?readPluginDoc(pluginDocId).then(result=>result.content):Promise.reject(new Error("no plugin selected"))):requested.repositoryPath?readRepository(requested.repositoryPath).then(document=>document.content):readShared(requested.path!);void pending.then(content=>{if(!cancelled)setDocs(current=>({...current,[requested.id]:content}))}).catch(reason=>{if(!cancelled)setErrors(current=>({...current,[requested.id]:String(reason)}))});return()=>{cancelled=true}},[active,pluginDocId]);
+ useEffect(()=>{if(effectivePreferred&&tabs.some(tab=>tab.id===effectivePreferred)){setActive(effectivePreferred);setOpened(null);setHistory([])}},[effectivePreferred,pluginDocId]);
+ const tab=tabs.find(item=>item.id===active)||tabs.find(item=>item.id==="context")!;
+ const baseDocument:OpenedDocument={path:tab.plugin?`plugins/${pluginDocId}/documentation`:tab.repositoryPath||(tab.path?repositoryPath(tab.path):""),content:active==="context"?(context?`\`\`\`json\n${context}\n\`\`\``:"No contextual inspector data is available for this page."):errors[active]?`> **Documentation failed to load:** ${errors[active]}`:(docs[active]||"Loading documentation…")};
  const document=opened||baseDocument;
  const navigate=async(href:string)=>{const next=await readRepository(resolveMarkdownPath(document.path,href));setHistory(current=>[...current,document]);setOpened(next)};
  const back=()=>setHistory(current=>{const next=[...current];setOpened(next.pop()||null);return next});
