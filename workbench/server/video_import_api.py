@@ -77,6 +77,26 @@ def _atomic_json_write(path: Path, value: Any) -> None:
     finally:
         temporary.unlink(missing_ok=True)
 
+
+def _shard_is_empty(value: Any) -> bool:
+    """A shard payload with nothing worth persisting (None or an empty container)."""
+    if value is None:
+        return True
+    if isinstance(value, (list, dict, str)):
+        return len(value) == 0
+    return False
+
+
+def _shard_file_has_data(path: Path) -> bool:
+    """True when an existing shard file holds real (non-empty) data."""
+    if not path.is_file():
+        return False
+    try:
+        existing = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    return not _shard_is_empty(existing)
+
 _VIDEO_SUFFIXES = {".mp4", ".webm", ".mkv", ".mov", ".avi", ".m4v"}
 _IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif"}
 _IMAGE_ARCHIVE_MAX_FILES = 2_000
@@ -740,7 +760,15 @@ def _save_page_state_payload(payload: dict[str, Any]) -> dict[str, Any]:
         manifest = dict(state)
         shard_root = container / "page_state"
         for key, filename in _PAGE_STATE_SHARDS.items():
-            _atomic_json_write(shard_root / filename, manifest.pop(key, {}))
+            incoming = manifest.pop(key, {})
+            shard_path = shard_root / filename
+            # Data-safety guard: never let an empty/blank save overwrite an
+            # existing non-empty shard. A stale or freshly-loaded browser tab
+            # must not be able to wipe real member-inventory / cache work by
+            # auto-saving empty state. (To intentionally clear, delete the file.)
+            if _shard_is_empty(incoming) and _shard_file_has_data(shard_path):
+                continue
+            _atomic_json_write(shard_path, incoming)
         manifest["stateShards"] = dict(_PAGE_STATE_SHARDS)
         _atomic_json_write(path, manifest)
     return {

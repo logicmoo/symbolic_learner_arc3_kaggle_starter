@@ -1281,6 +1281,27 @@ const JOB_TOOLS: Record<string, string> = {
 };
 const jobToolLabel = (kind: string) => JOB_TOOLS[kind] || kind;
 
+const formatBytes = (value?: number | null) => {
+  if (!value || !Number.isFinite(value) || value <= 0) return "?";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let size = value;
+  let unit = 0;
+  while (size >= 1024 && unit < units.length - 1) { size /= 1024; unit += 1; }
+  return `${size >= 10 || unit === 0 ? Math.round(size) : size.toFixed(1)}${units[unit]}`;
+};
+
+type ImportJobState = {
+  state: string;
+  percent: number;
+  title: string;
+  tool: string;
+  source: string;
+  downloadedBytes: number;
+  totalBytes: number | null;
+  etaSeconds: number | null;
+  error: string | null;
+};
+
 function PipeFork({ fork, title, value, disabled, onChange }: {
   fork: keyof PipeForkSelections;
   title: string;
@@ -1811,15 +1832,72 @@ export function VideoImportPage({
   const [source, setSource] = useState("");
   const [nameDraft, setNameDraft] = useState("");
   const [quality, setQuality] = useState("480p");
+  const [downloadJob, setDownloadJob] = useState<ImportJobState | null>(null);
   const fileInput = useRef<HTMLInputElement | null>(null);
+  const pollDownload = (jobId: string, initialTitle: string, tool: string, sourceRef: string) =>
+    new Promise<{ path: string; title: string }>((resolve, reject) => {
+      setDownloadJob({
+        state: "running", percent: 0, title: initialTitle, tool, source: sourceRef,
+        downloadedBytes: 0, totalBytes: null, etaSeconds: null, error: null,
+      });
+      const tick = async () => {
+        if (stopRef.current) {
+          void api("download/cancel", { jobId }).catch(() => undefined);
+          setDownloadJob(null);
+          reject(new Error("stopped"));
+          return;
+        }
+        let payload: Record<string, any>;
+        try {
+          payload = await api(`download/status?jobId=${encodeURIComponent(jobId)}`);
+        } catch (reason) {
+          reject(reason instanceof Error ? reason : new Error(String(reason)));
+          return;
+        }
+        const next: ImportJobState = {
+          state: String(payload.state || "running"),
+          percent: Number(payload.percent || 0),
+          title: String(payload.title || initialTitle),
+          tool, source: sourceRef,
+          downloadedBytes: Number(payload.downloadedBytes || 0),
+          totalBytes: payload.totalBytes == null ? null : Number(payload.totalBytes),
+          etaSeconds: payload.etaSeconds == null ? null : Number(payload.etaSeconds),
+          error: payload.error == null ? null : String(payload.error),
+        };
+        setDownloadJob(next);
+        const progressLabel = next.state === "finalizing" ? "finalizing" : `${Math.round(next.percent)}%`;
+        if (next.state === "running" || next.state === "finalizing") {
+          say(`Importing ${next.tool} ${next.source} — ${progressLabel}`);
+          window.setTimeout(() => void tick(), 700);
+        } else if (next.state === "done") {
+          window.setTimeout(() => setDownloadJob(null), 2000);
+          resolve({ path: String(payload.path || ""), title: next.title });
+        } else {
+          reject(new Error(next.error || "import failed"));
+        }
+      };
+      void tick();
+    });
   const importSource = (value?: string) =>
     run("Importing", async () => {
       const raw = (value ?? source).trim();
       if (!raw) return "nothing to import";
       const isUrl = /^https?:\/\//i.test(raw);
-      const payload = await api(isUrl ? "download" : "import-file", isUrl
-        ? { workspaceId, url: raw, name: nameDraft.trim() || undefined, quality: quality === "python-direct" ? undefined : quality, tool: quality === "python-direct" ? "python-direct" : "yt-dlp" }
-        : { workspaceId, path: raw, name: nameDraft.trim() || undefined });
+      if (isUrl) {
+        const tool = quality === "python-direct" ? "python-direct" : "yt-dlp";
+        const started = await api("download/start", {
+          workspaceId,
+          url: raw,
+          name: nameDraft.trim() || undefined,
+          quality: quality === "python-direct" ? undefined : quality,
+          tool,
+        });
+        const final = await pollDownload(String(started.jobId), String(started.title || nameDraft.trim() || raw), tool, raw);
+        setSource(""); setNameDraft("");
+        await loadVideos(final.path);
+        return `imported: ${final.title}`;
+      }
+      const payload = await api("import-file", { workspaceId, path: raw, name: nameDraft.trim() || undefined });
       setSource(""); setNameDraft("");
       await loadVideos(String(payload.path || ""));
       return `imported: ${payload.title}`;
@@ -1898,7 +1976,7 @@ export function VideoImportPage({
   const activeSegments = segments.length ? segments : (duration ? [{ start: 0, end: duration, keep: true }] : []);
 
   const detectScenes = () =>
-    run("Detecting scenes", async () => {
+    run(`Detecting scenes · imageio+numpy · ${videoLabel}`, async () => {
       // Resume where the last run stopped: start at the last detected marker.
       const resumeAt = markers.length ? Math.max(...markers.map((marker) => marker.atSeconds)) : 0;
       const payload = await api("scenes", {
@@ -1910,8 +1988,10 @@ export function VideoImportPage({
         minSceneGapSeconds: Math.max(0, Number(sceneMinGapSeconds) || 0),
         maxMarkers: sceneMaxMarkers.trim() ? Number(sceneMaxMarkers) : undefined,
       });
-      watchConcurrentJob(String(payload.jobId), "scenes", setSceneJob, (final) => { setMarkers(final.markers || []); say(`scenes: ${(final.markers || []).length} marker(s) (${resumeAt ? `resumed @ ${resumeAt.toFixed(1)}s` : "from the top"})`); });
-      return resumeAt ? `scanning for scene changes from ${resumeAt.toFixed(1)}s…` : "scanning for scene changes…";
+      watchConcurrentJob(String(payload.jobId), "scenes", setSceneJob, (final) => { setMarkers(final.markers || []); say(`scenes: ${(final.markers || []).length} marker(s) in ${videoLabel} via imageio+numpy (${resumeAt ? `resumed @ ${resumeAt.toFixed(1)}s` : "from the top"})`); });
+      return resumeAt
+        ? `imageio+numpy scanning ${videoLabel} for scene changes from ${resumeAt.toFixed(1)}s…`
+        : `imageio+numpy scanning ${videoLabel} for scene changes…`;
     });
   const clearSceneDetection = () => {
     if (sceneJob?.state === "running") void api("extract/cancel", { jobId: sceneJob.id }).catch(() => undefined);
@@ -1929,14 +2009,14 @@ export function VideoImportPage({
       .catch((reason) => setError(reason instanceof Error ? reason.message : String(reason)));
   };
   const generateCaptions = () =>
-    run("Generating video captions", async () => {
+    run(`Generating captions · ${effectiveCaptionModel || "caption model"} · ${videoLabel}`, async () => {
       const payload = await api("captions", { workspaceId, video: selectedPath, modelId: effectiveCaptionModel, chunkSeconds: 30, concurrency: 4 });
       watchConcurrentJob(String(payload.jobId), "captions", setCaptionJob, (final) => {
         setCaptions(final.captions || []);
         setCaptionSource(final.captionSource || "");
-        say(`captions: ${(final.captions || []).length} cue(s) · ${final.captionSource || "unknown source"}`);
+        say(`captions: ${(final.captions || []).length} cue(s) for ${videoLabel} · ${final.captionSource || "unknown source"}`);
       });
-      return `captioning ${payload.estimatedChunks || 1} audio chunk(s)…`;
+      return `ffmpeg + ${effectiveCaptionModel || "caption model"} captioning ${payload.estimatedChunks || 1} audio chunk(s) of ${videoLabel}…`;
     });
   const clearCaptions = () => {
     if (captionJob?.state === "running") void api("extract/cancel", { jobId: captionJob.id }).catch(() => undefined);
@@ -2190,13 +2270,13 @@ export function VideoImportPage({
     say("Extracted Frame Gallery and dependent generated galleries cleared; source files were preserved");
   };
   const extract = () =>
-    run("Extracting frames", async () => {
+    run(`Extracting frames · imageio · ${videoLabel}`, async () => {
       if (mode === "scenes" && !markers.length && sceneJob?.state === "running") {
         return "frame extraction stopped: scene detection is still scanning to the end of the video";
       }
       const payload = await api("extract", extractBody());
-      watchConcurrentJob(String(payload.jobId), "extract", setFrameExtractionJob, (final) => { acceptFrames(final.frames); say(`Extracted Frame Gallery: ${(final.frames || []).length} image(s)${final.interrupted ? " (interrupted)" : ""}`); });
-      return `extracting ≈${payload.estimatedFrames} frame(s)…`;
+      watchConcurrentJob(String(payload.jobId), "extract", setFrameExtractionJob, (final) => { acceptFrames(final.frames); say(`Extracted Frame Gallery: ${(final.frames || []).length} image(s) from ${videoLabel}${final.interrupted ? " (interrupted)" : ""}`); });
+      return `imageio extracting ≈${payload.estimatedFrames} frame(s) from ${videoLabel}…`;
     });
   const stopFrameExtraction = () => {
     if (frameExtractionJob?.state !== "running") return;
@@ -5410,6 +5490,16 @@ export function VideoImportPage({
           </div>
           <button className="video-import-stop" disabled={!busy && !anyBackgroundJobRunning} onClick={stopEverything}>■ Stop</button>
         </div>
+        {downloadJob && (
+          <div className="video-import-progress video-import-status-progress" role="progressbar" aria-label="import progress" aria-valuenow={Math.round(downloadJob.percent)} aria-valuemin={0} aria-valuemax={100}>
+            <div className="video-import-progress-track"><div className="video-import-progress-fill" style={{ width: `${downloadJob.state === "done" ? 100 : downloadJob.percent}%` }} /></div>
+            <small>
+              {downloadJob.state === "error"
+                ? `✗ importing ${downloadJob.tool} ${downloadJob.source} failed: ${downloadJob.error}`
+                : `${downloadJob.state === "done" ? "Imported" : "Importing"} ${downloadJob.tool} ${downloadJob.source}${downloadJob.title && downloadJob.title !== downloadJob.source ? ` (${downloadJob.title})` : ""} — ${downloadJob.state === "finalizing" ? "finalizing…" : downloadJob.state === "done" ? "done" : `${Math.round(downloadJob.percent)}%`}${downloadJob.totalBytes ? ` · ${formatBytes(downloadJob.downloadedBytes)}/${formatBytes(downloadJob.totalBytes)}` : downloadJob.downloadedBytes ? ` · ${formatBytes(downloadJob.downloadedBytes)}` : ""}${downloadJob.etaSeconds != null && downloadJob.state === "running" ? ` · ETA ${seconds(downloadJob.etaSeconds)}` : ""}`}
+            </small>
+          </div>
+        )}
         {visibleJobs.map((visibleJob) => {
           const progress = jobProgress(visibleJob);
           const eta = visibleJob.etaSeconds != null && Number.isFinite(visibleJob.etaSeconds)
