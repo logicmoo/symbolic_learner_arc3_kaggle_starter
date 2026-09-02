@@ -348,6 +348,36 @@ const hasVisualizedPlan = (inventory: MemberInventory) => Boolean(
   && inventory.parallelGroups?.length
 );
 
+// Build ordered parallel-extraction groups (waves) from a raw model "groups"
+// value, matching names to the described things and appending any omitted object
+// as a final group so every thing is covered exactly once. Used by both the
+// Describer (grouping folded into description) and the Planner fallback.
+const buildParallelGroups = (
+  rawGroups: unknown,
+  things: MemberInventoryThing[],
+): { parallelGroups: string[][]; extractionOrder: string[]; omitted: string[] } => {
+  const byName = new Map(things.map((thing) => [thing.name.toLowerCase(), thing.name]));
+  const seen = new Set<string>();
+  const parallelGroups: string[][] = [];
+  if (Array.isArray(rawGroups)) {
+    for (const wave of rawGroups) {
+      const names = Array.isArray(wave) ? wave : [wave];
+      const group: string[] = [];
+      for (const value of names) {
+        const key = String(typeof value === "string" ? value : (value as Record<string, unknown>)?.name || "").trim().toLowerCase();
+        const name = byName.get(key);
+        if (!name || seen.has(name)) continue;
+        seen.add(name);
+        group.push(name);
+      }
+      if (group.length) parallelGroups.push(group);
+    }
+  }
+  const omitted = things.map((thing) => thing.name).filter((name) => !seen.has(name));
+  if (omitted.length) parallelGroups.push(omitted);
+  return { parallelGroups, extractionOrder: parallelGroups.flat(), omitted };
+};
+
 // Per-object "what does it need next" indicator, derived from live state.
 type PipelineNext = { label: string; tone: "done" | "active" | "retry" | "wait" | "error" | "lost" };
 
@@ -468,11 +498,12 @@ const restorePipeForkSelection = <K extends keyof PipeForkSelections>(
 const DEFAULT_MEMBER_DESCRIPTION_PROMPT = [
   "SCENE OBJECTS TEXTUAL DESCRIPTION.",
   "{{subjectContext}}",
-  "Describe this image, then list only its direct visually separable child objects.",
+  "Describe this image, list only its direct visually separable child objects, then group those objects into ordered parallel-extraction waves.",
   "{{goal}}",
   "List every distinct extractable thing you can identify. Do not return polygons or coordinates in this stage.",
+  "Grouping: objects in the same group can be lifted in parallel (none covers, contains, or is part/parent of another in that group). Group 1 is the fully-visible foreground; each later group becomes liftable only after earlier groups are removed. Every listed thing appears in exactly one group by its exact name.",
   "{{alreadyExtracted}}",
-  "Answer ONLY with JSON: {\"description\":\"scene description\",\"things\":[{\"name\":\"short unique name\",\"description\":\"visual identity and location\"}]}",
+  "Answer ONLY with JSON: {\"description\":\"scene description\",\"things\":[{\"name\":\"short unique name\",\"description\":\"visual identity and location\"}],\"groups\":[[\"exact thing name\",...],...]}",
 ].join("\n");
 const DEFAULT_OBJECT_PROMPT_WRITER = [
   "OBJECT EXTRACTION PROMPT WRITER.",
@@ -1179,9 +1210,9 @@ const OutlineOverlay = ({
     </svg>
   );
 };
-const parseMemberDescriptionOutput = (raw: string): { sceneDescription: string; things: MemberInventoryThing[] } => {
+const parseMemberDescriptionOutput = (raw: string): { sceneDescription: string; things: MemberInventoryThing[]; groups: unknown } => {
   const formatted = formatDetectedJson(raw);
-  if (!formatted.detected) return { sceneDescription: raw, things: [] };
+  if (!formatted.detected) return { sceneDescription: raw, things: [], groups: undefined };
   const parsed = JSON.parse(formatted.text) as Record<string, unknown>;
   const sceneDescription = String(parsed.description || parsed.scene || "").trim();
   const seen = new Set<string>();
@@ -1200,7 +1231,7 @@ const parseMemberDescriptionOutput = (raw: string): { sceneDescription: string; 
     seen.add(key);
     return true;
   });
-  return { sceneDescription, things };
+  return { sceneDescription, things, groups: parsed.groups ?? parsed.parallelGroups ?? parsed.waves };
 };
 const normalizeMemberObjectTree = (value: unknown, depth = 0): MemberObjectTree => {
   if (!value || typeof value !== "object" || Array.isArray(value) || depth > 8) return {};
@@ -3739,16 +3770,26 @@ export function VideoImportPage({
       const descriptionOutput = typeof payload.text === "string" ? payload.text.trim() : "";
       const parsed = parseMemberDescriptionOutput(descriptionOutput);
       const things = parsed.things.filter((thing) => thing.name.toLowerCase() !== initial.subjectName?.toLowerCase());
+      // Grouping is folded into the Describer: derive the parallel-extraction plan
+      // now so the pipeline can skip the separate Planner stage.
+      const grouped = things.length ? buildParallelGroups(parsed.groups, things) : { parallelGroups: [], extractionOrder: [] };
       const completed: MemberInventory = {
         ...describing,
         sceneDescription: parsed.sceneDescription || descriptionOutput || `Extracted object ${initial.subjectName}`,
         descriptionOutput,
         describedThings: things,
         things,
+        extractionOrder: grouped.extractionOrder,
+        parallelGroups: grouped.parallelGroups,
+        plannerTouching: [],
+        plannerOcclusions: [],
+        plannerContainments: [],
+        plannerLabels: [],
+        plannerVisualizationImage: "",
         status: "done",
       };
       storeMemberInventory(completed);
-      say(`D${initial.depth || 0} ${initial.subjectName}: ${things.length} direct child object(s)`);
+      say(`D${initial.depth || 0} ${initial.subjectName}: ${things.length} object(s) in ${grouped.parallelGroups.length} parallel group(s)`);
       return completed;
     } catch (reason) {
       const message = reason instanceof Error ? reason.message : String(reason);
@@ -3859,11 +3900,12 @@ export function VideoImportPage({
           const inventoryRaw = typeof inventoryPayload.text === "string" ? inventoryPayload.text.trim() : "";
           updateMemberInventory(inventoryId, (inventory) => ({ ...inventory, descriptionOutput: inventoryRaw }));
           const inventoryMatch = inventoryRaw.match(/\{[\s\S]*\}/);
-          let sceneDescription = ""; let things: MemberInventoryThing[] = [];
+          let sceneDescription = ""; let things: MemberInventoryThing[] = []; let rawGroups: unknown;
           if (inventoryMatch) {
             try {
               const parsed = JSON.parse(inventoryMatch[0]);
               sceneDescription = String(parsed.description || parsed.scene || "").trim();
+              rawGroups = parsed.groups ?? parsed.parallelGroups ?? parsed.waves;
               const seen = new Set<string>();
               things = (Array.isArray(parsed.things) ? parsed.things : [])
                 .map((thing: unknown) => {
@@ -3920,14 +3962,22 @@ export function VideoImportPage({
             } : thing;
           });
           listed += things.length;
+          const grouped = buildParallelGroups(rawGroups, things);
           setMemberInventories((current) => current.map((inventory) => inventory.id === inventoryId ? {
             ...inventory,
             sceneDescription,
             status: "done",
             describedThings: things,
             things,
+            extractionOrder: grouped.extractionOrder,
+            parallelGroups: grouped.parallelGroups,
+            plannerTouching: [],
+            plannerOcclusions: [],
+            plannerContainments: [],
+            plannerLabels: [],
+            plannerVisualizationImage: "",
           } : inventory));
-          say(`① [input image] #${frame.index}: ${things.length} thing(s) listed`);
+          say(`① [input image] #${frame.index}: ${things.length} thing(s) in ${grouped.parallelGroups.length} parallel group(s)`);
        } finally {
          if (onlyMissing) automaticDescriptionClaimsRef.current.delete(task.claimKey);
        }
