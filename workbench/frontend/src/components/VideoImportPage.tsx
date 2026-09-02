@@ -952,6 +952,17 @@ const formatBytes = (value?: number | null) => {
   return `${size >= 10 || unit === 0 ? Math.round(size) : size.toFixed(1)}${units[unit]}`;
 };
 
+// The engine/tool each background media job runs on, named in the status + queue.
+const JOB_TOOLS: Record<string, string> = {
+  scenes: "imageio+numpy",
+  extract: "imageio",
+  captions: "ffmpeg + caption model",
+  trim: "imageio/ffmpeg",
+  retinter: "imageio",
+  gallery: "imageio",
+};
+const jobToolLabel = (kind: string) => JOB_TOOLS[kind] || kind;
+
 type ImportJobState = {
   state: string;
   percent: number;
@@ -1256,13 +1267,19 @@ export function VideoImportPage({
 
   // ---- status strip + interrupts ----------------------------------------
   const [log, setLog] = useState<Array<{ at: string; text: string }>>([]);
+  const logLinesRef = useRef<HTMLDivElement | null>(null);
   const stopRef = useRef(false);
   const activeRunsRef = useRef(0);
   const say = useCallback((text: string) => {
     const at = new Date().toLocaleTimeString([], { hour12: false });
-    setLog((current) => [...current.slice(-2), { at, text }]);
+    // Keep the full session history (capped) instead of a 3-line rolling window.
+    setLog((current) => [...current.slice(-999), { at, text }]);
     pushGlobalStatus(text, "video-import");
   }, []);
+  useEffect(() => {
+    const element = logLinesRef.current;
+    if (element) element.scrollTop = element.scrollHeight;
+  }, [log]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [downloadJob, setDownloadJob] = useState<ImportJobState | null>(null);
@@ -1407,6 +1424,8 @@ export function VideoImportPage({
   const [videos, setVideos] = useState<Video[]>([]);
   const [selectedPath, setSelectedPath] = useState("");
   const selected = videos.find((video) => video.path === selectedPath) || null;
+  const videoLabel = selected?.title
+    || (selectedPath ? selectedPath.split("/").filter(Boolean).pop() || selectedPath : "video");
   const loadVideos = useCallback(async (pick?: string) => {
     const payload = await api(`videos?workspaceId=${encodeURIComponent(workspaceId)}`);
     const list = (payload.videos as Video[]) || [];
@@ -1609,7 +1628,7 @@ export function VideoImportPage({
   const activeSegments = segments.length ? segments : (duration ? [{ start: 0, end: duration, keep: true }] : []);
 
   const detectScenes = () =>
-    run("Detecting scenes", async () => {
+    run(`Detecting scenes · imageio+numpy · ${videoLabel}`, async () => {
       // Resume where the last run stopped: start at the last detected marker.
       const resumeAt = markers.length ? Math.max(...markers.map((marker) => marker.atSeconds)) : 0;
       const payload = await api("scenes", {
@@ -1621,8 +1640,10 @@ export function VideoImportPage({
         minSceneGapSeconds: Math.max(0, Number(sceneMinGapSeconds) || 0),
         maxMarkers: sceneMaxMarkers.trim() ? Number(sceneMaxMarkers) : undefined,
       });
-      watchConcurrentJob(String(payload.jobId), "scenes", setSceneJob, (final) => { setMarkers(final.markers || []); say(`scenes: ${(final.markers || []).length} marker(s) (${resumeAt ? `resumed @ ${resumeAt.toFixed(1)}s` : "from the top"})`); });
-      return resumeAt ? `scanning for scene changes from ${resumeAt.toFixed(1)}s…` : "scanning for scene changes…";
+      watchConcurrentJob(String(payload.jobId), "scenes", setSceneJob, (final) => { setMarkers(final.markers || []); say(`scenes: ${(final.markers || []).length} marker(s) in ${videoLabel} via imageio+numpy (${resumeAt ? `resumed @ ${resumeAt.toFixed(1)}s` : "from the top"})`); });
+      return resumeAt
+        ? `imageio+numpy scanning ${videoLabel} for scene changes from ${resumeAt.toFixed(1)}s…`
+        : `imageio+numpy scanning ${videoLabel} for scene changes…`;
     });
   const clearSceneDetection = () => {
     if (sceneJob?.state === "running") void api("extract/cancel", { jobId: sceneJob.id }).catch(() => undefined);
@@ -1640,14 +1661,14 @@ export function VideoImportPage({
       .catch((reason) => setError(reason instanceof Error ? reason.message : String(reason)));
   };
   const generateCaptions = () =>
-    run("Generating video captions", async () => {
+    run(`Generating captions · ${effectiveCaptionModel || "caption model"} · ${videoLabel}`, async () => {
       const payload = await api("captions", { workspaceId, video: selectedPath, modelId: effectiveCaptionModel, chunkSeconds: 30, concurrency: 4 });
       watchConcurrentJob(String(payload.jobId), "captions", setCaptionJob, (final) => {
         setCaptions(final.captions || []);
         setCaptionSource(final.captionSource || "");
-        say(`captions: ${(final.captions || []).length} cue(s) · ${final.captionSource || "unknown source"}`);
+        say(`captions: ${(final.captions || []).length} cue(s) for ${videoLabel} · ${final.captionSource || "unknown source"}`);
       });
-      return `captioning ${payload.estimatedChunks || 1} audio chunk(s)…`;
+      return `ffmpeg + ${effectiveCaptionModel || "caption model"} captioning ${payload.estimatedChunks || 1} audio chunk(s) of ${videoLabel}…`;
     });
   const clearCaptions = () => {
     if (captionJob?.state === "running") void api("extract/cancel", { jobId: captionJob.id }).catch(() => undefined);
@@ -1849,13 +1870,13 @@ export function VideoImportPage({
     say("Extracted Frame Gallery and dependent generated galleries cleared; source files were preserved");
   };
   const extract = () =>
-    run("Extracting frames", async () => {
+    run(`Extracting frames · imageio · ${videoLabel}`, async () => {
       if (mode === "scenes" && !markers.length && sceneJob?.state === "running") {
         return "frame extraction stopped: scene detection is still scanning to the end of the video";
       }
       const payload = await api("extract", extractBody());
-      watchConcurrentJob(String(payload.jobId), "extract", setFrameExtractionJob, (final) => { acceptFrames(final.frames); say(`Extracted Frame Gallery: ${(final.frames || []).length} image(s)${final.interrupted ? " (interrupted)" : ""}`); });
-      return `extracting ≈${payload.estimatedFrames} frame(s)…`;
+      watchConcurrentJob(String(payload.jobId), "extract", setFrameExtractionJob, (final) => { acceptFrames(final.frames); say(`Extracted Frame Gallery: ${(final.frames || []).length} image(s) from ${videoLabel}${final.interrupted ? " (interrupted)" : ""}`); });
+      return `imageio extracting ≈${payload.estimatedFrames} frame(s) from ${videoLabel}…`;
     });
   const stopFrameExtraction = () => {
     if (frameExtractionJob?.state !== "running") return;
@@ -4865,7 +4886,7 @@ export function VideoImportPage({
           <button title="Forget the saved state — next load starts clean" onClick={forgetState}>⟲ forget</button>
         </div>
         <div className="video-import-activity-lower">
-          <div className="video-import-activity-lines">
+          <div className="video-import-activity-lines" ref={logLinesRef}>
             {log.map((line, index) => (
               <span key={`${line.at}-${index}`} className={index === log.length - 1 ? "is-current" : ""}><code>{line.at}</code> {line.text}</span>
             ))}
@@ -4891,24 +4912,24 @@ export function VideoImportPage({
             </small>
           </div>
         )}
-      </div>
-      {error && <div className="backend-error"><b>Video import error</b><span>{error}</span></div>}
-      {visibleJobs.length > 0 && <section className="video-import-media-job-queue">
-        <header><b>MEDIA JOB QUEUE</b><small>{visibleJobs.filter((visibleJob) => visibleJob.state === "running").length} active · {visibleJobs.length} visible</small></header>
         {visibleJobs.map((visibleJob) => {
           const progress = jobProgress(visibleJob);
+          const eta = visibleJob.etaSeconds != null && Number.isFinite(visibleJob.etaSeconds)
+            ? ` · ETA ${seconds(visibleJob.etaSeconds)}`
+            : "";
           return (
-            <div key={`${visibleJob.kind}:${visibleJob.id}`} className="video-import-progress" role="progressbar" aria-label={`${visibleJob.kind} progress`} aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
+            <div key={`${visibleJob.kind}:${visibleJob.id}`} className="video-import-progress video-import-import-progress" role="progressbar" aria-label={`${visibleJob.kind} progress`} aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
               <div className="video-import-progress-track"><div className="video-import-progress-fill" style={{ width: `${visibleJob.state === "done" ? 100 : progress}%` }} /></div>
               <small>
-                {visibleJob.state === "running" && `${visibleJob.kind}: ${visibleJob.done}/${visibleJob.total} · ETA ${visibleJob.etaSeconds}s`}
-                {visibleJob.state === "done" && `${visibleJob.kind} done in ${visibleJob.elapsedSeconds}s${visibleJob.interrupted ? " (interrupted)" : ""}`}
-                {visibleJob.state === "error" && `${visibleJob.kind} failed: ${visibleJob.error}`}
+                {visibleJob.state === "running" && `${jobToolLabel(visibleJob.kind)} · ${videoLabel} — ${visibleJob.kind} ${visibleJob.done}/${visibleJob.total} · ${progress}%${eta}`}
+                {visibleJob.state === "done" && `${jobToolLabel(visibleJob.kind)} · ${videoLabel} — ${visibleJob.kind} done in ${visibleJob.elapsedSeconds}s${visibleJob.interrupted ? " (interrupted)" : ""}`}
+                {visibleJob.state === "error" && `✗ ${visibleJob.kind} failed: ${visibleJob.error}`}
               </small>
             </div>
           );
         })}
-      </section>}
+      </div>
+      {error && <div className="backend-error"><b>Video import error</b><span>{error}</span></div>}
 
       <Section {...section("intake", "INTAKE", `${videos.length} video(s) in the library`)}>
         <div className="vi2-body">

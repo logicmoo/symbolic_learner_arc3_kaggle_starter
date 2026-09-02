@@ -157,10 +157,11 @@
   50% { opacity: 0.25; }
 }
 
-/* 3-line rolling status log */
+/* Status log (full session history, scrollable, newest at the bottom) */
 .video-import-activity-lines {
   width: 100%; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 1px;
   padding-top: 5px; border-top: 1px solid var(--line, #2a3742);
+  max-height: 168px; overflow-y: auto; scroll-behavior: smooth;
 }
 .video-import-activity-lines span { color: var(--muted, #8aa); }
 .video-import-activity-lines span.is-current { color: inherit; }
