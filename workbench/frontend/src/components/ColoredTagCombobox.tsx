@@ -84,13 +84,19 @@ export function ColoredTagCombobox({
           return !currentOpen;
         })}
       >
-        {current ? (
-          <>
-            {closedShow?.group && current.groupLabel ? <span className="colored-combobox-current-group">{current.groupLabel}</span> : null}
-            {(closedShow?.label ?? true) ? <span className="colored-combobox-current">{current.label}</span> : null}
-            {(closedShow?.tags ?? true) ? chips(current.tags) : null}
-          </>
-        ) : <span className="colored-combobox-current">{noneLabel}</span>}
+        {current ? (() => {
+          const showGroup = Boolean(closedShow?.group && current.groupLabel);
+          const showTags = (closedShow?.tags ?? true) && current.tags.length > 0;
+          // Fall back to the label whenever nothing else would render.
+          const showLabel = (closedShow?.label ?? true) || (!showGroup && !showTags);
+          return (
+            <>
+              {showGroup ? <span className="colored-combobox-current-group">{current.groupLabel}</span> : null}
+              {showLabel ? <span className="colored-combobox-current">{current.label}</span> : null}
+              {showTags ? chips(current.tags) : null}
+            </>
+          );
+        })() : <span className="colored-combobox-current">{noneLabel}</span>}
         <span className="colored-combobox-caret">▾</span>
       </button>
       {open && (
