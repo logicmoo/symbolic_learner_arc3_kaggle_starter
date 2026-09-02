@@ -3550,10 +3550,14 @@ export function VideoImportPage({
         if (msg.type === "status") { applyPipelineStatus(msg); }
         else if (msg.type === "state") {
           // The server pushes produced artifacts (inventories + cutout members +
-          // scenes) so the gallery/objects populate live over the socket.
-          if (Array.isArray(msg.memberInventories)) setMemberInventories(msg.memberInventories);
-          if (msg.memberScenes && typeof msg.memberScenes === "object") setMemberScenes(msg.memberScenes);
-          if (Array.isArray(msg.members)) setMembers(msg.members);
+          // scenes) so the gallery/objects populate live over the socket. Only
+          // adopt them while a SERVER run owns the state — otherwise this echo of
+          // the client's own autosave could clobber live client-side edits.
+          if (pipelineRunningRef.current) {
+            if (Array.isArray(msg.memberInventories)) setMemberInventories(msg.memberInventories);
+            if (msg.memberScenes && typeof msg.memberScenes === "object") setMemberScenes(msg.memberScenes);
+            if (Array.isArray(msg.members)) setMembers(msg.members);
+          }
         }
         else if (msg.type === "cleared") { pipelineLogSeenRef.current = 0; }
       };
@@ -5552,6 +5556,11 @@ export function VideoImportPage({
         });
     });
   useEffect(() => {
+    // Client-side pipeline orchestration is DISABLED — the describe → outline →
+    // extract loop now runs headless on the server (video_import_pipeline). The
+    // page only triggers a server run and displays pushed status/artifacts.
+    // Manual "Call LLM · ..." buttons still work for one-off client calls.
+    if (true) return;
     if (!restoredRef.current || workersHeld) return;
     const selectedRootsNeedDescription = frames.some((frame) => {
      if (!memberInputPaths.has(frame.path)) return false;
@@ -5660,6 +5669,8 @@ export function VideoImportPage({
   // spams calls: the busy-ref-based batches are empty when everything is
   // genuinely in-flight.
   useEffect(() => {
+    // Disabled with the client scheduler — the server owns pipeline advancement.
+    if (true) return;
     if (workersHeld) return;
     const anyAutomationOn = recursiveAutomation.describer || recursiveAutomation.planner
       || recursiveAutomation.outliner || recursiveAutomation.extractor

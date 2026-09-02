@@ -887,14 +887,9 @@ async def pipeline_ws(websocket: WebSocket) -> None:
                     await asyncio.to_thread(stop_run, workspace_id)
                     state["last_key"] = None
                 elif command == "clear":
-                    await asyncio.to_thread(
-                        _save_page_state_payload,
-                        {
-                            "workspaceId": workspace_id,
-                            "clearShards": ["memberInventories", "modelResponseCache"],
-                            "state": {"memberInventories": [], "modelResponseCache": {}},
-                        },
-                    )
+                    from video_import_pipeline import clear_llm_work
+
+                    await asyncio.to_thread(clear_llm_work, workspace_id)
                     try:
                         await websocket.send_json({"type": "cleared", "workspaceId": workspace_id})
                         state["last_state_mtime"] = 0.0  # push the emptied gallery

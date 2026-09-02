@@ -460,6 +460,23 @@ def load_state(workspace_id: str) -> dict[str, Any]:
     return state if isinstance(state, dict) else {}
 
 
+def clear_llm_work(workspace_id: str) -> None:
+    """Full-state-safe clear of all LLM-produced work (inventories, cache,
+    scenes, members, outputs) while preserving frames/selection/prompts/models."""
+    with _page_state_lock(workspace_id):
+        state = load_state(workspace_id)
+        state["memberInventories"] = []
+        state["modelResponseCache"] = {}
+        state["memberScenes"] = {}
+        state["members"] = []
+        state["output"] = []
+        _save_page_state_payload({
+            "workspaceId": workspace_id,
+            "clearShards": ["memberInventories", "modelResponseCache"],
+            "state": state,
+        })
+
+
 def _effective_describer_model(state: dict[str, Any], override: str | None) -> str:
     if override:
         return override
@@ -826,6 +843,7 @@ def run_outline(
         return "nothing to outline"
 
     concurrency = _stage_concurrency(state, "outliner", concurrency_override, 2)
+    scenes = dict(state.get("memberScenes") or {})
     counts["total"] = len(candidates)
     counts["done"] = 0
     counts["failed"] = 0
@@ -837,7 +855,10 @@ def run_outline(
         inventory, thing = pair
         inventory_id = str(inventory.get("id"))
         name = str(thing.get("name"))
-        scene_path = str(inventory.get("sourceImage") or inventory.get("framePath") or "")
+        # Outline on the CURRENT (progressively reduced) scene so a later parallel
+        # group is traced after earlier groups have been removed and no longer
+        # occlude it.
+        scene_path = scenes.get(inventory_id) or str(inventory.get("sourceImage") or inventory.get("framePath") or "")
         order = inventory.get("extractionOrder") or []
         position = order.index(name) if name in order else 0
         total = len(order) or len(inventory.get("things") or [])
@@ -984,12 +1005,19 @@ def run_extract(
         for inventory in (state.get("memberInventories") or [])
         if isinstance(inventory, dict) and has_visualized_plan(inventory)
     ]
-    # Only inventories whose pending objects are fully outlined are extractable.
-    ready = []
-    for inventory in inventories:
-        pending = [t for t in inventory.get("things") or [] if not t.get("outputImages")]
-        if pending and all(has_aligned_outline(t) for t in pending):
-            ready.append(inventory)
+    # An inventory is extractable when its current parallel group (the first group
+    # not yet fully extracted) contains at least one outlined, un-extracted object.
+    def _group_extract_ready(inventory: dict[str, Any]) -> bool:
+        by_name = {str(t.get("name")): t for t in inventory.get("things") or []}
+        groups = inventory.get("parallelGroups") or [inventory.get("extractionOrder") or list(by_name)]
+        for group in groups:
+            pending = [n for n in group if not (by_name.get(n) or {}).get("outputImages")]
+            if not pending:
+                continue
+            return any(has_aligned_outline(by_name.get(n) or {}) for n in pending)
+        return False
+
+    ready = [inventory for inventory in inventories if _group_extract_ready(inventory)]
     if not ready:
         emit(f"{_ts()} nothing to extract (outline the current group first)")
         return "nothing to extract"
@@ -1011,74 +1039,89 @@ def run_extract(
 
     def extract_inventory(inventory: dict[str, Any]) -> None:
         inventory_id = str(inventory.get("id"))
-        order = inventory.get("extractionOrder") or [t.get("name") for t in inventory.get("things") or []]
         by_name = {str(t.get("name")): t for t in inventory.get("things") or []}
+        groups = inventory.get("parallelGroups") or [inventory.get("extractionOrder") or list(by_name)]
         scene_path = scenes.get(inventory_id) or str(inventory.get("sourceImage") or inventory.get("framePath") or "")
         description = str(inventory.get("descriptionOutput") or inventory.get("sceneDescription") or "")
-        for position, name in enumerate(order):
+        extracted_names: set[str] = set()
+        for group in groups:
             if stop_event is not None and stop_event.is_set():
                 return
-            thing = by_name.get(name)
-            if not thing or thing.get("outputImages") or not has_aligned_outline(thing):
-                continue
-            prompt = render_extractor_prompt(template, description, thing, position + 1, len(order))
-            image = image_to_data_url(root, scene_path)
-            try:
-                raw = invoke_model(root, model_id, prompt, image, 120).strip()
-            except Exception as error:  # noqa: BLE001
-                counts["failed"] += 1
-                emit(f"{_ts()} ✗ extract {name}: {error}")
-                update_thing(workspace_id, inventory_id, name, {"status": "failed", "error": str(error)})
-                continue
-            fill_instructions = parse_background_fill(raw)
-            if not fill_instructions:
-                counts["failed"] += 1
-                emit(f"{_ts()} ✗ extract {name}: no usable backgroundFill plan")
-                update_thing(workspace_id, inventory_id, name, {
-                    "status": "failed", "error": "Extractor returned no usable backgroundFill reconstruction plan.",
-                })
-                continue
-            try:
-                cut = member_cut({
-                    "workspaceId": workspace_id,
-                    "image": scene_path,
-                    "outlineSourceImage": thing.get("outlineImage"),
-                    "outlineSourceDimensions": thing.get("outlineDimensions"),
-                    "polygons": thing.get("outlinePolygons") or [],
-                    "holes": thing.get("outlineHoles") or [],
-                    "box": thing.get("outlineBox"),
-                    "outlineVerificationImage": thing.get("outlineVerificationImage"),
-                    "outlineGeometryHash": thing.get("outlineGeometryHash"),
-                    "name": name,
-                    "step": next_step(),
-                    "fill": fill_mode,
-                    "fillInstructions": fill_instructions,
-                })
-            except Exception as error:  # noqa: BLE001
-                counts["failed"] += 1
-                emit(f"{_ts()} ✗ extract {name}: member-cut failed: {error}")
-                update_thing(workspace_id, inventory_id, name, {"status": "failed", "error": f"member-cut failed: {error}"})
-                continue
-            cutout = str(cut.get("cutout") or "")
-            new_scene = str(cut.get("scene") or scene_path)
-            scenes[inventory_id] = new_scene
-            update_thing(
-                workspace_id,
-                inventory_id,
-                name,
-                {
-                    "status": "extracted",
-                    "outputImages": [cutout],
-                    "fillInstructions": fill_instructions,
-                    "error": None,
-                },
-                inventory_patch={"status": "extracting"},
-                member_scenes={inventory_id: new_scene},
-            )
-            scene_path = new_scene
-            counts["done"] += 1
-            emit(f"{_ts()} ✓ extracted {name} ({counts['done']}/{total_objects})")
-        update_thing(workspace_id, inventory_id, name, {}, inventory_patch={"status": "done"})
+            pending = [n for n in group if not (by_name.get(n) or {}).get("outputImages")]
+            if not pending:
+                continue  # group already fully extracted — advance to the next
+            # Objects within a parallel group are independent: extract every one
+            # that is outlined; skip (do not block on) any not-yet-outlined ones.
+            for name in pending:
+                if stop_event is not None and stop_event.is_set():
+                    return
+                thing = by_name.get(name)
+                if not thing or not has_aligned_outline(thing):
+                    continue
+                position = (inventory.get("extractionOrder") or []).index(name) + 1 if name in (inventory.get("extractionOrder") or []) else 0
+                prompt = render_extractor_prompt(template, description, thing, position, len(by_name))
+                image = image_to_data_url(root, scene_path)
+                try:
+                    raw = invoke_model(root, model_id, prompt, image, 120).strip()
+                except Exception as error:  # noqa: BLE001
+                    counts["failed"] += 1
+                    emit(f"{_ts()} ✗ extract {name}: {error}")
+                    update_thing(workspace_id, inventory_id, name, {"status": "failed", "error": str(error)})
+                    continue
+                fill_instructions = parse_background_fill(raw)
+                if not fill_instructions:
+                    counts["failed"] += 1
+                    emit(f"{_ts()} ✗ extract {name}: no usable backgroundFill plan")
+                    update_thing(workspace_id, inventory_id, name, {
+                        "status": "failed", "error": "Extractor returned no usable backgroundFill reconstruction plan.",
+                    })
+                    continue
+                try:
+                    cut = member_cut({
+                        "workspaceId": workspace_id,
+                        "image": scene_path,
+                        "outlineSourceImage": thing.get("outlineImage"),
+                        "outlineSourceDimensions": thing.get("outlineDimensions"),
+                        "polygons": thing.get("outlinePolygons") or [],
+                        "holes": thing.get("outlineHoles") or [],
+                        "box": thing.get("outlineBox"),
+                        "outlineVerificationImage": thing.get("outlineVerificationImage"),
+                        "outlineGeometryHash": thing.get("outlineGeometryHash"),
+                        "name": name,
+                        "step": next_step(),
+                        "fill": fill_mode,
+                        "fillInstructions": fill_instructions,
+                    })
+                except Exception as error:  # noqa: BLE001
+                    counts["failed"] += 1
+                    emit(f"{_ts()} ✗ extract {name}: member-cut failed: {error}")
+                    update_thing(workspace_id, inventory_id, name, {"status": "failed", "error": f"member-cut failed: {error}"})
+                    continue
+                cutout = str(cut.get("cutout") or "")
+                new_scene = str(cut.get("scene") or scene_path)
+                scenes[inventory_id] = new_scene
+                if thing is not None:
+                    thing["outputImages"] = [cutout]
+                update_thing(
+                    workspace_id,
+                    inventory_id,
+                    name,
+                    {"status": "extracted", "outputImages": [cutout], "fillInstructions": fill_instructions, "error": None},
+                    inventory_patch={"status": "extracting"},
+                    member_scenes={inventory_id: new_scene},
+                )
+                scene_path = new_scene
+                extracted_names.add(name)
+                counts["done"] += 1
+                emit(f"{_ts()} ✓ extracted {name} ({counts['done']}/{total_objects})")
+            # If the current group still has un-outlined objects, later groups stay
+            # blocked (they may be occluded until this group is fully removed).
+            still_pending = [n for n in group if not (by_name.get(n) or {}).get("outputImages")]
+            if still_pending:
+                break
+        all_done = all((by_name.get(n) or {}).get("outputImages") for g in groups for n in g)
+        if all_done:
+            update_thing(workspace_id, inventory_id, next(iter(by_name), ""), {}, inventory_patch={"status": "done"})
 
     if concurrency <= 1:
         for inventory in ready:
@@ -1122,19 +1165,29 @@ def run_full(
     run_describe(workspace_id, counts=counts, **common)
     if stop_event is not None and stop_event.is_set():
         return "stopped after describe"
-    # Outline + extract advance group-by-group; loop until neither does work.
+    # Outline + extract advance group-by-group; loop until a whole round makes no
+    # progress (no new outlines AND no new extractions), which also breaks out of
+    # a persistently-failing outline instead of looping forever.
     for round_index in range(1, 41):
         if stop_event is not None and stop_event.is_set():
             return f"stopped during round {round_index}"
         emit(f"{_ts()} === full pipeline: outline (round {round_index}) ===")
-        outline_summary = run_outline(workspace_id, counts=counts, **common)
+        outline_counts: dict[str, int] = {}
+        run_outline(workspace_id, counts=outline_counts, **common)
         if stop_event is not None and stop_event.is_set():
             return f"stopped during outline round {round_index}"
         emit(f"{_ts()} === full pipeline: extract (round {round_index}) ===")
-        extract_summary = run_extract(workspace_id, counts=counts, **common)
-        if outline_summary.startswith("nothing") and extract_summary.startswith("nothing"):
+        extract_counts: dict[str, int] = {}
+        run_extract(workspace_id, counts=extract_counts, **common)
+        counts["outlined"] = counts.get("outlined", 0) + outline_counts.get("done", 0)
+        counts["extracted"] = counts.get("extracted", 0) + extract_counts.get("done", 0)
+        if outline_counts.get("done", 0) == 0 and extract_counts.get("done", 0) == 0:
+            emit(f"{_ts()} no further progress after round {round_index} — stopping")
             break
-    summary = "full pipeline complete"
+    summary = (
+        f"full pipeline complete: {counts.get('outlined', 0)} outlined, "
+        f"{counts.get('extracted', 0)} extracted"
+    )
     emit(f"{_ts()} {summary}")
     return summary
 
