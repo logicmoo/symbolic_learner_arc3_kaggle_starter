@@ -32,7 +32,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any, Iterator
 
-from fastapi import APIRouter, Body, File, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Body, File, Form, HTTPException, Request, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.responses import Response, StreamingResponse
 
 from arc3_play_api import (
@@ -781,6 +781,140 @@ def pipeline_stop(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
     from video_import_pipeline import stop_run
 
     return {"workspaceId": workspace_id, "stopping": stop_run(workspace_id)}
+
+
+@router.websocket("/pipeline/ws")
+async def pipeline_ws(websocket: WebSocket) -> None:
+    """Bidirectional channel for the Video Import page.
+
+    The page subscribes with its workspaceId, then the server pushes pipeline
+    status + log (so the STATUS window updates in real time with no polling) and
+    accepts commands (start/stop/clear) so buttons are just messages.
+    """
+    await websocket.accept()
+    from video_import_pipeline import get_run, start_run, stop_run
+
+    state = {"workspaceId": "", "last_key": None, "last_state_mtime": 0.0}
+    stop_flag = asyncio.Event()
+
+    def _snapshot() -> dict[str, Any]:
+        workspace_id = state["workspaceId"]
+        if not workspace_id:
+            return {"type": "status", "status": "idle"}
+        run = get_run(workspace_id)
+        snap = run.snapshot() if run else {"workspaceId": workspace_id, "status": "idle", "log": []}
+        return {"type": "status", **snap}
+
+    def _page_state_path(workspace_id: str) -> Path:
+        return _imports_root(_workspace_root(workspace_id)) / "page_state.json"
+
+    def _state_frame(workspace_id: str) -> dict[str, Any] | None:
+        """The produced artifacts (inventories/members/scenes) for the gallery."""
+        payload = get_page_state(workspace_id)
+        page = payload.get("state") if isinstance(payload, dict) else None
+        if not isinstance(page, dict):
+            return None
+        return {
+            "type": "state",
+            "workspaceId": workspace_id,
+            "memberInventories": page.get("memberInventories") or [],
+            "memberScenes": page.get("memberScenes") or {},
+            "members": page.get("members") or [],
+        }
+
+    async def push_loop() -> None:
+        # Push a status frame whenever the run status or its log length changes,
+        # and a state frame (inventories/members/scenes → gallery) whenever the
+        # persisted page-state changes — both without any client polling.
+        while not stop_flag.is_set():
+            workspace_id = state["workspaceId"]
+            if workspace_id:
+                snap = await asyncio.to_thread(_snapshot)
+                key = (snap.get("status"), len(snap.get("log") or []))
+                if key != state["last_key"]:
+                    state["last_key"] = key
+                    try:
+                        await websocket.send_json(snap)
+                    except Exception:  # noqa: BLE001 - client went away
+                        stop_flag.set()
+                        return
+                try:
+                    mtime = _page_state_path(workspace_id).stat().st_mtime
+                except OSError:
+                    mtime = 0.0
+                if mtime != state["last_state_mtime"]:
+                    state["last_state_mtime"] = mtime
+                    frame = await asyncio.to_thread(_state_frame, workspace_id)
+                    if frame is not None:
+                        try:
+                            await websocket.send_json(frame)
+                        except Exception:  # noqa: BLE001
+                            stop_flag.set()
+                            return
+            await asyncio.sleep(0.6)
+
+    async def receive_loop() -> None:
+        while not stop_flag.is_set():
+            try:
+                message = await websocket.receive_json()
+            except WebSocketDisconnect:
+                stop_flag.set()
+                return
+            except Exception:  # noqa: BLE001 - malformed frame; keep the socket open
+                continue
+            command = str(message.get("cmd") or "")
+            workspace_id = str(message.get("workspaceId") or state["workspaceId"])
+            state["workspaceId"] = workspace_id
+            if not workspace_id:
+                continue
+            try:
+                if command in ("subscribe", "status"):
+                    state["last_key"] = None  # force an immediate push
+                    state["last_state_mtime"] = 0.0  # force a gallery/state push
+                elif command == "start":
+                    concurrency = message.get("concurrency")
+                    await asyncio.to_thread(
+                        start_run,
+                        workspace_id,
+                        str(message.get("stage") or "full"),
+                        model_override=(str(message["model"]).strip() if message.get("model") else None),
+                        goal_override=(str(message["goal"]).strip() if message.get("goal") else None),
+                        only_selected=bool(message.get("onlySelected", True)),
+                        concurrency_override=int(concurrency) if concurrency else None,
+                    )
+                    state["last_key"] = None
+                elif command == "stop":
+                    await asyncio.to_thread(stop_run, workspace_id)
+                    state["last_key"] = None
+                elif command == "clear":
+                    await asyncio.to_thread(
+                        _save_page_state_payload,
+                        {
+                            "workspaceId": workspace_id,
+                            "clearShards": ["memberInventories", "modelResponseCache"],
+                            "state": {"memberInventories": [], "modelResponseCache": {}},
+                        },
+                    )
+                    try:
+                        await websocket.send_json({"type": "cleared", "workspaceId": workspace_id})
+                        state["last_state_mtime"] = 0.0  # push the emptied gallery
+                    except Exception:  # noqa: BLE001
+                        stop_flag.set()
+                        return
+            except Exception as error:  # noqa: BLE001 - report, keep socket open
+                try:
+                    await websocket.send_json({"type": "error", "error": str(error)})
+                except Exception:  # noqa: BLE001
+                    stop_flag.set()
+                    return
+
+    try:
+        await asyncio.gather(push_loop(), receive_loop())
+    except WebSocketDisconnect:
+        pass
+    finally:
+        stop_flag.set()
+
 
 
 

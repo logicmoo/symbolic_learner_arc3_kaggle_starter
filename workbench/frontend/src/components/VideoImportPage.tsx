@@ -3474,47 +3474,105 @@ export function VideoImportPage({
     try { navigator.sendBeacon?.(`${API}/page-state`, new Blob([JSON.stringify({ workspaceId, state: slim })], { type: "application/json" })); } catch { /* best effort */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  // Headless server-side pipeline: poll its status so the STATUS window shows the
-  // exact same messages the server emits, and mirror the server's inventories
-  // into the display while a run is active (the server, not the tab, owns them).
+  // Headless server-side pipeline: prefer a websocket (real-time push of the
+  // server's status + log, and a channel for button commands), with automatic
+  // fallback to HTTP polling if the socket can't connect. Either way the STATUS
+  // window shows the exact messages the server emits, and the server's
+  // inventories are mirrored into the display while a run is active.
   const pipelineRunningRef = useRef(false);
   const pipelineLogSeenRef = useRef(0);
+  const pipelineSocketRef = useRef<WebSocket | null>(null);
   const [pipelineRunStatus, setPipelineRunStatus] = useState<string>("idle");
+  const applyPipelineStatus = useCallback((snap: Record<string, any>) => {
+    const status = String(snap.status || "idle");
+    const running = status === "running";
+    setPipelineRunStatus(status);
+    const lines: string[] = Array.isArray(snap.log) ? snap.log.map((line: unknown) => String(line)) : [];
+    if (lines.length < pipelineLogSeenRef.current) pipelineLogSeenRef.current = 0;
+    for (let i = pipelineLogSeenRef.current; i < lines.length; i += 1) {
+      const line = lines[i].replace(/^\d\d:\d\d:\d\d\s+/, "").trim();
+      if (line) say(`⇢ ${line}`);
+    }
+    pipelineLogSeenRef.current = lines.length;
+    pipelineRunningRef.current = running;
+    return running;
+  }, [say]);
   useEffect(() => {
     if (!restoredRef.current) return;
     let cancelled = false;
     let timer: number | undefined;
-    const poll = async () => {
-      let running = false;
+    let socket: WebSocket | null = null;
+    let wsAlive = false;
+    let lastInvFetch = 0;
+    const refreshInventories = async () => {
+      const now = Date.now();
+      if (now - lastInvFetch < 1200) return;
+      lastInvFetch = now;
       try {
-        const res = await api(`pipeline/status?workspaceId=${encodeURIComponent(workspaceId)}`);
-        if (cancelled) return;
-        const status = String(res.status || "idle");
-        running = status === "running";
-        setPipelineRunStatus(status);
-        const lines: string[] = Array.isArray(res.log) ? res.log.map((line: unknown) => String(line)) : [];
-        // A new run resets the log; detect the shrink and replay from the start.
-        if (lines.length < pipelineLogSeenRef.current) pipelineLogSeenRef.current = 0;
-        for (let i = pipelineLogSeenRef.current; i < lines.length; i += 1) {
-          const line = lines[i].replace(/^\d\d:\d\d:\d\d\s+/, "").trim();
-          if (line) say(`⇢ ${line}`);
-        }
-        pipelineLogSeenRef.current = lines.length;
-        if (running) {
-          try {
-            const ps = await api(`page-state?workspaceId=${encodeURIComponent(workspaceId)}`);
-            const serverInv = ps?.state?.memberInventories;
-            if (!cancelled && Array.isArray(serverInv)) setMemberInventories(serverInv);
-          } catch { /* transient */ }
-        }
-      } catch { /* backend not reachable / endpoint missing — stay quiet */ }
-      finally {
-        pipelineRunningRef.current = running;
+        const ps = await api(`page-state?workspaceId=${encodeURIComponent(workspaceId)}`);
+        const serverInv = ps?.state?.memberInventories;
+        if (!cancelled && Array.isArray(serverInv)) setMemberInventories(serverInv);
+      } catch { /* transient */ }
+    };
+    // ---- HTTP polling fallback (used only while the socket is not alive) -----
+    const poll = async () => {
+      if (cancelled) return;
+      if (!wsAlive) {
+        let running = false;
+        try {
+          const res = await api(`pipeline/status?workspaceId=${encodeURIComponent(workspaceId)}`);
+          if (cancelled) return;
+          running = applyPipelineStatus(res);
+          if (running) await refreshInventories();
+        } catch { /* backend unreachable — stay quiet */ }
         if (!cancelled) timer = window.setTimeout(poll, running ? 1500 : 5000);
+      } else if (!cancelled) {
+        timer = window.setTimeout(poll, 4000);
       }
     };
+    // ---- WebSocket (preferred) ----------------------------------------------
+    const connect = () => {
+      if (cancelled) return;
+      try {
+        const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+        socket = new WebSocket(`${proto}//${window.location.host}${API}/pipeline/ws`);
+      } catch { return; }
+      pipelineSocketRef.current = socket;
+      socket.onopen = () => {
+        if (cancelled) { socket?.close(); return; }
+        wsAlive = true;
+        try { socket?.send(JSON.stringify({ cmd: "subscribe", workspaceId })); } catch { /* ignore */ }
+      };
+      socket.onmessage = (event) => {
+        if (cancelled) return;
+        let msg: Record<string, any>;
+        try { msg = JSON.parse(event.data); } catch { return; }
+        if (msg.type === "status") { applyPipelineStatus(msg); }
+        else if (msg.type === "state") {
+          // The server pushes produced artifacts (inventories + cutout members +
+          // scenes) so the gallery/objects populate live over the socket.
+          if (Array.isArray(msg.memberInventories)) setMemberInventories(msg.memberInventories);
+          if (msg.memberScenes && typeof msg.memberScenes === "object") setMemberScenes(msg.memberScenes);
+          if (Array.isArray(msg.members)) setMembers(msg.members);
+        }
+        else if (msg.type === "cleared") { pipelineLogSeenRef.current = 0; }
+      };
+      socket.onclose = () => {
+        wsAlive = false;
+        if (pipelineSocketRef.current === socket) pipelineSocketRef.current = null;
+        // Reconnect after a short delay (polling covers the gap meanwhile).
+        if (!cancelled) window.setTimeout(connect, 4000);
+      };
+      socket.onerror = () => { try { socket?.close(); } catch { /* ignore */ } };
+    };
+    connect();
     void poll();
-    return () => { cancelled = true; if (timer) window.clearTimeout(timer); };
+    return () => {
+      cancelled = true;
+      if (timer) window.clearTimeout(timer);
+      try { socket?.close(); } catch { /* ignore */ }
+      pipelineSocketRef.current = null;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceId]);
   const copyStateJson = () => {
@@ -3596,21 +3654,33 @@ export function VideoImportPage({
     } }).catch(() => undefined);
     say(`cleared all LLM work (${count} cached response(s) + inventories/members/outputs); a fresh run will re-describe from scratch`);
   };
-  // Start/stop the headless server-side pipeline. The server advances the stages
-  // and pushes status; the page just triggers and watches.
+  // Start/stop the headless server-side pipeline. Prefer the websocket command
+  // channel; fall back to HTTP if the socket isn't connected.
   const startServerPipeline = async () => {
+    pipelineLogSeenRef.current = 0;
+    const socket = pipelineSocketRef.current;
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      try {
+        socket.send(JSON.stringify({ cmd: "start", workspaceId, stage: "full", onlySelected: true }));
+        say("▶ started server pipeline (full) via websocket");
+        return;
+      } catch { /* fall through to HTTP */ }
+    }
     try {
-      pipelineLogSeenRef.current = 0;
-      const res = await api("pipeline/start", { workspaceId, stage: "describe", onlySelected: true });
+      const res = await api("pipeline/start", { workspaceId, stage: "full", onlySelected: true });
       pipelineRunningRef.current = String(res.status || "") === "running";
       setPipelineRunStatus(String(res.status || "running"));
-      say("▶ started server pipeline (describe)");
+      say("▶ started server pipeline (full)");
     } catch (reason) {
       const message = reason instanceof Error ? reason.message : String(reason);
       say(`✗ could not start server pipeline: ${message}`);
     }
   };
   const stopServerPipeline = async () => {
+    const socket = pipelineSocketRef.current;
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      try { socket.send(JSON.stringify({ cmd: "stop", workspaceId })); say("■ requested server pipeline stop"); return; } catch { /* fall through */ }
+    }
     try {
       await api("pipeline/stop", { workspaceId });
       say("■ requested server pipeline stop");
@@ -5961,7 +6031,7 @@ export function VideoImportPage({
           <button title="Copy the exact page state as JSON" disabled={false} onClick={copyStateJson}>⤓ state</button>
           {pipelineRunStatus === "running"
             ? <button title="Stop the headless server-side pipeline run" onClick={() => void stopServerPipeline()}>■ stop server run</button>
-            : <button title="Run describe on the server (headless — no browser needed; the STATUS log streams from the server)" onClick={() => void startServerPipeline()}>▶ run on server</button>}
+            : <button title="Run the full pipeline (describe → outline → extract) on the server — headless, no browser needed; the STATUS log streams live over a websocket" onClick={() => void startServerPipeline()}>▶ run on server</button>}
           <span className="video-import-toggle" title="Headless server pipeline status">server: {pipelineRunStatus}</span>
           <button title="Clear all LLM-produced work (cached responses, inventories, members, outputs) but keep the source images, so a fresh run re-describes from scratch" onClick={clearModelCache}>⟲ clear LLM work</button>
           <button title="Forget the saved state — next load starts clean" onClick={forgetState}>⟲ forget</button>
