@@ -2189,8 +2189,14 @@ export function VideoImportPage({
   };
   useEffect(() => {
     if (!selectedFrameSourceId) return;
-    setFrameSources((current) => current.map((source) =>
-      source.id === selectedFrameSourceId ? { ...source, frames } : source));
+    setFrameSources((current) => current.map((source) => {
+      if (source.id !== selectedFrameSourceId) return source;
+      // Never destroy a source's frames by syncing a transient-empty `frames`
+      // (e.g. during restore, before `frames` is derived from the source). This
+      // was silently wiping the selected source on every reload.
+      if (frames.length === 0 && (source.frames?.length || 0) > 0) return source;
+      return { ...source, frames };
+    }));
   }, [frames, selectedFrameSourceId]);
   const selectFrameSource = (sourceId: string) => {
     const source = frameSources.find((candidate) => candidate.id === sourceId);
@@ -3140,6 +3146,15 @@ export function VideoImportPage({
     autoClearData, autoClearAlgorithm, autoNext77,
     collapsedMap, pinnedMap,
   });
+  // A slim snapshot without the (potentially multi-MB) model response cache, for
+  // stores with tight size limits: browser localStorage (~5MB) and sendBeacon
+  // (~64KB) both silently fail on the full snapshot, which is why page state
+  // stopped persisting. The full snapshot (with cache) still goes to the
+  // filesystem via the API, which has no such limit.
+  const buildSlimSnapshot = () => {
+    const { modelResponseCache: _omitCache, ...rest } = buildSnapshot();
+    return { ...rest, modelResponseCache: {} };
+  };
   // Apply a snapshot object to the live page (used by mount-restore and the
   // JSON CONFIG editor). Returns false if the object is not a v1 snapshot.
   const applySnapshot = (s: any): boolean => {
@@ -3169,11 +3184,29 @@ export function VideoImportPage({
     if (typeof s.rangeStart === "string") setRangeStart(s.rangeStart);
     if (typeof s.rangeEnd === "string") setRangeEnd(s.rangeEnd);
     if (typeof s.maxFrames === "string") setMaxFrames(s.maxFrames);
-    if (Array.isArray(s.frames)) setFrames(s.frames);
-    if (Array.isArray(s.frameSources)) setFrameSources(s.frameSources);
-    else if (Array.isArray(s.frames) && s.frames.length) setFrameSources([{ id: "restored", label: "Restored extracted images", kind: "restored", frames: s.frames }]);
-    if (typeof s.selectedFrameSourceId === "string") setSelectedFrameSourceId(s.selectedFrameSourceId);
-    else if (Array.isArray(s.frames) && s.frames.length) setSelectedFrameSourceId("restored");
+    // Restore the frame sources, then derive the live `frames` from the SELECTED
+    // source rather than the persisted top-level `frames` (which is usually empty
+    // because it lives inside the sources). If the selected source was previously
+    // wiped, fall back to any source that still holds frames so images reappear.
+    const restoredSources: any[] = Array.isArray(s.frameSources) && s.frameSources.length
+      ? s.frameSources
+      : (Array.isArray(s.frames) && s.frames.length
+        ? [{ id: "restored", label: "Restored extracted images", kind: "restored", frames: s.frames }]
+        : []);
+    if (restoredSources.length) setFrameSources(restoredSources);
+    const wantedSelId = typeof s.selectedFrameSourceId === "string" && s.selectedFrameSourceId
+      ? s.selectedFrameSourceId
+      : (Array.isArray(s.frames) && s.frames.length ? "restored" : "");
+    let chosenSource = restoredSources.find((src) => src.id === wantedSelId);
+    if (!chosenSource || !(chosenSource.frames?.length)) {
+      chosenSource = restoredSources.find((src) => (src.frames?.length || 0) > 0) || chosenSource;
+    }
+    if (chosenSource) setSelectedFrameSourceId(chosenSource.id);
+    else if (wantedSelId) setSelectedFrameSourceId(wantedSelId);
+    const restoredFrames = (chosenSource?.frames?.length
+      ? chosenSource.frames
+      : (Array.isArray(s.frames) ? s.frames : [])) || [];
+    setFrames(restoredFrames);
     if (typeof s.picked === "string") setPicked(s.picked);
     if (Array.isArray(s.kept) && s.kept.length) setKept(new Set(s.kept.map(String)));
     if (Array.isArray(s.memberInputPaths)) {
@@ -3367,8 +3400,9 @@ export function VideoImportPage({
     if (!restoredRef.current) return;
     const timer = setTimeout(() => {
       const state = buildSnapshot();
-      try { localStorage.setItem(snapshotKey, JSON.stringify(state)); } catch { /* quota */ }
-      // Mirror into the image repository so the state lives beside the images.
+      // localStorage can't hold the full (cached) snapshot — store the slim one.
+      try { localStorage.setItem(snapshotKey, JSON.stringify(buildSlimSnapshot())); } catch { /* quota */ }
+      // Mirror the full state (with cache) into the image repository via the API.
       void api("page-state", { workspaceId, state }).catch(() => undefined);
     }, 900);
     return () => clearTimeout(timer);
@@ -3376,11 +3410,15 @@ export function VideoImportPage({
   // Flush on unmount so switching pages right after a change never loses it.
   const buildSnapshotRef = useRef(buildSnapshot);
   buildSnapshotRef.current = buildSnapshot;
+  const buildSlimSnapshotRef = useRef(buildSlimSnapshot);
+  buildSlimSnapshotRef.current = buildSlimSnapshot;
   useEffect(() => () => {
     if (!restoredRef.current) return;
-    const state = buildSnapshotRef.current();
-    try { localStorage.setItem(snapshotKey, JSON.stringify(state)); } catch { /* quota */ }
-    try { navigator.sendBeacon?.(`${API}/page-state`, new Blob([JSON.stringify({ workspaceId, state })], { type: "application/json" })); } catch { /* best effort */ }
+    const slim = buildSlimSnapshotRef.current();
+    try { localStorage.setItem(snapshotKey, JSON.stringify(slim)); } catch { /* quota */ }
+    // sendBeacon caps payloads (~64KB), so send the slim state — the full state
+    // was already mirrored by the debounced save above.
+    try { navigator.sendBeacon?.(`${API}/page-state`, new Blob([JSON.stringify({ workspaceId, state: slim })], { type: "application/json" })); } catch { /* best effort */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const copyStateJson = () => {
