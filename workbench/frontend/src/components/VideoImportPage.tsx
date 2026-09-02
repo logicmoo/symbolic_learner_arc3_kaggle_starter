@@ -3855,10 +3855,16 @@ export function VideoImportPage({
     storeMemberInventory(initial);
     return describeNow ? describeRecursiveInventory(initial) : initial;
   };
+  const plannerBusyRef = useRef(new Set<string>());
+  const outlinerBusyRef = useRef(new Set<string>());
+  const extractorBusyRef = useRef(new Set<string>());
   const planRecursiveInventory = async (inventory: MemberInventory, force = false): Promise<MemberInventory | null> => {
     if (!inventory.things.length) return { ...inventory, status: "done" };
     if (!force && hasVisualizedPlan(inventory)) return inventory;
     if (!force && inventory.status === "failed" && !retryReady(inventory.retryAfter)) return null;
+    if (plannerBusyRef.current.has(inventory.id)) return null;
+    plannerBusyRef.current.add(inventory.id);
+    try {
     const planning = { ...inventory, status: "ordering" as const };
     storeMemberInventory(planning);
     const image = await asDataUrl(inventory.sourceImage);
@@ -3938,6 +3944,9 @@ export function VideoImportPage({
      say(`✗ planner ${inventory.subjectName || "input"}: ${message}`);
      return null;
     }
+   } finally {
+     plannerBusyRef.current.delete(inventory.id);
+   }
   };
   const runRecursivePlanner = (onlyMissing = false) =>
     run("Planning recursive object extraction", async () => {
@@ -3945,7 +3954,7 @@ export function VideoImportPage({
      const inventories = memberInventories.filter((inventory) =>
        inventory.things.length > 0
        && (!onlyMissing || isInventoryActive(inventory))
-       && (!onlyMissing || (!hasVisualizedPlan(inventory) && (inventory.status !== "failed" || retryReady(inventory.retryAfter))))
+       && (!onlyMissing || (!hasVisualizedPlan(inventory) && inventory.status !== "ordering" && (inventory.status !== "failed" || retryReady(inventory.retryAfter))))
      );
      if (!inventories.length) return "call the Describer on input images first";
      let planned = 0;
@@ -3976,6 +3985,10 @@ export function VideoImportPage({
     if (!thing || thing.outputImages?.length) return false;
     if (!force && hasAlignedOutline(thing)) return false;
     if (!force && !retryReady(thing.outlineRetryAfter)) return false;
+    const outlineKey = `${inventory.id}:${thingIndex}`;
+    if (outlinerBusyRef.current.has(outlineKey)) return false;
+    outlinerBusyRef.current.add(outlineKey);
+    try {
     const position = Math.max(0, inventory.extractionOrder?.indexOf(thing.name) ?? thingIndex);
     const scenePath = inventory.sourceImage;
     updateInventoryThing(inventory.id, thingIndex, { status: "outlining", inputImage: scenePath });
@@ -4113,6 +4126,9 @@ export function VideoImportPage({
      say(`✗ Outliner ${thing.name}: ${message}`);
      return false;
     }
+   } finally {
+     outlinerBusyRef.current.delete(outlineKey);
+   }
   };
   const runRecursiveOutliner = (onlyMissing = false) =>
     run("Outlining planned objects independently", async () => {
@@ -4120,6 +4136,7 @@ export function VideoImportPage({
      const candidates = memberInventories.flatMap((inventory) => (hasVisualizedPlan(inventory) && (!onlyMissing || isInventoryActive(inventory)))
        ? inventory.things.map((thing, thingIndex) => ({ inventory, thing, thingIndex })).filter(({ thing }) => {
          if (thing.outputImages?.length) return false;
+         if (onlyMissing && thing.status === "outlining") return false;
          const ready = hasAlignedOutline(thing);
          return !onlyMissing || (!ready && retryReady(thing.outlineRetryAfter));
        })
@@ -4147,7 +4164,7 @@ export function VideoImportPage({
      const queue = automatic
        ? cooperativeRetryOrder(
          memberInventories.filter((inventory) => {
-           return Boolean(hasVisualizedPlan(inventory) && inventoryOutlinesReady(inventory) && isInventoryActive(inventory));
+           return Boolean(hasVisualizedPlan(inventory) && inventoryOutlinesReady(inventory) && isInventoryActive(inventory) && inventory.status !== "extracting");
          }),
          effectiveCallConcurrency("extractor"),
          (inventory) => inventory.things.some((thing) => (thing.status === "failed" || thing.status === "not_found") && retryReady(thing.retryAfter)),
@@ -4163,6 +4180,9 @@ export function VideoImportPage({
        if (stopRef.current) return;
        const inventory = sourceInventory;
        if (!inventory || !inventory.things.length) return;
+       if (extractorBusyRef.current.has(inventory.id)) return;
+       extractorBusyRef.current.add(inventory.id);
+       try {
        let scenePath = scenes[inventory.id] || inventory.sourceImage;
        let things = inventory.things.map((thing) => ({ ...thing }));
        const order = inventory.extractionOrder?.length ? inventory.extractionOrder : things.map((thing) => thing.name);
@@ -4300,6 +4320,9 @@ export function VideoImportPage({
          }
        }
        storeMemberInventory({ ...inventory, status: "done", things });
+      } finally {
+        extractorBusyRef.current.delete(inventory.id);
+      }
      };
      if (automatic) {
        await runConcurrent([...queue], effectiveCallConcurrency("extractor"), processInventory);
@@ -5213,7 +5236,10 @@ export function VideoImportPage({
       return artifact?.status === "generated" || (artifact?.status === "failed" && artifact.failedStage === "png" && retryReady(artifact.retryAfter));
     });
     const launch = (type: keyof LlmCallConcurrency, task: () => Promise<void>) => {
-     const allowsOverlappingRefill = type === "describer";
+     // Describer/Planner/Outliner/Extractor may overlap-refill so newly-ready
+     // items start immediately (their batch filters skip in-progress items, so
+     // overlapping launches never double-process). Turtle stages stay batched.
+     const allowsOverlappingRefill = type !== "turtle" && type !== "turtlePng";
      if (!allowsOverlappingRefill && automaticStagesRunningRef.current.has(type)) return;
      if (!allowsOverlappingRefill) automaticStagesRunningRef.current.add(type);
      void task().finally(() => {
