@@ -5312,7 +5312,7 @@ export function VideoImportPage({
   const undiscoveredSelectedRoots = selectedRootInventories.filter((inventory) => !inventory).length;
   const schedulerPending = (type: keyof LlmCallConcurrency) =>
     llmSchedulerRef.current.waiters.filter((waiter) => waiter.type === type).length;
-  const llmStageProgress: Record<keyof LlmCallConcurrency, { waiting: number; pending: number; completed: number }> = {
+  const llmStageProgress: Record<keyof LlmCallConcurrency, { waiting: number; pending: number; completed: number; retry: number; errors: number }> = {
     describer: {
       waiting: schedulerPending("describer") + undiscoveredSelectedRoots + runnableMemberInventories.filter((inventory) =>
         !inventory.descriptionOutput && inventory.status !== "describing" && inventory.status !== "ordering"
@@ -5323,6 +5323,8 @@ export function VideoImportPage({
       completed: runnableMemberInventories.filter((inventory) =>
         Boolean(inventory.descriptionOutput) && !inventory.descriptionOutput.startsWith("ERROR:")
       ).length,
+      errors: runnableMemberInventories.filter((inventory) => Boolean(inventory.descriptionOutput?.startsWith("ERROR:"))).length,
+      retry: runnableMemberInventories.filter((inventory) => Boolean(inventory.descriptionOutput?.startsWith("ERROR:")) && !retryReady(inventory.retryAfter)).length,
     },
     planner: {
       waiting: schedulerPending("planner") + runnableMemberInventories.filter((inventory) =>
@@ -5335,6 +5337,8 @@ export function VideoImportPage({
         inventory.things.length > 0 && !inventory.orderOutput && inventory.status !== "ordering"
       ).length,
       completed: runnableMemberInventories.filter((inventory) => Boolean(inventory.orderOutput)).length,
+      errors: runnableMemberInventories.filter((inventory) => inventory.status === "failed" && !inventory.orderOutput).length,
+      retry: runnableMemberInventories.filter((inventory) => inventory.status === "failed" && !inventory.orderOutput && !retryReady(inventory.retryAfter)).length,
     },
     outliner: {
       waiting: schedulerPending("outliner") + runnableMemberInventories.reduce((count, inventory) => {
@@ -5350,6 +5354,10 @@ export function VideoImportPage({
         count + inventory.things.filter((thing) => !thing.outputImages?.length && !hasAlignedOutline(thing)).length, 0),
       completed: runnableMemberInventories.reduce((count, inventory) =>
         count + inventory.things.filter(hasAlignedOutline).length, 0),
+      errors: runnableMemberInventories.reduce((count, inventory) =>
+        count + inventory.things.filter((thing) => Boolean(thing.outlineError) && !hasAlignedOutline(thing) && !thing.outputImages?.length).length, 0),
+      retry: runnableMemberInventories.reduce((count, inventory) =>
+        count + inventory.things.filter((thing) => Boolean(thing.outlineError) && !hasAlignedOutline(thing) && !thing.outputImages?.length && !retryReady(thing.outlineRetryAfter)).length, 0),
     },
     extractor: {
       waiting: schedulerPending("extractor") + runnableMemberInventories.filter((inventory) => {
@@ -5361,6 +5369,10 @@ export function VideoImportPage({
         count + inventory.things.filter((thing) => !thing.outputImages?.length).length, 0),
       completed: runnableMemberInventories.reduce((count, inventory) =>
         count + inventory.things.filter((thing) => Boolean(thing.outputImages?.length)).length, 0),
+      errors: runnableMemberInventories.reduce((count, inventory) =>
+        count + inventory.things.filter((thing) => (thing.status === "failed" || thing.status === "not_found") && !thing.outputImages?.length).length, 0),
+      retry: runnableMemberInventories.reduce((count, inventory) =>
+        count + inventory.things.filter((thing) => (thing.status === "failed" || thing.status === "not_found") && !thing.outputImages?.length && !retryReady(thing.retryAfter)).length, 0),
     },
     turtle: {
       waiting: schedulerPending("turtle") + turtleLeafCandidates.filter((candidate) => {
@@ -5369,6 +5381,8 @@ export function VideoImportPage({
       }).length,
       pending: turtleLeafCandidates.filter((candidate) => !turtleArtifacts[candidate.sourceImage]?.rawProgram).length,
       completed: Object.values(turtleArtifacts).filter((artifact) => Boolean(artifact.rawProgram)).length,
+      errors: Object.values(turtleArtifacts).filter((artifact) => artifact.status === "failed" && artifact.failedStage === "gen").length,
+      retry: Object.values(turtleArtifacts).filter((artifact) => artifact.status === "failed" && artifact.failedStage === "gen" && !retryReady(artifact.retryAfter)).length,
     },
     turtlePng: {
       waiting: schedulerPending("turtlePng") + Object.values(turtleArtifacts).filter((artifact) =>
@@ -5378,6 +5392,8 @@ export function VideoImportPage({
         Boolean(artifact.rawProgram) && !artifact.renderedImage
       ).length,
       completed: Object.values(turtleArtifacts).filter((artifact) => Boolean(artifact.renderedImage)).length,
+      errors: Object.values(turtleArtifacts).filter((artifact) => artifact.status === "failed" && artifact.failedStage === "png").length,
+      retry: Object.values(turtleArtifacts).filter((artifact) => artifact.status === "failed" && artifact.failedStage === "png" && !retryReady(artifact.retryAfter)).length,
     },
   };
   const selectedImageStageIndicators = (frame: Frame): WorkflowStageIndicator[] => {
@@ -6302,6 +6318,8 @@ export function VideoImportPage({
                 <span title="Jobs running right now on a worker for this stage."><b>{llmSchedulerRef.current.byType[type]}</b><small>PROCESSING</small></span>
                 <span title="Jobs whose dependencies are satisfied right now and are ready to run (awaiting a free worker)."><b>{progress.waiting}</b><small>WAITING</small></span>
                 <span title="Total jobs still left for this stage if every dependency were already satisfied."><b>{progress.pending}</b><small>PENDING</small></span>
+                <span title="Failed jobs cooling down before their next automatic retry."><b>{progress.retry}</b><small>RETRY</small></span>
+                <span title="Jobs currently in a failed/error state for this stage." className={progress.errors ? "has-errors" : ""}><b>{progress.errors}</b><small>ERRORS</small></span>
                 <span><b>{completed}</b><small>COMPLETED</small></span>
                 <span title={metric.completed ? `${Math.round(averageMs)}ms average across ${metric.completed} completed job(s)` : "No completed jobs yet"}><b>{formatJobDuration(averageMs)}</b><small>AVG / JOB</small></span>
               </div>
