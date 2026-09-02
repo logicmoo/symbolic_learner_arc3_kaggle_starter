@@ -981,6 +981,19 @@
 .video-import-member-run > header { border: 0; border-bottom: 1px solid var(--line, #2a3742); }
 .video-import-member-run > header span { color: var(--muted, #8aa); }
 .video-import-member-run > header em { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+.video-import-next-step {
+  display: inline-block; padding: 1px 7px; border-radius: 999px;
+  font: 700 9px ui-monospace, monospace; letter-spacing: 0.06em; white-space: nowrap;
+  border: 1px solid var(--line, #2a3742); background: rgba(255, 255, 255, 0.04);
+  color: var(--text, #dce7ee);
+}
+.video-import-next-step.tone-wait { color: #cbd7e0; border-color: #33475a; }
+.video-import-next-step.tone-active { color: #7fd8ff; border-color: #2a6c92; background: rgba(60, 150, 210, 0.14); }
+.video-import-next-step.tone-retry { color: #ffc561; border-color: #7a5a1f; background: rgba(210, 150, 40, 0.12); }
+.video-import-next-step.tone-error { color: #ff7a7a; border-color: #7a2f2f; background: rgba(210, 60, 60, 0.12); }
+.video-import-next-step.tone-done { color: #7fe0a8; border-color: #2f7a54; background: rgba(60, 200, 130, 0.12); }
+.video-import-member-run > header .video-import-next-step { grid-column: 1 / -1; grid-row: 3; justify-self: start; margin-top: 2px; }
+.video-import-member-run summary .video-import-next-step { float: right; margin-left: 6px; }
 .video-import-member-run > section { display: grid; gap: 6px; padding: 10px; }
 .video-import-member-run > section + section { border-top: 1px dashed var(--line, #2a3742); }
 .video-import-member-run p { margin: 0; color: var(--text, #dce7ee); font-size: 11px; line-height: 1.45; }

@@ -349,6 +349,9 @@ const hasVisualizedPlan = (inventory: MemberInventory) => Boolean(
   && inventory.plannerVisualizationImage
 );
 
+// Per-object "what does it need next" indicator, derived from live state.
+type PipelineNext = { label: string; tone: "done" | "active" | "retry" | "wait" | "error" };
+
 const API = "/workbench/video-import";
 const streamSlug = (value: string) =>
   value.toLowerCase().replace(/[^a-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "workbench";
@@ -2919,6 +2922,45 @@ export function VideoImportPage({
     if (!workersHeld) pumpLlmScheduler();
   }, [llmCallConcurrency, totalLlmConcurrency, workersHeld]);
   const retryReady = (retryAfter?: number) => !retryAfter || retryAfter <= retryClock;
+  // What each object needs next (Describe/Plan/Outline/Extract/Turtle/Done),
+  // derived from the current draft + resolved state so it is always live.
+  const describeThingNext = (thing: MemberInventoryThing): PipelineNext => {
+    if (thing.outputImages?.length) return { label: "Done", tone: "done" };
+    if (!hasAlignedOutline(thing)) {
+      if (thing.status === "outlining") return { label: "Outlining", tone: "active" };
+      if (thing.outlineError) return retryReady(thing.outlineRetryAfter)
+        ? { label: "Outline · retry", tone: "retry" }
+        : { label: "Outline · cooling", tone: "error" };
+      return { label: "Outline", tone: "wait" };
+    }
+    if (thing.status === "extracting") return { label: "Extracting", tone: "active" };
+    if (thing.status === "failed" || thing.status === "not_found") return retryReady(thing.retryAfter)
+      ? { label: "Extract · retry", tone: "retry" }
+      : { label: "Extract · cooling", tone: "error" };
+    return { label: "Extract", tone: "wait" };
+  };
+  const describeInventoryNext = (inventory: MemberInventory): PipelineNext => {
+    if (!inventory.descriptionOutput) {
+      if (inventory.status === "describing") return { label: "Describing", tone: "active" };
+      if (inventory.status === "failed") return retryReady(inventory.retryAfter)
+        ? { label: "Describe · retry", tone: "retry" }
+        : { label: "Describe · cooling", tone: "error" };
+      return { label: "Describe", tone: "wait" };
+    }
+    if (!inventory.things.length) return { label: "Leaf → Turtle", tone: "done" };
+    if (!hasVisualizedPlan(inventory)) {
+      if (inventory.status === "ordering") return { label: "Planning", tone: "active" };
+      if (inventory.status === "failed") return retryReady(inventory.retryAfter)
+        ? { label: "Plan · retry", tone: "retry" }
+        : { label: "Plan · cooling", tone: "error" };
+      return { label: "Plan", tone: "wait" };
+    }
+    const pending = inventory.things.filter((thing) => !thing.outputImages?.length);
+    if (!pending.length) return { label: "Done", tone: "done" };
+    const needOutline = pending.filter((thing) => !hasAlignedOutline(thing)).length;
+    if (needOutline > 0) return { label: `Outline ${needOutline}`, tone: pending.some((thing) => thing.status === "outlining") ? "active" : "wait" };
+    return { label: `Extract ${pending.length}`, tone: pending.some((thing) => thing.status === "extracting") ? "active" : "wait" };
+  };
   const scheduleRetry = () => {
     window.clearTimeout(retryTimerRef.current);
     retryTimerRef.current = window.setTimeout(() => setRetryClock(Date.now()), LLM_RETRY_DELAY_MS + 50);
@@ -5303,6 +5345,31 @@ export function VideoImportPage({
     turtleArtifacts,
   ]);
 
+  // Safety heartbeat: the scheduler is normally re-evaluated whenever a stage run
+  // finishes (launch().finally bumps the tick) or a retry fires. If a worker ever
+  // dies WITHOUT running its finally (dropped promise), no tick would fire and an
+  // item stranded in a transient status could sit idle. This periodic tick makes
+  // reclaim guaranteed — a stranded item has no retryAfter, so retryReady is true
+  // and it is re-selected on the next evaluation. It never spams calls: the
+  // busy-ref-based batches are empty when everything is genuinely in-flight.
+  useEffect(() => {
+    if (workersHeld) return;
+    const anyAutomationOn = recursiveAutomation.describer || recursiveAutomation.planner
+      || recursiveAutomation.outliner || recursiveAutomation.extractor
+      || recursiveAutomation.turtle || recursiveAutomation.turtlePng;
+    if (!anyAutomationOn) return;
+    const timer = window.setInterval(() => setAutomaticSchedulerTick((tick) => tick + 1), 5000);
+    return () => window.clearInterval(timer);
+  }, [
+    workersHeld,
+    recursiveAutomation.describer,
+    recursiveAutomation.planner,
+    recursiveAutomation.outliner,
+    recursiveAutomation.extractor,
+    recursiveAutomation.turtle,
+    recursiveAutomation.turtlePng,
+  ]);
+
   const visibleJobs = [sceneJob, frameExtractionJob, captionJob, job].filter((candidate): candidate is JobState => Boolean(candidate));
   const anyBackgroundJobRunning = visibleJobs.some((candidate) => candidate.state === "running");
   const jobProgress = (candidate: JobState) => candidate.total > 0
@@ -6589,7 +6656,7 @@ export function VideoImportPage({
                 {!memberInventories.length && <div className="studio-empty">Scene Description & Inventory must run first.</div>}
                 {orderedMemberInventories.map((inventory) => (
                   <article id={`recursive-output-${responseCacheHash(inventory.id)}`} className={`video-import-member-run ${inventory.status}`} key={inventory.id}>
-                    <header><b>depth {inventory.depth || 0} · {inventory.subjectName || `input image #${inventory.frameIndex}`}</b><span>{inventory.parentInventoryId ? `child of ${inventory.parentInventoryId}` : "root input image"}</span><em>{inventory.status}</em></header>
+                    <header><b>depth {inventory.depth || 0} · {inventory.subjectName || `input image #${inventory.frameIndex}`}</b><span>{inventory.parentInventoryId ? `child of ${inventory.parentInventoryId}` : "root input image"}</span><em>{inventory.status}</em>{(() => { const next = describeInventoryNext(inventory); return <em className={`video-import-next-step tone-${next.tone}`}>NEXT · {next.label}</em>; })()}</header>
                     <section>
                       <span>DESCRIBER</span>
                       {inventory.sourceImage && <figure className="video-import-member-input-image"><img src={asset(inventory.sourceImage)} alt={inventory.subjectName || "input image"} loading="lazy" /><figcaption>DESCRIBER INPUT IMAGE · {inventory.sourceImage}</figcaption></figure>}
@@ -6633,7 +6700,7 @@ export function VideoImportPage({
                       {!inventory.things.length && <small>No planned objects to outline.</small>}
                       {inventory.things.map((thing, thingIndex) => (
                         <details className={`video-import-member-call is-${thing.status}`} key={`outline:${thing.name}:${thingIndex}`} open={thing.status === "outlining"}>
-                          <summary><b>{(inventory.extractionOrder?.indexOf(thing.name) ?? thingIndex) + 1}. {thing.name}</b><em>{thing.outlineOutput ? "outlined" : thing.outlineError ? "retrying" : "waiting"}</em></summary>
+                          <summary><b>{(inventory.extractionOrder?.indexOf(thing.name) ?? thingIndex) + 1}. {thing.name}</b><em>{thing.outlineOutput ? "outlined" : thing.outlineError ? "retrying" : "waiting"}</em>{(() => { const next = describeThingNext(thing); return <em className={`video-import-next-step tone-${next.tone}`}>NEXT · {next.label}</em>; })()}</summary>
                           <p>{thing.description}</p>
                           {thing.outlinePrompt && <details><summary>Exact Outliner prompt</summary><pre>{thing.outlinePrompt}</pre></details>}
                           {thing.outlineOutput && <details open><summary>Exact Outliner output</summary><pre>{formatDetectedJson(thing.outlineOutput).text}</pre></details>}
@@ -6665,7 +6732,7 @@ export function VideoImportPage({
                       {!inventory.things.length && <small>No extractable things listed.</small>}
                       {inventory.things.map((thing, thingIndex) => (
                         <details className={`video-import-member-call is-${thing.status}`} key={`${thing.name}:${thingIndex}`}>
-                          <summary><b>{thingIndex + 1}. {thing.name}</b><em>{thing.status.replace("_", " ")}</em></summary>
+                          <summary><b>{thingIndex + 1}. {thing.name}</b><em>{thing.status.replace("_", " ")}</em>{(() => { const next = describeThingNext(thing); return <em className={`video-import-next-step tone-${next.tone}`}>NEXT · {next.label}</em>; })()}</summary>
                           <p>{thing.description}</p>
                           <details><summary>Planner-selected next-object data</summary><pre>{JSON.stringify({ name: thing.name, description: thing.description, plannerPosition: (inventory.extractionOrder?.indexOf(thing.name) ?? -1) + 1, plannerTotal: inventory.extractionOrder?.length || inventory.things.length, parallelGroup: ((inventory.parallelGroups || []).findIndex((group) => group.includes(thing.name)) + 1) || undefined, parallelGroupCount: inventory.parallelGroups?.length || undefined, relationships: plannerRelationshipsForThing(inventory, thing.name) }, null, 2)}</pre></details>
                           {thing.extractionAttempts?.map((attempt, attemptIndex) => (
