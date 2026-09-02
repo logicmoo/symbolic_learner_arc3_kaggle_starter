@@ -6661,13 +6661,6 @@ export function VideoImportPage({
       )}
       </div>
       )}
-      {activeSubview === "games" && (
-        <section className="video-import-games-todo">
-          <h2>Games</h2>
-          <p>Coming soon: convert an imported movie — its extracted frames, detected objects, and captions — into a playable ARC-style game.</p>
-          <p className="video-import-games-todo-note">Not built yet. This step will turn the pipeline output into game states and transitions.</p>
-        </section>
-      )}
       {activeSubview === "recognition" && (
         <section className="video-import-games-todo">
           <h2>Recognition</h2>
