@@ -29,6 +29,7 @@ from plugin_api import install_plugins, router as plugin_router
 from repository_docs_api import router as repository_docs_router
 from system_control_api import INSTANCE_ID, router as system_control_router
 from service_monitor_api import router as service_monitor_router, schedule_startup_reconciliation
+from terminal_api import router as terminal_router
 from workflow_engine_api import router as workflow_engine_router
 from workflow_runner_todo_api import router as workflow_runner_todo_router
 from workspace_api import router as workspace_router
@@ -74,6 +75,7 @@ app.include_router(policy_router, prefix="/workbench")
 app.include_router(repository_docs_router, prefix="/workbench")
 app.include_router(system_control_router, prefix="/workbench")
 app.include_router(service_monitor_router, prefix="/workbench")
+app.include_router(terminal_router, prefix="/workbench")
 app.include_router(plugin_router, prefix="/workbench")
 install_plugins(app)
 

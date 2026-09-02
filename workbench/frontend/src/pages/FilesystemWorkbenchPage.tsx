@@ -116,6 +116,9 @@ const PluginManagerPage = lazy(() =>
 const PluginHostedPage = lazy(() =>
   import("../components/PluginHostedPage").then((module) => ({ default: module.PluginHostedPage })),
 );
+const TerminalPage = lazy(() =>
+  import("../components/TerminalPage").then((module) => ({ default: module.TerminalPage })),
+);
 const WorkspaceSettingsPanel = lazy(() =>
   import("../components/WorkspaceSettingsPanel").then((module) => ({
     default: module.WorkspaceSettingsPanel,
@@ -448,6 +451,7 @@ type View =
   | "checks"
   | "setup"
   | "processes"
+  | "terminal"
   | "plugins"
   | "pluginPage"
   | "goals"
@@ -505,6 +509,7 @@ const WORKBENCH_VIEWS: Set<View> = new Set([
   "checks",
   "setup",
   "processes",
+  "terminal",
   "plugins",
   "pluginPage",
   "goals",
@@ -750,6 +755,7 @@ export const NAVIGATION_V2: Array<{
       { label: "Model Policy", view: "modelPolicy", glyph: "⚖" },
       { label: "Benchmarks", view: "benchmarks", glyph: "↗" },
       { label: "Processes", view: "processes", glyph: "⟳" },
+      { label: "Terminal", view: "terminal", glyph: "▩" },
       { label: "Settings", view: "setup", glyph: "⚙" },
     ],
   },
@@ -4786,6 +4792,7 @@ export function FilesystemWorkbenchPage() {
               />
             )}{" "}
             {view === "plugins" && <PluginManagerPage />}{" "}
+            {view === "terminal" && <TerminalPage />}{" "}
             {view === "videoImport" && (
               <VideoImportPage
                 workspaceId={workspace.id}

@@ -91,6 +91,57 @@ def test_plugin_scanner_declared_masks_found_list_and_enabled_toggle(
     assert "secret" not in stored["pluginsFound"]
 
 
+def test_plugin_scanner_surfaces_declared_repo_not_checked_out(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    """A pluginsFound entry that names a repo but whose directory is missing is
+    surfaced as an ``available`` placeholder carrying the repo and clone
+    command, so it can be checked out from the Plugins page. An entry with no
+    repo stays absent, and a bad repo URL is flagged."""
+
+    plugin_api = importlib.import_module("plugin_api")
+    present = tmp_path / "present"
+    present.mkdir()
+    (present / "plugin.json").write_text(json.dumps({"id": "present", "scan": "disabled"}), encoding="utf-8")
+    policy_path = tmp_path / "plugins.json"
+    policy_path.write_text(json.dumps({
+        "startupScan": ["*/plugin.json"],
+        "pluginsFound": {
+            "present": {"path": "present/plugin.json", "scan": "disabled", "enabled": True,
+                        "repo": "https://github.com/logicmoo/present.git"},
+            "ghost": {"path": "ghost/plugin.json", "scan": "startup", "enabled": True,
+                      "repo": "https://github.com/logicmoo/ghost.git", "ref": "main"},
+            "sneaky": {"path": "sneaky/plugin.json", "scan": "startup", "enabled": True,
+                       "repo": "file:///etc/passwd"},
+            "norepo": {"path": "norepo/plugin.json", "scan": "startup", "enabled": True},
+        },
+    }), encoding="utf-8")
+    monkeypatch.setattr(plugin_api, "PLUGINS_ROOT", tmp_path)
+    monkeypatch.setattr(plugin_api, "POLICY_PATH", policy_path)
+
+    catalog = {plugin["id"]: plugin for plugin in plugin_api._scan(register=False)}
+
+    # A checked-out plugin advertises its repo origin but is not a placeholder.
+    assert catalog["present"]["checkedOut"] is True
+    assert catalog["present"]["repo"] == "https://github.com/logicmoo/present.git"
+
+    # A declared repo with no directory becomes an available, not-loaded entry.
+    ghost = catalog["ghost"]
+    assert ghost["available"] is True and ghost["loaded"] is False and ghost["checkedOut"] is False
+    assert ghost["repo"] == "https://github.com/logicmoo/ghost.git" and ghost["ref"] == "main"
+    assert ghost["repoAllowed"] is True
+    assert ghost["checkoutCommand"].startswith("git clone --depth 1 --branch main ")
+    assert ghost["adminPath"] == "/ghost/admin"
+
+    # A non-git URL is surfaced but flagged and not offered for one-click clone.
+    assert catalog["sneaky"]["repoAllowed"] is False
+    assert catalog["sneaky"]["error"]
+
+    # No repo declared -> not surfaced at all.
+    assert "norepo" not in catalog
+
+
 def test_plugin_mailbox_endpoints_resolve_for_every_declaring_server(
     tmp_path: Path,
     monkeypatch,

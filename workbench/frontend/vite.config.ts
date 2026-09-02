@@ -69,7 +69,7 @@ const API_FALLBACK = `^/(?!${VITE_OWNED}).+`;
 
 function apiProxy(apiTarget: string): Record<string, ProxyOptions> {
   return {
-    "/workbench": { target: apiTarget, changeOrigin: true },
+    "/workbench": { target: apiTarget, changeOrigin: true, ws: true },
     ...pluginProxy(apiTarget),
     [API_FALLBACK]: { target: apiTarget, changeOrigin: true, ws: true },
   };
