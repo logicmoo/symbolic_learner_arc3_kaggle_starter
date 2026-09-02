@@ -507,11 +507,7 @@ const DEFAULT_MEMBER_DECOMPOSITION_PROMPT = [
 ].join("\n");
 const DEFAULT_MEMBER_ORDER_PROMPT = [
   "PARALLEL EXTRACTION PLANNER.",
-  "Look at the attached image and the listed objects. Your ONLY job is to partition every listed object into ordered GROUPS (waves) for extraction.",
-  "Objects in the SAME group can be lifted (extracted) in parallel because none of them covers/occludes, contains, or is a part/parent of another object in that same group.",
-  "Group 1 = objects not covered by any other listed object (pure foreground); they can be removed first, together. Each later group = objects that become fully uncovered only after every earlier group is removed. Earlier groups are removed before later ones.",
-  "Every listed object must appear in exactly one group, using its exact name exactly once.",
-  "Do nothing else: no ordering rationale, no relationships, no touching/occlusion/containment, no coordinates, no labels, no outlines.",
+  "Group the listed objects into ordered waves for extraction. Objects in the same group can be lifted in parallel (none covers, contains, or is part/parent of another in that group). Group 1 is the fully-visible foreground; each later group becomes liftable only after earlier groups are removed. Use every object's exact name exactly once, and output nothing else.",
   "OBJECTS:",
   "{{objects}}",
   "Answer ONLY with JSON: {\"groups\":[[\"exact object name\",...],...]}",
