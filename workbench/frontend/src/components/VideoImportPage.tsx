@@ -3210,7 +3210,12 @@ export function VideoImportPage({
     if (typeof s.picked === "string") setPicked(s.picked);
     if (Array.isArray(s.kept) && s.kept.length) setKept(new Set(s.kept.map(String)));
     if (Array.isArray(s.memberInputPaths)) {
-      const restoredFramePaths = new Set(Array.isArray(s.frames) ? s.frames.map((frame: Frame) => frame.path) : []);
+      // Filter the saved selection against the frames we actually restored (across
+      // ALL sources), not the usually-empty top-level s.frames — otherwise the
+      // selection was wiped on every reload and automation had nothing to run.
+      const restoredFramePaths = new Set<string>();
+      for (const src of restoredSources) for (const fr of (src.frames || [])) restoredFramePaths.add(fr.path);
+      for (const fr of restoredFrames) restoredFramePaths.add((fr as Frame).path);
       setMemberInputPaths(new Set(s.memberInputPaths.map(String).filter((path: string) => restoredFramePaths.has(path))));
     }
     if (Array.isArray(s.selectedWorkflowGalleryPaths)) setSelectedWorkflowGalleryPaths(new Set(s.selectedWorkflowGalleryPaths.map(String)));
