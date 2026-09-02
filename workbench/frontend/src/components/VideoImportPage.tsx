@@ -345,7 +345,7 @@ const hasAlignedOutline = (thing: MemberInventoryThing) => Boolean(
 );
 const hasVisualizedPlan = (inventory: MemberInventory) => Boolean(
   inventory.extractionOrder?.length
-  && inventory.plannerLabels?.length === inventory.extractionOrder.length
+  && (inventory.plannerLabels?.length || 0) > 0
   && inventory.plannerVisualizationImage
 );
 
@@ -4061,14 +4061,21 @@ export function VideoImportPage({
      const parallelGroups = groupResult.groups;
      const extractionOrder = parallelGroups.length ? parallelGroups.flat() : initialOrder;
      const labelResult = parsePlannerLabels(parsed, inventory.things, extractionOrder, plannerDimensions);
+     // Tolerate a partial label set instead of throwing (which retried the slow
+     // planner call forever). The model sometimes labels an extra object (e.g.
+     // the background) or names one differently than the Describer, leaving a few
+     // objects unlabelled. Labels only drive the numbered preview, not extraction,
+     // so proceed with whatever valid labels we have.
      if (labelResult.labels.length !== extractionOrder.length) {
-       throw new Error(`Planner returned ${labelResult.labels.length}/${extractionOrder.length} valid object label points.`);
+       labelResult.warnings.push(`Planner labelled ${labelResult.labels.length}/${extractionOrder.length} object(s); proceeding with the labelled ones.`);
      }
-     const visualization = await api("planner-visualization", {
-       workspaceId,
-       image: inventory.sourceImage,
-       labels: labelResult.labels,
-     });
+     const visualization = labelResult.labels.length
+       ? await api("planner-visualization", {
+         workspaceId,
+         image: inventory.sourceImage,
+         labels: labelResult.labels,
+       })
+       : { visualizationImage: "" };
      const orderWarnings = [
        omitted.length ? `Planner omitted ${omitted.length} object(s) from order; appended last.` : "",
        ...relationships.warnings,
