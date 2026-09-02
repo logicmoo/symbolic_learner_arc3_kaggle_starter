@@ -11,7 +11,10 @@ from resource_store import get_filesystem_provider
 
 POLICY_KINDS = {"model_policy", "model_policy_variant", "vendor_policy", "model_policy_entry", "model_health_observation", "model_ping_job", "model_ping_event", "benchmark_policy", "benchmark_job", "benchmark_result"}
 POLICY_STATES = {"on", "auto", "off"}
-UNHEALTHY_STATUSES = {"offline", "error", "ratelimited", "rate_limited", "unknown"}
+# A model is only treated as unhealthy when a ping has PROVEN it so. "unknown"
+# (never pinged, or health reset after a restart) is not proof of a problem, so
+# it must not disable a model — otherwise every model is unusable until a ping.
+UNHEALTHY_STATUSES = {"offline", "error", "ratelimited", "rate_limited"}
 
 def _records(root: Path, source: str, workspace_id: str) -> list[dict[str, Any]]:
     directory = root / "policies"
