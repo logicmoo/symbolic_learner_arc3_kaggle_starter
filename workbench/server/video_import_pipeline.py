@@ -261,8 +261,8 @@ def active_outline_group_names(inventory: dict[str, Any]) -> set[str] | None:
             thing = by_name.get(name)
             if not thing:
                 continue
-            if thing.get("outputImages"):
-                continue
+            if thing.get("outputImages") or thing.get("outlineSkipped"):
+                continue  # extracted, or given up on after repeated failures
             if not has_aligned_outline(thing):
                 needs = True
                 break
@@ -400,6 +400,51 @@ def build_parallel_groups(
     }
 
 
+# After this many failed outline attempts an object is given up on ("skipped") so
+# a single stubborn object can't block its whole parallel group (and thus every
+# later group / the extraction of the scene) forever.
+MAX_OUTLINE_ATTEMPTS = 3
+
+
+def _clamp_point(point: Any, width: int, height: int) -> list[float] | None:
+    if not isinstance(point, (list, tuple)) or len(point) < 2:
+        return None
+    try:
+        x = min(max(0.0, float(point[0])), float(max(0, width - 1)))
+        y = min(max(0.0, float(point[1])), float(max(0, height - 1)))
+    except (TypeError, ValueError):
+        return None
+    return [x, y]
+
+
+def clamp_geometry(geometry: dict[str, Any], width: int, height: int) -> dict[str, Any]:
+    """Clamp outliner coordinates into [0,width-1]x[0,height-1]. Models often emit
+    edge points at exactly width/height, which the verifier rejects as out of
+    bounds — clamping keeps those otherwise-valid outlines."""
+    def _clamp_polys(polys: Any) -> list[list[list[float]]]:
+        out: list[list[list[float]]] = []
+        for poly in polys or []:
+            pts = [p for p in (_clamp_point(pt, width, height) for pt in poly) if p is not None]
+            if len(pts) >= 3:
+                out.append(pts)
+        return out
+
+    box = geometry.get("box")
+    clamped_box = None
+    if isinstance(box, (list, tuple)) and len(box) == 4:
+        tl = _clamp_point([box[0], box[1]], width, height)
+        br = _clamp_point([box[2], box[3]], width, height)
+        if tl and br:
+            clamped_box = [tl[0], tl[1], br[0], br[1]]
+    return {
+        **geometry,
+        "polygons": _clamp_polys(geometry.get("polygons")),
+        "holes": _clamp_polys(geometry.get("holes")),
+        "box": clamped_box,
+    }
+
+
+
 # --------------------------------------------------------------------------- #
 # Model invocation (mirrors policy_api.invoke_model_example)                    #
 # --------------------------------------------------------------------------- #
@@ -534,8 +579,13 @@ def update_thing(
     *,
     inventory_patch: dict[str, Any] | None = None,
     member_scenes: dict[str, Any] | None = None,
+    member: dict[str, Any] | None = None,
 ) -> None:
-    """Patch a single thing (matched by name) within an inventory, full-state safe."""
+    """Patch a single thing (matched by name) within an inventory, full-state safe.
+
+    Optionally appends a gallery `member` (a produced cutout) so the objects
+    gallery populates, and merges `member_scenes` (progressively reduced scenes).
+    """
     with _page_state_lock(workspace_id):
         state = load_state(workspace_id)
         inventories = state.get("memberInventories") or []
@@ -555,6 +605,15 @@ def update_thing(
             scenes = state.get("memberScenes") or {}
             scenes.update(member_scenes)
             state["memberScenes"] = scenes
+        if member:
+            members = state.get("members") or []
+            # Replace any prior member for the same object in this inventory.
+            members = [
+                m for m in members
+                if not (isinstance(m, dict) and m.get("inventoryId") == inventory_id and m.get("name") == thing_name)
+            ]
+            members.append(member)
+            state["members"] = members
         _save_page_state_payload({"workspaceId": workspace_id, "state": state})
 
 
@@ -853,7 +912,7 @@ def run_outline(
             continue
         active_group = active_outline_group_names(inventory)
         for thing in inventory.get("things") or []:
-            if not isinstance(thing, dict) or thing.get("outputImages"):
+            if not isinstance(thing, dict) or thing.get("outputImages") or thing.get("outlineSkipped"):
                 continue
             if active_group is not None and thing.get("name") not in active_group:
                 continue
@@ -887,14 +946,26 @@ def run_outline(
         order = inventory.get("extractionOrder") or []
         position = order.index(name) if name in order else 0
         total = len(order) or len(inventory.get("things") or [])
+        attempts = int(thing.get("outlineAttempts") or 0) + 1
+        skip = attempts >= MAX_OUTLINE_ATTEMPTS
+
+        def fail(error: str, status: str = "listed", extra: dict[str, Any] | None = None) -> None:
+            counts["failed"] += 1
+            update_thing(workspace_id, inventory_id, name, {
+                "status": "skipped" if skip else status,
+                "outlineError": error,
+                "outlineAttempts": attempts,
+                "outlineSkipped": skip,
+                **(extra or {}),
+            })
+            if skip:
+                emit(f"{_ts()} ⨯ giving up on outline {name} after {attempts} attempt(s): {error}")
+            else:
+                emit(f"{_ts()} ✗ outline {name}: {error}")
+
         dims = image_dimensions(root, scene_path)
         if not dims:
-            counts["failed"] += 1
-            emit(f"{_ts()} ✗ outline {name}: could not load {scene_path}")
-            update_thing(workspace_id, inventory_id, name, {
-                "status": "listed",
-                "outlineError": f"Could not load Outliner input image: {scene_path}",
-            })
+            fail(f"could not load Outliner input image: {scene_path}")
             return
         width, height = dims
         prompt = render_outliner_prompt(
@@ -918,38 +989,20 @@ def run_outline(
             with active:
                 raw = invoke_model(root, model_id, prompt, image, 120).strip()
         except Exception as error:  # noqa: BLE001
-            counts["failed"] += 1
-            emit(f"{_ts()} ✗ outline {name}: {error}")
-            update_thing(workspace_id, inventory_id, name, {"status": "listed", "outlineError": str(error)})
+            fail(str(error))
             return
         if re.fullmatch(r"\s*none[.!]?\s*", raw, re.IGNORECASE):
-            counts["failed"] += 1
-            emit(f"{_ts()} ✗ outline {name}: Outliner could not locate this object")
-            update_thing(workspace_id, inventory_id, name, {
-                "status": "not_found",
-                "outlineOutput": raw,
-                "outlineError": "Outliner could not locate this object.",
-            })
+            fail("Outliner could not locate this object.", status="not_found", extra={"outlineOutput": raw})
             return
-        geometry = parse_outline_geometry(raw)
+        geometry = clamp_geometry(parse_outline_geometry(raw), width, height)
         polygons = geometry.get("polygons") or []
         box = geometry.get("box")
         trace_turtle = geometry.get("traceTurtle") or []
         if not polygons and not box:
-            counts["failed"] += 1
-            emit(f"{_ts()} ✗ outline {name}: no usable polygons or box")
-            update_thing(workspace_id, inventory_id, name, {
-                "status": "listed", "outlineOutput": raw,
-                "outlineError": "Outliner returned no usable precise polygons or box.",
-            })
+            fail("Outliner returned no usable precise polygons or box.", extra={"outlineOutput": raw})
             return
         if not trace_turtle:
-            counts["failed"] += 1
-            emit(f"{_ts()} ✗ outline {name}: no Turtle trace to verify")
-            update_thing(workspace_id, inventory_id, name, {
-                "status": "listed", "outlineOutput": raw,
-                "outlineError": "Outliner returned no Turtle trace to verify.",
-            })
+            fail("Outliner returned no Turtle trace to verify.", extra={"outlineOutput": raw})
             return
         try:
             verification = outline_verification({
@@ -963,11 +1016,12 @@ def run_outline(
                 "plannerNumber": position + 1,
             })
         except Exception as error:  # noqa: BLE001
-            counts["failed"] += 1
-            emit(f"{_ts()} ✗ outline {name}: verification failed: {error}")
-            update_thing(workspace_id, inventory_id, name, {
-                "status": "listed", "outlineOutput": raw, "outlineError": f"verification failed: {error}",
-            })
+            message = str(error)
+            # HTTPException stringifies as "409: <detail>"; keep the detail.
+            detail = getattr(error, "detail", None)
+            if detail:
+                message = str(detail)
+            fail(f"verification failed: {message}", extra={"outlineOutput": raw})
             return
         update_thing(workspace_id, inventory_id, name, {
             "status": "outlined",
@@ -1032,12 +1086,16 @@ def run_extract(
         if isinstance(inventory, dict) and has_visualized_plan(inventory)
     ]
     # An inventory is extractable when its current parallel group (the first group
-    # not yet fully extracted) contains at least one outlined, un-extracted object.
+    # not yet fully resolved) contains at least one outlined, un-extracted object.
+    # A "resolved" object is one already extracted OR given up on (outlineSkipped).
+    def _resolved(thing: dict[str, Any]) -> bool:
+        return bool(thing.get("outputImages") or thing.get("outlineSkipped"))
+
     def _group_extract_ready(inventory: dict[str, Any]) -> bool:
         by_name = {str(t.get("name")): t for t in inventory.get("things") or []}
         groups = inventory.get("parallelGroups") or [inventory.get("extractionOrder") or list(by_name)]
         for group in groups:
-            pending = [n for n in group if not (by_name.get(n) or {}).get("outputImages")]
+            pending = [n for n in group if not _resolved(by_name.get(n) or {})]
             if not pending:
                 continue
             return any(has_aligned_outline(by_name.get(n) or {}) for n in pending)
@@ -1076,9 +1134,9 @@ def run_extract(
         for group in groups:
             if stop_event is not None and stop_event.is_set():
                 return
-            pending = [n for n in group if not (by_name.get(n) or {}).get("outputImages")]
+            pending = [n for n in group if not _resolved(by_name.get(n) or {})]
             if not pending:
-                continue  # group already fully extracted — advance to the next
+                continue  # group already fully resolved — advance to the next
             # Objects within a parallel group are independent: extract every one
             # that is outlined; skip (do not block on) any not-yet-outlined ones.
             for name in pending:
@@ -1129,9 +1187,32 @@ def run_extract(
                     continue
                 cutout = str(cut.get("cutout") or "")
                 new_scene = str(cut.get("scene") or scene_path)
+                next_pass = str(cut.get("nextPassImage") or cutout)
+                cut_box = cut.get("box") or thing.get("outlineBox") or [0, 0, 0, 0]
                 scenes[inventory_id] = new_scene
                 if thing is not None:
                     thing["outputImages"] = [cutout]
+                member = {
+                    "framePath": inventory.get("framePath"),
+                    "frameIndex": inventory.get("frameIndex"),
+                    "name": name,
+                    "cutout": cutout,
+                    "box": cut_box,
+                    "step": step_counter["n"],
+                    "status": "pending",
+                    "probeIndex": -1,
+                    "probeLabel": inventory.get("probeLabel") or "input image",
+                    "route": "direct_from_scene",
+                    "promptSource": "outliner",
+                    "inputImage": thing.get("inputImage") or scene_path,
+                    "sceneAfter": new_scene,
+                    "inventoryId": inventory_id,
+                    "depth": inventory.get("depth") or 0,
+                    "nextPassImage": next_pass,
+                    "provenance": str(cut.get("cutoutProvenance") or ""),
+                    "nextPassProvenance": str(cut.get("nextPassProvenance") or ""),
+                    "sceneProvenance": str(cut.get("sceneProvenance") or ""),
+                }
                 update_thing(
                     workspace_id,
                     inventory_id,
@@ -1139,17 +1220,18 @@ def run_extract(
                     {"status": "extracted", "outputImages": [cutout], "fillInstructions": fill_instructions, "error": None},
                     inventory_patch={"status": "extracting"},
                     member_scenes={inventory_id: new_scene},
+                    member=member,
                 )
                 scene_path = new_scene
                 extracted_names.add(name)
                 counts["done"] += 1
                 emit(f"{_ts()} ✓ extracted {name} ({counts['done']}/{total_objects})")
-            # If the current group still has un-outlined objects, later groups stay
+            # If the current group still has unresolved objects, later groups stay
             # blocked (they may be occluded until this group is fully removed).
-            still_pending = [n for n in group if not (by_name.get(n) or {}).get("outputImages")]
+            still_pending = [n for n in group if not _resolved(by_name.get(n) or {})]
             if still_pending:
                 break
-        all_done = all((by_name.get(n) or {}).get("outputImages") for g in groups for n in g)
+        all_done = all(_resolved(by_name.get(n) or {}) for g in groups for n in g)
         if all_done:
             update_thing(workspace_id, inventory_id, next(iter(by_name), ""), {}, inventory_patch={"status": "done"})
 
