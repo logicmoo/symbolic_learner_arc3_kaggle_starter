@@ -70,6 +70,21 @@ export function ColoredTagCombobox({
     </span>
   ));
   const rootWidth = closedWidth;
+  const orderedIds: string[] = [];
+  if (allowNone) orderedIds.push("");
+  [...groups.keys()].sort((left, right) => left.localeCompare(right)).forEach((groupKey) => {
+    orderedIds.push(...(groups.get(groupKey)?.ids ?? []));
+  });
+  const stepValue = (delta: number) => {
+    if (!orderedIds.length) return;
+    const start = Math.max(0, orderedIds.indexOf(value));
+    for (let index = start + delta; index >= 0 && index < orderedIds.length; index += delta) {
+      const id = orderedIds[index];
+      if (id && describe(id).disabled) continue;
+      onChange(id);
+      return;
+    }
+  };
   return (
     <div className="colored-combobox" ref={ref} style={rootWidth ? { width: rootWidth } : undefined}>
       <button
@@ -80,6 +95,10 @@ export function ColoredTagCombobox({
         aria-expanded={open}
         disabled={disabled}
         style={current?.rowColor ? { background: current.rowColor, color: current.rowTextColor, borderColor: current.rowColor } : undefined}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowDown") { event.preventDefault(); stepValue(1); }
+          else if (event.key === "ArrowUp") { event.preventDefault(); stepValue(-1); }
+        }}
         onClick={() => setOpen((currentOpen) => {
           if (!currentOpen) onOpen?.();
           return !currentOpen;

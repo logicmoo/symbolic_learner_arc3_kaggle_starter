@@ -1,7 +1,7 @@
 .colored-combobox { position: relative; flex: 1; min-width: 0; }
 .colored-combobox-button {
   display: flex; align-items: center; gap: 4px; width: 100%;
-  text-align: left; padding: 4px 6px; cursor: pointer;
+  text-align: left; padding: 4px 6px; cursor: pointer; overflow: hidden;
   background: var(--panel); color: var(--text);
   border: 1px solid var(--line); border-radius: 4px;
 }
