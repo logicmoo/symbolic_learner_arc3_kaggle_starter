@@ -1269,11 +1269,11 @@ function isTransientNetworkError(reason: unknown): boolean {
   return /failed to fetch|networkerror|network error|load failed|connection reset|econnreset|fetch failed/i.test(message);
 }
 class ApiHttpError extends Error {}
-async function api(path: string, body?: unknown): Promise<Record<string, any>> {
+async function api(path: string, body?: unknown, signal?: AbortSignal): Promise<Record<string, any>> {
   const url = path.startsWith("/") ? path : `${API}/${path}`;
   const init: RequestInit = body === undefined
-    ? { headers: { "content-type": "application/json" } }
-    : { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) };
+    ? { headers: { "content-type": "application/json" }, signal }
+    : { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal };
   let lastError: unknown = new Error("network request failed");
   for (let attempt = 0; attempt <= API_NETWORK_RETRIES; attempt += 1) {
     try {
@@ -1288,6 +1288,8 @@ async function api(path: string, body?: unknown): Promise<Record<string, any>> {
       return payload;
     } catch (reason) {
       if (reason instanceof ApiHttpError) throw reason;
+      // An explicit client-side abort must not be retried — the caller gave up.
+      if (signal?.aborted || (reason instanceof DOMException && reason.name === "AbortError")) throw reason;
       if (!isTransientNetworkError(reason) || attempt >= API_NETWORK_RETRIES) throw reason;
       lastError = reason;
       await new Promise((resolve) => setTimeout(resolve, 300 * 2 ** attempt));
@@ -3619,13 +3621,31 @@ export function VideoImportPage({
     }
     let payload: Record<string, any>;
     const startedAt = performance.now();
+    // A hung model request (e.g. the server died mid-call during a restart) would
+    // otherwise never settle, so this finally — and thus release() — would never
+    // run, leaking the PROCESSING slot forever (a phantom worker). Race the
+    // request against a client-side timeout that aborts the fetch, guaranteeing
+    // the slot is always released.
+    const controller = new AbortController();
+    const request = api(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/models/${encodeURIComponent(modelId)}/invoke`, {
+      prompt,
+      image,
+      timeoutSeconds,
+    }, controller.signal);
+    request.catch(() => { /* swallow late rejection after a client-side timeout */ });
+    let clientTimer: number | undefined;
     try {
-      payload = await api(`/workbench/workspaces/${encodeURIComponent(workspaceId)}/models/${encodeURIComponent(modelId)}/invoke`, {
-        prompt,
-        image,
-        timeoutSeconds,
-      });
+      payload = await Promise.race([
+        request,
+        new Promise<never>((_, reject) => {
+          clientTimer = window.setTimeout(() => {
+            controller.abort();
+            reject(new Error(`Client-side timeout after ${timeoutSeconds + 15}s — no response from the model server; slot released.`));
+          }, (timeoutSeconds + 15) * 1000);
+        }),
+      ]);
     } finally {
+      if (clientTimer !== undefined) window.clearTimeout(clientTimer);
       const durationMs = performance.now() - startedAt;
       setLlmCallMetrics((current) => ({
         ...current,
