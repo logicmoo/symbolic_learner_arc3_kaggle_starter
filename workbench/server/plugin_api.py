@@ -4,6 +4,8 @@ import fnmatch
 import importlib.util
 import json
 import os
+import shutil
+import subprocess
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -114,6 +116,107 @@ def _discover_manifests(policy_doc: dict[str, Any]) -> list[Path]:
 def _plugins_found(policy_doc: dict[str, Any]) -> dict[str, Any]:
     section = policy_doc.get("pluginsFound")
     return section if isinstance(section, dict) else {}
+
+
+# A pluginsFound entry may name the git repository the plugin lives in, so a
+# plugin whose directory has not been checked out yet still appears in the
+# catalog as "available" and can be cloned into the plugins directory. Only
+# these URL shapes are accepted, and clones always run as an argument list
+# (never a shell string), so a repo value cannot smuggle in extra git flags.
+_ALLOWED_REPO_SCHEMES = ("https://", "http://", "ssh://", "git://", "git@")
+
+
+def _repo_of(entry: Any) -> dict[str, str]:
+    """Extract the optional git coordinates from a pluginsFound entry."""
+
+    if not isinstance(entry, dict):
+        return {}
+    repo = str(entry.get("repo") or "").strip()
+    if not repo:
+        return {}
+    ref = str(entry.get("ref") or "").strip()
+    result = {"repo": repo}
+    if ref:
+        result["ref"] = ref
+    return result
+
+
+def _repo_is_allowed(repo: str) -> bool:
+    return bool(repo) and repo.startswith(_ALLOWED_REPO_SCHEMES)
+
+
+def _plugin_dir_name(entry: Any, plugin_id: str) -> str:
+    """The plugins-root-relative directory a plugin lives in.
+
+    Uses the recorded ``path`` (``emullm/plugin.json`` -> ``emullm``) so the
+    clone target matches where discovery expects the manifest, falling back to
+    the plugin id.
+    """
+
+    if isinstance(entry, dict):
+        raw = str(entry.get("path") or "").strip().replace("\\", "/")
+        head = raw.split("/", 1)[0] if raw else ""
+        if head and head not in (".", ".."):
+            return head
+    return plugin_id
+
+
+def _git_clone_command(repo: str, ref: str, target: Path) -> list[str]:
+    command = ["git", "clone", "--depth", "1"]
+    if ref:
+        command += ["--branch", ref]
+    command += [repo, str(target)]
+    return command
+
+
+def _missing_declared_plugins(policy_doc: dict[str, Any], seen_ids: set[str]) -> list[dict[str, Any]]:
+    """Catalog placeholders for declared-with-a-repo plugins not on disk yet.
+
+    A pluginsFound entry that names a ``repo`` but whose directory/manifest was
+    not discovered is surfaced as an ``available`` entry carrying the repo URL,
+    the expected directory, and the ``git clone`` command, so the Plugins page
+    can offer to check it out instead of the plugin silently not existing.
+    """
+
+    root = Path(PLUGINS_ROOT)
+    placeholders: list[dict[str, Any]] = []
+    for plugin_id, entry in _plugins_found(policy_doc).items():
+        if plugin_id in seen_ids:
+            continue
+        coords = _repo_of(entry)
+        if not coords:
+            continue
+        dir_name = _plugin_dir_name(entry, plugin_id)
+        target = root / dir_name
+        repo = coords["repo"]
+        ref = coords.get("ref", "")
+        checked_out = target.exists()
+        scan_mode = "disabled" if (isinstance(entry, dict) and entry.get("enabled") is False) else str(
+            (entry.get("scan") if isinstance(entry, dict) else "") or "startup"
+        )
+        placeholders.append({
+            "id": plugin_id,
+            "label": plugin_id,
+            "description": "Declared in plugins.json but not checked out into the plugins directory.",
+            "scan": scan_mode,
+            "loaded": False,
+            "adminAvailable": False,
+            "adminPath": f"/{plugin_id}/admin",
+            "adminApiPath": f"{API_PREFIX}/{plugin_id}/admin",
+            "configPage": "",
+            "available": True,
+            "checkedOut": checked_out,
+            "repo": repo,
+            "ref": ref,
+            "repoAllowed": _repo_is_allowed(repo),
+            "checkoutCommand": " ".join(_git_clone_command(repo, ref, target)),
+            "path": str(target),
+            "uiPages": [],
+            "error": "" if _repo_is_allowed(repo)
+            else f"Repo URL is not an allowed git URL: {repo}",
+        })
+    return placeholders
+
 
 
 def _record_plugins_found(policy_doc: dict[str, Any], found: dict[str, dict[str, Any]]) -> None:
@@ -296,12 +399,20 @@ def _scan(*, register: bool) -> list[dict[str, Any]]:
                 "enabled": True,
             }
             entry = plugins_found.get(plugin_id) if isinstance(plugins_found.get(plugin_id), dict) else {}
+            coords = _repo_of(entry)
             # Effective mode: the pluginsFound entry wins over the manifest;
             # "enabled": false disables regardless of scan mode.
             scan_mode = str(entry.get("scan") or manifest_scan)
             if entry.get("enabled") is False:
                 scan_mode = "disabled"
+            # Even a checked-out plugin advertises the repo it came from, so the
+            # Plugins page can always show its origin.
             item = {**manifest, "id": plugin_id, "scan": scan_mode, "path": str(manifest_path.parent), "loaded": plugin_id in _loaded}
+            if coords:
+                item["repo"] = coords["repo"]
+                item["ref"] = coords.get("ref", "")
+            item["available"] = True
+            item["checkedOut"] = True
             # ``path`` now names the plugin directory, so the manifest's own
             # declared administration path is preserved under its own key.
             item["declaredPath"] = str(manifest.get("path") or "")
@@ -374,6 +485,10 @@ def _scan(*, register: bool) -> list[dict[str, Any]]:
             except Exception:  # noqa: BLE001 - a broken directory still lists
                 pass
             catalog.append(failed)
+    # Declared-but-not-checked-out plugins (a pluginsFound entry that names a
+    # repo but whose directory was not discovered) are surfaced as available
+    # placeholders so they can be cloned from the Plugins page.
+    catalog.extend(_missing_declared_plugins(policy_doc, set(seen_ids)))
     if register:
         _run_init_commands(catalog)
     # Resolved after plugin-init mounts are applied, so a standalone plugin's
@@ -747,6 +862,73 @@ def refresh_plugins() -> dict[str, Any]:
         "plugins": _scan(register=True),
         "policyPath": str(POLICY_PATH),
         "manifestName": MANIFEST_NAME,
+    }
+
+
+@router.post("/{plugin_id}/checkout")
+def checkout_plugin(plugin_id: str, body: dict[str, Any] = Body(default_factory=dict)) -> dict[str, Any]:
+    """Clone a declared-but-missing plugin's git repository into the plugins directory.
+
+    The repo URL comes from the plugin's ``pluginsFound`` entry in
+    ``plugins.json`` (a ``ref`` there, or in the request body, selects a
+    branch/tag). The clone target is the directory discovery expects the
+    manifest in, so a successful checkout is picked up by the following scan.
+    The command runs as an argument list, never a shell string, and only
+    allowed git URL schemes are accepted, so a repo value cannot inject extra
+    flags or shell.
+    """
+
+    policy = _policy()
+    entry = _plugins_found(policy).get(plugin_id)
+    coords = _repo_of(entry)
+    if not coords:
+        raise HTTPException(status_code=400, detail=f"'{plugin_id}' has no 'repo' declared in plugins.json")
+    repo = coords["repo"]
+    if not _repo_is_allowed(repo):
+        raise HTTPException(status_code=400, detail=f"Repo URL is not an allowed git URL: {repo}")
+    ref = str(body.get("ref") or coords.get("ref") or "").strip()
+
+    if shutil.which("git") is None:
+        raise HTTPException(status_code=500, detail="git was not found on PATH")
+
+    root = Path(PLUGINS_ROOT)
+    target = root / _plugin_dir_name(entry, plugin_id)
+    try:
+        target.relative_to(root)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Refusing to check out outside the plugins directory")
+    if target.exists() and any(target.iterdir()):
+        raise HTTPException(status_code=409, detail=f"Target already exists and is not empty: {target}")
+
+    command = _git_clone_command(repo, ref, target)
+    try:
+        result = subprocess.run(  # noqa: S603 - git executable, argument list, no shell
+            command,
+            capture_output=True,
+            text=True,
+            timeout=600,
+            cwd=str(root),
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError) as error:
+        raise HTTPException(status_code=500, detail=f"git clone failed to launch: {error}") from error
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "git clone failed").strip()[-2000:]
+        raise HTTPException(status_code=500, detail=f"git clone failed: {detail}")
+
+    checkout = {
+        "id": plugin_id,
+        "repo": repo,
+        "ref": ref,
+        "target": str(target),
+        "command": " ".join(command),
+        "ok": True,
+    }
+    return {
+        "plugins": _scan(register=True),
+        "policyPath": str(POLICY_PATH),
+        "manifestName": MANIFEST_NAME,
+        "checkout": checkout,
     }
 
 

@@ -59,6 +59,12 @@ type Plugin = {
   loaded: boolean;
   path: string;
   error?: string;
+  repo?: string;
+  ref?: string;
+  available?: boolean;
+  checkedOut?: boolean;
+  repoAllowed?: boolean;
+  checkoutCommand?: string;
   adminPath?: string;
   adminApiPath?: string;
   configPage?: string;
@@ -90,7 +96,8 @@ type PluginAssessment = {
   ok: boolean;
   verdict: string;
 };
-type PluginResponse = { plugins: Plugin[]; policyPath: string; manifestName?: string };
+type PluginResponse = { plugins: Plugin[]; policyPath: string; manifestName?: string; checkout?: PluginCheckout };
+type PluginCheckout = { id: string; repo: string; ref?: string; target: string; command: string; ok: boolean };
 /** Phases whose invocation could stop or restart a plugin's own process --
  * never rendered as a one-click link, only as a labelled, non-clickable entry. */
 const DESTRUCTIVE_API_SECTIONS = new Set(["restart", "shutdown"]);
@@ -185,6 +192,34 @@ export function PluginManagerPage() {
     }
   };
 
+  const [checkoutBusy, setCheckoutBusy] = useState<string | null>(null);
+  const [checkoutResult, setCheckoutResult] = useState<Record<string, { ok: boolean; detail: string }>>({});
+  const checkoutPlugin = async (plugin: Plugin) => {
+    setCheckoutBusy(plugin.id);
+    setError(null);
+    try {
+      const response = await fetch(`/workbench/plugins/${encodeURIComponent(plugin.id)}/checkout`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.detail || response.statusText);
+      setCatalog(payload as PluginResponse);
+      setCheckoutResult((current) => ({
+        ...current,
+        [plugin.id]: { ok: true, detail: `Cloned into ${payload.checkout?.target || "plugins directory"}` },
+      }));
+    } catch (reason) {
+      setCheckoutResult((current) => ({
+        ...current,
+        [plugin.id]: { ok: false, detail: reason instanceof Error ? reason.message : String(reason) },
+      }));
+    } finally {
+      setCheckoutBusy(null);
+    }
+  };
+
   const selected = catalog?.plugins.find((plugin) => plugin.id === openPage?.pluginId);
   const manifestName = catalog?.manifestName || "plugin.json";
 
@@ -207,7 +242,7 @@ export function PluginManagerPage() {
           <article className="plugin-card" key={plugin.id}>
             <header>
               <div>
-                <span>{plugin.loaded ? "LOADED" : plugin.scan.toUpperCase()}</span>
+                <span>{plugin.loaded ? "LOADED" : plugin.available && !plugin.checkedOut ? "AVAILABLE" : plugin.scan.toUpperCase()}</span>
                 <h2>
                   {plugin.label || plugin.id}
                   {plugin.version && <small className="plugin-version"> v{plugin.version}</small>}
@@ -224,6 +259,42 @@ export function PluginManagerPage() {
               </select>
             </header>
             <p>{plugin.description || "No description supplied."}</p>
+            {plugin.repo && (
+              <dl>
+                <dt>Repository</dt>
+                <dd>
+                  <code>{plugin.repo}</code>
+                  {plugin.ref && <small> @ {plugin.ref}</small>}
+                </dd>
+              </dl>
+            )}
+            {plugin.available && !plugin.checkedOut && (
+              <fieldset className="plugin-admin-section">
+                <legend>Not checked out</legend>
+                <p>
+                  This plugin is declared in <code>{manifestName === "plugin.json" ? "plugins.json" : manifestName}</code>{" "}
+                  but its directory is missing. Check it out into the plugins directory to load it.
+                </p>
+                {plugin.checkoutCommand && <pre className="plugin-admin-install">{plugin.checkoutCommand}</pre>}
+                <button
+                  disabled={checkoutBusy === plugin.id || plugin.repoAllowed === false}
+                  title={
+                    plugin.repoAllowed === false
+                      ? "The declared repo URL is not an allowed git URL"
+                      : `Clone ${plugin.repo} into the plugins directory`
+                  }
+                  onClick={() => void checkoutPlugin(plugin)}
+                >
+                  {checkoutBusy === plugin.id ? "Checking out…" : "Check out"}
+                </button>
+                {checkoutResult[plugin.id] && (
+                  <small className={checkoutResult[plugin.id].ok ? "plugin-ready" : "plugin-incomplete"}>
+                    {" "}
+                    {checkoutResult[plugin.id].detail}
+                  </small>
+                )}
+              </fieldset>
+            )}
             {plugin.routePrefix && (
               <dl>
                 <dt>Route</dt>

@@ -18,33 +18,52 @@
     "ws_collab": {
       "path": "ws_collab/plugin.json",
       "scan": "startup",
-      "enabled": true
+      "enabled": true,
+      "repo": "https://github.com/logicmoo/ws_collab.git",
+      "ref": "master"
     },
     "emullm": {
       "path": "emullm/plugin.json",
       "scan": "startup",
-      "enabled": true
+      "enabled": true,
+      "repo": "https://github.com/TeamSPoon/emullm.git",
+      "ref": "master"
+    },
+    "codex_cli": {
+      "path": "codex_cli/plugin.json",
+      "scan": "startup",
+      "enabled": true,
+      "repo": "https://github.com/logicmoo/codex_cli.git",
+      "ref": "main"
     },
     "mailbox_chat": {
       "path": "mailbox_chat/plugin.json",
       "scan": "startup",
-      "enabled": true
+      "enabled": true,
+      "repo": "https://github.com/logicmoo/mailbox_chat.git",
+      "ref": "main"
     },
     "coplex_stdpy": {
       "path": "coplex_stdpy/plugin.json",
       "scan": "startup",
-      "enabled": true
+      "enabled": true,
+      "repo": "https://github.com/logicmoo/coplex_stdpy.git",
+      "ref": "main"
     },
     "coplex": {
       "path": "coplex/plugin.json",
       "scan": "startup",
-      "enabled": true
+      "enabled": true,
+      "repo": "https://github.com/logicmoo/coplex.git",
+      "ref": "master"
     },
     "pycoplex": {
       "path": "coplex_stdpy/plugin.json",
       "scan": "startup",
-      "enabled": true
+      "enabled": true,
+      "repo": "https://github.com/logicmoo/coplex_stdpy.git",
+      "ref": "main"
     }
   },
-  "pluginsFound_Help": "Auto-maintained: every discovered plugin is recorded here. Set enabled: false (or scan: disabled) to keep one unloaded; scan says when to rescan its config."
+  "pluginsFound_Help": "Auto-maintained: every discovered plugin is recorded here. Set enabled: false (or scan: disabled) to keep one unloaded; scan says when to rescan its config. Add an optional 'repo' (git URL) and 'ref' (branch/tag) so a plugin whose directory is not checked out still appears in the catalog and can be cloned into the plugins directory from the Plugins page."
 }
