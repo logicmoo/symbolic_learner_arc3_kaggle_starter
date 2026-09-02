@@ -6232,7 +6232,7 @@ export function VideoImportPage({
               </div>
               <label>max processes
                 <select className="video-import-max-processes" value={concurrency ?? ""} onFocus={() => setExpandedCallPrompt(type)} onPointerDown={() => setExpandedCallPrompt(type)} onChange={(event) => { setCallConcurrency(type, event.target.value ? Number(event.target.value) : null); setExpandedCallPrompt(type); }}>
-                  <option value="">auto</option>
+                  <option value="">auto · reserve cross-stage capacity</option>
                   {Array.from({ length: 50 }, (_, index) => index + 1).map((value) => <option key={value} value={value}>{value}</option>)}
                 </select>
               </label>
