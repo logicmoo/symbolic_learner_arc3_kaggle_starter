@@ -1,6 +1,6 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { lazy, Suspense, useCallback, useEffect, useId, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { pushGlobalStatus } from "../lib/globalStatus";
-import { ColoredTagCombobox, type ColoredTagDescription } from "./ColoredTagCombobox";
+import { ColoredTagCombobox, type ColoredTag, type ColoredTagDescription } from "./ColoredTagCombobox";
 import { SuperControl } from "./UniversalArtifactEditor";
 import type { WorkflowPageDefinition } from "./WorkflowPageHost";
 import type { ModelChoice as Arc3ModelChoice, WorkspaceFileRecord } from "./Arc3B1B2PipelinePage";
@@ -29,13 +29,21 @@ type Video = {
   captions?: CaptionCue[];
   captionSource?: string;
 };
-type Frame = { path: string; index: number; atSeconds?: number; sceneIndex?: number; provenance?: string; characters: string[]; anonymous: number };
+type Frame = { path: string; index: number; moveNumber?: number; atSeconds?: number; sceneIndex?: number; provenance?: string; characters: string[]; anonymous: number };
 type ExtractedImageSource = {
   id: string;
   label: string;
   kind: "video" | "stream" | "arc" | "curated" | "archive" | "restored";
   frames: Frame[];
 };
+type VideoImportSubview = "sources" | "frames" | "objects" | "finish" | "advanced";
+const VIDEO_IMPORT_SUBVIEWS: Array<{ id: VideoImportSubview; label: string }> = [
+  { id: "sources", label: "1 · Sources" },
+  { id: "frames", label: "2 · Frames & Filters" },
+  { id: "objects", label: "3 · Objects" },
+  { id: "finish", label: "4 · Finish" },
+  { id: "advanced", label: "Advanced" },
+];
 type FilterEntry = {
   id: string; title: string; filter: string; description?: string;
   params?: Record<string, unknown>; paramChoices?: Record<string, string[]>;
@@ -168,6 +176,7 @@ type MemberInventory = {
   orderPrompt?: string;
   orderOutput?: string;
   extractionOrder?: string[];
+  parallelGroups?: string[][];
   plannerTouching?: PlannerTouchingRelation[];
   plannerOcclusions?: PlannerOcclusionRelation[];
   plannerContainments?: PlannerContainmentRelation[];
@@ -218,6 +227,40 @@ type TurtleArtifact = {
  retryAfter?: number;
  attempts?: number;
 };
+// Object-scoped context for an image child object (a single outlined thing).
+// A child object popup deliberately shows ONLY its own identity/description, its
+// parent image's NAME, and its relations to adjacent/touching/occluding/containing
+// objects — never the parent image's full Describer/Planner/Outliner dumps.
+type OutlineObjectInfo = {
+  name: string;
+  description?: string;
+  status?: string;
+  visibility?: string;
+  hiddenReason?: string;
+  occludedBy?: string[];
+  countIndex?: number;
+  countTotal?: number;
+  parentImageName: string;
+  relationships: {
+    touching: { object?: string; contact?: string }[];
+    occludes: { object?: string; region?: string }[];
+    occludedBy: { object?: string; region?: string }[];
+    contains: { object?: string; evidence?: string }[];
+    containedBy: { object?: string; evidence?: string }[];
+  };
+};
+type OutlineGeometry = {
+  imageSrc: string;
+  imagePath: string;
+  alt: string;
+  width: number;
+  height: number;
+  polygons?: number[][][];
+  holes?: number[][][];
+  box?: number[];
+  status: "accepted" | "rejected" | "pending";
+  object?: OutlineObjectInfo;
+};
 type AltImageZoom = {
   src: string;
   imagePath: string;
@@ -227,8 +270,9 @@ type AltImageZoom = {
   width: number;
   height: number;
   scale: number;
+  outline?: OutlineGeometry;
 };
-type HoverImageContext = Pick<AltImageZoom, "src" | "imagePath" | "alt" | "x" | "y">;
+type HoverImageContext = Pick<AltImageZoom, "src" | "imagePath" | "alt" | "x" | "y" | "outline">;
 type WorkflowStageIndicator = {
   label: "D" | "P" | "O" | "E" | "T" | "I";
   value: string;
@@ -263,6 +307,7 @@ type RecursiveAutomation = {
   turtlePng: boolean;
   advanceLevels: boolean;
   enlargeSubobjects: boolean;
+  pilotFirst: boolean;
 };
 type LlmCallConcurrency = {
   describer: number | null;
@@ -306,6 +351,8 @@ const streamSlug = (value: string) =>
   value.toLowerCase().replace(/[^a-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "workbench";
 const MAX_RECURSIVE_OBJECT_DEPTH = 9;
 const LLM_RETRY_DELAY_MS = 1000;
+const PILOT_FIRST_IMAGE_COUNT = 2;
+const PILOT_MAX_ATTEMPTS = 3;
 const DEFAULT_RECURSIVE_AUTOMATION: RecursiveAutomation = {
   describer: true,
   planner: true,
@@ -315,6 +362,7 @@ const DEFAULT_RECURSIVE_AUTOMATION: RecursiveAutomation = {
   turtlePng: true,
   advanceLevels: true,
   enlargeSubobjects: true,
+  pilotFirst: true,
 };
 const DEFAULT_LLM_CALL_CONCURRENCY: LlmCallConcurrency = {
   describer: null,
@@ -434,6 +482,8 @@ const DEFAULT_MEMBER_ORDER_PROMPT = [
   "Declare every directed occlusion where one listed object visibly covers any part of another. Name the foreground object as occluder and the covered object as occluded.",
   "Declare every directed containment where the complete visible extent of one listed object is spatially inside another listed object's boundary. Name the enclosing object as container and the inner object as contained. Do not call partial overlap or ordinary touching containment.",
   "Order every occluder before the object it occludes, and every contained object before its container. Remove foreground objects first and the farthest background objects last.",
+  "List first, before any other object, every object that is not occluded at all — no listed object covers any part of it. These fully-unoccluded objects are pure foreground, depend on nothing being removed first, and can be extracted immediately and in parallel with each other; keep their relative order among themselves free.",
+  "Also partition every object into ordered parallel GROUPS (waves) that can be worked on together. Group 1 is exactly the objects that are not occluded at all right now. After all of group 1 is removed, some previously-covered objects become fully unoccluded because their only occluders are now gone — those form group 2. Repeat: each later group is the set of objects that become fully unoccluded once every earlier group has been removed. Every object inside a single group must be mutually independent — none occludes, contains, or is a sub-object or parent of another object in the SAME group — so all objects in one group can be extracted in parallel. Earlier groups must be fully removed before any object in a later group. Every object appears in exactly one group, and flattening the groups in order must equal the extraction order.",
   "Use every object name exactly once.",
   "Do not outline objects and do not return polygons, coordinates, masks, or cutout instructions. Outliner handles that separately, one object at a time.",
   "TEXTUAL DESCRIPTION:",
@@ -442,7 +492,7 @@ const DEFAULT_MEMBER_ORDER_PROMPT = [
   "{{objects}}",
   "NUMBER LABEL COORDINATE SPACE: width={{imageWidth}}, height={{imageHeight}}. Give one point [x,y] visibly inside each exact object so the workbench can draw its extraction-order number on the object.",
   "Always include touching, occlusions, containments, and labels as arrays, using [] only when that relationship type has no entries.",
-  "Answer ONLY with JSON: {\"touching\":[{\"objects\":[\"exact object name\",\"exact object name\"],\"contact\":\"what visibly touches where\"}],\"occlusions\":[{\"occluder\":\"foreground exact object name\",\"occluded\":\"covered exact object name\",\"region\":\"what part is covered\"}],\"containments\":[{\"container\":\"enclosing exact object name\",\"contained\":\"fully inner exact object name\",\"evidence\":\"how its complete visible extent is inside\"}],\"order\":[\"exact object name\",...],\"labels\":[{\"object\":\"exact object name\",\"number\":1,\"point\":[x,y]}],\"reasoning\":[\"why this relationship-aware order\",...]}",
+  "Answer ONLY with JSON: {\"touching\":[{\"objects\":[\"exact object name\",\"exact object name\"],\"contact\":\"what visibly touches where\"}],\"occlusions\":[{\"occluder\":\"foreground exact object name\",\"occluded\":\"covered exact object name\",\"region\":\"what part is covered\"}],\"containments\":[{\"container\":\"enclosing exact object name\",\"contained\":\"fully inner exact object name\",\"evidence\":\"how its complete visible extent is inside\"}],\"order\":[\"exact object name\",...],\"groups\":[[\"exact object name\",...],...],\"labels\":[{\"object\":\"exact object name\",\"number\":1,\"point\":[x,y]}],\"reasoning\":[\"why this relationship-aware order\",...]}",
 ].join("\n");
 const migratePlannerPrompt = (value: string) => (
   value.startsWith("OBJECT EXTRACTION PLANNER.")
@@ -451,6 +501,7 @@ const migratePlannerPrompt = (value: string) => (
     || !value.includes('"occlusions"')
     || !value.includes('"containments"')
     || !value.includes('"labels"')
+    || !value.includes('"groups"')
   )
     ? DEFAULT_MEMBER_ORDER_PROMPT
     : value
@@ -711,6 +762,101 @@ const parsePlannerLabels = (
     warnings,
   };
 };
+// Dependency edge X -> Y means "X must be extracted before Y" (Y depends on X):
+// occluder before occluded, contained before container, sub-object before parent.
+// The parallel groups are the topological "waves" of this graph: group 0 is every
+// object with no unresolved prerequisite (fully unoccluded now); once a wave is
+// removed, objects whose only prerequisites were in earlier waves become newly
+// unoccluded and form the next wave. Objects within a wave are mutually
+// independent and can be extracted in parallel.
+const computeParallelGroups = (
+  order: string[],
+  things: MemberInventoryThing[],
+  occlusions: PlannerOcclusionRelation[],
+  containments: PlannerContainmentRelation[],
+): string[][] => {
+  const present = new Set(order);
+  const prereqs = new Map<string, Set<string>>();
+  order.forEach((name) => prereqs.set(name, new Set<string>()));
+  const addEdge = (before?: string, after?: string) => {
+    if (!before || !after || before === after) return;
+    if (!present.has(before) || !present.has(after)) return;
+    prereqs.get(after)!.add(before);
+  };
+  occlusions.forEach((relation) => addEdge(relation.occluder, relation.occluded));
+  containments.forEach((relation) => addEdge(relation.contained, relation.container));
+  things.forEach((thing) => addEdge(thing.name, thing.parentName));
+  const waveOf = new Map<string, number>();
+  const resolving = new Set<string>();
+  const resolve = (name: string): number => {
+    if (waveOf.has(name)) return waveOf.get(name)!;
+    if (resolving.has(name)) return 0; // cycle guard: treat as no-dependency root
+    resolving.add(name);
+    let wave = 0;
+    for (const dep of prereqs.get(name) || []) {
+      wave = Math.max(wave, resolve(dep) + 1);
+    }
+    resolving.delete(name);
+    waveOf.set(name, wave);
+    return wave;
+  };
+  order.forEach(resolve);
+  const maxWave = order.reduce((max, name) => Math.max(max, waveOf.get(name) ?? 0), 0);
+  const groups: string[][] = [];
+  for (let wave = 0; wave <= maxWave; wave += 1) {
+    const members = order.filter((name) => (waveOf.get(name) ?? 0) === wave);
+    if (members.length) groups.push(members);
+  }
+  return groups;
+};
+// Accept an explicit planner "groups" partition, but only when it covers exactly
+// the ordered objects with no repeats and respects every dependency edge (each
+// prerequisite lands in an earlier group). Otherwise fall back to the computed
+// waves so the parallel groups are always dependency-correct.
+const parsePlannerGroups = (
+  parsed: Record<string, unknown>,
+  order: string[],
+  things: MemberInventoryThing[],
+  occlusions: PlannerOcclusionRelation[],
+  containments: PlannerContainmentRelation[],
+): { groups: string[][]; warnings: string[] } => {
+  const computed = computeParallelGroups(order, things, occlusions, containments);
+  const raw = (parsed.groups ?? parsed.parallelGroups ?? parsed.waves);
+  if (!Array.isArray(raw) || !raw.length) {
+    return { groups: computed, warnings: [] };
+  }
+  const byName = new Map(things.map((thing) => [thing.name.toLowerCase(), thing.name]));
+  const present = new Set(order);
+  const seen = new Set<string>();
+  const cleaned: string[][] = [];
+  for (const wave of raw) {
+    const names = Array.isArray(wave) ? wave : [wave];
+    const group: string[] = [];
+    for (const value of names) {
+      const name = byName.get(String(typeof value === "string" ? value : (value as Record<string, unknown>)?.name || "").trim().toLowerCase());
+      if (!name || !present.has(name) || seen.has(name)) continue;
+      seen.add(name);
+      group.push(name);
+    }
+    if (group.length) cleaned.push(group);
+  }
+  const covered = cleaned.reduce((total, group) => total + group.length, 0);
+  if (covered !== order.length) {
+    return { groups: computed, warnings: ["Planner groups did not cover every object once; used dependency-computed parallel groups."] };
+  }
+  const groupIndexOf = new Map<string, number>();
+  cleaned.forEach((group, index) => group.forEach((name) => groupIndexOf.set(name, index)));
+  const violates = (before?: string, after?: string) =>
+    Boolean(before && after && present.has(before) && present.has(after)
+      && (groupIndexOf.get(before) ?? 0) >= (groupIndexOf.get(after) ?? 0));
+  const broken = occlusions.some((relation) => violates(relation.occluder, relation.occluded))
+    || containments.some((relation) => violates(relation.contained, relation.container))
+    || things.some((thing) => violates(thing.name, thing.parentName));
+  if (broken) {
+    return { groups: computed, warnings: ["Planner groups violated a remove-before dependency; used dependency-computed parallel groups."] };
+  }
+  return { groups: cleaned, warnings: [] };
+};
 const plannerRelationshipsForThing = (inventory: MemberInventory, name: string) => ({
   touching: (inventory.plannerTouching || [])
     .filter((relation) => relation.objects.includes(name))
@@ -730,6 +876,22 @@ const plannerRelationshipsForThing = (inventory: MemberInventory, name: string) 
   containedBy: (inventory.plannerContainments || [])
     .filter((relation) => relation.contained === name)
     .map((relation) => ({ object: relation.container, evidence: relation.evidence })),
+});
+// Build the object-scoped popup payload for a single outlined child object. It
+// intentionally carries only the parent image NAME (not its Describer/Planner
+// output), the object's own description/visibility, and its relations to other
+// objects, so a child-object outline never leaks the parent image's full context.
+const buildOutlineObjectInfo = (inventory: MemberInventory, thing: MemberInventoryThing): OutlineObjectInfo => ({
+  name: thing.name,
+  description: thing.description,
+  status: thing.status,
+  visibility: thing.visibility,
+  hiddenReason: thing.hiddenReason,
+  occludedBy: thing.occludedBy,
+  countIndex: thing.countIndex,
+  countTotal: thing.countTotal,
+  parentImageName: inventory.subjectName || (Number.isFinite(inventory.frameIndex) ? `input image · frame #${inventory.frameIndex}` : "parent image"),
+  relationships: plannerRelationshipsForThing(inventory, thing.name),
 });
 const renderMemberOutlinerPrompt = (
   template: string,
@@ -856,6 +1018,145 @@ const formatDetectedJson = (value: string): { text: string; detected: boolean } 
     return { text: value, detected: false };
   }
 };
+const outlineOverlayRegistry = new Map<string, OutlineGeometry>();
+const OutlineOverlay = ({
+  imageSrc,
+  width,
+  height,
+  polygons,
+  holes,
+  box,
+  status,
+  alt,
+  object,
+  interactive = false,
+}: {
+  imageSrc: string;
+  width: number;
+  height: number;
+  polygons?: number[][][];
+  holes?: number[][][];
+  box?: number[];
+  status: "accepted" | "rejected" | "pending";
+  alt?: string;
+  object?: OutlineObjectInfo;
+  interactive?: boolean;
+}) => {
+  const w = Math.max(1, Math.round(width || 0));
+  const h = Math.max(1, Math.round(height || 0));
+  const toPoints = (poly: number[][]) => poly.map((pt) => `${Number(pt?.[0]) || 0},${Number(pt?.[1]) || 0}`).join(" ");
+  const polys = (polygons || []).filter((poly) => Array.isArray(poly) && poly.length >= 3);
+  const holePolys = (holes || []).filter((poly) => Array.isArray(poly) && poly.length >= 3);
+  const hasBox = Array.isArray(box) && box.length === 4;
+  const overlayId = useId();
+  // Register geometry so the page-level image popups (hover context + Alt zoom)
+  // can treat this SVG outline exactly like a real <img>. Only in-page outlines
+  // register; the enlarged copy rendered inside the popup stays non-interactive
+  // so it never becomes its own popup target.
+  useEffect(() => {
+    if (!interactive) return undefined;
+    let imagePath = "";
+    try { imagePath = new URL(imageSrc, window.location.href).searchParams.get("path") || ""; }
+    catch { /* a non-filesystem image has no workbench path */ }
+    outlineOverlayRegistry.set(overlayId, {
+      imageSrc,
+      imagePath,
+      alt: alt || "object outline",
+      width: w,
+      height: h,
+      polygons: polys,
+      holes: holePolys,
+      box: hasBox ? box : undefined,
+      status,
+      object,
+    });
+    return () => { outlineOverlayRegistry.delete(overlayId); };
+  });
+  const stroke = status === "accepted" ? "#39ff14" : status === "rejected" ? "#ff5c33" : "#ffd23f";
+  const fill = status === "accepted" ? "rgba(57,255,20,0.12)" : status === "rejected" ? "rgba(255,92,51,0.15)" : "rgba(255,210,63,0.14)";
+  const badgeFill = status === "accepted" ? "#16a34a" : status === "rejected" ? "#dc2626" : "#d97706";
+  const lw = Math.max(1, w / 220);
+  const badgeR = Math.max(9, Math.round(Math.min(w, h) * 0.09));
+  const bx = w - badgeR - lw * 3;
+  const by = badgeR + lw * 3;
+  const m = badgeR * 0.44;
+  return (
+    <svg
+      className="video-import-outline-overlay"
+      viewBox={`0 0 ${w} ${h}`}
+      preserveAspectRatio="xMidYMid meet"
+      role="img"
+      aria-label={`Outliner geometry on original image (${status})`}
+      data-outline-id={interactive ? overlayId : undefined}
+    >
+      <image href={imageSrc} x={0} y={0} width={w} height={h} preserveAspectRatio="xMidYMid meet" />
+      {hasBox && (
+        <rect
+          x={box![0]}
+          y={box![1]}
+          width={Math.max(0, box![2] - box![0])}
+          height={Math.max(0, box![3] - box![1])}
+          fill="none"
+          stroke="#33d6ff"
+          strokeWidth={lw}
+          strokeDasharray={`${lw * 3} ${lw * 2}`}
+        />
+      )}
+      {polys.map((poly, index) => (
+        <polygon
+          key={`poly-${index}`}
+          points={toPoints(poly)}
+          fill={fill}
+          stroke={stroke}
+          strokeWidth={lw}
+          strokeLinejoin="round"
+        />
+      ))}
+      {holePolys.map((poly, index) => (
+        <polygon
+          key={`hole-${index}`}
+          points={toPoints(poly)}
+          fill="rgba(0,0,0,0.4)"
+          stroke="#ffd23f"
+          strokeWidth={lw}
+          strokeDasharray={`${lw * 2} ${lw * 2}`}
+          strokeLinejoin="round"
+        />
+      ))}
+      <g>
+        <circle cx={bx} cy={by} r={badgeR} fill={badgeFill} stroke="#ffffff" strokeWidth={lw} />
+        {status === "accepted" && (
+          <polyline
+            points={`${bx - m},${by + m * 0.1} ${bx - m * 0.25},${by + m * 0.75} ${bx + m},${by - m * 0.65}`}
+            fill="none"
+            stroke="#ffffff"
+            strokeWidth={lw * 1.7}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        )}
+        {status === "rejected" && (
+          <g stroke="#ffffff" strokeWidth={lw * 1.7} strokeLinecap="round">
+            <line x1={bx - m} y1={by - m} x2={bx + m} y2={by + m} />
+            <line x1={bx + m} y1={by - m} x2={bx - m} y2={by + m} />
+          </g>
+        )}
+        {status === "pending" && (
+          <text
+            x={bx}
+            y={by}
+            fill="#ffffff"
+            fontSize={badgeR * 1.5}
+            fontWeight={700}
+            fontFamily="ui-monospace, monospace"
+            textAnchor="middle"
+            dominantBaseline="central"
+          >?</text>
+        )}
+      </g>
+    </svg>
+  );
+};
 const parseMemberDescriptionOutput = (raw: string): { sceneDescription: string; things: MemberInventoryThing[] } => {
   const formatted = formatDetectedJson(raw);
   if (!formatted.detected) return { sceneDescription: raw, things: [] };
@@ -923,57 +1224,50 @@ const flattenMemberObjectTree = (tree: MemberObjectTree, parentName?: string): M
     ...flattenMemberObjectTree(node.subObjects, name),
   ]);
 
+// A fetch() that never received a response (the dev proxy resets sockets under
+// heavy concurrent load, connection resets, etc.) throws a TypeError rather
+// than returning an HTTP status. Those requests never reached the backend, so
+// retrying them is safe and stops transient blips from surfacing as
+// "OUTLINER failed: Failed to fetch". A real HTTP error (the backend answered)
+// is thrown immediately and never retried.
+const API_NETWORK_RETRIES = 3;
+function isTransientNetworkError(reason: unknown): boolean {
+  if (reason instanceof TypeError) return true;
+  const message = reason instanceof Error ? reason.message : String(reason);
+  return /failed to fetch|networkerror|network error|load failed|connection reset|econnreset|fetch failed/i.test(message);
+}
+class ApiHttpError extends Error {}
 async function api(path: string, body?: unknown): Promise<Record<string, any>> {
-  const response = await fetch(path.startsWith("/") ? path : `${API}/${path}`, body === undefined
+  const url = path.startsWith("/") ? path : `${API}/${path}`;
+  const init: RequestInit = body === undefined
     ? { headers: { "content-type": "application/json" } }
-    : { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-  const text = await response.text();
-  const payload = text ? JSON.parse(text) : {};
-  if (!response.ok) {
-    const detail = payload.detail;
-    const message = typeof detail === "string" ? detail : detail?.message || (detail ? JSON.stringify(detail) : response.statusText);
-    throw new Error(String(message));
+    : { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) };
+  let lastError: unknown = new Error("network request failed");
+  for (let attempt = 0; attempt <= API_NETWORK_RETRIES; attempt += 1) {
+    try {
+      const response = await fetch(url, init);
+      const text = await response.text();
+      const payload = text ? JSON.parse(text) : {};
+      if (!response.ok) {
+        const detail = payload.detail;
+        const message = typeof detail === "string" ? detail : detail?.message || (detail ? JSON.stringify(detail) : response.statusText);
+        throw new ApiHttpError(String(message));
+      }
+      return payload;
+    } catch (reason) {
+      if (reason instanceof ApiHttpError) throw reason;
+      if (!isTransientNetworkError(reason) || attempt >= API_NETWORK_RETRIES) throw reason;
+      lastError = reason;
+      await new Promise((resolve) => setTimeout(resolve, 300 * 2 ** attempt));
+    }
   }
-  return payload;
+  throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }
 
 const seconds = (value?: number | null) => {
   if (!value || !Number.isFinite(value)) return "?";
   const total = Math.round(value);
   return total >= 60 ? `${Math.floor(total / 60)}m${String(total % 60).padStart(2, "0")}s` : `${total}s`;
-};
-
-const formatBytes = (value?: number | null) => {
-  if (!value || !Number.isFinite(value) || value <= 0) return "?";
-  const units = ["B", "KB", "MB", "GB", "TB"];
-  let size = value;
-  let unit = 0;
-  while (size >= 1024 && unit < units.length - 1) { size /= 1024; unit += 1; }
-  return `${size >= 10 || unit === 0 ? Math.round(size) : size.toFixed(1)}${units[unit]}`;
-};
-
-// The engine/tool each background media job runs on, named in the status + queue.
-const JOB_TOOLS: Record<string, string> = {
-  scenes: "imageio+numpy",
-  extract: "imageio",
-  captions: "ffmpeg + caption model",
-  trim: "imageio/ffmpeg",
-  retinter: "imageio",
-  gallery: "imageio",
-};
-const jobToolLabel = (kind: string) => JOB_TOOLS[kind] || kind;
-
-type ImportJobState = {
-  state: string;
-  percent: number;
-  title: string;
-  message: string;
-  tool: string;
-  source: string;
-  downloadedBytes: number;
-  totalBytes: number | null;
-  etaSeconds: number | null;
-  error: string | null;
 };
 
 function PipeFork({ fork, title, value, disabled, onChange }: {
@@ -1158,7 +1452,19 @@ export function VideoImportPage({
    * panel) without needing to lift the whole chain/filters state up. */
   onChainSummaryChange?: (steps: VideoImportChainSummaryStep[]) => void;
 }) {
-  const hoveredImageRef = useRef<HTMLImageElement | null>(null);
+  const requestedSubview = new URL(window.location.href).searchParams.get("subview")?.toLowerCase();
+  const [activeSubview, setActiveSubview] = useState<VideoImportSubview>(
+    VIDEO_IMPORT_SUBVIEWS.some((entry) => entry.id === requestedSubview)
+      ? requestedSubview as VideoImportSubview
+      : "sources",
+  );
+  const selectSubview = (subview: VideoImportSubview) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("subview", subview);
+    window.history.replaceState(window.history.state, "", url);
+    setActiveSubview(subview);
+  };
+  const hoveredImageRef = useRef<Element | null>(null);
   const [altImageZoom, setAltImageZoom] = useState<AltImageZoom | null>(null);
   const [pinnedAltImageZoom, setPinnedAltImageZoom] = useState<AltImageZoom | null>(null);
   const [hoverImageContext, setHoverImageContext] = useState<HoverImageContext | null>(null);
@@ -1180,9 +1486,31 @@ export function VideoImportPage({
       y: Math.max(8, Math.min(rect.top, window.innerHeight - panelHeight - 8)),
     };
   };
-  const showAltImageZoom = useCallback((image: HTMLImageElement, x?: number, y?: number) => {
-    const { rect, imagePath } = imageElementContext(image);
-    if (rect.width <= 0 || rect.height <= 0 || !image.currentSrc) return;
+  // Resolve either a real <img> OR an interactive outline-overlay SVG under the
+  // pointer into a common "image-like" context, so object outlines get the very
+  // same hover context + Alt zoom + click-to-pin popups that plain images do.
+  type ImageLike = { el: Element; rect: DOMRect; src: string; imagePath: string; alt: string; outline?: OutlineGeometry };
+  const resolveImageLike = (target: Element | null): ImageLike | null => {
+    if (!target) return null;
+    const overlay = target.closest(".video-import-outline-overlay") as SVGElement | null;
+    if (overlay) {
+      const id = overlay.getAttribute("data-outline-id") || "";
+      const geometry = id ? outlineOverlayRegistry.get(id) : undefined;
+      if (!geometry?.imageSrc) return null;
+      return { el: overlay, rect: overlay.getBoundingClientRect(), src: geometry.imageSrc, imagePath: geometry.imagePath, alt: geometry.alt, outline: geometry };
+    }
+    const image = target.closest("img") as HTMLImageElement | null;
+    if (image?.currentSrc) {
+      const { rect, imagePath } = imageElementContext(image);
+      return { el: image, rect, src: image.currentSrc, imagePath, alt: image.alt };
+    }
+    return null;
+  };
+  const showAltImageZoom = useCallback((el: Element, x?: number, y?: number) => {
+    const info = resolveImageLike(el);
+    if (!info) return;
+    const { rect, imagePath, src, alt, outline } = info;
+    if (rect.width <= 0 || rect.height <= 0 || !src) return;
     const contextWidth = Math.min(720, Math.max(160, window.innerWidth / 2 - 16));
     const maximumImageWidth = Math.max(120, Math.min(window.innerWidth / 2 - 16, window.innerWidth - contextWidth - 24));
     const maximumImageHeight = Math.max(120, window.innerHeight / 2 - 16);
@@ -1192,56 +1520,47 @@ export function VideoImportPage({
     const desiredX = (x ?? rect.left + rect.width / 2) - width / 2;
     const desiredY = (y ?? rect.top + rect.height / 2) - height / 2;
     setAltImageZoom({
-      src: image.currentSrc,
+      src,
       imagePath,
-      alt: image.alt,
+      alt,
       x: Math.max(8, Math.min(window.innerWidth - width - contextWidth - 8, desiredX)),
       y: Math.max(8, Math.min(window.innerHeight - Math.max(height, maximumImageHeight) - 8, desiredY)),
       width,
       height,
       scale,
+      outline,
     });
   }, []);
   const handleImageZoomPointer = (event: ReactPointerEvent<HTMLElement>) => {
-    const image = event.target instanceof Element ? event.target.closest("img") as HTMLImageElement | null : null;
-    const changedImage = hoveredImageRef.current !== image;
-    hoveredImageRef.current = image;
+    const info = resolveImageLike(event.target instanceof Element ? event.target : null);
+    const el = info?.el ?? null;
+    const changedImage = hoveredImageRef.current !== el;
+    hoveredImageRef.current = el;
     if (changedImage) {
-      if (image?.currentSrc) {
-        const { rect, imagePath } = imageElementContext(image);
-        const position = imageContextPosition(rect);
-        setHoverImageContext({
-          src: image.currentSrc,
-          imagePath,
-          alt: image.alt,
-          ...position,
-        });
+      if (info) {
+        const position = imageContextPosition(info.rect);
+        setHoverImageContext({ src: info.src, imagePath: info.imagePath, alt: info.alt, outline: info.outline, ...position });
       } else {
         setHoverImageContext(null);
       }
     }
-    if (image && event.altKey) showAltImageZoom(image, event.clientX, event.clientY);
+    if (el && event.altKey) showAltImageZoom(el, event.clientX, event.clientY);
     else setAltImageZoom(null);
   };
   const handleImageContextClick = (event: ReactMouseEvent<HTMLElement>) => {
     const target = event.target instanceof Element ? event.target : null;
     if (!target || event.ctrlKey || target.closest(".video-import-workflow-gallery-check")) return;
-    const image = (target.closest("img") || target.closest("figure")?.querySelector("img")) as HTMLImageElement | null;
-    if (!image?.currentSrc) return;
+    const figureImage = target.closest("figure")?.querySelector("img") as HTMLImageElement | null;
+    const info = resolveImageLike(target) || (figureImage ? resolveImageLike(figureImage) : null);
+    if (!info) return;
     if (event.altKey && altImageZoom) {
       setPinnedAltImageZoom(altImageZoom);
       setPinnedImageContext(null);
       return;
     }
-    const { rect, imagePath } = imageElementContext(image);
-    const position = imageContextPosition(rect);
+    const position = imageContextPosition(info.rect);
     setPinnedAltImageZoom(null);
-    setPinnedImageContext({
-      src: image.currentSrc,
-      imagePath,
-      alt: image.alt,
-      ...position,
-    });
+    setPinnedImageContext({ src: info.src, imagePath: info.imagePath, alt: info.alt, outline: info.outline, ...position });
   };
   useEffect(() => {
     const keyDown = (event: KeyboardEvent) => {
@@ -1267,22 +1586,15 @@ export function VideoImportPage({
 
   // ---- status strip + interrupts ----------------------------------------
   const [log, setLog] = useState<Array<{ at: string; text: string }>>([]);
-  const logLinesRef = useRef<HTMLDivElement | null>(null);
   const stopRef = useRef(false);
   const activeRunsRef = useRef(0);
   const say = useCallback((text: string) => {
     const at = new Date().toLocaleTimeString([], { hour12: false });
-    // Keep the full session history (capped) instead of a 3-line rolling window.
-    setLog((current) => [...current.slice(-999), { at, text }]);
+    setLog((current) => [...current.slice(-2), { at, text }]);
     pushGlobalStatus(text, "video-import");
   }, []);
-  useEffect(() => {
-    const element = logLinesRef.current;
-    if (element) element.scrollTop = element.scrollHeight;
-  }, [log]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [downloadJob, setDownloadJob] = useState<ImportJobState | null>(null);
   const run = async (label: string, work: () => Promise<string | void>) => {
     if (activeRunsRef.current === 0) stopRef.current = false;
     activeRunsRef.current += 1;
@@ -1424,8 +1736,6 @@ export function VideoImportPage({
   const [videos, setVideos] = useState<Video[]>([]);
   const [selectedPath, setSelectedPath] = useState("");
   const selected = videos.find((video) => video.path === selectedPath) || null;
-  const videoLabel = selected?.title
-    || (selectedPath ? selectedPath.split("/").filter(Boolean).pop() || selectedPath : "video");
   const loadVideos = useCallback(async (pick?: string) => {
     const payload = await api(`videos?workspaceId=${encodeURIComponent(workspaceId)}`);
     const list = (payload.videos as Video[]) || [];
@@ -1488,71 +1798,12 @@ export function VideoImportPage({
       const raw = (value ?? source).trim();
       if (!raw) return "nothing to import";
       const isUrl = /^https?:\/\//i.test(raw);
-      if (isUrl) {
-        const tool = quality === "python-direct" ? "python-direct" : "yt-dlp";
-        const started = await api("download/start", {
-          workspaceId,
-          url: raw,
-          name: nameDraft.trim() || undefined,
-          quality: quality === "python-direct" ? undefined : quality,
-          tool,
-        });
-        const final = await pollDownload(String(started.jobId), String(started.title || nameDraft.trim() || raw), tool, raw);
-        setSource(""); setNameDraft("");
-        await loadVideos(final.path);
-        return `imported: ${final.title}`;
-      }
-      const payload = await api("import-file", { workspaceId, path: raw, name: nameDraft.trim() || undefined });
+      const payload = await api(isUrl ? "download" : "import-file", isUrl
+        ? { workspaceId, url: raw, name: nameDraft.trim() || undefined, quality: quality === "python-direct" ? undefined : quality, tool: quality === "python-direct" ? "python-direct" : "yt-dlp" }
+        : { workspaceId, path: raw, name: nameDraft.trim() || undefined });
       setSource(""); setNameDraft("");
       await loadVideos(String(payload.path || ""));
       return `imported: ${payload.title}`;
-    });
-  const pollDownload = (jobId: string, initialTitle: string, tool: string, sourceRef: string) =>
-    new Promise<{ path: string; title: string }>((resolve, reject) => {
-      setDownloadJob({
-        state: "running", percent: 0, title: initialTitle, message: "starting import…",
-        tool, source: sourceRef,
-        downloadedBytes: 0, totalBytes: null, etaSeconds: null, error: null,
-      });
-      const tick = async () => {
-        if (stopRef.current) {
-          void api("download/cancel", { jobId }).catch(() => undefined);
-          setDownloadJob(null);
-          reject(new Error("stopped"));
-          return;
-        }
-        let payload: Record<string, any>;
-        try {
-          payload = await api(`download/status?jobId=${encodeURIComponent(jobId)}`);
-        } catch (reason) {
-          reject(reason instanceof Error ? reason : new Error(String(reason)));
-          return;
-        }
-        const next: ImportJobState = {
-          state: String(payload.state || "running"),
-          percent: Number(payload.percent || 0),
-          title: String(payload.title || initialTitle),
-          message: String(payload.message || ""),
-          tool,
-          source: sourceRef,
-          downloadedBytes: Number(payload.downloadedBytes || 0),
-          totalBytes: payload.totalBytes == null ? null : Number(payload.totalBytes),
-          etaSeconds: payload.etaSeconds == null ? null : Number(payload.etaSeconds),
-          error: payload.error == null ? null : String(payload.error),
-        };
-        setDownloadJob(next);
-        const progressLabel = next.state === "finalizing" ? "finalizing" : `${Math.round(next.percent)}%`;
-        if (next.state === "running" || next.state === "finalizing") {
-          say(`Importing ${next.tool} ${next.source} — ${progressLabel}`);
-          window.setTimeout(() => void tick(), 700);
-        } else if (next.state === "done") {
-          window.setTimeout(() => setDownloadJob(null), 2000);
-          resolve({ path: String(payload.path || ""), title: next.title });
-        } else {
-          reject(new Error(next.error || "import failed"));
-        }
-      };
-      void tick();
     });
   const upload = (file: File | null) => {
     if (!file) return;
@@ -1628,7 +1879,7 @@ export function VideoImportPage({
   const activeSegments = segments.length ? segments : (duration ? [{ start: 0, end: duration, keep: true }] : []);
 
   const detectScenes = () =>
-    run(`Detecting scenes · imageio+numpy · ${videoLabel}`, async () => {
+    run("Detecting scenes", async () => {
       // Resume where the last run stopped: start at the last detected marker.
       const resumeAt = markers.length ? Math.max(...markers.map((marker) => marker.atSeconds)) : 0;
       const payload = await api("scenes", {
@@ -1640,10 +1891,8 @@ export function VideoImportPage({
         minSceneGapSeconds: Math.max(0, Number(sceneMinGapSeconds) || 0),
         maxMarkers: sceneMaxMarkers.trim() ? Number(sceneMaxMarkers) : undefined,
       });
-      watchConcurrentJob(String(payload.jobId), "scenes", setSceneJob, (final) => { setMarkers(final.markers || []); say(`scenes: ${(final.markers || []).length} marker(s) in ${videoLabel} via imageio+numpy (${resumeAt ? `resumed @ ${resumeAt.toFixed(1)}s` : "from the top"})`); });
-      return resumeAt
-        ? `imageio+numpy scanning ${videoLabel} for scene changes from ${resumeAt.toFixed(1)}s…`
-        : `imageio+numpy scanning ${videoLabel} for scene changes…`;
+      watchConcurrentJob(String(payload.jobId), "scenes", setSceneJob, (final) => { setMarkers(final.markers || []); say(`scenes: ${(final.markers || []).length} marker(s) (${resumeAt ? `resumed @ ${resumeAt.toFixed(1)}s` : "from the top"})`); });
+      return resumeAt ? `scanning for scene changes from ${resumeAt.toFixed(1)}s…` : "scanning for scene changes…";
     });
   const clearSceneDetection = () => {
     if (sceneJob?.state === "running") void api("extract/cancel", { jobId: sceneJob.id }).catch(() => undefined);
@@ -1661,14 +1910,14 @@ export function VideoImportPage({
       .catch((reason) => setError(reason instanceof Error ? reason.message : String(reason)));
   };
   const generateCaptions = () =>
-    run(`Generating captions · ${effectiveCaptionModel || "caption model"} · ${videoLabel}`, async () => {
+    run("Generating video captions", async () => {
       const payload = await api("captions", { workspaceId, video: selectedPath, modelId: effectiveCaptionModel, chunkSeconds: 30, concurrency: 4 });
       watchConcurrentJob(String(payload.jobId), "captions", setCaptionJob, (final) => {
         setCaptions(final.captions || []);
         setCaptionSource(final.captionSource || "");
-        say(`captions: ${(final.captions || []).length} cue(s) for ${videoLabel} · ${final.captionSource || "unknown source"}`);
+        say(`captions: ${(final.captions || []).length} cue(s) · ${final.captionSource || "unknown source"}`);
       });
-      return `ffmpeg + ${effectiveCaptionModel || "caption model"} captioning ${payload.estimatedChunks || 1} audio chunk(s) of ${videoLabel}…`;
+      return `captioning ${payload.estimatedChunks || 1} audio chunk(s)…`;
     });
   const clearCaptions = () => {
     if (captionJob?.state === "running") void api("extract/cancel", { jobId: captionJob.id }).catch(() => undefined);
@@ -1783,24 +2032,76 @@ export function VideoImportPage({
     say(`Extracted Images source: ${source.label}`);
   };
   const selectExtractedImageSource = (sourceId: string) => {
-    if (!sourceId.startsWith("curated:")) {
+    if (!sourceId) return;
+    // Already-loaded sources (video extraction, previously imported curated /
+    // recording / stream frames) switch instantly without re-importing.
+    if (frameSources.some((candidate) => candidate.id === sourceId)) {
       selectFrameSource(sourceId);
       return;
     }
-    const sourcePath = sourceId.slice("curated:".length);
-    const source = curatedSources.find((candidate) => candidate.path === sourcePath);
-    void run("Importing curated game images", async () => {
-      const payload = await api("curated-image-sources/import", {
-        workspaceId,
-        source: sourcePath,
+    if (sourceId.startsWith("curated:")) {
+      const sourcePath = sourceId.slice("curated:".length);
+      const source = curatedSources.find((candidate) => candidate.path === sourcePath);
+      void run("Importing curated game images", async () => {
+        const payload = await api("curated-image-sources/import", {
+          workspaceId,
+          source: sourcePath,
+        });
+        acceptFrames(payload.frames, {
+          id: sourceId,
+          label: `Curated data · ${source?.label || sourcePath}`,
+          kind: "curated",
+        });
+        return `loaded ${(payload.frames as Frame[] | undefined)?.length || 0} curated image(s) from ${sourcePath}`;
       });
-      acceptFrames(payload.frames, {
-        id: sourceId,
-        label: `Curated data · ${source?.label || sourcePath}`,
-        kind: "curated",
-      });
-      return `loaded ${(payload.frames as Frame[] | undefined)?.length || 0} curated image(s) from ${sourcePath}`;
-    });
+      return;
+    }
+    if (sourceId.startsWith("arc:")) {
+      void importArcRecording(sourceId.slice("arc:".length));
+      return;
+    }
+    selectFrameSource(sourceId);
+  };
+  // Option ids for the colored source combobox, in display order. The remembered
+  // selection is always kept available so it survives reloads even if its
+  // curated/recording source list has not loaded yet.
+  const frameSourceOptionIds = (() => {
+    const ids: string[] = [];
+    const seen = new Set<string>();
+    const push = (id: string) => { if (id && !seen.has(id)) { seen.add(id); ids.push(id); } };
+    if (frameSources.some((source) => source.id === "video-extraction")) push("video-extraction");
+    curatedSources.forEach((source) => push(`curated:${source.path}`));
+    arcRecordings.forEach((recording) => push(`arc:${recording.path}`));
+    frameSources
+      .filter((source) => source.id !== "video-extraction" && source.kind !== "curated" && source.kind !== "arc" && source.kind !== "restored")
+      .forEach((source) => push(source.id));
+    if (selectedFrameSourceId) push(selectedFrameSourceId);
+    return ids;
+  })();
+  const describeFrameSource = (id: string): ColoredTagDescription => {
+    if (id === "video-extraction") {
+      const count = frameSources.find((source) => source.id === "video-extraction")?.frames.length || 0;
+      return { label: "Current video above", groupKey: "0-video", groupLabel: "Current video", tags: [{ text: `${count} images`, color: "#27dcc2" }] };
+    }
+    if (id.startsWith("curated:")) {
+      const path = id.slice("curated:".length);
+      const source = curatedSources.find((candidate) => candidate.path === path);
+      const count = source?.frames ?? frameSources.find((candidate) => candidate.id === id)?.frames.length ?? 0;
+      return { label: source?.label || path, groupKey: "1-curated", groupLabel: "Curated data", tags: [{ text: "curated", color: "#e6ad45" }, { text: `${count} images`, color: "#8aa0aa" }] };
+    }
+    if (id.startsWith("arc:")) {
+      const path = id.slice("arc:".length);
+      const recording = arcRecordings.find((candidate) => candidate.path === path);
+      const loaded = frameSources.find((candidate) => candidate.id === id);
+      const count = recording?.frames ?? loaded?.frames.length ?? 0;
+      const tags: ColoredTag[] = [];
+      if (recording?.level !== undefined && recording?.level !== null) tags.push({ text: `L${recording.level}`, color: "#9b8cff" });
+      tags.push({ text: `${count} frames`, color: "#7bd88f" });
+      if (loaded) tags.push({ text: "loaded", color: "#27dcc2" });
+      return { label: recording?.gameId || loaded?.label || path, groupKey: "2-arc", groupLabel: "ARC recordings", tags };
+    }
+    const source = frameSources.find((candidate) => candidate.id === id);
+    return { label: source?.label || id, groupKey: "3-loaded", groupLabel: "Loaded sources", tags: [{ text: `${source?.frames.length ?? frames.length} images`, color: "#8aa0aa" }, { text: "remembered", color: "#8aa0aa" }] };
   };
   const copyStreamUrl = (value: string, label: string) => {
     void navigator.clipboard.writeText(value)
@@ -1870,13 +2171,13 @@ export function VideoImportPage({
     say("Extracted Frame Gallery and dependent generated galleries cleared; source files were preserved");
   };
   const extract = () =>
-    run(`Extracting frames · imageio · ${videoLabel}`, async () => {
+    run("Extracting frames", async () => {
       if (mode === "scenes" && !markers.length && sceneJob?.state === "running") {
         return "frame extraction stopped: scene detection is still scanning to the end of the video";
       }
       const payload = await api("extract", extractBody());
-      watchConcurrentJob(String(payload.jobId), "extract", setFrameExtractionJob, (final) => { acceptFrames(final.frames); say(`Extracted Frame Gallery: ${(final.frames || []).length} image(s) from ${videoLabel}${final.interrupted ? " (interrupted)" : ""}`); });
-      return `imageio extracting ≈${payload.estimatedFrames} frame(s) from ${videoLabel}…`;
+      watchConcurrentJob(String(payload.jobId), "extract", setFrameExtractionJob, (final) => { acceptFrames(final.frames); say(`Extracted Frame Gallery: ${(final.frames || []).length} image(s)${final.interrupted ? " (interrupted)" : ""}`); });
+      return `extracting ≈${payload.estimatedFrames} frame(s)…`;
     });
   const stopFrameExtraction = () => {
     if (frameExtractionJob?.state !== "running") return;
@@ -2496,6 +2797,30 @@ export function VideoImportPage({
     setSelectedWorkflowGalleryPaths((current) => new Set([...current].filter((path) => !removedPaths.has(path))));
     say(`Level ${depth} generated objects/backgrounds cleared; automation can regenerate this level and its descendants`);
   };
+  const clearRecursiveOutlines = (depth: number) => {
+    setMemberInventories((current) => current.map((inventory) => (inventory.depth || 0) !== depth ? inventory : {
+      ...inventory,
+      things: inventory.things.map((thing) => ({
+        ...thing,
+        outlinePrompt: undefined,
+        outlineOutput: undefined,
+        outlineImage: undefined,
+        outlineDimensions: undefined,
+        outlinePolygons: undefined,
+        outlineHoles: undefined,
+        outlineBox: undefined,
+        outlineTraceTurtle: undefined,
+        outlineVerificationImage: undefined,
+        outlineGeometryHash: undefined,
+        outlineTraceAgreement: undefined,
+        outlineBoundaryCoverage: undefined,
+        outlineError: undefined,
+        outlineRetryAfter: undefined,
+        outlineAttempts: undefined,
+      })),
+    }));
+    say(`Level ${depth} object outlines cleared; the Outliner can regenerate them`);
+  };
   const clearTurtleTerminations = () => {
     const renderedPaths = new Set(Object.values(turtleArtifacts).map((artifact) => artifact.renderedImage).filter((path): path is string => Boolean(path)));
     setTurtleArtifacts({});
@@ -2695,6 +3020,7 @@ export function VideoImportPage({
         turtlePng: s.recursiveAutomation.turtlePng !== false,
         advanceLevels: s.recursiveAutomation.advanceLevels !== false,
         enlargeSubobjects: s.recursiveAutomation.enlargeSubobjects !== false,
+        pilotFirst: s.recursiveAutomation.pilotFirst !== false,
       });
     }
     if (s.llmCallConcurrency && typeof s.llmCallConcurrency === "object") {
@@ -3126,6 +3452,7 @@ export function VideoImportPage({
       if (!selectedInputFrames.length) return "multi-select at least one Extracted Frame Gallery image as an LLM input";
       const inputFrames = onlyMissing
         ? selectedInputFrames.filter((frame) => {
+            if (!isInputPathActive(frame.path)) return false;
             const existing = memberInventories.find((inventory) => inventory.id === `input:${frame.path}`);
             return !automaticDescriptionClaimsRef.current.has(`root:${frame.path}`)
               && (!existing || (existing.status === "failed" ? retryReady(existing.retryAfter) : !existing.descriptionOutput));
@@ -3133,7 +3460,7 @@ export function VideoImportPage({
         : selectedInputFrames;
         const pendingChildren = memberInventories.filter((inventory) =>
           inventory.parentInventoryId
-          && (!onlyMissing || !automaticDescriptionClaimsRef.current.has(`child:${inventory.id}`))
+          && (!onlyMissing || (isInventoryActive(inventory) && !automaticDescriptionClaimsRef.current.has(`child:${inventory.id}`)))
           && (inventory.status === "pending" || (inventory.status === "failed" && retryReady(inventory.retryAfter)))
         );
       const descriptionTasks = [
@@ -3366,8 +3693,11 @@ export function VideoImportPage({
        return null;
      }
      const omitted = inventory.things.map((thing) => thing.name).filter((name) => !orderedNames.includes(name));
-     const extractionOrder = [...orderedNames, ...omitted];
      const relationships = parsePlannerRelationships(parsed, inventory.things);
+     const initialOrder = [...orderedNames, ...omitted];
+     const groupResult = parsePlannerGroups(parsed, initialOrder, inventory.things, relationships.occlusions, relationships.containments);
+     const parallelGroups = groupResult.groups;
+     const extractionOrder = parallelGroups.length ? parallelGroups.flat() : initialOrder;
      const labelResult = parsePlannerLabels(parsed, inventory.things, extractionOrder, plannerDimensions);
      if (labelResult.labels.length !== extractionOrder.length) {
        throw new Error(`Planner returned ${labelResult.labels.length}/${extractionOrder.length} valid object label points.`);
@@ -3380,12 +3710,14 @@ export function VideoImportPage({
      const orderWarnings = [
        omitted.length ? `Planner omitted ${omitted.length} object(s) from order; appended last.` : "",
        ...relationships.warnings,
+       ...groupResult.warnings,
        ...labelResult.warnings,
      ].filter(Boolean);
      const completed: MemberInventory = {
        ...planning,
        orderOutput,
        extractionOrder,
+       parallelGroups,
        plannerTouching: relationships.touching,
        plannerOcclusions: relationships.occlusions,
        plannerContainments: relationships.containments,
@@ -3395,7 +3727,7 @@ export function VideoImportPage({
        status: "done",
      };
      storeMemberInventory(completed);
-     say(`P${inventory.depth || 0} ${inventory.subjectName || "input"}: ordered ${inventory.things.length} extraction(s)`);
+     say(`P${inventory.depth || 0} ${inventory.subjectName || "input"}: ordered ${inventory.things.length} extraction(s) in ${parallelGroups.length} parallel group(s)`);
      return completed;
     } catch (reason) {
      const message = reason instanceof Error ? reason.message : String(reason);
@@ -3411,6 +3743,7 @@ export function VideoImportPage({
      if (!isRunnableVisionModel(effectivePlannerModel)) return "pick an enabled Planner vision model first";
      const inventories = memberInventories.filter((inventory) =>
        inventory.things.length > 0
+       && (!onlyMissing || isInventoryActive(inventory))
        && (!onlyMissing || (!hasVisualizedPlan(inventory) && (inventory.status !== "failed" || retryReady(inventory.retryAfter))))
      );
      if (!inventories.length) return "call the Describer on input images first";
@@ -3456,8 +3789,12 @@ export function VideoImportPage({
      scheduleRetry();
      return false;
     }
+    // Persist whatever the Outliner produced (raw output + any parsed geometry)
+    // so a "messed up" outline can still be drawn on the original image.
+    const captured: Partial<MemberInventoryThing> = { outlineImage: scenePath };
     try {
      const outlineDimensions = await imageDataDimensions(image);
+     captured.outlineDimensions = outlineDimensions;
      const outlinePrompt = renderMemberOutlinerPrompt(
        selectedOutlinerPrompt,
        inventory.descriptionOutput || inventory.sceneDescription,
@@ -3468,6 +3805,7 @@ export function VideoImportPage({
        scenePath,
        outlineDimensions,
      );
+     captured.outlinePrompt = outlinePrompt;
      updateInventoryThing(inventory.id, thingIndex, { outlinePrompt, outlineImage: scenePath, outlineDimensions });
      const payload = await invokeCachedModel(
        effectiveOutlinerModel,
@@ -3479,6 +3817,7 @@ export function VideoImportPage({
        "outliner",
      );
      const outlineOutput = typeof payload.text === "string" ? payload.text.trim() : "";
+     captured.outlineOutput = outlineOutput;
      if (/^\s*none[.!]?\s*$/i.test(outlineOutput)) {
        updateInventoryThing(inventory.id, thingIndex, {
          status: "not_found",
@@ -3495,10 +3834,11 @@ export function VideoImportPage({
      let holes: number[][][] = [];
      let box: number[] | undefined;
      let traceTurtle: Array<{ op: string; x: number; y: number }> = [];
+     let nameMismatch = "";
      if (geometry) {
        const parsed = JSON.parse(geometry[0]) as Record<string, unknown>;
        if (parsed.name && String(parsed.name).trim().toLowerCase() !== thing.name.trim().toLowerCase()) {
-         throw new Error(`Outliner returned geometry for ${String(parsed.name)} instead of ${thing.name}.`);
+         nameMismatch = `Outliner returned geometry for ${String(parsed.name)} instead of ${thing.name}.`;
        }
        polygons = Array.isArray(parsed.polygons)
          ? parsed.polygons.filter((candidate: unknown) => Array.isArray(candidate) && candidate.length >= 3) as number[][][]
@@ -3516,6 +3856,12 @@ export function VideoImportPage({
          }))
          : [];
      }
+     // Capture partial geometry so the UI can overlay it even when it fails below.
+     captured.outlinePolygons = polygons;
+     captured.outlineHoles = holes;
+     captured.outlineBox = box;
+     captured.outlineTraceTurtle = traceTurtle;
+     if (nameMismatch) throw new Error(nameMismatch);
      if (!polygons.length && !box) throw new Error("Outliner returned no usable precise polygons or box.");
      if (!traceTurtle.length) throw new Error("Outliner returned no Turtle trace to verify.");
      const verification = await api("outline-verification", {
@@ -3555,6 +3901,9 @@ export function VideoImportPage({
      const message = reason instanceof Error ? reason.message : String(reason);
      updateInventoryThing(inventory.id, thingIndex, {
        status: "listed",
+       ...captured,
+       outlineVerificationImage: undefined,
+       outlineGeometryHash: undefined,
        outlineError: message,
        outlineRetryAfter: Date.now() + LLM_RETRY_DELAY_MS,
        outlineAttempts: (thing.outlineAttempts || 0) + 1,
@@ -3567,7 +3916,7 @@ export function VideoImportPage({
   const runRecursiveOutliner = (onlyMissing = false) =>
     run("Outlining planned objects independently", async () => {
      if (!isRunnableVisionModel(effectiveOutlinerModel)) return "pick an enabled Outliner vision model first";
-     const candidates = memberInventories.flatMap((inventory) => hasVisualizedPlan(inventory)
+     const candidates = memberInventories.flatMap((inventory) => (hasVisualizedPlan(inventory) && (!onlyMissing || isInventoryActive(inventory)))
        ? inventory.things.map((thing, thingIndex) => ({ inventory, thing, thingIndex })).filter(({ thing }) => {
          if (thing.outputImages?.length) return false;
          const ready = hasAlignedOutline(thing);
@@ -3597,7 +3946,7 @@ export function VideoImportPage({
      const queue = automatic
        ? cooperativeRetryOrder(
          memberInventories.filter((inventory) => {
-           return Boolean(hasVisualizedPlan(inventory) && inventoryOutlinesReady(inventory));
+           return Boolean(hasVisualizedPlan(inventory) && inventoryOutlinesReady(inventory) && isInventoryActive(inventory));
          }),
          effectiveCallConcurrency("extractor"),
          (inventory) => inventory.things.some((thing) => (thing.status === "failed" || thing.status === "not_found") && retryReady(thing.retryAfter)),
@@ -4403,6 +4752,8 @@ export function VideoImportPage({
       if (!isRunnableVisionModel(effectiveTurtleModel)) return "pick an enabled Turtle Gen vision model first";
       const candidates = turtleLeafCandidates.filter((candidate) => {
         if (!onlyMissing) return true;
+        const inv = inventoryByIdForPilot.get(candidate.inventoryId);
+        if (inv && !isInventoryActive(inv)) return false;
         const artifact = turtleArtifacts[candidate.sourceImage];
         return !artifact || (artifact.status === "failed" && artifact.failedStage === "gen" && retryReady(artifact.retryAfter));
       });
@@ -4455,7 +4806,13 @@ export function VideoImportPage({
       if (!isRunnableVisionModel(effectiveTurtlePngModel)) return "pick an enabled Turtle PNG vision model first";
       const candidates = turtleLeafCandidates
         .map((candidate) => ({ candidate, artifact: turtleArtifacts[candidate.sourceImage] }))
-        .filter(({ artifact }) => artifact?.rawProgram && (!onlyMissing || artifact.status === "generated" || (artifact.status === "failed" && artifact.failedStage === "png" && retryReady(artifact.retryAfter))))
+        .filter(({ candidate, artifact }) => {
+          if (onlyMissing) {
+            const inv = inventoryByIdForPilot.get(candidate.inventoryId);
+            if (inv && !isInventoryActive(inv)) return false;
+          }
+          return artifact?.rawProgram && (!onlyMissing || artifact.status === "generated" || (artifact.status === "failed" && artifact.failedStage === "png" && retryReady(artifact.retryAfter)));
+        })
         .map(({ candidate, artifact }) => ({ candidate, artifact: artifact! }));
       if (!candidates.length) return onlyMissing ? "no generated Turtle programs are waiting for PNG" : "generate Turtle leaf programs first";
       let rendered = 0;
@@ -4514,42 +4871,143 @@ export function VideoImportPage({
 
   const automaticStagesRunningRef = useRef(new Set<keyof LlmCallConcurrency>());
   const [automaticSchedulerTick, setAutomaticSchedulerTick] = useState(0);
+  const runnableInventoryIds = new Set(
+    memberInventories
+      .filter((inventory) =>
+        !inventory.parentInventoryId
+        && (
+          memberInputPaths.has(inventory.framePath)
+          || memberInputPaths.has(inventory.sourceImage)
+        ))
+      .map((inventory) => inventory.id),
+  );
+  for (let pass = 0; pass < memberInventories.length; pass += 1) {
+    for (const inventory of memberInventories) {
+      if (inventory.parentInventoryId && runnableInventoryIds.has(inventory.parentInventoryId)) {
+        runnableInventoryIds.add(inventory.id);
+      }
+    }
+  }
+  const runnableMemberInventories = memberInventories.filter((inventory) =>
+    runnableInventoryIds.has(inventory.id));
+  // ---- Pilot-first scheduling ----------------------------------------------
+  // Run the first two selected input images all the way through the pipeline
+  // before automation starts the rest. Surfaces pipeline problems early on a
+  // small canary set instead of fanning every image out at once.
+  const inventoryByIdForPilot = new Map<string, MemberInventory>();
+  for (const inv of memberInventories) inventoryByIdForPilot.set(inv.id, inv);
+  const rootInputPathOf = (inventory: MemberInventory): string | undefined => {
+    let current: MemberInventory | undefined = inventory;
+    const seen = new Set<string>();
+    while (current?.parentInventoryId && !seen.has(current.id)) {
+      seen.add(current.id);
+      current = inventoryByIdForPilot.get(current.parentInventoryId);
+    }
+    return current?.framePath || current?.sourceImage;
+  };
+  const orderedSelectedInputPaths = frames
+    .filter((frame) => memberInputPaths.has(frame.path))
+    .map((frame) => frame.path);
+  const pilotInputPaths = orderedSelectedInputPaths.slice(0, PILOT_FIRST_IMAGE_COUNT);
+  const pilotFirstActive = recursiveAutomation.pilotFirst
+    && orderedSelectedInputPaths.length > PILOT_FIRST_IMAGE_COUNT;
+  const inputPathActionablePending = (path: string): boolean => {
+    const root = memberInventories.find((inv) => inv.id === `input:${path}`);
+    if (!root) return true;
+    if (!root.descriptionOutput
+      && (root.status !== "failed" || (retryReady(root.retryAfter) && (root.attempts || 0) < PILOT_MAX_ATTEMPTS))) return true;
+    const subtree = memberInventories.filter((inv) => rootInputPathOf(inv) === path);
+    for (const inv of subtree) {
+      if (inv.parentInventoryId
+        && (inv.status === "pending"
+          || (inv.status === "failed" && retryReady(inv.retryAfter) && (inv.attempts || 0) < PILOT_MAX_ATTEMPTS))) return true;
+      if (inv.things.length > 0 && !hasVisualizedPlan(inv)
+        && (inv.status === "done"
+          || (inv.status === "failed" && retryReady(inv.retryAfter) && (inv.attempts || 0) < PILOT_MAX_ATTEMPTS))) return true;
+      if (hasVisualizedPlan(inv)) {
+        if (inv.things.some((thing) => !thing.outputImages?.length
+          && !hasAlignedOutline(thing)
+          && retryReady(thing.outlineRetryAfter)
+          && (thing.outlineAttempts || 0) < PILOT_MAX_ATTEMPTS)) return true;
+        const next = inventoryOutlinesReady(inv) ? nextUnextractedThing(inv) : null;
+        if (next && retryReady(next.thing.retryAfter) && (next.thing.attempts || 0) < PILOT_MAX_ATTEMPTS) return true;
+      }
+    }
+    if (recursiveAutomation.turtle || recursiveAutomation.turtlePng) {
+      for (const candidate of turtleLeafCandidates) {
+        const inv = inventoryByIdForPilot.get(candidate.inventoryId);
+        if (!inv || rootInputPathOf(inv) !== path) continue;
+        const artifact = turtleArtifacts[candidate.sourceImage];
+        const underCap = (artifact?.attempts || 0) < PILOT_MAX_ATTEMPTS;
+        if (recursiveAutomation.turtle
+          && (!artifact || (artifact.status === "failed" && artifact.failedStage === "gen" && retryReady(artifact.retryAfter) && underCap))) return true;
+        if (recursiveAutomation.turtlePng
+          && (artifact?.status === "generated" || (artifact?.status === "failed" && artifact.failedStage === "png" && retryReady(artifact.retryAfter) && underCap))) return true;
+      }
+    }
+    return false;
+  };
+  const pilotSelectionKey = orderedSelectedInputPaths.join("|");
+  const [pilotGateReleased, setPilotGateReleased] = useState(false);
+  useEffect(() => { setPilotGateReleased(false); }, [pilotSelectionKey]);
+  const pilotsSettled = pilotFirstActive
+    && pilotInputPaths.length > 0
+    && pilotInputPaths.every((path) => !inputPathActionablePending(path));
+  useEffect(() => {
+    if (pilotFirstActive && !pilotGateReleased && pilotsSettled) setPilotGateReleased(true);
+  }, [pilotFirstActive, pilotGateReleased, pilotsSettled]);
+  const pilotGateClosed = pilotFirstActive && !pilotGateReleased;
+  const isInputPathActive = (path: string) => !pilotGateClosed || pilotInputPaths.includes(path);
+  const isInventoryActive = (inventory: MemberInventory) => {
+    if (!pilotGateClosed) return true;
+    const path = rootInputPathOf(inventory);
+    return path !== undefined && pilotInputPaths.includes(path);
+  };
   useEffect(() => {
     if (!restoredRef.current || workersHeld) return;
     const selectedRootsNeedDescription = frames.some((frame) => {
      if (!memberInputPaths.has(frame.path)) return false;
+     if (!isInputPathActive(frame.path)) return false;
      if (automaticDescriptionClaimsRef.current.has(`root:${frame.path}`)) return false;
      const inventory = memberInventories.find((candidate) => candidate.id === `input:${frame.path}`);
      return !inventory || (inventory.status === "failed" ? retryReady(inventory.retryAfter) : !inventory.descriptionOutput);
     });
-    const childNeedsDescription = memberInventories.some((inventory) =>
+    const childNeedsDescription = runnableMemberInventories.some((inventory) =>
      inventory.parentInventoryId
+     && isInventoryActive(inventory)
      && !automaticDescriptionClaimsRef.current.has(`child:${inventory.id}`)
      && (inventory.status === "pending" || (inventory.status === "failed" && retryReady(inventory.retryAfter)))
     );
-    const inventoryNeedsPlan = memberInventories.some((inventory) =>
-     (inventory.status === "done" || (inventory.status === "failed" && retryReady(inventory.retryAfter)))
+    const inventoryNeedsPlan = runnableMemberInventories.some((inventory) =>
+     isInventoryActive(inventory)
+     && (inventory.status === "done" || (inventory.status === "failed" && retryReady(inventory.retryAfter)))
      && inventory.things.length > 0
      && !hasVisualizedPlan(inventory)
     );
-    const inventoryNeedsOutline = memberInventories.some((inventory) =>
-     hasVisualizedPlan(inventory)
+    const inventoryNeedsOutline = runnableMemberInventories.some((inventory) =>
+     isInventoryActive(inventory)
+     && hasVisualizedPlan(inventory)
      && inventory.things.some((thing) =>
        !thing.outputImages?.length
        && !hasAlignedOutline(thing)
        && retryReady(thing.outlineRetryAfter)
      )
     );
-    const inventoryNeedsExtraction = memberInventories.some((inventory) =>
-     hasVisualizedPlan(inventory)
+    const inventoryNeedsExtraction = runnableMemberInventories.some((inventory) =>
+     isInventoryActive(inventory)
+     && hasVisualizedPlan(inventory)
      && inventoryOutlinesReady(inventory)
      && Boolean(nextUnextractedThing(inventory) && retryReady(nextUnextractedThing(inventory)?.thing.retryAfter))
     );
     const leafNeedsTurtleGen = turtleLeafCandidates.some((candidate) => {
+      const inv = inventoryByIdForPilot.get(candidate.inventoryId);
+      if (inv && !isInventoryActive(inv)) return false;
       const artifact = turtleArtifacts[candidate.sourceImage];
       return !artifact || (artifact.status === "failed" && artifact.failedStage === "gen" && retryReady(artifact.retryAfter));
     });
     const leafNeedsTurtlePng = turtleLeafCandidates.some((candidate) => {
+      const inv = inventoryByIdForPilot.get(candidate.inventoryId);
+      if (inv && !isInventoryActive(inv)) return false;
       const artifact = turtleArtifacts[candidate.sourceImage];
       return artifact?.status === "generated" || (artifact?.status === "failed" && artifact.failedStage === "png" && retryReady(artifact.retryAfter));
     });
@@ -4599,6 +5057,8 @@ export function VideoImportPage({
     recursiveAutomation.planner,
     recursiveAutomation.turtle,
     recursiveAutomation.turtlePng,
+    recursiveAutomation.pilotFirst,
+    pilotGateClosed,
     retryClock,
     workersHeld,
     turtleArtifacts,
@@ -4609,31 +5069,6 @@ export function VideoImportPage({
   const jobProgress = (candidate: JobState) => candidate.total > 0
     ? Math.min(100, Math.round((candidate.done / candidate.total) * 100))
     : 0;
-  const imageSourceKindColors: Record<string, string> = {
-    video: "#4dd4c4", curated: "#e0b341", stream: "#f08a4b", arc: "#8a7dff", archive: "#c56bff", restored: "#5bd47a",
-  };
-  const imageSourceIds = [
-    "video-extraction",
-    ...curatedSources.map((source) => `curated:${source.path}`),
-    ...frameSources.filter((source) => source.id !== "video-extraction" && source.kind !== "curated").map((source) => source.id),
-  ];
-  const describeImageSource = (id: string): ColoredTagDescription => {
-    if (id === "video-extraction") {
-      const source = frameSources.find((candidate) => candidate.id === "video-extraction");
-      const count = source?.frames.length || 0;
-      return { label: `Current video · ${count} images`, groupKey: "0-video", groupLabel: "Current video", tags: [{ text: `${count} imgs`, color: imageSourceKindColors.video }], disabled: !source };
-    }
-    if (id.startsWith("curated:")) {
-      const path = id.slice("curated:".length);
-      const source = curatedSources.find((candidate) => candidate.path === path);
-      const count = source?.frames || 0;
-      return { label: `${source?.label || path} · ${count} images`, groupKey: "1-curated", groupLabel: "Curated data", tags: [{ text: `${count} imgs`, color: imageSourceKindColors.curated }, { text: "curated", color: imageSourceKindColors.curated }] };
-    }
-    const source = frameSources.find((candidate) => candidate.id === id);
-    const count = source?.frames.length || 0;
-    const kind = source?.kind || "restored";
-    return { label: `${source?.label || id} · ${count} images`, groupKey: `2-${kind}`, groupLabel: `${kind.charAt(0).toUpperCase()}${kind.slice(1)}`, tags: [{ text: `${count} imgs`, color: imageSourceKindColors[kind] || "#8aa" }, { text: kind, color: imageSourceKindColors[kind] || "#8aa" }] };
-  };
   const selectorScore = (kind: string) => { const score = ledger[`select:${kind}`] || 0; return score ? ` (${score > 0 ? "+" : ""}${score})` : ""; };
   const recursiveRootInventories = memberInventories
     .filter((inventory) => !inventory.parentInventoryId)
@@ -4651,24 +5086,24 @@ export function VideoImportPage({
     llmSchedulerRef.current.waiters.filter((waiter) => waiter.type === type).length;
   const llmStageProgress: Record<keyof LlmCallConcurrency, { pending: number; completed: number }> = {
     describer: {
-      pending: schedulerPending("describer") + undiscoveredSelectedRoots + memberInventories.filter((inventory) =>
+      pending: schedulerPending("describer") + undiscoveredSelectedRoots + runnableMemberInventories.filter((inventory) =>
         !inventory.descriptionOutput && inventory.status !== "describing" && inventory.status !== "ordering"
       ).length,
-      completed: memberInventories.filter((inventory) =>
+      completed: runnableMemberInventories.filter((inventory) =>
         Boolean(inventory.descriptionOutput) && !inventory.descriptionOutput.startsWith("ERROR:")
       ).length,
     },
     planner: {
-      pending: schedulerPending("planner") + memberInventories.filter((inventory) =>
+      pending: schedulerPending("planner") + runnableMemberInventories.filter((inventory) =>
         Boolean(inventory.descriptionOutput)
         && inventory.things.length > 0
         && !hasVisualizedPlan(inventory)
         && inventory.status !== "ordering"
       ).length,
-      completed: memberInventories.filter((inventory) => Boolean(inventory.orderOutput)).length,
+      completed: runnableMemberInventories.filter((inventory) => Boolean(inventory.orderOutput)).length,
     },
     outliner: {
-      pending: schedulerPending("outliner") + memberInventories.reduce((count, inventory) => {
+      pending: schedulerPending("outliner") + runnableMemberInventories.reduce((count, inventory) => {
         if (!hasVisualizedPlan(inventory)) return count;
         return count + inventory.things.filter((thing) =>
           !thing.outputImages?.length
@@ -4677,16 +5112,16 @@ export function VideoImportPage({
           && retryReady(thing.outlineRetryAfter)
         ).length;
       }, 0),
-      completed: memberInventories.reduce((count, inventory) =>
+      completed: runnableMemberInventories.reduce((count, inventory) =>
         count + inventory.things.filter(hasAlignedOutline).length, 0),
     },
     extractor: {
-      pending: schedulerPending("extractor") + memberInventories.filter((inventory) => {
+      pending: schedulerPending("extractor") + runnableMemberInventories.filter((inventory) => {
         if (!hasVisualizedPlan(inventory) || !inventoryOutlinesReady(inventory)) return false;
         const next = nextUnextractedThing(inventory)?.thing;
         return Boolean(next && next.status !== "extracting" && retryReady(next.retryAfter));
       }).length,
-      completed: memberInventories.reduce((count, inventory) =>
+      completed: runnableMemberInventories.reduce((count, inventory) =>
         count + inventory.things.filter((thing) => Boolean(thing.outputImages?.length)).length, 0),
     },
     turtle: {
@@ -4811,6 +5246,39 @@ export function VideoImportPage({
   const recursiveGalleryDepths = [...new Set([0, ...memberInventories.map((inventory) => inventory.depth || 0), ...members.map((member) => member.depth || 0)])].sort((left, right) => left - right);
   const visibleAltImageZoom = pinnedAltImageZoom || altImageZoom;
   const activeImageContext = visibleAltImageZoom || pinnedImageContext || hoverImageContext;
+  // A child object outline carries its own scoped payload. When present, its popup
+  // shows ONLY the parent image name, this object's own description, and its
+  // relations to other objects — never the parent image's full pipeline context.
+  const activeOutlineObject = activeImageContext?.outline?.object;
+  const renderOutlineObjectSections = (info: OutlineObjectInfo) => {
+    const rel = info.relationships;
+    const relationCount = rel.touching.length + rel.occludedBy.length + rel.occludes.length + rel.containedBy.length + rel.contains.length;
+    return (
+      <>
+        <section>
+          <strong>PART OF IMAGE</strong>
+          <p>{info.parentImageName}</p>
+        </section>
+        <section>
+          <strong>THIS OBJECT{info.countIndex && info.countTotal ? ` · ${info.countIndex} of ${info.countTotal}` : ""}</strong>
+          <p>{info.description || "This object has no description yet."}</p>
+          {info.visibility && info.visibility !== "visible" && <p><em>{info.visibility.replace("_", " ")}{info.hiddenReason ? ` · ${info.hiddenReason}` : ""}</em></p>}
+        </section>
+        <section>
+          <strong>RELATIONS TO ADJACENT OBJECTS · {relationCount}</strong>
+          {relationCount ? (
+            <ul className="video-import-outline-object-relations">
+              {rel.touching.map((r, i) => <li key={`touch:${i}`}>Touches <b>{r.object || "?"}</b>{r.contact ? ` — ${r.contact}` : ""}</li>)}
+              {rel.occludedBy.map((r, i) => <li key={`occby:${i}`}>Occluded by <b>{r.object || "?"}</b>{r.region ? ` — ${r.region}` : ""}</li>)}
+              {rel.occludes.map((r, i) => <li key={`occ:${i}`}>Occludes <b>{r.object || "?"}</b>{r.region ? ` — ${r.region}` : ""}</li>)}
+              {rel.containedBy.map((r, i) => <li key={`inside:${i}`}>Inside <b>{r.object || "?"}</b>{r.evidence ? ` — ${r.evidence}` : ""}</li>)}
+              {rel.contains.map((r, i) => <li key={`contains:${i}`}>Contains <b>{r.object || "?"}</b>{r.evidence ? ` — ${r.evidence}` : ""}</li>)}
+            </ul>
+          ) : <p>No touching, occlusion, or containment relations were declared for this object.</p>}
+        </section>
+      </>
+    );
+  };
   const activeImageMember = activeImageContext
     ? members.find((member) => member.cutout === activeImageContext.imagePath || member.nextPassImage === activeImageContext.imagePath)
     : undefined;
@@ -4878,7 +5346,7 @@ export function VideoImportPage({
 
   // ---- render -----------------------------------------------------------------------
   return (
-    <section className="resource-view video-import-page vi2" onClickCapture={handleImageContextClick} onPointerMove={handleImageZoomPointer} onPointerLeave={() => { hoveredImageRef.current = null; setAltImageZoom(null); setHoverImageContext(null); }}>
+    <section className="resource-view video-import-page vi2" data-subview={activeSubview} onClickCapture={handleImageContextClick} onPointerMove={handleImageZoomPointer} onPointerLeave={() => { hoveredImageRef.current = null; setAltImageZoom(null); setHoverImageContext(null); }}>
       <div className="resource-heading">
         <div>
           <span>KNOWLEDGE INTAKE · GENERATION 2</span>
@@ -4886,6 +5354,11 @@ export function VideoImportPage({
           <p>Rebuilt from its own build prompt (see the help tab appendix): import → timeline → the preview stack for building filter chains → probes and entity strips → materialize. Every gallery collapses, every step interrupts.</p>
         </div>
       </div>
+      <nav className="video-import-human-nav" aria-label="Video Import steps">
+        {VIDEO_IMPORT_SUBVIEWS.map((entry) => (
+          <button key={entry.id} type="button" className={activeSubview === entry.id ? "is-active" : ""} aria-current={activeSubview === entry.id ? "page" : undefined} onClick={() => selectSubview(entry.id)}>{entry.label}</button>
+        ))}
+      </nav>
 
       <div className="video-import-activity" role="status" aria-live="polite">
         <div className="video-import-activity-controls">
@@ -4911,50 +5384,31 @@ export function VideoImportPage({
           <button title="Forget the saved state — next load starts clean" onClick={forgetState}>⟲ forget</button>
         </div>
         <div className="video-import-activity-lower">
-          <div className="video-import-activity-lines" ref={logLinesRef}>
+          <div className="video-import-activity-lines">
             {log.map((line, index) => (
               <span key={`${line.at}-${index}`} className={index === log.length - 1 ? "is-current" : ""}><code>{line.at}</code> {line.text}</span>
             ))}
           </div>
           <button className="video-import-stop" disabled={!busy && !anyBackgroundJobRunning} onClick={stopEverything}>■ Stop</button>
         </div>
-        {downloadJob && (
-          <div
-            className="video-import-progress video-import-import-progress"
-            role="progressbar"
-            aria-label="import progress"
-            aria-valuenow={Math.round(downloadJob.percent)}
-            aria-valuemin={0}
-            aria-valuemax={100}
-          >
-            <div className="video-import-progress-track">
-              <div className="video-import-progress-fill" style={{ width: `${downloadJob.state === "done" ? 100 : downloadJob.percent}%` }} />
-            </div>
-            <small>
-              {downloadJob.state === "error"
-                ? `✗ importing ${downloadJob.tool} ${downloadJob.source} failed: ${downloadJob.error}`
-                : `${downloadJob.state === "done" ? "Imported" : "Importing"} ${downloadJob.tool} ${downloadJob.source}${downloadJob.title && downloadJob.title !== downloadJob.source ? ` (${downloadJob.title})` : ""} — ${downloadJob.state === "finalizing" ? "finalizing…" : downloadJob.state === "done" ? "done" : `${Math.round(downloadJob.percent)}%`}${downloadJob.totalBytes ? ` · ${formatBytes(downloadJob.downloadedBytes)}/${formatBytes(downloadJob.totalBytes)}` : downloadJob.downloadedBytes ? ` · ${formatBytes(downloadJob.downloadedBytes)}` : ""}${downloadJob.etaSeconds != null && downloadJob.state === "running" ? ` · ETA ${seconds(downloadJob.etaSeconds)}` : ""}`}
-            </small>
-          </div>
-        )}
+      </div>
+      {error && <div className="backend-error"><b>Video import error</b><span>{error}</span></div>}
+      {visibleJobs.length > 0 && <section className="video-import-media-job-queue">
+        <header><b>MEDIA JOB QUEUE</b><small>{visibleJobs.filter((visibleJob) => visibleJob.state === "running").length} active · {visibleJobs.length} visible</small></header>
         {visibleJobs.map((visibleJob) => {
           const progress = jobProgress(visibleJob);
-          const eta = visibleJob.etaSeconds != null && Number.isFinite(visibleJob.etaSeconds)
-            ? ` · ETA ${seconds(visibleJob.etaSeconds)}`
-            : "";
           return (
-            <div key={`${visibleJob.kind}:${visibleJob.id}`} className="video-import-progress video-import-import-progress" role="progressbar" aria-label={`${visibleJob.kind} progress`} aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
+            <div key={`${visibleJob.kind}:${visibleJob.id}`} className="video-import-progress" role="progressbar" aria-label={`${visibleJob.kind} progress`} aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
               <div className="video-import-progress-track"><div className="video-import-progress-fill" style={{ width: `${visibleJob.state === "done" ? 100 : progress}%` }} /></div>
               <small>
-                {visibleJob.state === "running" && `${jobToolLabel(visibleJob.kind)} · ${videoLabel} — ${visibleJob.kind} ${visibleJob.done}/${visibleJob.total} · ${progress}%${eta}`}
-                {visibleJob.state === "done" && `${jobToolLabel(visibleJob.kind)} · ${videoLabel} — ${visibleJob.kind} done in ${visibleJob.elapsedSeconds}s${visibleJob.interrupted ? " (interrupted)" : ""}`}
-                {visibleJob.state === "error" && `✗ ${visibleJob.kind} failed: ${visibleJob.error}`}
+                {visibleJob.state === "running" && `${visibleJob.kind}: ${visibleJob.done}/${visibleJob.total} · ETA ${visibleJob.etaSeconds}s`}
+                {visibleJob.state === "done" && `${visibleJob.kind} done in ${visibleJob.elapsedSeconds}s${visibleJob.interrupted ? " (interrupted)" : ""}`}
+                {visibleJob.state === "error" && `${visibleJob.kind} failed: ${visibleJob.error}`}
               </small>
             </div>
           );
         })}
-      </div>
-      {error && <div className="backend-error"><b>Video import error</b><span>{error}</span></div>}
+      </section>}
 
       <Section {...section("intake", "INTAKE", `${videos.length} video(s) in the library`)}>
         <div className="vi2-body">
@@ -5496,6 +5950,7 @@ export function VideoImportPage({
         </Section>
       )}
 
+      {(activeSubview === "objects" || activeSubview === "finish") && (
       <div className="video-import-scene-object-workspace">
       <div className="video-import-recursive-automation" role="toolbar" aria-label="Recursive extraction automation">
         <div className="video-import-llm-global-row">
@@ -5609,6 +6064,8 @@ export function VideoImportPage({
           <button className="primary" disabled={busy || !isRunnableVisionModel(effectiveDescriberModel) || !memberInputPaths.size} onClick={() => void describeMemberScenes()}>Call LLM · Describe selected input images</button>
           <button type="button" className={recursiveAutomation.advanceLevels ? "is-on" : ""} aria-pressed={recursiveAutomation.advanceLevels} onClick={() => toggleRecursiveAutomation("advanceLevels")}>Next recursion levels {recursiveAutomation.advanceLevels ? "ON" : "OFF"}</button>
           <button type="button" className={recursiveAutomation.enlargeSubobjects ? "is-on" : ""} aria-pressed={recursiveAutomation.enlargeSubobjects} onClick={() => toggleRecursiveAutomation("enlargeSubobjects")}>Enlarge subobjects {recursiveAutomation.enlargeSubobjects ? "ON" : "OFF"}</button>
+          <button type="button" className={recursiveAutomation.pilotFirst ? "is-on" : ""} aria-pressed={recursiveAutomation.pilotFirst} onClick={() => toggleRecursiveAutomation("pilotFirst")} title={`Run the first ${PILOT_FIRST_IMAGE_COUNT} selected input images through the whole pipeline before starting the rest`}>Pilot first {PILOT_FIRST_IMAGE_COUNT} images {recursiveAutomation.pilotFirst ? "ON" : "OFF"}</button>
+          {pilotGateClosed && <small className="video-import-planner-jump-status">Pilot pass: finishing {pilotInputPaths.length} image(s) before the other {orderedSelectedInputPaths.length - pilotInputPaths.length} start</small>}
           <button type="button" disabled={!selectedRecursiveInventory} onClick={() => selectedRecursiveInventory && revealRecursiveOutput(selectedRecursiveInventory.id, "members", "recursive-output")}>↓ Planner output</button>
           {selectedRecursiveInventory && <small className="video-import-planner-jump-status">{selectedRecursiveInventory.subjectName}: {selectedRecursiveInventory.orderOutput ? "Planner output ready" : selectedRecursiveInventory.orderError ? `Planner retrying · ${selectedRecursiveInventory.orderError}` : selectedRecursiveInventory.descriptionOutput ? "Planner queued" : "waiting for Describer output"}</small>}
         </div>
@@ -5634,19 +6091,26 @@ export function VideoImportPage({
             <label>Extracted Images source
               <ColoredTagCombobox
                 value={selectedFrameSourceId}
-                ids={imageSourceIds}
-                ariaLabel="Extracted images source"
+                ids={frameSourceOptionIds}
+                ariaLabel="Extracted Images source"
                 allowNone
                 noneLabel="Choose an image source…"
-                describe={describeImageSource}
-                disabled={!frameSources.length && !curatedSources.length}
+                describe={describeFrameSource}
                 onChange={selectExtractedImageSource}
+                disabled={!frameSources.length && !curatedSources.length && !arcRecordings.length}
               />
             </label>
           </header>
           <div className="video-import-workflow-galleries">
             <WorkflowGalleryPanel title={`EXTRACTED IMAGES · ${frames.length}`} open={!collapsedLeftGalleries.extractedImages} onOpenChange={(open) => setLeftGalleryOpen("extractedImages", open)} onClear={clearExtractedFrames}>
-              <div className="video-import-workflow-gallery-images">{frames.map((frame) => <WorkflowGalleryItem key={frame.path} src={asset(frame.path)} alt={`extracted image ${frame.index}`} caption={`frame #${frame.index}`} selected={memberInputPaths.has(frame.path)} onSelectedChange={(selected) => setMemberInputPaths((current) => { const next = new Set(current); if (selected) next.add(frame.path); else next.delete(frame.path); return next; })} />)}</div>
+              {frames.length > 0 && (
+                <div className="video-import-workflow-gallery-actions">
+                  <button type="button" disabled={frames.every((frame) => memberInputPaths.has(frame.path))} onClick={() => setMemberInputPaths((current) => { const next = new Set(current); frames.forEach((frame) => next.add(frame.path)); return next; })}>Select all</button>
+                  <button type="button" disabled={!frames.some((frame) => memberInputPaths.has(frame.path))} onClick={() => setMemberInputPaths((current) => { const next = new Set(current); frames.forEach((frame) => next.delete(frame.path)); return next; })}>Deselect all</button>
+                  <span>{frames.filter((frame) => memberInputPaths.has(frame.path)).length} of {frames.length} selected</span>
+                </div>
+              )}
+              <div className="video-import-workflow-gallery-images">{frames.map((frame) => <WorkflowGalleryItem key={frame.path} src={asset(frame.path)} alt={`extracted image ${frame.index}`} caption={frame.moveNumber !== undefined ? `move #${frame.moveNumber}` : `frame #${frame.index}`} selected={memberInputPaths.has(frame.path)} onSelectedChange={(selected) => setMemberInputPaths((current) => { const next = new Set(current); if (selected) next.add(frame.path); else next.delete(frame.path); return next; })} />)}</div>
               {!frames.length && <small>Extracted Frame Gallery images appear here.</small>}
             </WorkflowGalleryPanel>
             <WorkflowGalleryPanel title={`SELECTED IMAGES · ${memberInputPaths.size}`} open={!collapsedLeftGalleries.selectedImages} onOpenChange={(open) => setLeftGalleryOpen("selectedImages", open)} onClear={clearSelectedImages}>
@@ -5658,7 +6122,24 @@ export function VideoImportPage({
               const levelBackgrounds = memberInventories
                 .filter((inventory) => (inventory.depth || 0) === depth && memberScenes[inventory.id])
                 .map((inventory) => ({ inventory, path: memberScenes[inventory.id] }));
+              const levelOutlines = memberInventories
+                .filter((inventory) => (inventory.depth || 0) === depth)
+                .flatMap((inventory) => inventory.things
+                  .filter((thing) => thing.outlineImage && thing.outlineDimensions?.width && thing.outlineDimensions?.height && ((thing.outlinePolygons?.length || 0) > 0 || thing.outlineBox?.length === 4))
+                  .map((thing) => ({ inventory, thing })));
               return [
+                <WorkflowGalleryPanel key={`outlines:${depth}`} title={`LEVEL ${depth} · OBJECT OUTLINES · ${levelOutlines.length} · ${levelOutlines.filter(({ thing }) => hasAlignedOutline(thing)).length} ✓ · ${levelOutlines.filter(({ thing }) => Boolean(thing.outlineError)).length} ✗ · ${levelOutlines.filter(({ thing }) => !hasAlignedOutline(thing) && !thing.outlineError).length} ?`} open={!collapsedLeftGalleries[`outlines:${depth}`]} onOpenChange={(open) => setLeftGalleryOpen(`outlines:${depth}`, open)} onClear={() => clearRecursiveOutlines(depth)}>
+                  <div className="video-import-workflow-gallery-images video-import-outline-gallery-images">{levelOutlines.map(({ inventory, thing }, index) => {
+                    const status: "accepted" | "rejected" | "pending" = hasAlignedOutline(thing) ? "accepted" : thing.outlineError ? "rejected" : "pending";
+                    return (
+                      <figure key={`${inventory.id}:${thing.name}:${index}`} className={`video-import-outline-figure is-${status}`} title={thing.outlineError || `${thing.name} · ${status}`}>
+                        <OutlineOverlay imageSrc={asset(thing.outlineImage!)} width={thing.outlineDimensions!.width} height={thing.outlineDimensions!.height} polygons={thing.outlinePolygons} holes={thing.outlineHoles} box={thing.outlineBox} status={status} alt={`${thing.name} · ${status}`} object={buildOutlineObjectInfo(inventory, thing)} interactive />
+                        <figcaption>{thing.name}</figcaption>
+                      </figure>
+                    );
+                  })}</div>
+                  {!levelOutlines.length && <small>Outliner geometry drawn on each source image appears here.</small>}
+                </WorkflowGalleryPanel>,
                 <WorkflowGalleryPanel key={`objects:${depth}`} title={`LEVEL ${depth} · EXTRACTED OBJECTS · ${levelMembers.length}`} open={!collapsedLeftGalleries[`objects:${depth}`]} onOpenChange={(open) => setLeftGalleryOpen(`objects:${depth}`, open)} onClear={() => clearRecursiveLevel(depth)}>
                   <div className="video-import-workflow-gallery-images">{levelMembers.map((member) => <WorkflowGalleryItem key={`${member.inventoryId}:${member.cutout}`} src={asset(member.cutout)} alt={member.name} caption={member.name} selected={selectedWorkflowGalleryPaths.has(member.cutout)} onSelectedChange={(selected) => selectWorkflowGalleryPath(member.cutout, selected)} />)}</div>
                   {!levelMembers.length && <small>No extracted objects at this level yet.</small>}
@@ -5805,6 +6286,18 @@ export function VideoImportPage({
                         {inventory.orderOutput && formatDetectedJson(inventory.orderOutput).detected && <details><summary>Raw ordering output</summary><pre>{inventory.orderOutput}</pre></details>}
                       </details>
                       {inventory.extractionOrder?.length ? <p>Planned extraction order: {inventory.extractionOrder.join(" → ")}</p> : null}
+                      {inventory.parallelGroups?.length ? (
+                        <div className="video-import-parallel-groups">
+                          <p>Parallel groups (each group can be worked on together; earlier groups removed first):</p>
+                          <ol>
+                            {inventory.parallelGroups.map((group, groupIndex) => (
+                              <li key={`pgroup:${groupIndex}`}>
+                                <b>Group {groupIndex + 1}</b> ({group.length} in parallel): {group.join(", ")}
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
+                      ) : null}
                       {inventory.plannerTouching?.length ? <p>Touching: {inventory.plannerTouching.map((relation) => `${relation.objects[0]} ↔ ${relation.objects[1]}${relation.contact ? ` (${relation.contact})` : ""}`).join("; ")}</p> : inventory.orderOutput ? <p>Touching: none declared.</p> : null}
                       {inventory.plannerOcclusions?.length ? <p>Occlusions: {inventory.plannerOcclusions.map((relation) => `${relation.occluder} → ${relation.occluded}${relation.region ? ` (${relation.region})` : ""}`).join("; ")}</p> : inventory.orderOutput ? <p>Occlusions: none declared.</p> : null}
                       {inventory.plannerContainments?.length ? <p>Containments: {inventory.plannerContainments.map((relation) => `${relation.container} contains ${relation.contained}${relation.evidence ? ` (${relation.evidence})` : ""}`).join("; ")}</p> : inventory.orderOutput ? <p>Containments: none declared.</p> : null}
@@ -5820,6 +6313,24 @@ export function VideoImportPage({
                           <p>{thing.description}</p>
                           {thing.outlinePrompt && <details><summary>Exact Outliner prompt</summary><pre>{thing.outlinePrompt}</pre></details>}
                           {thing.outlineOutput && <details open><summary>Exact Outliner output</summary><pre>{formatDetectedJson(thing.outlineOutput).text}</pre></details>}
+                          {thing.outlineImage && thing.outlineDimensions?.width && thing.outlineDimensions?.height && ((thing.outlinePolygons?.length || 0) > 0 || thing.outlineBox?.length === 4) && (
+                            <div className="video-import-verification-gallery">
+                              <figure>
+                                <OutlineOverlay
+                                  imageSrc={asset(thing.outlineImage)}
+                                  width={thing.outlineDimensions.width}
+                                  height={thing.outlineDimensions.height}
+                                  polygons={thing.outlinePolygons}
+                                  holes={thing.outlineHoles}
+                                  box={thing.outlineBox}
+                                  status={hasAlignedOutline(thing) ? "accepted" : thing.outlineError ? "rejected" : "pending"}
+                                  alt={`${thing.name} outline on original`}
+                                  interactive
+                                />
+                                <figcaption>{hasAlignedOutline(thing) ? "OUTLINER ON ORIGINAL · ACCEPTED" : thing.outlineError ? "OUTLINER ON ORIGINAL · REJECTED" : "OUTLINER ON ORIGINAL · NOT CHECKED"}</figcaption>
+                              </figure>
+                            </div>
+                          )}
                           {thing.outlineVerificationImage && <div className="video-import-verification-gallery"><figure><img src={asset(thing.outlineVerificationImage)} alt={`${thing.name} verified outline trace`} loading="lazy" /><figcaption>VERIFIED TRACE · agreement {Math.round((thing.outlineTraceAgreement || 0) * 100)}% · boundary {Math.round((thing.outlineBoundaryCoverage || 0) * 100)}%</figcaption></figure></div>}
                           {thing.outlineError && <small>{thing.outlineError}</small>}
                         </details>
@@ -5832,7 +6343,7 @@ export function VideoImportPage({
                         <details className={`video-import-member-call is-${thing.status}`} key={`${thing.name}:${thingIndex}`}>
                           <summary><b>{thingIndex + 1}. {thing.name}</b><em>{thing.status.replace("_", " ")}</em></summary>
                           <p>{thing.description}</p>
-                          <details><summary>Planner-selected next-object data</summary><pre>{JSON.stringify({ name: thing.name, description: thing.description, plannerPosition: (inventory.extractionOrder?.indexOf(thing.name) ?? -1) + 1, plannerTotal: inventory.extractionOrder?.length || inventory.things.length, relationships: plannerRelationshipsForThing(inventory, thing.name) }, null, 2)}</pre></details>
+                          <details><summary>Planner-selected next-object data</summary><pre>{JSON.stringify({ name: thing.name, description: thing.description, plannerPosition: (inventory.extractionOrder?.indexOf(thing.name) ?? -1) + 1, plannerTotal: inventory.extractionOrder?.length || inventory.things.length, parallelGroup: ((inventory.parallelGroups || []).findIndex((group) => group.includes(thing.name)) + 1) || undefined, parallelGroupCount: inventory.parallelGroups?.length || undefined, relationships: plannerRelationshipsForThing(inventory, thing.name) }, null, 2)}</pre></details>
                           {thing.extractionAttempts?.map((attempt, attemptIndex) => (
                             <details key={`${attempt.route}:${attempt.inputImage}:${attemptIndex}`}>
                               <summary>{attempt.route.replaceAll("_", " ")} · {(attempt.promptSource || "legacy prompt").replaceAll("_", " ")} · {attempt.status.replaceAll("_", " ")}</summary>
@@ -5849,6 +6360,46 @@ export function VideoImportPage({
                   </article>
                 ))}
               </div>
+              {orderedMemberInventories.some((inventory) => inventory.things.some((thing) => thing.outlineImage && thing.outlineDimensions?.width && thing.outlineDimensions?.height && ((thing.outlinePolygons?.length || 0) > 0 || thing.outlineBox?.length === 4))) && (
+                <section className="video-import-extracted-object-strips video-import-outline-on-original-strips">
+                  <header><b>OUTLINER OUTPUT ON ORIGINAL IMAGES</b><small>Outline drawn on each source image · ✓ accepted · ✗ rejected · ? not checked yet</small></header>
+                  <div className="video-import-member-strips" role="list">
+                    {orderedMemberInventories
+                      .map((inventory) => ({
+                        inventory,
+                        outlined: inventory.things.filter((thing) => thing.outlineImage && thing.outlineDimensions?.width && thing.outlineDimensions?.height && ((thing.outlinePolygons?.length || 0) > 0 || thing.outlineBox?.length === 4)),
+                      }))
+                      .filter(({ outlined }) => outlined.length > 0)
+                      .map(({ inventory, outlined }) => (
+                        <div key={`outline-strip:${inventory.id}`} className="video-import-member-strip" role="listitem">
+                          <header>
+                            <b>{inventory.subjectName || `input image · frame #${inventory.frameIndex}`}</b>
+                            <small>depth {inventory.depth || 0} · {outlined.filter(hasAlignedOutline).length} ✓ · {outlined.filter((thing) => Boolean(thing.outlineError)).length} ✗ · {outlined.filter((thing) => !hasAlignedOutline(thing) && !thing.outlineError).length} ?</small>
+                          </header>
+                          {outlined.map((thing, thingIndex) => {
+                            const status: "accepted" | "rejected" | "pending" = hasAlignedOutline(thing) ? "accepted" : thing.outlineError ? "rejected" : "pending";
+                            return (
+                              <article key={`${thing.name}:${thingIndex}`} className={`video-import-member is-${status}`}>
+                                <OutlineOverlay
+                                  imageSrc={asset(thing.outlineImage!)}
+                                  width={thing.outlineDimensions!.width}
+                                  height={thing.outlineDimensions!.height}
+                                  polygons={thing.outlinePolygons}
+                                  holes={thing.outlineHoles}
+                                  box={thing.outlineBox}
+                                  status={status}
+                                  alt={`${thing.name} outline on original`}
+                                  interactive
+                                />
+                                <header><b>{thing.name}</b><small>{status === "accepted" ? "accepted" : status === "rejected" ? "rejected" : "not checked"}</small></header>
+                              </article>
+                            );
+                          })}
+                        </div>
+                      ))}
+                  </div>
+                </section>
+              )}
               {members.length > 0 && (
                 <section className="video-import-extracted-object-strips">
                   <header><b>VERTICAL STRIPS OF EXTRACTED OBJECTS</b><small>One strip per input image; each card retains its recursive depth and parent inventory.</small></header>
@@ -5910,6 +6461,8 @@ export function VideoImportPage({
         </Section>
       )}
       </div>
+      )}
+      {activeSubview === "advanced" && (
       <Section {...section("config", "JSON CONFIG", `the page's exact state as editable JSON${configDraft === null ? " · live" : configValid ? " · editing (applies live)" : " · INVALID JSON — keep typing"}`,
         <>
           <button disabled={busy || configDraft === null} title="Force-apply now and resume tracking the live config" onClick={applyConfigDraft}>⏎ Apply</button>
@@ -5949,6 +6502,7 @@ export function VideoImportPage({
           />
         </div>
       </Section>
+      )}
       {visibleAltImageZoom && (
         <div
           className={`video-import-alt-image-zoom${pinnedAltImageZoom ? " is-pinned" : ""}`}
@@ -5956,11 +6510,26 @@ export function VideoImportPage({
           aria-hidden={pinnedAltImageZoom ? undefined : "true"}
         >
           <div className="video-import-alt-image-zoom-image" style={{ width: visibleAltImageZoom.width, height: visibleAltImageZoom.height }}>
-            <img src={visibleAltImageZoom.src} alt={visibleAltImageZoom.alt} />
+            {visibleAltImageZoom.outline ? (
+              <OutlineOverlay
+                imageSrc={visibleAltImageZoom.outline.imageSrc}
+                width={visibleAltImageZoom.outline.width}
+                height={visibleAltImageZoom.outline.height}
+                polygons={visibleAltImageZoom.outline.polygons}
+                holes={visibleAltImageZoom.outline.holes}
+                box={visibleAltImageZoom.outline.box}
+                status={visibleAltImageZoom.outline.status}
+                alt={visibleAltImageZoom.alt}
+              />
+            ) : (
+              <img src={visibleAltImageZoom.src} alt={visibleAltImageZoom.alt} />
+            )}
             <span>ALT · {visibleAltImageZoom.scale.toFixed(1)}×</span>
           </div>
           <aside>
-            <header><b>{activeImageInventory?.subjectName || activeImageMember?.name || visibleAltImageZoom.alt || "IMAGE"}</b><small>{visibleAltImageZoom.imagePath || "No filesystem image path"}</small>{pinnedAltImageZoom && <button type="button" onClick={() => setPinnedAltImageZoom(null)}>× Close</button>}</header>
+            <header><b>{activeOutlineObject ? activeOutlineObject.name : (activeImageInventory?.subjectName || activeImageMember?.name || visibleAltImageZoom.alt || "IMAGE")}</b><small>{visibleAltImageZoom.imagePath || "No filesystem image path"}</small>{pinnedAltImageZoom && <button type="button" onClick={() => setPinnedAltImageZoom(null)}>× Close</button>}</header>
+            {activeOutlineObject ? renderOutlineObjectSections(activeOutlineObject) : (
+            <>
             <section>
               <strong>PARENT OBJECT DESCRIPTION</strong>
               <p>{activeImageParentDescription || "This image has no parent extraction-object description."}</p>
@@ -5980,18 +6549,24 @@ export function VideoImportPage({
             </section>
             {activeImageProvenancePath && <section><strong>PROVENANCE JSON · {activeImageProvenancePath}</strong><pre>{activeImageProvenance ? JSON.stringify(activeImageProvenance, null, 2) : "Loading provenance…"}</pre></section>}
             {activeTurtleArtifact && <section><strong>TURTLE GEN · {activeTurtleArtifact.status}</strong><pre>{formatDetectedJson(activeTurtleArtifact.rawProgram || activeTurtleArtifact.error || "Generating…").text}</pre>{activeTurtleArtifact.pngProgram && <><strong>TURTLE PNG DRAW PROGRAM</strong><pre>{formatDetectedJson(activeTurtleArtifact.pngProgram).text}</pre></>}{activeTurtleArtifact.renderedImage && <figure><img src={asset(activeTurtleArtifact.renderedImage)} alt={`${activeTurtleArtifact.subjectName} Turtle render`} /><figcaption>TERMINAL TURTLE RENDER · {activeTurtleArtifact.renderedImage}</figcaption></figure>}</section>}
+            </>
+            )}
           </aside>
         </div>
       )}
       {(pinnedImageContext || hoverImageContext) && !visibleAltImageZoom && (
         <aside className={`video-import-image-hover-context${pinnedImageContext ? " is-pinned" : ""}`} style={{ left: (pinnedImageContext || hoverImageContext)!.x, top: (pinnedImageContext || hoverImageContext)!.y }} aria-hidden={pinnedImageContext ? undefined : "true"}>
-          <header><b>IMAGE CONTEXT</b><small>{activeImageInventory?.subjectName || activeImageMember?.name || (pinnedImageContext || hoverImageContext)!.alt || "image"}</small>{pinnedImageContext && <button type="button" onClick={() => setPinnedImageContext(null)}>× Close</button>}</header>
+          <header><b>{activeOutlineObject ? "OBJECT CONTEXT" : "IMAGE CONTEXT"}</b><small>{activeOutlineObject ? activeOutlineObject.name : (activeImageInventory?.subjectName || activeImageMember?.name || (pinnedImageContext || hoverImageContext)!.alt || "image")}</small>{pinnedImageContext && <button type="button" onClick={() => setPinnedImageContext(null)}>× Close</button>}</header>
+          {activeOutlineObject ? renderOutlineObjectSections(activeOutlineObject) : (
+          <>
           <section><strong>PARENT OBJECT DESCRIPTION</strong><p>{activeImageParentDescription || "No parent extraction-object description."}</p></section>
           <section><strong>LAST IMAGE DESCRIBER OUTPUT</strong><pre>{formatDetectedJson(activeImageDescriberOutput || "The Describer has not analyzed this image yet.").text}</pre></section>
           <section><strong>PLANNER · {activeImagePlannerStatus}</strong><pre>{activeImagePlannerOutput ? formatDetectedJson(activeImagePlannerOutput).text : activeImagePlannerStatus}</pre></section>
           <section><strong>OUTLINER · {activeImageOutlinerOutputs.length} OBJECT(S)</strong><pre>{activeImageOutlinerOutputs.length ? JSON.stringify(activeImageOutlinerOutputs, null, 2) : "No one-object outlines yet."}</pre></section>
           {activeImageProvenancePath && <section><strong>PROVENANCE JSON · {activeImageProvenancePath}</strong><pre>{activeImageProvenance ? JSON.stringify(activeImageProvenance, null, 2) : "Loading provenance…"}</pre></section>}
           {activeTurtleArtifact && <section><strong>TURTLE GEN · {activeTurtleArtifact.status}</strong><pre>{formatDetectedJson(activeTurtleArtifact.rawProgram || activeTurtleArtifact.error || "Generating…").text}</pre>{activeTurtleArtifact.pngProgram && <><strong>TURTLE PNG DRAW PROGRAM</strong><pre>{formatDetectedJson(activeTurtleArtifact.pngProgram).text}</pre></>}{activeTurtleArtifact.renderedImage && <img className="video-import-hover-turtle-render" src={asset(activeTurtleArtifact.renderedImage)} alt={`${activeTurtleArtifact.subjectName} Turtle render`} />}</section>}
+          </>
+          )}
         </aside>
       )}
     </section>
