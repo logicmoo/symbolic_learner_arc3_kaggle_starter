@@ -86,6 +86,8 @@ _CURATED_DATA_EXCLUDES = {"videoimports", "recordings", "importables"}
 
 # Running/finished frame-extraction jobs, polled for the progress bar.
 _extract_jobs: dict[str, dict[str, Any]] = {}
+# Running/finished download (import) jobs, polled for the import progress bar.
+_download_jobs: dict[str, dict[str, Any]] = {}
 _video_meta_locks: dict[Path, threading.Lock] = {}
 _video_meta_locks_guard = threading.Lock()
 _MEDIAMTX_IMAGE = "bluenviron/mediamtx:1.20.1"
@@ -904,6 +906,21 @@ def download_video(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
         except Exception as error:  # noqa: BLE001 - reported to the caller
             shutil.rmtree(staging, ignore_errors=True)
             raise HTTPException(status_code=400, detail=f"download failed: {error}") from error
+    try:
+        return _finalize_download(root, container, staging, info, url, requested_name)
+    except FileNotFoundError as error:
+        raise HTTPException(status_code=500, detail=str(error)) from error
+
+
+def _finalize_download(
+    root: Path,
+    container: Path,
+    staging: Path,
+    info: dict[str, Any],
+    url: str,
+    requested_name: str,
+) -> dict[str, Any]:
+    """Move a completed download out of staging and record its metadata."""
     title = requested_name or str(info.get("title") or "video")
     directory = container / _slug(title)
     if directory.exists():
@@ -914,7 +931,7 @@ def download_video(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
         None,
     )
     if video_file is None:
-        raise HTTPException(status_code=500, detail="download completed but produced no video file")
+        raise FileNotFoundError("download completed but produced no video file")
     if not info.get("duration"):
         info["duration"] = _probe_duration_seconds(video_file)
     (directory / "video.json").write_text(
@@ -940,6 +957,177 @@ def download_video(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
         "downloadedAt": _utc_now(),
     })
     return result
+
+
+def _download_worker(
+    job_id: str,
+    workspace_id: str,
+    url: str,
+    requested_name: str,
+    quality: str,
+    tool: str,
+) -> None:
+    """Run one import in the background, reporting progress into _download_jobs."""
+    job = _download_jobs[job_id]
+    staging: Path | None = None
+    try:
+        root = _workspace_root(workspace_id)
+        container = _imports_root(root)
+        container.mkdir(parents=True, exist_ok=True)
+        staging = container / f"dl_{uuid.uuid4().hex[:8]}"
+        staging.mkdir(parents=True, exist_ok=True)
+        info: dict[str, Any] = {}
+        if tool == "python-direct":
+            import urllib.request  # noqa: PLC0415
+
+            suffix = Path(url.split("?")[0]).suffix.lower()
+            if suffix not in _VIDEO_SUFFIXES:
+                suffix = ".mp4"
+            target = staging / f"video{suffix}"
+            request_obj = urllib.request.Request(url, headers={"User-Agent": "workbench-video-import/1.0"})
+            with urllib.request.urlopen(request_obj, timeout=60) as response, target.open("wb") as sink:
+                total_header = response.headers.get("Content-Length")
+                total = int(total_header) if total_header and total_header.isdigit() else None
+                job.update({"totalBytes": total, "message": "downloading…"})
+                downloaded = 0
+                chunk = 1024 * 256
+                while True:
+                    if job.get("cancel"):
+                        raise RuntimeError("cancelled")
+                    block = response.read(chunk)
+                    if not block:
+                        break
+                    sink.write(block)
+                    downloaded += len(block)
+                    percent = round(downloaded / total * 100, 1) if total else job.get("percent", 0.0)
+                    job.update({
+                        "downloadedBytes": downloaded,
+                        "percent": percent,
+                        "message": f"downloading {job.get('title') or 'video'}…",
+                    })
+            info = {"title": requested_name or Path(url.split("?")[0]).stem or "video"}
+        else:
+            import yt_dlp  # noqa: PLC0415
+
+            formats = {
+                "480p": "mp4[height<=480]/best[height<=480]/mp4/best",
+                "720p": "mp4[height<=720]/best[height<=720]/mp4/best",
+                "1080p": "mp4[height<=1080]/best[height<=1080]/mp4/best",
+                "best": "mp4/best",
+            }
+
+            def hook(status: dict[str, Any]) -> None:
+                if job.get("cancel"):
+                    raise RuntimeError("cancelled")
+                state = status.get("status")
+                if state == "downloading":
+                    total = status.get("total_bytes") or status.get("total_bytes_estimate")
+                    done = status.get("downloaded_bytes") or 0
+                    title = ((status.get("info_dict") or {}).get("title")) or job.get("title")
+                    percent = round(done / total * 100, 1) if total else job.get("percent", 0.0)
+                    update = {
+                        "downloadedBytes": done,
+                        "totalBytes": total,
+                        "percent": percent,
+                        "speedBytesPerSecond": status.get("speed"),
+                        "etaSeconds": status.get("eta"),
+                        "message": f"downloading {title or 'video'}…",
+                    }
+                    if title:
+                        update["title"] = title
+                    job.update(update)
+                elif state == "finished":
+                    job.update({"percent": 100.0, "message": "processing download…"})
+
+            options = {
+                "outtmpl": str(staging / "video.%(ext)s"),
+                "format": formats.get(quality, formats["480p"]),
+                "noplaylist": True,
+                "quiet": True,
+                "no_warnings": True,
+                "progress_hooks": [hook],
+            }
+            with yt_dlp.YoutubeDL(options) as downloader:
+                info = downloader.extract_info(url, download=True)
+        job.update({"state": "finalizing", "message": "finalizing import…"})
+        result = _finalize_download(root, container, staging, info, url, requested_name)
+        job.update({
+            "state": "done",
+            "percent": 100.0,
+            "path": result["path"],
+            "title": result["title"],
+            "duration": result.get("duration"),
+            "message": f"imported {result['title']}",
+        })
+    except Exception as error:  # noqa: BLE001 - surfaced via the job record
+        if staging is not None:
+            shutil.rmtree(staging, ignore_errors=True)
+        job.update({"state": "error", "error": str(error), "message": f"import failed: {error}"})
+
+
+@router.post("/download/start")
+def download_start(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    """Begin a background import of one URL and return a job id to poll.
+
+    Progress (percent, bytes, title, ETA) is reported through
+    ``GET /download/status`` so the client can show an import progress bar and
+    name what it is importing."""
+    workspace_id = str(body.get("workspaceId") or "")
+    url = str(body.get("url") or "").strip()
+    requested_name = str(body.get("name") or "").strip()
+    quality = str(body.get("quality") or "480p")
+    tool = str(body.get("tool") or "yt-dlp")
+    if not workspace_id or not url:
+        raise HTTPException(status_code=400, detail="workspaceId and url are required")
+    if not url.startswith(("http://", "https://")):
+        raise HTTPException(status_code=400, detail="url must be http(s)")
+    if tool != "python-direct":
+        try:
+            import yt_dlp  # noqa: F401, PLC0415
+        except ImportError as error:
+            raise HTTPException(status_code=500, detail="yt-dlp is not installed in the server environment") from error
+    job_id = uuid.uuid4().hex[:12]
+    _download_jobs[job_id] = {
+        "id": job_id,
+        "state": "running",
+        "percent": 0.0,
+        "downloadedBytes": 0,
+        "totalBytes": None,
+        "speedBytesPerSecond": None,
+        "etaSeconds": None,
+        "title": requested_name or url,
+        "tool": tool,
+        "quality": quality,
+        "message": "starting import…",
+        "path": None,
+        "duration": None,
+        "error": None,
+    }
+    threading.Thread(
+        target=_download_worker,
+        args=(job_id, workspace_id, url, requested_name, quality, tool),
+        name=f"video-download-{job_id}",
+        daemon=True,
+    ).start()
+    return {"jobId": job_id, "title": requested_name or url}
+
+
+@router.get("/download/status")
+def download_status(jobId: str) -> dict[str, Any]:
+    job = _download_jobs.get(jobId)
+    if job is None:
+        raise HTTPException(status_code=404, detail=f"unknown download job: {jobId}")
+    return job
+
+
+@router.post("/download/cancel")
+def download_cancel(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    job_id = str(body.get("jobId") or "")
+    job = _download_jobs.get(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail=f"unknown download job: {job_id}")
+    job["cancel"] = True
+    return {"jobId": job_id, "cancelling": True}
 
 
 def _probe_duration_seconds(video_path: Path) -> float | None:

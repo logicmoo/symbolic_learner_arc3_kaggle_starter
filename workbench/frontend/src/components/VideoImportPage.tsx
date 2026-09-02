@@ -943,6 +943,28 @@ const seconds = (value?: number | null) => {
   return total >= 60 ? `${Math.floor(total / 60)}m${String(total % 60).padStart(2, "0")}s` : `${total}s`;
 };
 
+const formatBytes = (value?: number | null) => {
+  if (!value || !Number.isFinite(value) || value <= 0) return "?";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let size = value;
+  let unit = 0;
+  while (size >= 1024 && unit < units.length - 1) { size /= 1024; unit += 1; }
+  return `${size >= 10 || unit === 0 ? Math.round(size) : size.toFixed(1)}${units[unit]}`;
+};
+
+type ImportJobState = {
+  state: string;
+  percent: number;
+  title: string;
+  message: string;
+  tool: string;
+  source: string;
+  downloadedBytes: number;
+  totalBytes: number | null;
+  etaSeconds: number | null;
+  error: string | null;
+};
+
 function PipeFork({ fork, title, value, disabled, onChange }: {
   fork: keyof PipeForkSelections;
   title: string;
@@ -1243,6 +1265,7 @@ export function VideoImportPage({
   }, []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [downloadJob, setDownloadJob] = useState<ImportJobState | null>(null);
   const run = async (label: string, work: () => Promise<string | void>) => {
     if (activeRunsRef.current === 0) stopRef.current = false;
     activeRunsRef.current += 1;
@@ -1446,12 +1469,71 @@ export function VideoImportPage({
       const raw = (value ?? source).trim();
       if (!raw) return "nothing to import";
       const isUrl = /^https?:\/\//i.test(raw);
-      const payload = await api(isUrl ? "download" : "import-file", isUrl
-        ? { workspaceId, url: raw, name: nameDraft.trim() || undefined, quality: quality === "python-direct" ? undefined : quality, tool: quality === "python-direct" ? "python-direct" : "yt-dlp" }
-        : { workspaceId, path: raw, name: nameDraft.trim() || undefined });
+      if (isUrl) {
+        const tool = quality === "python-direct" ? "python-direct" : "yt-dlp";
+        const started = await api("download/start", {
+          workspaceId,
+          url: raw,
+          name: nameDraft.trim() || undefined,
+          quality: quality === "python-direct" ? undefined : quality,
+          tool,
+        });
+        const final = await pollDownload(String(started.jobId), String(started.title || nameDraft.trim() || raw), tool, raw);
+        setSource(""); setNameDraft("");
+        await loadVideos(final.path);
+        return `imported: ${final.title}`;
+      }
+      const payload = await api("import-file", { workspaceId, path: raw, name: nameDraft.trim() || undefined });
       setSource(""); setNameDraft("");
       await loadVideos(String(payload.path || ""));
       return `imported: ${payload.title}`;
+    });
+  const pollDownload = (jobId: string, initialTitle: string, tool: string, sourceRef: string) =>
+    new Promise<{ path: string; title: string }>((resolve, reject) => {
+      setDownloadJob({
+        state: "running", percent: 0, title: initialTitle, message: "starting import…",
+        tool, source: sourceRef,
+        downloadedBytes: 0, totalBytes: null, etaSeconds: null, error: null,
+      });
+      const tick = async () => {
+        if (stopRef.current) {
+          void api("download/cancel", { jobId }).catch(() => undefined);
+          setDownloadJob(null);
+          reject(new Error("stopped"));
+          return;
+        }
+        let payload: Record<string, any>;
+        try {
+          payload = await api(`download/status?jobId=${encodeURIComponent(jobId)}`);
+        } catch (reason) {
+          reject(reason instanceof Error ? reason : new Error(String(reason)));
+          return;
+        }
+        const next: ImportJobState = {
+          state: String(payload.state || "running"),
+          percent: Number(payload.percent || 0),
+          title: String(payload.title || initialTitle),
+          message: String(payload.message || ""),
+          tool,
+          source: sourceRef,
+          downloadedBytes: Number(payload.downloadedBytes || 0),
+          totalBytes: payload.totalBytes == null ? null : Number(payload.totalBytes),
+          etaSeconds: payload.etaSeconds == null ? null : Number(payload.etaSeconds),
+          error: payload.error == null ? null : String(payload.error),
+        };
+        setDownloadJob(next);
+        const progressLabel = next.state === "finalizing" ? "finalizing" : `${Math.round(next.percent)}%`;
+        if (next.state === "running" || next.state === "finalizing") {
+          say(`Importing ${next.tool} ${next.source} — ${progressLabel}`);
+          window.setTimeout(() => void tick(), 700);
+        } else if (next.state === "done") {
+          window.setTimeout(() => setDownloadJob(null), 2000);
+          resolve({ path: String(payload.path || ""), title: next.title });
+        } else {
+          reject(new Error(next.error || "import failed"));
+        }
+      };
+      void tick();
     });
   const upload = (file: File | null) => {
     if (!file) return;
@@ -4790,6 +4872,25 @@ export function VideoImportPage({
           </div>
           <button className="video-import-stop" disabled={!busy && !anyBackgroundJobRunning} onClick={stopEverything}>■ Stop</button>
         </div>
+        {downloadJob && (
+          <div
+            className="video-import-progress video-import-import-progress"
+            role="progressbar"
+            aria-label="import progress"
+            aria-valuenow={Math.round(downloadJob.percent)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          >
+            <div className="video-import-progress-track">
+              <div className="video-import-progress-fill" style={{ width: `${downloadJob.state === "done" ? 100 : downloadJob.percent}%` }} />
+            </div>
+            <small>
+              {downloadJob.state === "error"
+                ? `✗ importing ${downloadJob.tool} ${downloadJob.source} failed: ${downloadJob.error}`
+                : `${downloadJob.state === "done" ? "Imported" : "Importing"} ${downloadJob.tool} ${downloadJob.source}${downloadJob.title && downloadJob.title !== downloadJob.source ? ` (${downloadJob.title})` : ""} — ${downloadJob.state === "finalizing" ? "finalizing…" : downloadJob.state === "done" ? "done" : `${Math.round(downloadJob.percent)}%`}${downloadJob.totalBytes ? ` · ${formatBytes(downloadJob.downloadedBytes)}/${formatBytes(downloadJob.totalBytes)}` : downloadJob.downloadedBytes ? ` · ${formatBytes(downloadJob.downloadedBytes)}` : ""}${downloadJob.etaSeconds != null && downloadJob.state === "running" ? ` · ETA ${seconds(downloadJob.etaSeconds)}` : ""}`}
+            </small>
+          </div>
+        )}
       </div>
       {error && <div className="backend-error"><b>Video import error</b><span>{error}</span></div>}
       {visibleJobs.length > 0 && <section className="video-import-media-job-queue">
