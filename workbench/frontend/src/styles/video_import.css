@@ -992,6 +992,14 @@
 .video-import-next-step.tone-retry { color: #ffc561; border-color: #7a5a1f; background: rgba(210, 150, 40, 0.12); }
 .video-import-next-step.tone-error { color: #ff7a7a; border-color: #7a2f2f; background: rgba(210, 60, 60, 0.12); }
 .video-import-next-step.tone-done { color: #7fe0a8; border-color: #2f7a54; background: rgba(60, 200, 130, 0.12); }
+.video-import-next-step.tone-lost {
+  color: #fff; border-color: #b3324a; background: #7a132b;
+  animation: video-import-lost-pulse 1.1s ease-in-out infinite;
+}
+@keyframes video-import-lost-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(230, 60, 90, 0.55); }
+  50% { box-shadow: 0 0 7px 2px rgba(230, 60, 90, 0.85); }
+}
 .video-import-member-run > header .video-import-next-step { grid-column: 1 / -1; grid-row: 3; justify-self: start; margin-top: 2px; }
 .video-import-member-run summary .video-import-next-step { float: right; margin-left: 6px; }
 .video-import-member-run > section { display: grid; gap: 6px; padding: 10px; }

@@ -350,7 +350,7 @@ const hasVisualizedPlan = (inventory: MemberInventory) => Boolean(
 );
 
 // Per-object "what does it need next" indicator, derived from live state.
-type PipelineNext = { label: string; tone: "done" | "active" | "retry" | "wait" | "error" };
+type PipelineNext = { label: string; tone: "done" | "active" | "retry" | "wait" | "error" | "lost" };
 
 const API = "/workbench/video-import";
 const streamSlug = (value: string) =>
@@ -2923,17 +2923,26 @@ export function VideoImportPage({
   }, [llmCallConcurrency, totalLlmConcurrency, workersHeld]);
   const retryReady = (retryAfter?: number) => !retryAfter || retryAfter <= retryClock;
   // What each object needs next (Describe/Plan/Outline/Extract/Turtle/Done),
-  // derived from the current draft + resolved state so it is always live.
-  const describeThingNext = (thing: MemberInventoryThing): PipelineNext => {
+  // derived from the current draft + resolved state so it is always live. A
+  // transient status ("outlining"/"extracting"/"ordering") whose id is NOT held
+  // in the matching busy-ref means the worker gave up/died and nobody owns it =
+  // LOST (the heartbeat will reclaim it on the next tick; the badge flips back).
+  const describeThingNext = (inventory: MemberInventory, thingIndex: number): PipelineNext => {
+    const thing = inventory.things[thingIndex];
+    if (!thing) return { label: "—", tone: "wait" };
     if (thing.outputImages?.length) return { label: "Done", tone: "done" };
     if (!hasAlignedOutline(thing)) {
-      if (thing.status === "outlining") return { label: "Outlining", tone: "active" };
+      if (thing.status === "outlining") return outlinerBusyRef.current.has(`${inventory.id}:${thingIndex}`)
+        ? { label: "Outlining", tone: "active" }
+        : { label: "Outline · LOST", tone: "lost" };
       if (thing.outlineError) return retryReady(thing.outlineRetryAfter)
         ? { label: "Outline · retry", tone: "retry" }
         : { label: "Outline · cooling", tone: "error" };
       return { label: "Outline", tone: "wait" };
     }
-    if (thing.status === "extracting") return { label: "Extracting", tone: "active" };
+    if (thing.status === "extracting") return extractorBusyRef.current.has(inventory.id)
+      ? { label: "Extracting", tone: "active" }
+      : { label: "Extract · LOST", tone: "lost" };
     if (thing.status === "failed" || thing.status === "not_found") return retryReady(thing.retryAfter)
       ? { label: "Extract · retry", tone: "retry" }
       : { label: "Extract · cooling", tone: "error" };
@@ -2949,7 +2958,9 @@ export function VideoImportPage({
     }
     if (!inventory.things.length) return { label: "Leaf → Turtle", tone: "done" };
     if (!hasVisualizedPlan(inventory)) {
-      if (inventory.status === "ordering") return { label: "Planning", tone: "active" };
+      if (inventory.status === "ordering") return plannerBusyRef.current.has(inventory.id)
+        ? { label: "Planning", tone: "active" }
+        : { label: "Plan · LOST", tone: "lost" };
       if (inventory.status === "failed") return retryReady(inventory.retryAfter)
         ? { label: "Plan · retry", tone: "retry" }
         : { label: "Plan · cooling", tone: "error" };
@@ -2957,6 +2968,10 @@ export function VideoImportPage({
     }
     const pending = inventory.things.filter((thing) => !thing.outputImages?.length);
     if (!pending.length) return { label: "Done", tone: "done" };
+    // Surface a LOST child object at the inventory level too, so a stranded item
+    // is visible without expanding the inventory.
+    const lost = inventory.things.some((thing, index) => !thing.outputImages?.length && describeThingNext(inventory, index).tone === "lost");
+    if (lost) return { label: "Object · LOST", tone: "lost" };
     const needOutline = pending.filter((thing) => !hasAlignedOutline(thing)).length;
     if (needOutline > 0) return { label: `Outline ${needOutline}`, tone: pending.some((thing) => thing.status === "outlining") ? "active" : "wait" };
     return { label: `Extract ${pending.length}`, tone: pending.some((thing) => thing.status === "extracting") ? "active" : "wait" };
@@ -3901,6 +3916,54 @@ export function VideoImportPage({
   const plannerBusyRef = useRef(new Set<string>());
   const outlinerBusyRef = useRef(new Set<string>());
   const extractorBusyRef = useRef(new Set<string>());
+  // Monitor: compare the "flagged in-progress" status against the live job
+  // wrappers (busy-refs). Any item in a transient status that no wrapper owns —
+  // its job already ended without reaching a terminal state (a worker died, or a
+  // stale write resurrected the status) — is the discrepancy. We log it so it can
+  // be found out, then reset it to a re-queueable status so it re-enters the
+  // counted pipeline and is completed.
+  const reconcileStrandedJobs = () => {
+    const strays: string[] = [];
+    for (const inventory of memberInventories) {
+      if (inventory.status === "ordering" && !hasVisualizedPlan(inventory) && !plannerBusyRef.current.has(inventory.id)) {
+        strays.push(`planner·${inventory.subjectName || inventory.id}`);
+      }
+      inventory.things.forEach((thing, index) => {
+        if (!thing.outputImages?.length && thing.status === "outlining" && !hasAlignedOutline(thing)
+          && !outlinerBusyRef.current.has(`${inventory.id}:${index}`)) {
+          strays.push(`outliner·${thing.name}`);
+        }
+        if (!thing.outputImages?.length && thing.status === "extracting"
+          && !extractorBusyRef.current.has(inventory.id)) {
+          strays.push(`extractor·${thing.name}`);
+        }
+      });
+    }
+    if (!strays.length) return;
+    say(`⟳ reclaimed ${strays.length} stranded job(s) — flagged in-progress but no worker owned them: ${strays.slice(0, 6).join(", ")}${strays.length > 6 ? "…" : ""}`);
+    setMemberInventories((current) => current.map((inventory) => {
+      let inv = inventory;
+      if (inv.status === "ordering" && !hasVisualizedPlan(inv) && !plannerBusyRef.current.has(inv.id)) {
+        inv = { ...inv, status: "done" };
+      }
+      let thingsChanged = false;
+      const things = inv.things.map((thing, index) => {
+        if (!thing.outputImages?.length && thing.status === "outlining" && !hasAlignedOutline(thing)
+          && !outlinerBusyRef.current.has(`${inv.id}:${index}`)) {
+          thingsChanged = true;
+          return { ...thing, status: "listed" as const };
+        }
+        if (!thing.outputImages?.length && thing.status === "extracting"
+          && !extractorBusyRef.current.has(inv.id)) {
+          thingsChanged = true;
+          return { ...thing, status: (hasAlignedOutline(thing) ? "outlined" : "listed") as MemberInventoryThing["status"] };
+        }
+        return thing;
+      });
+      if (thingsChanged) inv = { ...inv, things };
+      return inv;
+    }));
+  };
   const planRecursiveInventory = async (inventory: MemberInventory, force = false): Promise<MemberInventory | null> => {
     if (!inventory.things.length) return { ...inventory, status: "done" };
     if (!force && hasVisualizedPlan(inventory)) return inventory;
@@ -5239,6 +5302,10 @@ export function VideoImportPage({
   };
   useEffect(() => {
     if (!restoredRef.current || workersHeld) return;
+    // Monitor pass: reclaim any item stranded in a transient status with no
+    // backing wrapper, so the discrepancy between "flagged in-progress" and
+    // "actually being processed" is found and corrected every scheduler tick.
+    reconcileStrandedJobs();
     const selectedRootsNeedDescription = frames.some((frame) => {
      if (!memberInputPaths.has(frame.path)) return false;
      if (!isInputPathActive(frame.path)) return false;
@@ -6700,7 +6767,7 @@ export function VideoImportPage({
                       {!inventory.things.length && <small>No planned objects to outline.</small>}
                       {inventory.things.map((thing, thingIndex) => (
                         <details className={`video-import-member-call is-${thing.status}`} key={`outline:${thing.name}:${thingIndex}`} open={thing.status === "outlining"}>
-                          <summary><b>{(inventory.extractionOrder?.indexOf(thing.name) ?? thingIndex) + 1}. {thing.name}</b><em>{thing.outlineOutput ? "outlined" : thing.outlineError ? "retrying" : "waiting"}</em>{(() => { const next = describeThingNext(thing); return <em className={`video-import-next-step tone-${next.tone}`}>NEXT · {next.label}</em>; })()}</summary>
+                          <summary><b>{(inventory.extractionOrder?.indexOf(thing.name) ?? thingIndex) + 1}. {thing.name}</b><em>{thing.outlineOutput ? "outlined" : thing.outlineError ? "retrying" : "waiting"}</em>{(() => { const next = describeThingNext(inventory, thingIndex); return <em className={`video-import-next-step tone-${next.tone}`}>NEXT · {next.label}</em>; })()}</summary>
                           <p>{thing.description}</p>
                           {thing.outlinePrompt && <details><summary>Exact Outliner prompt</summary><pre>{thing.outlinePrompt}</pre></details>}
                           {thing.outlineOutput && <details open><summary>Exact Outliner output</summary><pre>{formatDetectedJson(thing.outlineOutput).text}</pre></details>}
@@ -6732,7 +6799,7 @@ export function VideoImportPage({
                       {!inventory.things.length && <small>No extractable things listed.</small>}
                       {inventory.things.map((thing, thingIndex) => (
                         <details className={`video-import-member-call is-${thing.status}`} key={`${thing.name}:${thingIndex}`}>
-                          <summary><b>{thingIndex + 1}. {thing.name}</b><em>{thing.status.replace("_", " ")}</em>{(() => { const next = describeThingNext(thing); return <em className={`video-import-next-step tone-${next.tone}`}>NEXT · {next.label}</em>; })()}</summary>
+                          <summary><b>{thingIndex + 1}. {thing.name}</b><em>{thing.status.replace("_", " ")}</em>{(() => { const next = describeThingNext(inventory, thingIndex); return <em className={`video-import-next-step tone-${next.tone}`}>NEXT · {next.label}</em>; })()}</summary>
                           <p>{thing.description}</p>
                           <details><summary>Planner-selected next-object data</summary><pre>{JSON.stringify({ name: thing.name, description: thing.description, plannerPosition: (inventory.extractionOrder?.indexOf(thing.name) ?? -1) + 1, plannerTotal: inventory.extractionOrder?.length || inventory.things.length, parallelGroup: ((inventory.parallelGroups || []).findIndex((group) => group.includes(thing.name)) + 1) || undefined, parallelGroupCount: inventory.parallelGroups?.length || undefined, relationships: plannerRelationshipsForThing(inventory, thing.name) }, null, 2)}</pre></details>
                           {thing.extractionAttempts?.map((attempt, attemptIndex) => (
