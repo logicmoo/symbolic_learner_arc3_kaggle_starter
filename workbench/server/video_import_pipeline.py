@@ -595,6 +595,24 @@ _runs: dict[str, PipelineRun] = {}
 _runs_guard = threading.Lock()
 
 
+class _Active:
+    """Thread-safe in-flight counter written into a stage's counts dict so the run
+    snapshot (and the websocket) reflects real-time PROCESSING/ACTIVE WORKERS."""
+
+    def __init__(self, counts: dict[str, int]) -> None:
+        self._counts = counts
+        self._lock = threading.Lock()
+
+    def __enter__(self) -> "_Active":
+        with self._lock:
+            self._counts["active"] = self._counts.get("active", 0) + 1
+        return self
+
+    def __exit__(self, *_exc: Any) -> None:
+        with self._lock:
+            self._counts["active"] = max(0, self._counts.get("active", 0) - 1)
+
+
 def get_run(workspace_id: str) -> PipelineRun | None:
     with _runs_guard:
         return _runs.get(workspace_id)
@@ -662,9 +680,12 @@ def run_describe(
         f"{_ts()} describe start · {len(frames)} image(s) · model {model_id} · "
         f"goal {goal} · concurrency {concurrency}"
     )
+    counts["stage"] = "describe"
     counts["total"] = len(frames)
     counts["done"] = 0
     counts["failed"] = 0
+    counts["active"] = 0
+    active = _Active(counts)
 
     subject_context = (
         "This is a root input image. Describe the scene and list its top-level "
@@ -705,7 +726,8 @@ def run_describe(
             )
             return
         try:
-            raw = invoke_model(root, model_id, prompt, image, 120)
+            with active:
+                raw = invoke_model(root, model_id, prompt, image, 120)
         except Exception as error:  # noqa: BLE001 - report provider failures
             counts["failed"] = counts.get("failed", 0) + 1
             emit(f"{_ts()} ✗ describe #{index} failed: {error}")
@@ -844,9 +866,12 @@ def run_outline(
 
     concurrency = _stage_concurrency(state, "outliner", concurrency_override, 2)
     scenes = dict(state.get("memberScenes") or {})
+    counts["stage"] = "outline"
     counts["total"] = len(candidates)
     counts["done"] = 0
     counts["failed"] = 0
+    counts["active"] = 0
+    active = _Active(counts)
     emit(f"{_ts()} outline start · {len(candidates)} object(s) · model {model_id} · concurrency {concurrency}")
 
     def outline_one(pair: tuple[dict[str, Any], dict[str, Any]]) -> None:
@@ -890,7 +915,8 @@ def run_outline(
         })
         image = image_to_data_url(root, scene_path)
         try:
-            raw = invoke_model(root, model_id, prompt, image, 120).strip()
+            with active:
+                raw = invoke_model(root, model_id, prompt, image, 120).strip()
         except Exception as error:  # noqa: BLE001
             counts["failed"] += 1
             emit(f"{_ts()} ✗ outline {name}: {error}")
@@ -1025,9 +1051,12 @@ def run_extract(
     scenes = dict(state.get("memberScenes") or {})
     concurrency = _stage_concurrency(state, "extractor", concurrency_override, 2)
     total_objects = sum(len([t for t in inv.get("things") or [] if not t.get("outputImages")]) for inv in ready)
+    counts["stage"] = "extract"
     counts["total"] = total_objects
     counts["done"] = 0
     counts["failed"] = 0
+    counts["active"] = 0
+    active = _Active(counts)
     emit(f"{_ts()} extract start · {len(ready)} scene(s), {total_objects} object(s) · model {model_id} · concurrency {concurrency}")
     step_lock = threading.Lock()
     step_counter = {"n": int(state.get("memberStep") or 0)}
@@ -1062,7 +1091,8 @@ def run_extract(
                 prompt = render_extractor_prompt(template, description, thing, position, len(by_name))
                 image = image_to_data_url(root, scene_path)
                 try:
-                    raw = invoke_model(root, model_id, prompt, image, 120).strip()
+                    with active:
+                        raw = invoke_model(root, model_id, prompt, image, 120).strip()
                 except Exception as error:  # noqa: BLE001
                     counts["failed"] += 1
                     emit(f"{_ts()} ✗ extract {name}: {error}")
@@ -1165,29 +1195,30 @@ def run_full(
     run_describe(workspace_id, counts=counts, **common)
     if stop_event is not None and stop_event.is_set():
         return "stopped after describe"
+    total_outlined = 0
+    total_extracted = 0
     # Outline + extract advance group-by-group; loop until a whole round makes no
     # progress (no new outlines AND no new extractions), which also breaks out of
-    # a persistently-failing outline instead of looping forever.
+    # a persistently-failing outline instead of looping forever. The shared counts
+    # dict is passed to each sub-stage so the websocket shows live current-stage
+    # stats (stage/active/done/failed/total).
     for round_index in range(1, 41):
         if stop_event is not None and stop_event.is_set():
             return f"stopped during round {round_index}"
         emit(f"{_ts()} === full pipeline: outline (round {round_index}) ===")
-        outline_counts: dict[str, int] = {}
-        run_outline(workspace_id, counts=outline_counts, **common)
+        run_outline(workspace_id, counts=counts, **common)
+        outlined_this = counts.get("done", 0)
+        total_outlined += outlined_this
         if stop_event is not None and stop_event.is_set():
             return f"stopped during outline round {round_index}"
         emit(f"{_ts()} === full pipeline: extract (round {round_index}) ===")
-        extract_counts: dict[str, int] = {}
-        run_extract(workspace_id, counts=extract_counts, **common)
-        counts["outlined"] = counts.get("outlined", 0) + outline_counts.get("done", 0)
-        counts["extracted"] = counts.get("extracted", 0) + extract_counts.get("done", 0)
-        if outline_counts.get("done", 0) == 0 and extract_counts.get("done", 0) == 0:
+        run_extract(workspace_id, counts=counts, **common)
+        extracted_this = counts.get("done", 0)
+        total_extracted += extracted_this
+        if outlined_this == 0 and extracted_this == 0:
             emit(f"{_ts()} no further progress after round {round_index} — stopping")
             break
-    summary = (
-        f"full pipeline complete: {counts.get('outlined', 0)} outlined, "
-        f"{counts.get('extracted', 0)} extracted"
-    )
+    summary = f"full pipeline complete: {total_outlined} outlined, {total_extracted} extracted"
     emit(f"{_ts()} {summary}")
     return summary
 

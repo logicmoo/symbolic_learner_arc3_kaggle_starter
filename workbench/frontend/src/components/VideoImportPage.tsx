@@ -3483,10 +3483,12 @@ export function VideoImportPage({
   const pipelineLogSeenRef = useRef(0);
   const pipelineSocketRef = useRef<WebSocket | null>(null);
   const [pipelineRunStatus, setPipelineRunStatus] = useState<string>("idle");
+  const [pipelineCounts, setPipelineCounts] = useState<Record<string, any>>({});
   const applyPipelineStatus = useCallback((snap: Record<string, any>) => {
     const status = String(snap.status || "idle");
     const running = status === "running";
     setPipelineRunStatus(status);
+    setPipelineCounts(snap.counts && typeof snap.counts === "object" ? snap.counts : {});
     const lines: string[] = Array.isArray(snap.log) ? snap.log.map((line: unknown) => String(line)) : [];
     if (lines.length < pipelineLogSeenRef.current) pipelineLogSeenRef.current = 0;
     for (let i = pipelineLogSeenRef.current; i < lines.length; i += 1) {
@@ -3498,7 +3500,8 @@ export function VideoImportPage({
     return running;
   }, [say]);
   useEffect(() => {
-    if (!restoredRef.current) return;
+    // The status/command channel is independent of page-state restore — start it
+    // on mount (do NOT gate on restoredRef, whose flip doesn't re-run this effect).
     let cancelled = false;
     let timer: number | undefined;
     let socket: WebSocket | null = null;
@@ -3689,6 +3692,20 @@ export function VideoImportPage({
       await api("pipeline/stop", { workspaceId });
       say("■ requested server pipeline stop");
     } catch { /* best effort */ }
+  };
+  // Start a single server-side stage (describe/outline/extract) over the websocket
+  // (falls back to HTTP). The existing per-stage "Call LLM" buttons use this so a
+  // button click is a server interaction.
+  const startServerStage = (stage: string) => {
+    pipelineLogSeenRef.current = 0;
+    const socket = pipelineSocketRef.current;
+    const payload = { cmd: "start", workspaceId, stage, onlySelected: true };
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      try { socket.send(JSON.stringify(payload)); say(`▶ server ${stage}`); return; } catch { /* fall through */ }
+    }
+    void api("pipeline/start", { workspaceId, stage, onlySelected: true })
+      .then(() => say(`▶ server ${stage}`))
+      .catch((reason) => say(`✗ could not start server ${stage}: ${reason instanceof Error ? reason.message : String(reason)}`));
   };
   // JSON CONFIG editor draft: null = tracking the live config. Edits apply to
   // the flow LIVE as soon as the JSON parses (debounced).
@@ -6705,25 +6722,36 @@ export function VideoImportPage({
             const progress = llmStageProgress[type];
             const completed = Math.max(progress.completed, metric.completed);
             const averageMs = metric.completed ? metric.totalDurationMs / metric.completed : 0;
+            // When a server-side run owns this stage, its live counts (pushed over
+            // the websocket) drive the stat row instead of the (disabled) client
+            // scheduler.
+            const serverStageFor: Record<string, string> = { describer: "describe", outliner: "outline", extractor: "extract" };
+            const serverActive = pipelineRunStatus === "running" && pipelineCounts.stage === serverStageFor[type];
+            const sProcessing = serverActive ? Number(pipelineCounts.active || 0) : llmSchedulerRef.current.byType[type];
+            const sCompleted = serverActive ? Number(pipelineCounts.done || 0) : completed;
+            const sErrors = serverActive ? Number(pipelineCounts.failed || 0) : progress.errors;
+            const sPending = serverActive
+              ? Math.max(0, Number(pipelineCounts.total || 0) - Number(pipelineCounts.done || 0) - Number(pipelineCounts.failed || 0) - Number(pipelineCounts.active || 0))
+              : progress.pending;
             return (
             <div className="video-import-llm-call-row" key={type}>
               <button
                 type="button"
-                className={`${enabled ? "is-on" : ""}${llmSchedulerRef.current.byType[type] ? " has-workers" : ""}`}
+                className={`${enabled ? "is-on" : ""}${sProcessing ? " has-workers" : ""}`}
                 aria-pressed={enabled}
                 onClick={() => toggleRecursiveAutomation(type)}
               >
                 <span>{label}</span>
                 <small>{enabled ? "ON" : "OFF"}</small>
-                <em>{llmSchedulerRef.current.byType[type]} ACTIVE WORKER{llmSchedulerRef.current.byType[type] === 1 ? "" : "S"}</em>
+                <em>{sProcessing} ACTIVE WORKER{sProcessing === 1 ? "" : "S"}</em>
               </button>
               <div className="video-import-llm-call-metrics" aria-label={`${label} job metrics`}>
-                <span title="Jobs running right now on a worker for this stage."><b>{llmSchedulerRef.current.byType[type]}</b><small>PROCESSING</small></span>
+                <span title="Jobs running right now on a worker for this stage."><b>{sProcessing}</b><small>PROCESSING</small></span>
                 <span title="Jobs whose dependencies are satisfied right now and are ready to run (awaiting a free worker)."><b>{progress.waiting}</b><small>WAITING</small></span>
-                <span title="Total jobs still left for this stage if every dependency were already satisfied."><b>{progress.pending}</b><small>PENDING</small></span>
+                <span title="Total jobs still left for this stage if every dependency were already satisfied."><b>{sPending}</b><small>PENDING</small></span>
                 <span title="Failed jobs cooling down before their next automatic retry."><b>{progress.retry}</b><small>RETRY</small></span>
-                <span title="Jobs currently in a failed/error state for this stage." className={progress.errors ? "has-errors" : ""}><b>{progress.errors}</b><small>ERRORS</small></span>
-                <span><b>{completed}</b><small>COMPLETED</small></span>
+                <span title="Jobs currently in a failed/error state for this stage." className={sErrors ? "has-errors" : ""}><b>{sErrors}</b><small>ERRORS</small></span>
+                <span><b>{sCompleted}</b><small>COMPLETED</small></span>
                 <span title={metric.completed ? `${Math.round(averageMs)}ms average across ${metric.completed} completed job(s)` : "No completed jobs yet"}><b>{formatJobDuration(averageMs)}</b><small>AVG / JOB</small></span>
               </div>
               <label>max processes
@@ -6782,7 +6810,7 @@ export function VideoImportPage({
               <option value="text">find text/signs</option>
             </select>
           </label>
-          <button className="primary" disabled={busy || !isRunnableVisionModel(effectiveDescriberModel) || !memberInputPaths.size} onClick={() => void describeMemberScenes()}>Call LLM · Describe selected input images</button>
+          <button className="primary" disabled={busy || !isRunnableVisionModel(effectiveDescriberModel) || !memberInputPaths.size} onClick={() => startServerStage("describe")}>Call LLM · Describe selected input images</button>
           <button type="button" className={recursiveAutomation.advanceLevels ? "is-on" : ""} aria-pressed={recursiveAutomation.advanceLevels} onClick={() => toggleRecursiveAutomation("advanceLevels")}>Next recursion levels {recursiveAutomation.advanceLevels ? "ON" : "OFF"}</button>
           <button type="button" className={recursiveAutomation.enlargeSubobjects ? "is-on" : ""} aria-pressed={recursiveAutomation.enlargeSubobjects} onClick={() => toggleRecursiveAutomation("enlargeSubobjects")}>Enlarge subobjects {recursiveAutomation.enlargeSubobjects ? "ON" : "OFF"}</button>
           <button type="button" className={recursiveAutomation.pilotFirst ? "is-on" : ""} aria-pressed={recursiveAutomation.pilotFirst} onClick={() => toggleRecursiveAutomation("pilotFirst")} title={`Run the first ${PILOT_FIRST_IMAGE_COUNT} selected input images through the whole pipeline before starting the rest`}>Pilot first {PILOT_FIRST_IMAGE_COUNT} images {recursiveAutomation.pilotFirst ? "ON" : "OFF"}</button>
@@ -6959,7 +6987,7 @@ export function VideoImportPage({
                   </label>
                 </details>
                 <div className="video-import-member-prompt-actions">
-                  <button disabled={busy || !isRunnableVisionModel(effectiveOutlinerModel) || !memberInventories.some(hasVisualizedPlan)} onClick={() => void runRecursiveOutliner()}>Call LLM · Outliner</button>
+                  <button disabled={busy || !isRunnableVisionModel(effectiveOutlinerModel) || !memberInventories.some(hasVisualizedPlan)} onClick={() => startServerStage("outline")}>Call LLM · Outliner</button>
                 </div>
                 <details className="video-import-member-prompt-disclosure">
                   <summary>EXTRACTOR PROMPT</summary>
@@ -6970,7 +6998,7 @@ export function VideoImportPage({
                   </label>
                 </details>
                 <div className="video-import-member-prompt-actions">
-                  <button className="primary" disabled={busy || !isRunnableVisionModel(effectiveExtractorModel) || !memberInventories.some((inventory) => inventory.things.length)} onClick={() => void runRecursiveExtractor()}>Call LLM · Recursive Extractor</button>
+                  <button className="primary" disabled={busy || !isRunnableVisionModel(effectiveExtractorModel) || !memberInventories.some((inventory) => inventory.things.length)} onClick={() => startServerStage("extract")}>Call LLM · Recursive Extractor</button>
                 </div>
               <div className="video-import-member-runner">
                 <header className="video-import-member-runner-heading">
