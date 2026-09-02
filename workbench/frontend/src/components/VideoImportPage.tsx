@@ -6272,6 +6272,7 @@ export function VideoImportPage({
                 <em>{llmSchedulerRef.current.byType[type]} ACTIVE WORKER{llmSchedulerRef.current.byType[type] === 1 ? "" : "S"}</em>
               </button>
               <div className="video-import-llm-call-metrics" aria-label={`${label} job metrics`}>
+                <span title="Jobs running right now on a worker for this stage."><b>{llmSchedulerRef.current.byType[type]}</b><small>PROCESSING</small></span>
                 <span title="Jobs whose dependencies are satisfied right now and are ready to run (awaiting a free worker)."><b>{progress.waiting}</b><small>WAITING</small></span>
                 <span title="Total jobs still left for this stage if every dependency were already satisfied."><b>{progress.pending}</b><small>PENDING</small></span>
                 <span><b>{completed}</b><small>COMPLETED</small></span>
