@@ -724,6 +724,53 @@ async def save_page_state(request: Request) -> dict[str, Any]:
     return await asyncio.to_thread(_save_page_state_payload, payload)
 
 
+@router.post("/pipeline/start")
+async def pipeline_start(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    """Start the headless scene-object pipeline for a workspace.
+
+    Runs describe -> group -> outline -> extract server-side so the work no
+    longer depends on a browser tab. The page (if open) becomes a status viewer.
+    """
+    workspace_id = str(payload.get("workspaceId") or "")
+    if not workspace_id:
+        raise HTTPException(status_code=400, detail="workspaceId is required")
+    from video_import_pipeline import start_run
+
+    concurrency = payload.get("concurrency")
+    return await asyncio.to_thread(
+        start_run,
+        workspace_id,
+        str(payload.get("stage") or "describe"),
+        model_override=(str(payload["model"]).strip() if payload.get("model") else None),
+        goal_override=(str(payload["goal"]).strip() if payload.get("goal") else None),
+        only_selected=bool(payload.get("onlySelected", True)),
+        concurrency_override=int(concurrency) if concurrency else None,
+    )
+
+
+@router.get("/pipeline/status")
+def pipeline_status(workspaceId: str) -> dict[str, Any]:
+    """Current headless pipeline run status for a workspace."""
+    from video_import_pipeline import get_run
+
+    run = get_run(workspaceId)
+    if not run:
+        return {"workspaceId": workspaceId, "status": "idle"}
+    return run.snapshot()
+
+
+@router.post("/pipeline/stop")
+def pipeline_stop(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    """Request the headless pipeline run for a workspace to stop."""
+    workspace_id = str(payload.get("workspaceId") or "")
+    if not workspace_id:
+        raise HTTPException(status_code=400, detail="workspaceId is required")
+    from video_import_pipeline import stop_run
+
+    return {"workspaceId": workspace_id, "stopping": stop_run(workspace_id)}
+
+
+
 def _compact_page_state(state: dict[str, Any]) -> dict[str, Any]:
     cache = state.get("modelResponseCache")
     if not isinstance(cache, dict):
