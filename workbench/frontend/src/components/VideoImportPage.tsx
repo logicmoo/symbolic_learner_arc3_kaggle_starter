@@ -6346,7 +6346,7 @@ export function VideoImportPage({
                   describe={(id) => id === "workspace"
                     ? { label: `workspace-edited ${type} prompt`, groupKey: "0", groupLabel: "PROMPT", tags: [{ text: "ws", color: "#27dcc2" }] }
                     : { label: `built-in default ${type} prompt`, groupKey: "0", groupLabel: "PROMPT", tags: [{ text: "default", color: "#8aa0aa" }] }}
-                  closedShow={{ label: true }}
+                  closedShow={{ tags: true }}
                   openWidth="26ch"
                   onOpen={() => setExpandedCallPrompt(type)}
                   onChange={(value) => { setPromptSelection(value as PromptSelection); setExpandedCallPrompt(type); }}
@@ -6360,6 +6360,7 @@ export function VideoImportPage({
                   allowNone
                   noneLabel={`<use global${allCallsModel ? ` · ${allCallsModel}` : ""}>`}
                   describe={describeVideoModel}
+                  openWidth="32ch"
                   onOpen={() => setExpandedCallPrompt(type)}
                   onChange={(value) => { touchedRef.current = true; setModel(value); setExpandedCallPrompt(type); }}
                 />
