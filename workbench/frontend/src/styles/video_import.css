@@ -220,10 +220,29 @@
 .video-import-activity-lines {
   width: 100%; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 1px;
   padding-top: 5px; border-top: 1px solid var(--line, #2a3742);
-  height: 96px; min-height: 24px; max-height: 70vh;
-  overflow-y: auto; scroll-behavior: smooth;
-  resize: vertical;
+  min-height: 22px; overflow-y: auto; scroll-behavior: smooth;
 }
+.video-import-activity-lines-wrap { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); }
+.video-import-activity-lines-hidden {
+  padding-top: 5px; border-top: 1px solid var(--line, #2a3742);
+  color: var(--muted, #718494); font-size: 11px; font-style: italic;
+}
+.video-import-status-resizer {
+  height: 7px; margin-top: 1px; cursor: ns-resize;
+  border-top: 1px solid var(--line, #2a3742);
+  background:
+    linear-gradient(var(--panel, #10161d), var(--panel, #10161d)) padding-box,
+    repeating-linear-gradient(90deg, var(--muted, #718494) 0 6px, transparent 6px 12px) center/36px 2px no-repeat;
+}
+.video-import-status-resizer:hover { background-color: var(--line, #2a3742); }
+.video-import-status-modes { display: inline-flex; gap: 0; margin-left: auto; border: 1px solid var(--line, #2a3742); border-radius: 4px; overflow: hidden; }
+.video-import-status-modes button {
+  border: 0; border-left: 1px solid var(--line, #2a3742); background: transparent;
+  color: var(--muted, #8aa); padding: 3px 8px; font-size: 10px; cursor: pointer;
+}
+.video-import-status-modes button:first-child { border-left: 0; }
+.video-import-status-modes button:hover { background: #16232c; color: #cfe0e6; }
+.video-import-status-modes button.is-active { background: #142a31; color: var(--cyan, #27dcc2); }
 .video-import-status-progress { margin-top: 4px; }
 .video-import-status-progress .video-import-progress-track { height: 12px; }
 .video-import-status-progress small { color: inherit; font-size: 11px; }

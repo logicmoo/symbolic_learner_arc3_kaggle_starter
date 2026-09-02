@@ -1631,6 +1631,43 @@ export function VideoImportPage({
     const element = logLinesRef.current;
     if (element) element.scrollTop = element.scrollHeight;
   }, [log]);
+  // STATUS log sizing: Hidden / 3 rows / 20% screen height / custom (mouse drag,
+  // capped at 70% of the viewport). Persisted across reloads.
+  type StatusMode = "hidden" | "rows3" | "screen20" | "custom";
+  const [statusMode, setStatusMode] = useState<StatusMode>(() => {
+    const stored = localStorage.getItem("vi2.statusMode");
+    return stored === "hidden" || stored === "rows3" || stored === "screen20" || stored === "custom" ? stored : "rows3";
+  });
+  const [statusCustomPx, setStatusCustomPx] = useState<number>(() => {
+    const stored = Number(localStorage.getItem("vi2.statusCustomPx"));
+    return Number.isFinite(stored) && stored > 0 ? stored : 140;
+  });
+  useEffect(() => { try { localStorage.setItem("vi2.statusMode", statusMode); } catch { /* quota */ } }, [statusMode]);
+  useEffect(() => { try { localStorage.setItem("vi2.statusCustomPx", String(Math.round(statusCustomPx))); } catch { /* quota */ } }, [statusCustomPx]);
+  const statusDragRef = useRef<{ startY: number; startPx: number } | null>(null);
+  const statusResizeMax = () => Math.round(window.innerHeight * 0.7);
+  const onStatusResizeDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const height = logLinesRef.current?.getBoundingClientRect().height ?? statusCustomPx;
+    statusDragRef.current = { startY: event.clientY, startPx: height };
+    setStatusCustomPx(Math.min(statusResizeMax(), Math.max(24, height)));
+    setStatusMode("custom");
+    try { event.currentTarget.setPointerCapture(event.pointerId); } catch { /* ignore */ }
+    event.preventDefault();
+  };
+  const onStatusResizeMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = statusDragRef.current;
+    if (!drag) return;
+    const next = Math.max(24, Math.min(statusResizeMax(), drag.startPx + (event.clientY - drag.startY)));
+    setStatusCustomPx(next);
+  };
+  const onStatusResizeUp = (event: ReactPointerEvent<HTMLDivElement>) => {
+    statusDragRef.current = null;
+    try { event.currentTarget.releasePointerCapture(event.pointerId); } catch { /* ignore */ }
+  };
+  const statusLinesHeight =
+    statusMode === "rows3" ? "3.4em"
+    : statusMode === "screen20" ? "20vh"
+    : `${Math.min(statusCustomPx, statusResizeMax())}px`;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const run = async (label: string, work: () => Promise<string | void>) => {
@@ -2165,11 +2202,12 @@ export function VideoImportPage({
   };
   const reinitializeWorkflowFromSource = () => {
     if (!selectedFrameSourceId) { say("choose an image source first"); return; }
-    if (!window.confirm("Reinitialize the workflow with this source?\n\nThis clears the object-extraction caches (member inventories, members, scenes, model responses, outputs) and reloads the source images.")) return;
-    // Clear all downstream workflow caches.
+    if (!window.confirm("Reinitialize the workflow with this source?\n\nThis REMOVES all work the LLMs produced so far (member inventories, members, scenes, Turtle artifacts, model responses, outputs) and reloads the source images.")) return;
+    // Clear all LLM-produced work and downstream workflow caches.
     setMembers([]);
     setMemberInventories([]);
     setMemberScenes({});
+    setTurtleArtifacts({});
     setProbes([]);
     setTrail([]);
     setOutput([]);
@@ -2179,7 +2217,7 @@ export function VideoImportPage({
     // (Re)load the images from the selected source, forcing a re-fetch so a
     // source whose cached frame list is empty still repopulates the gallery.
     selectExtractedImageSource(selectedFrameSourceId, true);
-    say(`reinitialized workflow: cleared caches and reloading ${videoLabel} images`);
+    say(`reinitialized workflow: removed all LLM work and reloading ${videoLabel} images`);
   };
   // Option ids for the colored source combobox, in display order. The remembered
   // selection is always kept available so it survives reloads even if its
@@ -5501,13 +5539,33 @@ export function VideoImportPage({
           </label>
           <button title="Copy the exact page state as JSON" disabled={false} onClick={copyStateJson}>⤓ state</button>
           <button title="Forget the saved state — next load starts clean" onClick={forgetState}>⟲ forget</button>
+          <span className="video-import-status-modes" role="group" aria-label="Status log size">
+            <button type="button" className={statusMode === "hidden" ? "is-active" : ""} title="Hide the status log" onClick={() => setStatusMode("hidden")}>Hidden</button>
+            <button type="button" className={statusMode === "rows3" ? "is-active" : ""} title="Show ~3 rows" onClick={() => setStatusMode("rows3")}>3 rows</button>
+            <button type="button" className={statusMode === "screen20" ? "is-active" : ""} title="20% of screen height" onClick={() => setStatusMode("screen20")}>20%</button>
+          </span>
         </div>
         <div className="video-import-activity-lower">
-          <div className="video-import-activity-lines" ref={logLinesRef}>
-            {log.map((line, index) => (
-              <span key={`${line.at}-${index}`} className={index === log.length - 1 ? "is-current" : ""}><code>{line.at}</code> {line.text}</span>
-            ))}
-          </div>
+          {statusMode === "hidden" ? (
+            <div className="video-import-activity-lines-hidden">status log hidden — pick 3 rows / 20% to show it</div>
+          ) : (
+            <div className="video-import-activity-lines-wrap">
+              <div className="video-import-activity-lines" ref={logLinesRef} style={{ height: statusLinesHeight }}>
+                {log.map((line, index) => (
+                  <span key={`${line.at}-${index}`} className={index === log.length - 1 ? "is-current" : ""}><code>{line.at}</code> {line.text}</span>
+                ))}
+              </div>
+              <div
+                className="video-import-status-resizer"
+                role="separator"
+                aria-orientation="horizontal"
+                title="Drag to resize (max 70% of screen)"
+                onPointerDown={onStatusResizeDown}
+                onPointerMove={onStatusResizeMove}
+                onPointerUp={onStatusResizeUp}
+              />
+            </div>
+          )}
           <button className="video-import-stop" disabled={!busy && !anyBackgroundJobRunning} onClick={stopEverything}>■ Stop</button>
         </div>
         {downloadJob && (
