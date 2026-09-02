@@ -479,7 +479,7 @@
 }
 .video-import-llm-global-row,
 .video-import-llm-call-row {
-  display: grid; grid-template-columns: minmax(140px, auto) minmax(250px, 1.3fr) auto minmax(170px, 1fr) minmax(200px, 1fr);
+  display: grid; grid-template-columns: minmax(140px, auto) minmax(250px, 1.3fr) 78px minmax(170px, 1fr) minmax(200px, 1fr);
   align-items: end; gap: 6px;
 }
 .video-import-llm-global-row {
