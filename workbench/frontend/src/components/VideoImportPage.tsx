@@ -3955,7 +3955,11 @@ export function VideoImportPage({
      const inventories = memberInventories.filter((inventory) =>
        inventory.things.length > 0
        && (!onlyMissing || isInventoryActive(inventory))
-       && (!onlyMissing || (!hasVisualizedPlan(inventory) && inventory.status !== "ordering" && (inventory.status !== "failed" || retryReady(inventory.retryAfter))))
+       // "in-progress" is determined by the busy-ref (real in-flight ownership,
+       // always cleared in finally), NOT by the persisted "ordering" status. A
+       // dropped hand-off can strand an inventory in "ordering" with nobody
+       // actually working it; keying off status would exclude it forever.
+       && (!onlyMissing || (!hasVisualizedPlan(inventory) && !plannerBusyRef.current.has(inventory.id) && (inventory.status !== "failed" || retryReady(inventory.retryAfter))))
      );
      if (!inventories.length) return "call the Describer on input images first";
      let planned = 0;
@@ -4135,9 +4139,12 @@ export function VideoImportPage({
     run("Outlining planned objects independently", async () => {
      if (!isRunnableVisionModel(effectiveOutlinerModel)) return "pick an enabled Outliner vision model first";
      const candidates = memberInventories.flatMap((inventory) => (hasVisualizedPlan(inventory) && (!onlyMissing || isInventoryActive(inventory)))
-       ? inventory.things.map((thing, thingIndex) => ({ inventory, thing, thingIndex })).filter(({ thing }) => {
+       ? inventory.things.map((thing, thingIndex) => ({ inventory, thing, thingIndex })).filter(({ thing, thingIndex }) => {
          if (thing.outputImages?.length) return false;
-         if (onlyMissing && thing.status === "outlining") return false;
+         // Skip only if a worker actually owns this outline right now (busy-ref),
+         // not merely because the persisted status says "outlining" — a worker
+         // that died/gave up can strand that status with nobody working it.
+         if (onlyMissing && outlinerBusyRef.current.has(`${inventory.id}:${thingIndex}`)) return false;
          const ready = hasAlignedOutline(thing);
          return !onlyMissing || (!ready && retryReady(thing.outlineRetryAfter));
        })
@@ -4165,7 +4172,7 @@ export function VideoImportPage({
      const queue = automatic
        ? cooperativeRetryOrder(
          memberInventories.filter((inventory) => {
-           return Boolean(hasVisualizedPlan(inventory) && inventoryOutlinesReady(inventory) && isInventoryActive(inventory) && inventory.status !== "extracting");
+           return Boolean(hasVisualizedPlan(inventory) && inventoryOutlinesReady(inventory) && isInventoryActive(inventory) && !extractorBusyRef.current.has(inventory.id));
          }),
          effectiveCallConcurrency("extractor"),
          (inventory) => inventory.things.some((thing) => (thing.status === "failed" || thing.status === "not_found") && retryReady(thing.retryAfter)),
@@ -5205,7 +5212,11 @@ export function VideoImportPage({
     );
     const inventoryNeedsPlan = runnableMemberInventories.some((inventory) =>
      isInventoryActive(inventory)
-     && (inventory.status === "done" || (inventory.status === "failed" && retryReady(inventory.retryAfter)))
+     && (inventory.status === "done"
+       || (inventory.status === "failed" && retryReady(inventory.retryAfter))
+       // A stranded "ordering" (status flipped at hand-off, but no worker owns it
+       // in the busy-ref) must re-trigger the planner or it waits forever.
+       || (inventory.status === "ordering" && !plannerBusyRef.current.has(inventory.id)))
      && inventory.things.length > 0
      && !hasVisualizedPlan(inventory)
     );
