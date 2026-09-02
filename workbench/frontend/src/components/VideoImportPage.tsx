@@ -6402,7 +6402,14 @@ export function VideoImportPage({
       <div className="video-import-scene-object-workspace">
       <div className="video-import-recursive-automation" role="toolbar" aria-label="Recursive extraction automation">
         <div className="video-import-llm-global-row">
-          <b>ALL LLM CALLS <small key={llmSchedulerVersion}>{llmSchedulerRef.current.active}/{totalLlmConcurrency} active · {llmSchedulerRef.current.waiters.length} queued</small><small>Each stage may use {llmPerStageCeiling}; {llmStageReserve} slots stay available for other stages in either direction.</small>{restartPendingSignal && <em>RESTART PENDING · DRAINING</em>}</b>
+          <b>ALL LLM CALLS <small key={llmSchedulerVersion}>{llmSchedulerRef.current.active}/{totalLlmConcurrency} active · {llmSchedulerRef.current.waiters.length} queued</small><small>Each stage may use {llmPerStageCeiling}; {llmStageReserve} slots stay available for other stages in either direction.</small>{(() => {
+            const wrappers = plannerBusyRef.current.size + outlinerBusyRef.current.size + extractorBusyRef.current.size;
+            const slots = llmSchedulerRef.current.byType.planner + llmSchedulerRef.current.byType.outliner + llmSchedulerRef.current.byType.extractor;
+            const phantom = slots - wrappers;
+            return phantom !== 0
+              ? <em className="video-import-slot-discrepancy">⚠ P/O/E {slots} slot(s) vs {wrappers} job wrapper(s) · {phantom > 0 ? `${phantom} phantom` : `${-phantom} untracked`}</em>
+              : <small>{wrappers} P/O/E job wrapper(s)</small>;
+          })()}{restartPendingSignal && <em>RESTART PENDING · DRAINING</em>}</b>
           <label>model
             <ColoredTagCombobox
               value={allCallsModel}

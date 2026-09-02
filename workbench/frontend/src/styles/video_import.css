@@ -493,6 +493,9 @@
 .video-import-llm-global-row > b small,
 .video-import-llm-global-row > b em { display: block; margin-top: 2px; font: 8px ui-monospace, monospace; letter-spacing: 0; }
 .video-import-llm-global-row > b em { color: #ffad33; font-style: normal; text-shadow: 0 0 7px #ff8a00aa; }
+.video-import-llm-global-row > b em.video-import-slot-discrepancy {
+  color: #ff7a7a; text-shadow: 0 0 7px #ff3b3baa; animation: video-import-lost-pulse 1.1s ease-in-out infinite;
+}
 .video-import-llm-call-rows { display: grid; gap: 4px; }
 .video-import-llm-call-row { padding: 4px 0; border-bottom: 1px solid var(--line, #2a3742); }
 .video-import-llm-call-row > button {
