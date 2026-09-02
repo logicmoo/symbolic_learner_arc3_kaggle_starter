@@ -2161,6 +2161,23 @@ export function VideoImportPage({
     }
     selectFrameSource(sourceId);
   };
+  const reinitializeWorkflowFromSource = () => {
+    if (!selectedFrameSourceId) { say("choose an image source first"); return; }
+    if (!window.confirm("Reinitialize the workflow with this source?\n\nThis clears the object-extraction caches (member inventories, members, scenes, model responses, outputs) and reloads the source images.")) return;
+    // Clear all downstream workflow caches.
+    setMembers([]);
+    setMemberInventories([]);
+    setMemberScenes({});
+    setProbes([]);
+    setTrail([]);
+    setOutput([]);
+    setGallery(null);
+    setModelResponseCache({});
+    setSelectedWorkflowGalleryPaths(new Set());
+    // (Re)load the images from the selected source.
+    selectExtractedImageSource(selectedFrameSourceId);
+    say(`reinitialized workflow: cleared caches and reloaded ${videoLabel} images`);
+  };
   // Option ids for the colored source combobox, in display order. The remembered
   // selection is always kept available so it survives reloads even if its
   // curated/recording source list has not loaded yet.
@@ -6209,6 +6226,15 @@ export function VideoImportPage({
                 disabled={!frameSources.length && !curatedSources.length && !arcRecordings.length}
               />
             </label>
+            <button
+              type="button"
+              className="video-import-reinit-source is-dangerous"
+              disabled={!selectedFrameSourceId}
+              title="DANGER: clears the object-extraction caches (inventories, members, model responses, outputs) and reloads the source images"
+              onClick={reinitializeWorkflowFromSource}
+            >
+              ⟲ Reinitialize workflow — clears caches &amp; reloads images
+            </button>
           </header>
           <div className="video-import-workflow-galleries">
             <WorkflowGalleryPanel title={`EXTRACTED IMAGES · ${frames.length}`} open={!collapsedLeftGalleries.extractedImages} onOpenChange={(open) => setLeftGalleryOpen("extractedImages", open)} onClear={clearExtractedFrames}>

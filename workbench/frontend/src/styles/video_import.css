@@ -225,6 +225,25 @@
 .video-import-status-progress { margin-top: 4px; }
 .video-import-status-progress .video-import-progress-track { height: 12px; }
 .video-import-status-progress small { color: inherit; font-size: 11px; }
+.video-import-reinit-source { margin-top: 6px; width: 100%; }
+.video-import-reinit-source.is-dangerous {
+  border: 1px solid #f0556b;
+  background: linear-gradient(#3a1119, #2a0d13);
+  color: #ff9aa8;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  padding: 7px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  box-shadow: 0 0 0 1px #f0556b33, 0 0 10px #f0556b22;
+}
+.video-import-reinit-source.is-dangerous:hover:not(:disabled) {
+  background: linear-gradient(#54121f, #3a0e16);
+  color: #ffd0d7;
+  box-shadow: 0 0 0 1px #f0556b66, 0 0 14px #f0556b55;
+}
+.video-import-reinit-source.is-dangerous:disabled { opacity: 0.4; cursor: not-allowed; }
 .video-import-activity-lines span { color: var(--muted, #8aa); }
 .video-import-activity-lines span.is-current { color: inherit; }
 .video-import-activity-lines code { color: var(--muted, #8aa); margin-right: 6px; font-size: 11px; }
