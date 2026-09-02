@@ -86,10 +86,11 @@ export function ColoredTagCombobox({
         })}
       >
         {current ? (() => {
-          const showGroup = Boolean(closedShow?.group && current.groupLabel);
-          const showTags = (closedShow?.tags ?? true) && current.tags.length > 0;
+          const cfg = closedShow ?? { label: true, tags: true };
+          const showGroup = Boolean(cfg.group && current.groupLabel);
+          const showTags = Boolean(cfg.tags) && current.tags.length > 0;
           // Fall back to the label whenever nothing else would render.
-          const showLabel = (closedShow?.label ?? true) || (!showGroup && !showTags);
+          const showLabel = Boolean(cfg.label) || (!showGroup && !showTags);
           return (
             <>
               {showGroup ? <span className="colored-combobox-current-group">{current.groupLabel}</span> : null}
