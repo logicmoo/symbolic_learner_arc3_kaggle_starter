@@ -5506,7 +5506,11 @@ export function VideoImportPage({
     <section className="resource-view video-import-page vi2" data-subview={activeSubview} onClickCapture={handleImageContextClick} onPointerMove={handleImageZoomPointer} onPointerLeave={() => { hoveredImageRef.current = null; setAltImageZoom(null); setHoverImageContext(null); }}>
       <div className="video-import-topbar">
         <div className="video-import-topbar-head">
-          <b className="video-import-topbar-name">Video Import 2</b>
+          <div className="video-import-topbar-name">
+            <span className="video-import-topbar-kicker">KNOWLEDGE INTAKE · GENERATION 2</span>
+            <span className="video-import-topbar-sep">·</span>
+            <span className="video-import-topbar-title">Video Import 2</span>
+          </div>
           <span className="video-import-topbar-desc">Rebuilt from its own build prompt: import → timeline → the preview stack for building filter chains → probes and entity strips → materialize. Every gallery collapses, every step interrupts.</span>
         </div>
         <nav className="video-import-human-nav" aria-label="Video Import steps">

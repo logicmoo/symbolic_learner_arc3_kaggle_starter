@@ -21,7 +21,17 @@
   margin: 0; display: flex; flex-direction: column; gap: 1px;
 }
 .video-import-topbar-name {
+  display: flex; align-items: baseline; gap: 6px;
+  white-space: nowrap; overflow: hidden;
+}
+.video-import-topbar-kicker {
+  font: 700 8px ui-monospace, monospace; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--cyan, #27dcc2); flex: 0 0 auto;
+}
+.video-import-topbar-sep { color: #4b5b66; flex: 0 0 auto; }
+.video-import-topbar-title {
   font-weight: 700; font-size: 12px; letter-spacing: .04em; color: #cfe0e6;
+  overflow: hidden; text-overflow: ellipsis;
 }
 .video-import-topbar-desc {
   font: 400 10px/1.3 ui-monospace, monospace; color: #8395a0;
