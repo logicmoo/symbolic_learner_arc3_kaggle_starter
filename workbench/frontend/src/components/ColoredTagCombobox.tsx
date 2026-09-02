@@ -69,7 +69,7 @@ export function ColoredTagCombobox({
       {tag.text}
     </span>
   ));
-  const rootWidth = open ? (openWidth ?? closedWidth) : closedWidth;
+  const rootWidth = closedWidth;
   return (
     <div className="colored-combobox" ref={ref} style={rootWidth ? { width: rootWidth } : undefined}>
       <button
