@@ -322,7 +322,8 @@ type LlmCallConcurrency = {
 };
 type LlmCallMetric = { completed: number; totalDurationMs: number };
 type LlmCallMetrics = Record<keyof LlmCallConcurrency, LlmCallMetric>;
-const LLM_STAGE_RESERVE_MIN = 5;
+const LLM_STAGE_RESERVE_MIN = 1;
+const LLM_STAGE_RESERVE_MAX = 6;
 const LLM_STAGE_RESERVE_FRACTION = 0.30;
 const LLM_STAGE_ORDER: Array<keyof LlmCallConcurrency> = [
   "describer",
@@ -2829,6 +2830,7 @@ export function VideoImportPage({
   };
   const llmStageReserve = Math.min(
     Math.max(0, totalLlmConcurrency - 1),
+    LLM_STAGE_RESERVE_MAX,
     Math.max(LLM_STAGE_RESERVE_MIN, Math.ceil(totalLlmConcurrency * LLM_STAGE_RESERVE_FRACTION)),
   );
   const llmPerStageCeiling = Math.max(1, totalLlmConcurrency - llmStageReserve);
@@ -2892,27 +2894,6 @@ export function VideoImportPage({
           bestRoundRobinDistance = roundRobinDistance;
         }
       });
-      if (waiterIndex < 0) {
-        // A per-stage cap (e.g. "reserve") only matters when other stages have
-        // queued work. If total slots remain free but every waiter is already
-        // at its per-stage cap, let the bottleneck stage(s) burst into the idle
-        // workers -- fair by current load + round-robin -- instead of leaving
-        // workers idle. So whichever stage is holding everyone up takes all.
-        let bestBurst = Number.POSITIVE_INFINITY;
-        let bestBurstDistance = Number.POSITIVE_INFINITY;
-        scheduler.waiters.forEach((waiter, index) => {
-          const load = scheduler.byType[waiter.type];
-          const stageIndex = LLM_STAGE_ORDER.indexOf(waiter.type);
-          const roundRobinDistance = (
-            stageIndex - scheduler.lastGrantedIndex + LLM_STAGE_ORDER.length
-          ) % LLM_STAGE_ORDER.length || LLM_STAGE_ORDER.length;
-          if (load < bestBurst || (load === bestBurst && roundRobinDistance < bestBurstDistance)) {
-            waiterIndex = index;
-            bestBurst = load;
-            bestBurstDistance = roundRobinDistance;
-          }
-        });
-      }
       if (waiterIndex < 0) break;
       const [waiter] = scheduler.waiters.splice(waiterIndex, 1);
       scheduler.lastGrantedIndex = LLM_STAGE_ORDER.indexOf(waiter.type);
