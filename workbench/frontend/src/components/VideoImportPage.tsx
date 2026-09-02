@@ -6275,6 +6275,7 @@ export function VideoImportPage({
                     describe={describeConcurrencyOption}
                     closedWidth="11ch"
                     openWidth="30ch"
+                    closedShow={{ tags: true }}
                     onOpen={() => setExpandedCallPrompt(type)}
                     onChange={(value) => { setCallConcurrency(type, isAutoPolicy(value) ? value : Number(value)); setExpandedCallPrompt(type); }}
                   />

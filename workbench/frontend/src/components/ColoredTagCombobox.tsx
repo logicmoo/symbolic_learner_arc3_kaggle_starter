@@ -24,6 +24,7 @@ export function ColoredTagCombobox({
   disabled,
   closedWidth,
   openWidth,
+  closedShow,
 }: {
   value: string;
   ids: string[];
@@ -36,6 +37,7 @@ export function ColoredTagCombobox({
   disabled?: boolean;
   closedWidth?: string;
   openWidth?: string;
+  closedShow?: { group?: boolean; label?: boolean; tags?: boolean };
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
@@ -82,8 +84,13 @@ export function ColoredTagCombobox({
           return !currentOpen;
         })}
       >
-        <span className="colored-combobox-current">{current ? current.label : noneLabel}</span>
-        {current ? chips(current.tags) : null}
+        {current ? (
+          <>
+            {closedShow?.group && current.groupLabel ? <span className="colored-combobox-current-group">{current.groupLabel}</span> : null}
+            {(closedShow?.label ?? true) ? <span className="colored-combobox-current">{current.label}</span> : null}
+            {(closedShow?.tags ?? true) ? chips(current.tags) : null}
+          </>
+        ) : <span className="colored-combobox-current">{noneLabel}</span>}
         <span className="colored-combobox-caret">▾</span>
       </button>
       {open && (
