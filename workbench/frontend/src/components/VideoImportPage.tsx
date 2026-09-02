@@ -3502,6 +3502,30 @@ export function VideoImportPage({
     void api("page-state", { workspaceId, state: { v: 1, forgotten: true } }).catch(() => undefined);
     say("saved state forgotten — next load starts clean");
   };
+  // Clear ALL LLM-produced work for this page (cached responses, inventories,
+  // members, scenes, Turtle artifacts, outputs) while KEEPING the source images
+  // and selection. After this, selecting/running re-describes from scratch (no
+  // cache hit, no pre-existing plan that instantly fans the outliner out).
+  const clearModelCache = () => {
+    const count = Object.keys(modelResponseCacheRef.current).length;
+    modelResponseCacheRef.current = {};
+    setModelResponseCache({});
+    setMemberInventories([]);
+    setMembers([]);
+    setMemberScenes({});
+    setTurtleArtifacts({});
+    setProbes([]);
+    setTrail([]);
+    setOutput([]);
+    setGallery(null);
+    setSelectedWorkflowGalleryPaths(new Set());
+    void api("page-state", { workspaceId, state: {
+      ...buildSnapshotRef.current(),
+      modelResponseCache: {}, memberInventories: [], members: [], memberScenes: {},
+      turtleArtifacts: {}, output: [], trail: [], probes: [], gallery: null,
+    } }).catch(() => undefined);
+    say(`cleared all LLM work (${count} cached response(s) + inventories/members/outputs); a fresh run will re-describe from scratch`);
+  };
   // JSON CONFIG editor draft: null = tracking the live config. Edits apply to
   // the flow LIVE as soon as the JSON parses (debounced).
   const [configDraft, setConfigDraft] = useState<string | null>(null);
@@ -5878,6 +5902,7 @@ export function VideoImportPage({
             auto next 77
           </label>
           <button title="Copy the exact page state as JSON" disabled={false} onClick={copyStateJson}>⤓ state</button>
+          <button title="Clear all LLM-produced work (cached responses, inventories, members, outputs) but keep the source images, so a fresh run re-describes from scratch" onClick={clearModelCache}>⟲ clear LLM work</button>
           <button title="Forget the saved state — next load starts clean" onClick={forgetState}>⟲ forget</button>
           <span className="video-import-status-modes" role="group" aria-label="Status log size">
             <button type="button" className={statusMode === "hidden" ? "is-active" : ""} title="Hide the status log" onClick={() => setStatusMode("hidden")}>Hidden</button>
