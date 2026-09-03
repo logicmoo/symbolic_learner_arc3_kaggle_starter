@@ -302,32 +302,69 @@ def normalize_turtle_program(program: Any) -> dict[str, Any] | None:
         n = str(name or "").lower()
         return aliases.get(n, n)
 
-    for i, command in enumerate(commands):
+    def num(value: Any) -> float | None:
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
+
+    def coerce(command: Any) -> dict[str, Any] | None:
+        """Return a render-ready command, or None to drop it. Tolerates map-form,
+        aliases, alternate coordinate shapes (points arrays, center+radius,
+        x/y/w/h, size), and 'none' colors. Dropping malformed commands means one
+        bad command no longer blanks the whole PNG (best-effort render)."""
         if not isinstance(command, dict):
-            continue
-        # MAP FORM tolerance: one-shot models often emit {"rectangle":{"box":...}}
-        # instead of {"op":"rectangle","box":...}. Unwrap the single key whose
-        # value is a dict and whose (aliased) name is an allowed op, so a strict
-        # op-reader doesn't silently drop the command (blank PNGs).
+            return None
+        # MAP FORM: {"rectangle":{...}} -> {"op":"rectangle",...}
         if not command.get("op"):
             for key, value in list(command.items()):
                 if isinstance(value, dict) and canon_op(key) in allowed_ops:
                     command = {"op": canon_op(key), **value}
-                    commands[i] = command
                     break
         op = canon_op(command.get("op"))
-        if op:
-            command["op"] = op
+        if op not in allowed_ops:
+            return None
+        command = {**command, "op": op}
+        # "none" colors -> transparent (Pillow rejects the literal "none")
+        for field in ("fill", "outline", "color"):
+            if isinstance(command.get(field), str) and command[field].strip().lower() == "none":
+                command[field] = "transparent"
+        pts = _normalize_points(command.get("points") or command.get("vertices"))
+        if pts is not None:
+            command["points"] = pts
+        if op == "pen":
+            return command
+        if op in ("move", "line", "dot"):
+            x, y = num(command.get("x")), num(command.get("y"))
+            if (x is None or y is None) and isinstance(command.get("points"), list) and command["points"]:
+                # A "line" carrying >=2 points is really a polyline.
+                if op == "line" and len(command["points"]) >= 2:
+                    return {**command, "op": "polyline"}
+                first = command["points"][0]
+                command["x"], command["y"] = first[0], first[1]
+            if op == "dot" and command.get("radius") is None and command.get("size") is not None:
+                command["radius"] = command.get("size")
+            if num(command.get("x")) is None or num(command.get("y")) is None:
+                return None
+            return command
         if op in ("rectangle", "ellipse"):
             box = command.get("box")
-            if not (isinstance(box, list) and len(box) == 4):
+            if not (isinstance(box, list) and len(box) == 4 and all(num(b) is not None for b in box)):
                 derived = _derive_box(command)
-                if derived:
-                    command["box"] = derived
-        elif op in ("polygon", "polyline"):
-            pts = _normalize_points(command.get("points") or command.get("vertices"))
-            if pts is not None:
-                command["points"] = pts
+                if not derived:
+                    return None
+                command["box"] = derived
+            return command
+        if op in ("polygon", "polyline"):
+            need = 3 if op == "polygon" else 2
+            good = [p for p in (command.get("points") or []) if isinstance(p, (list, tuple)) and len(p) == 2 and num(p[0]) is not None and num(p[1]) is not None]
+            if len(good) < need:
+                return None
+            command["points"] = [[float(p[0]), float(p[1])] for p in good]
+            return command
+        return None
+
+    prog["commands"] = [c for c in (coerce(cmd) for cmd in commands) if c is not None]
     return prog
 
 

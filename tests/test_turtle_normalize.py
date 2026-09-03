@@ -64,6 +64,35 @@ def test_map_form_polygon_points_normalized() -> None:
     assert cmd["points"] == [[1, 2], [3, 4], [5, 6]]
 
 
+def test_line_with_points_becomes_polyline() -> None:
+    prog = normalize_turtle_program({"commands": [{"op": "line", "points": [[20, 945], [10, 861]], "fill": "none"}]})
+    assert prog is not None
+    cmd = prog["commands"][0]
+    assert cmd["op"] == "polyline"
+    assert cmd["points"] == [[20, 945], [10, 861]]
+    assert cmd["fill"] == "transparent"  # "none" sanitized
+
+
+def test_dot_with_points_and_size() -> None:
+    prog = normalize_turtle_program({"commands": [{"op": "dot", "points": [[291, 91]], "size": 12}]})
+    assert prog is not None
+    cmd = prog["commands"][0]
+    assert cmd["op"] == "dot"
+    assert float(cmd["x"]) == 291 and float(cmd["y"]) == 91
+    assert cmd["radius"] == 12
+
+
+def test_unrenderable_command_is_dropped_not_blanking() -> None:
+    prog = normalize_turtle_program({"commands": [
+        {"op": "rectangle", "box": [0, 0, 10, 10], "fill": "#123456"},
+        {"op": "line", "x": None, "y": None},  # malformed -> dropped
+        {"op": "polygon", "points": [[0, 0], [1, 1]]},  # <3 points -> dropped
+    ]})
+    assert prog is not None
+    ops = [c["op"] for c in prog["commands"]]
+    assert ops == ["rectangle"]
+
+
 def test_combined_parser_captures_turtle_program() -> None:
     import json
 

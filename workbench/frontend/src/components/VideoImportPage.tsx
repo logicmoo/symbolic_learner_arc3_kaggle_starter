@@ -3837,7 +3837,7 @@ export function VideoImportPage({
     if (!sourceImage || turtleRenderInFlight.current.has(sourceImage)) return;
     if (turtleRenderInFlight.current.size >= TURTLE_RENDER_MAX_INFLIGHT) return;
     const art = turtleArtifactsRef.current[sourceImage];
-    if (!art || !art.rawProgram || art.renderedImage) return;
+    if (!art || !art.rawProgram || art.renderedImage || art.status === "failed") return;
     turtleRenderInFlight.current.add(sourceImage);
     void (async () => {
       try {
@@ -6228,11 +6228,11 @@ export function VideoImportPage({
   useEffect(() => {
     for (const m of recognitionMembers) {
       const art = m && m.cutout ? turtleArtifacts[m.cutout] : undefined;
-      if (art && art.rawProgram && !art.renderedImage) ensureTurtleImage(m.cutout);
+      if (art && art.rawProgram && !art.renderedImage && art.status !== "failed") ensureTurtleImage(m.cutout);
     }
   }, [recognitionMembers, turtleArtifacts, ensureTurtleImage]);
   useEffect(() => {
-    if (activeTurtleArtifact && activeTurtleArtifact.rawProgram && !activeTurtleArtifact.renderedImage) {
+    if (activeTurtleArtifact && activeTurtleArtifact.rawProgram && !activeTurtleArtifact.renderedImage && activeTurtleArtifact.status !== "failed") {
       ensureTurtleImage(activeTurtleArtifact.sourceImage);
     }
   }, [activeTurtleArtifact, ensureTurtleImage]);
