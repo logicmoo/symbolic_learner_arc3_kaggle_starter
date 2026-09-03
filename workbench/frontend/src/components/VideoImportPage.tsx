@@ -1756,6 +1756,11 @@ export function VideoImportPage({
   });
   useEffect(() => { try { localStorage.setItem("vi2.statusMode", statusMode); } catch { /* quota */ } }, [statusMode]);
   useEffect(() => { try { localStorage.setItem("vi2.statusCustomPx", String(Math.round(statusCustomPx))); } catch { /* quota */ } }, [statusCustomPx]);
+  // Whole-STATUS-panel hide/restore (× to hide completely, compact pill to restore). Persisted.
+  const [statusPanelHidden, setStatusPanelHidden] = useState<boolean>(() => {
+    try { return localStorage.getItem("vi2.statusPanelHidden") === "1"; } catch { return false; }
+  });
+  useEffect(() => { try { localStorage.setItem("vi2.statusPanelHidden", statusPanelHidden ? "1" : "0"); } catch { /* quota */ } }, [statusPanelHidden]);
   const statusDragRef = useRef<{ startY: number; startPx: number } | null>(null);
   const statusResizeMax = () => Math.round(window.innerHeight * 0.7);
   const onStatusResizeDown = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -6323,7 +6328,12 @@ export function VideoImportPage({
         </div>
       )}
 
-      <div className="video-import-activity" role="status" aria-live="polite">
+      {statusPanelHidden && (
+        <div className="video-import-activity-collapsed">
+          <button type="button" className="video-import-activity-restore" title="Restore the STATUS panel" onClick={() => setStatusPanelHidden(false)}>▸ Show STATUS</button>
+        </div>
+      )}
+      <div className={`video-import-activity${statusPanelHidden ? " is-hidden" : ""}`} role="status" aria-live="polite">
         <div className="video-import-activity-controls">
           <span className={`video-import-activity-dot${busy || anyBackgroundJobRunning ? " is-busy" : ""}`} />
           <b>STATUS</b>
@@ -6356,6 +6366,7 @@ export function VideoImportPage({
             <button type="button" className={statusMode === "screen20" ? "is-active" : ""} title="20% of screen height" onClick={() => setStatusMode("screen20")}>20%</button>
           </span>
           <button className="video-import-stop" disabled={!busy && !anyBackgroundJobRunning} onClick={stopEverything}>■ Stop</button>
+          <button type="button" className="video-import-activity-close" title="Hide the STATUS panel (restore it with the button that appears)" aria-label="Hide STATUS panel" onClick={() => setStatusPanelHidden(true)}>✕</button>
         </div>
         {statusMode !== "hidden" && (
           <div className="video-import-activity-lower">
