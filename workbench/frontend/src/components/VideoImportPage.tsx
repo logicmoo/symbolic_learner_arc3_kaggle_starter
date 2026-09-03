@@ -2825,6 +2825,9 @@ export function VideoImportPage({
   // Reduce section shows a collapsible char-grouped grid above a flat
   // one-row-per-image list (all 200); "reduceListQuery" filters the list.
   const [reduceListQuery, setReduceListQuery] = useState("");
+  // Per-character collapse in the flat list — each character's 10 condition
+  // rows can be folded away from its separator header.
+  const [collapsedReduceChars, setCollapsedReduceChars] = useState<Set<string>>(new Set());
   const [recognitionUploading, setRecognitionUploading] = useState(false);
   // Recognition stage-row state — dedicated per-row model + prompt, decoupled
   // from the Objects-page prompts. Persisted under the keys the server reads.
@@ -3259,7 +3262,7 @@ export function VideoImportPage({
     frames, frameSources, selectedFrameSourceId, picked, kept: kept ? [...kept] : null, memberInputPaths: [...memberInputPaths], selectedWorkflowGalleryPaths: [...selectedWorkflowGalleryPaths], previewSource, galleryScope,
     filterId, filterParams, chain, candidateCount, fullSelectors,
     gallery, output, outputMode, outputLabel, appliedIds, trail, probes,
-    members, memberInventories, memberScenes, memberDescriptionPrompt, objectPromptWriter, memberDecompositionPrompt, memberOrderPrompt, memberOutlinerPrompt, memberExtractorPrompt, turtlePrompt, turtlePngPrompt,     turtleArtifacts, recognitions, recognitionInputs, recognitionMembers, recognitionMatches, recognitionInventories, recognitionGallery, recognitionReduce, memberGoal, memberFill,
+    members, memberInventories, memberScenes, memberDescriptionPrompt, objectPromptWriter, memberDecompositionPrompt, memberOrderPrompt, memberOutlinerPrompt, memberExtractorPrompt, turtlePrompt, turtlePngPrompt,     turtleArtifacts, recognitions, recognitionInputs, recognitionMembers, recognitionMatches, recognitionInventories, recognitionGallery, memberGoal, memberFill,
     recognizeOnepassModel: recOnepassModel, recognizeOnepassPrompt: recOnepassPrompt, recognizeOnepassPromptSelection: recOnepassPromptSelection,
     recognizeObjectsTurtleModel: recObjectsTurtleModel, recognizeObjectsTurtlePrompt: recObjectsTurtlePrompt, recognizeObjectsTurtlePromptSelection: recObjectsTurtlePromptSelection,
     recognizeTurtleModel: recTurtleModel, recognizeTurtlePrompt: recTurtlePrompt, recognizeTurtlePromptSelection: recTurtlePromptSelection,
@@ -3410,7 +3413,8 @@ export function VideoImportPage({
     if (s.recognitionMatches && typeof s.recognitionMatches === "object") setRecognitionMatches(s.recognitionMatches);
     if (Array.isArray(s.recognitionInventories)) setRecognitionInventories(s.recognitionInventories);
     if (Array.isArray(s.recognitionGallery)) setRecognitionGallery(s.recognitionGallery);
-    if (s.recognitionReduce && typeof s.recognitionReduce === "object") setRecognitionReduce(s.recognitionReduce);
+    // recognitionReduce is loaded straight from the workspace filesystem
+    // (see the reduce-manifest fetch effect) — never from page-state.
     if (typeof s.recognizeOnepassModel === "string") setRecOnepassModel(s.recognizeOnepassModel);
     if (typeof s.recognizeOnepassPrompt === "string") setRecOnepassPrompt(s.recognizeOnepassPrompt);
     if (s.recognizeOnepassPromptSelection === "workspace" || s.recognizeOnepassPromptSelection === "default") setRecOnepassPromptSelection(s.recognizeOnepassPromptSelection);
@@ -3669,7 +3673,7 @@ export function VideoImportPage({
             if (msg.recognitionMatches && typeof msg.recognitionMatches === "object") setRecognitionMatches(msg.recognitionMatches);
             if (Array.isArray(msg.recognitionInventories)) setRecognitionInventories(msg.recognitionInventories);
             if (Array.isArray(msg.recognitionGallery)) setRecognitionGallery(msg.recognitionGallery);
-            if (msg.recognitionReduce && typeof msg.recognitionReduce === "object") setRecognitionReduce(msg.recognitionReduce);
+            // recognitionReduce comes from the filesystem manifest, not the socket.
           }
         }
         else if (msg.type === "cleared") { pipelineLogSeenRef.current = 0; }
@@ -3888,6 +3892,26 @@ export function VideoImportPage({
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reduceMetta]);
+  // Load the reduction manifest straight from the workspace filesystem
+  // (server synthesizes it from data/recognition_reduce/pool + manifest.json +
+  // provenance.json). This is fully independent of the page-state save, so the
+  // Recognition reduce view works across reloads, workspace switches, and
+  // multiple simultaneously-open windows without any ingest step. Re-fetched
+  // whenever the workspace changes.
+  useEffect(() => {
+    if (!workspaceId) { setRecognitionReduce(null); return; }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const resp = await fetch(`${API}/reduce-manifest?workspaceId=${encodeURIComponent(workspaceId)}`, { cache: "no-store" });
+        if (!resp.ok) { if (!cancelled) setRecognitionReduce(null); return; }
+        const mf = await resp.json();
+        if (cancelled) return;
+        setRecognitionReduce(mf && Array.isArray(mf.items) ? mf : null);
+      } catch { if (!cancelled) setRecognitionReduce(null); }
+    })();
+    return () => { cancelled = true; };
+  }, [workspaceId]);
   // Render one Recognition stage row, reusing the exact Objects-page stage-row
   // markup (video-import-llm-call-row). The run action starts the
   // server stage; stat cells reflect live pipeline counts when a server run
@@ -7643,12 +7667,20 @@ export function VideoImportPage({
             list = list.filter((it: any) => !reduceOnlyGood || (it.rows || []).some((r: any) => r.kind !== "oneshot" && (r.agree?.score ?? 0) >= 0.7));
             if (q) list = list.filter((it: any) => String(it.id || "").toLowerCase().includes(q) || String(nameBySlug.get(it.slug) || it.slug || "").toLowerCase().includes(q) || String(COND_LABELS[it.cond] || it.cond || "").toLowerCase().includes(q));
             list.sort((a: any, b: any) => (slugRank(a.slug) - slugRank(b.slug)) || (condRank(a.cond) - condRank(b.cond)));
+            const countBySlug = new Map<string, number>();
+            for (const it of list) countBySlug.set(it.slug, (countBySlug.get(it.slug) || 0) + 1);
+            const orderedSlugsInList: string[] = Array.from(new Set<string>(list.map((it: any) => String(it.slug))));
+            const toggleChar = (slug: string) => setCollapsedReduceChars((prev) => { const next = new Set(prev); if (next.has(slug)) next.delete(slug); else next.add(slug); return next; });
+            const collapseAll = () => setCollapsedReduceChars(new Set(orderedSlugsInList));
+            const expandAll = () => setCollapsedReduceChars(new Set());
             return (
               <div className="video-import-reduce">
                 <h3 className="video-import-recognition-subhead">All images · {list.length} of {recognitionReduce.items.length} reduced</h3>
                 <div className="video-import-reduce-explain">One row per image. Each row is a reduction pipeline that <b>grows rightward</b> as the image gets reduced: the input, then one cell per shot-tier (1-shot reference, then cheaper N-shot passes) with its part/relation counts and <b>agreement</b> vs the 1-shot. Click a row for the full symbolic strip + per-tier MeTTa. Web scenes are <b>real fetched images</b> (source link) — not generated.</div>
                 <div className="video-import-reduce-listctrls">
                   <input className="video-import-reduce-search" type="search" placeholder="Filter by character or condition…" value={reduceListQuery} onChange={(e) => setReduceListQuery(e.target.value)} />
+                  <button type="button" className="video-import-reduce-foldbtn" onClick={collapseAll}>Collapse all</button>
+                  <button type="button" className="video-import-reduce-foldbtn" onClick={expandAll}>Expand all</button>
                   <label className="video-import-toggle"><input type="checkbox" checked={reduceOnlyGood} onChange={(e) => setReduceOnlyGood(e.target.checked)} /> Only where a cheaper N-shot AGREES (≥70%) with 1-shot</label>
                 </div>
                 <div className="video-import-reduce-listbox" role="listbox" aria-label="All reduced images">
@@ -7660,8 +7692,18 @@ export function VideoImportPage({
                     const open = it.id === expandedReduceId;
                     const chipRel = it.chipPath || `data/recognition_reduce/chips/${String(it.chip || "").split("/").pop()}`;
                     const tiers = (it.rows || []);
+                    const charCollapsed = collapsedReduceChars.has(it.slug);
                     const els: any[] = [];
-                    if (newGroup) els.push(<div className="video-import-reduce-listsep" key={`sep-${it.slug}`}>{nameBySlug.get(it.slug) || it.slug}</div>);
+                    if (newGroup) els.push(
+                      <div className={`video-import-reduce-listsep${charCollapsed ? " is-collapsed" : ""}`} key={`sep-${it.slug}`} role="button" tabIndex={0}
+                        onClick={() => toggleChar(it.slug)}
+                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleChar(it.slug); } }}>
+                        <span className="video-import-reduce-sepchevron">{charCollapsed ? "▸" : "▾"}</span>
+                        <span className="video-import-reduce-sepname">{nameBySlug.get(it.slug) || it.slug}</span>
+                        <span className="video-import-reduce-sepcount">{countBySlug.get(it.slug) || 0} conditions</span>
+                      </div>
+                    );
+                    if (charCollapsed) return els;
                     els.push(
                       <div className={`video-import-reduce-listrow${open ? " is-open" : ""}`} key={it.id} role="option" aria-selected={open}>
                         <div className="video-import-reduce-listmain" role="button" tabIndex={0}
@@ -7680,20 +7722,22 @@ export function VideoImportPage({
                               ) : <span className="video-import-reduce-tag derived">derived</span>}
                             </div>
                           </div>
-                          {tiers.length === 0
-                            ? <div className="video-import-reduce-listcell is-pending">reducing…</div>
-                            : tiers.map((row: any, ri: number) => {
-                                const isRef = row.kind === "oneshot";
-                                const rv = row.agree?.verdict || (isRef ? "ref" : "");
-                                const rp = Math.round((row.agree?.score ?? 0) * 100);
-                                return (
-                                  <div className="video-import-reduce-listcell is-tier" key={ri}>
-                                    <div className="video-import-reduce-tierhead">{row.shots}-shot</div>
-                                    <div className="video-import-reduce-tiermeta">{row.nparts}p · {row.nrels}r</div>
-                                    <span className={`video-import-reduce-badge v-${rv}`}>{isRef ? "REF" : `${rp}% ${String(rv).toUpperCase()}`}</span>
-                                  </div>
-                                );
-                              })}
+                          {it.chip
+                            ? <img className="video-import-reduce-rowstrip" src={asset(chipRel)} alt={it.id} loading="lazy" />
+                            : tiers.length === 0
+                              ? <div className="video-import-reduce-listcell is-pending">reducing…</div>
+                              : tiers.map((row: any, ri: number) => {
+                                  const isRef = row.kind === "oneshot";
+                                  const rv = row.agree?.verdict || (isRef ? "ref" : "");
+                                  const rp = Math.round((row.agree?.score ?? 0) * 100);
+                                  return (
+                                    <div className="video-import-reduce-listcell is-tier" key={ri}>
+                                      <div className="video-import-reduce-tierhead">{row.shots}-shot</div>
+                                      <div className="video-import-reduce-tiermeta">{row.nparts}p · {row.nrels}r</div>
+                                      <span className={`video-import-reduce-badge v-${rv}`}>{isRef ? "REF" : `${rp}% ${String(rv).toUpperCase()}`}</span>
+                                    </div>
+                                  );
+                                })}
                         </div>
                         {open && (
                           <div className="video-import-reduce-expanded">

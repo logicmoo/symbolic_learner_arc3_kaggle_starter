@@ -1295,7 +1295,13 @@
 .video-import-reduce-listctrls { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin: 4px 0 8px; }
 .video-import-reduce-search { flex: 0 1 320px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.14); border-radius: 6px; color: #fff; font-size: 12px; padding: 5px 10px; }
 .video-import-reduce-listbox { max-height: 72vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; }
-.video-import-reduce-listsep { position: sticky; left: 0; padding: 5px 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #27dcc2; background: rgba(39,220,194,0.08); border-top: 1px solid rgba(39,220,194,0.25); border-bottom: 1px solid rgba(255,255,255,0.06); }
+.video-import-reduce-listsep { position: sticky; left: 0; padding: 5px 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #27dcc2; background: rgba(39,220,194,0.08); border-top: 1px solid rgba(39,220,194,0.25); border-bottom: 1px solid rgba(255,255,255,0.06); cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px; }
+.video-import-reduce-listsep:hover { background: rgba(39,220,194,0.14); }
+.video-import-reduce-listsep.is-collapsed { border-bottom-color: rgba(39,220,194,0.25); }
+.video-import-reduce-sepchevron { display: inline-block; width: 10px; opacity: 0.85; }
+.video-import-reduce-sepname { flex: 0 0 auto; }
+.video-import-reduce-sepcount { font-weight: 500; letter-spacing: 0; text-transform: none; opacity: 0.55; font-size: 10.5px; }
+.video-import-reduce-foldbtn { font-size: 11px; padding: 4px 10px; }
 .video-import-reduce-listrow { content-visibility: auto; contain-intrinsic-size: auto 60px; border-bottom: 1px solid rgba(255,255,255,0.06); }
 .video-import-reduce-listrow.is-open { content-visibility: visible; background: rgba(39,220,194,0.05); }
 .video-import-reduce-listmain { display: flex; align-items: stretch; gap: 8px; padding: 6px 10px; cursor: pointer; overflow-x: auto; }
@@ -1304,6 +1310,7 @@
 .video-import-reduce-listcell.is-input { flex-direction: row; align-items: center; gap: 10px; min-width: 240px; background: rgba(255,255,255,0.05); }
 .video-import-reduce-listcell.is-tier { min-width: 110px; align-items: flex-start; }
 .video-import-reduce-listcell.is-pending { justify-content: center; align-items: center; min-width: 110px; font-size: 11px; font-style: italic; opacity: 0.55; }
+.video-import-reduce-rowstrip { flex: 0 0 auto; height: 150px; width: auto; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); background: #fff; }
 .video-import-reduce-listthumb { flex: 0 0 auto; width: 44px; height: 44px; object-fit: cover; border-radius: 5px; background: rgba(0,0,0,0.35); }
 .video-import-reduce-listlabel { display: flex; flex-direction: column; gap: 2px; line-height: 1.25; overflow: hidden; }
 .video-import-reduce-listlabel b { font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

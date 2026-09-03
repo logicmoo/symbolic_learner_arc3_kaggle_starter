@@ -2160,6 +2160,121 @@ def image_provenance(workspaceId: str, image: str) -> dict[str, Any]:
     return payload
 
 
+@router.get("/reduce-manifest")
+def reduce_manifest(workspaceId: str) -> dict[str, Any]:
+    """Filesystem-driven reduction manifest for the Recognition page.
+
+    Builds the full 20x10 = 200 condition set by listing
+    ``data/recognition_reduce/pool/*.jpg`` and overlays any generated rows and
+    chips from ``data/recognition_reduce/manifest.json`` plus source
+    attribution from ``data/recognition_reduce/provenance.json``. This is
+    independent of the page-state save, so the view survives reloads, workspace
+    switches, and multiple simultaneously-open windows.
+    """
+    root = _workspace_root(workspaceId)
+    slug_order = [
+        "bart_simpson", "lisa_simpson", "homer_simpson", "marge_simpson",
+        "maggie_simpson", "grandpa_simpson", "spongebob", "patrick_star",
+        "squidward", "scooby_doo", "shaggy", "mickey_mouse", "minnie_mouse",
+        "donald_duck", "goofy", "bugs_bunny", "pikachu", "mario", "sonic", "moana",
+    ]
+    cond_order = [
+        "c1_bw", "c2_flip", "c3_rot45", "c4_busy", "c5_new",
+        "c6_verybusy", "c7_withchars", "c8_typical", "c9_colorful", "c10_modality",
+    ]
+    transforms = {"c1_bw", "c2_flip", "c3_rot45"}
+    bases = ["data/recognition_reduce", "data/arc3_games/curated/recognition_reduce"]
+    default_base = next((b for b in bases if (root / b).is_dir()), bases[0])
+
+    def base_name(value: Any) -> str:
+        return str(value or "").replace("\\", "/").split("/")[-1]
+
+    def resolve(sub: str, name: Any) -> str:
+        leaf = base_name(name)
+        if not leaf:
+            return ""
+        for b in bases:
+            rel = f"{b}/{sub}/{leaf}"
+            if (root / rel).is_file():
+                return rel
+        return f"{default_base}/{sub}/{leaf}"
+
+    manifest: dict[str, Any] = {}
+    tiers: list[Any] = []
+    for b in bases:
+        mp = root / b / "manifest.json"
+        if mp.is_file():
+            try:
+                mj = json.loads(mp.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            if isinstance(mj.get("tiers"), list):
+                tiers = mj["tiers"]
+            for entry in (mj.get("items") or []):
+                if isinstance(entry, dict) and entry.get("id"):
+                    manifest[str(entry["id"])] = entry
+            break
+
+    prov: dict[str, Any] = {}
+    for b in bases:
+        pp = root / b / "provenance.json"
+        if pp.is_file():
+            try:
+                loaded = json.loads(pp.read_text(encoding="utf-8"))
+                if isinstance(loaded, dict):
+                    prov = loaded
+                break
+            except (OSError, json.JSONDecodeError):
+                continue
+
+    pool_ids: set[str] = set(manifest.keys())
+    for b in bases:
+        pool = root / b / "pool"
+        if pool.is_dir():
+            for image in pool.glob("*.jpg"):
+                pool_ids.add(image.stem)
+
+    items: list[dict[str, Any]] = []
+    for slug in slug_order:
+        for cond in cond_order:
+            idv = f"{slug}__{cond}"
+            if idv not in pool_ids:
+                continue
+            m = manifest.get(idv) or {}
+            pv = prov.get(idv) or {}
+            source = m.get("source") or pv.get("source") or ("transform" if cond in transforms else "web")
+            source_url = m.get("source_url") or pv.get("source_url") or ""
+            item: dict[str, Any] = {
+                "id": idv,
+                "slug": slug,
+                "cond": cond,
+                "label": m.get("label") or slug.replace("_", " "),
+                "input": f"{idv}.jpg",
+                "inputPath": resolve("pool", m.get("input") or f"{idv}.jpg"),
+                "source": source,
+                "source_url": source_url,
+                "scene": cond not in transforms,
+                "rows": [],
+            }
+            chip = base_name(m.get("chip"))
+            if chip:
+                item["chip"] = chip
+                item["chipPath"] = resolve("chips", chip)
+            rows: list[dict[str, Any]] = []
+            for row in (m.get("rows") or []):
+                if not isinstance(row, dict):
+                    continue
+                normalized = dict(row)
+                metta = base_name(row.get("metta"))
+                if metta:
+                    normalized["mettaPath"] = resolve("sym", metta)
+                rows.append(normalized)
+            item["rows"] = rows
+            items.append(item)
+
+    return {"tiers": tiers, "count": len(items), "items": items}
+
+
 @router.post("/extract/cancel")
 def cancel_job(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
     """Ask any running job (extract/scenes/trim/filter/gallery) to stop at
