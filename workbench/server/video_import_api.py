@@ -121,6 +121,59 @@ _CURATED_DATA_EXCLUDES = {"videoimports", "recordings", "importables"}
 _extract_jobs: dict[str, dict[str, Any]] = {}
 # Running/finished download (import) jobs, polled for the import progress bar.
 _download_jobs: dict[str, dict[str, Any]] = {}
+
+
+def _job_summary(job: dict[str, Any]) -> dict[str, Any]:
+    """Compact, reconnection-friendly view of any server job."""
+    total = job.get("total")
+    done = job.get("done")
+    percent = job.get("percent")
+    if percent is None and isinstance(total, (int, float)) and total:
+        try:
+            percent = round(100.0 * float(done or 0) / float(total), 1)
+        except (TypeError, ValueError, ZeroDivisionError):
+            percent = None
+    return {
+        "id": job.get("id"),
+        "kind": job.get("kind") or "job",
+        "label": job.get("label") or job.get("title") or job.get("kind") or "job",
+        "state": job.get("state"),
+        "done": done,
+        "total": total,
+        "percent": percent,
+        "etaSeconds": job.get("etaSeconds"),
+        "message": job.get("message"),
+        "error": job.get("error"),
+        "startedAt": job.get("startedAt"),
+    }
+
+
+def _list_workspace_jobs(workspace_id: str, *, include_finished: bool = True) -> list[dict[str, Any]]:
+    """All tagged jobs (extract/scenes/download/…) for a workspace, so a
+    reconnecting browser can see and interrupt in-progress server work even
+    though it lost the original jobId."""
+    out: list[dict[str, Any]] = []
+    for store in (_extract_jobs, _download_jobs):
+        for job in list(store.values()):
+            if not isinstance(job, dict) or job.get("workspaceId") != workspace_id:
+                continue
+            if not include_finished and job.get("state") not in ("running", "starting", "queued"):
+                continue
+            out.append(_job_summary(job))
+    out.sort(key=lambda j: str(j.get("startedAt") or ""), reverse=True)
+    return out
+
+
+def _cancel_workspace_job(workspace_id: str, job_id: str) -> bool:
+    """Request cancellation of a job by id, scoped to the workspace."""
+    for store in (_extract_jobs, _download_jobs):
+        job = store.get(job_id)
+        if isinstance(job, dict) and job.get("workspaceId") == workspace_id:
+            job["cancel"] = True
+            return True
+    return False
+
+
 _video_meta_locks: dict[Path, threading.Lock] = {}
 _video_meta_locks_guard = threading.Lock()
 _MEDIAMTX_IMAGE = "bluenviron/mediamtx:1.20.1"
@@ -772,6 +825,24 @@ def pipeline_status(workspaceId: str) -> dict[str, Any]:
     return run.snapshot()
 
 
+@router.get("/jobs")
+def list_jobs(workspaceId: str) -> dict[str, Any]:
+    """All server jobs (frame extractor, scene detector, importer/downloader, …)
+    for a workspace, so a reconnecting browser can see and cancel in-progress
+    work without needing the original jobId."""
+    return {"workspaceId": workspaceId, "jobs": _list_workspace_jobs(workspaceId)}
+
+
+@router.post("/jobs/cancel")
+def cancel_workspace_job(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    """Interrupt any server job by id (scoped to the workspace)."""
+    workspace_id = str(payload.get("workspaceId") or "")
+    job_id = str(payload.get("jobId") or "")
+    if not workspace_id or not job_id:
+        raise HTTPException(status_code=400, detail="workspaceId and jobId are required")
+    return {"jobId": job_id, "cancelling": _cancel_workspace_job(workspace_id, job_id)}
+
+
 @router.post("/pipeline/stop")
 def pipeline_stop(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
     """Request the headless pipeline run for a workspace to stop."""
@@ -794,7 +865,7 @@ async def pipeline_ws(websocket: WebSocket) -> None:
     await websocket.accept()
     from video_import_pipeline import get_run, start_run, stop_run
 
-    state = {"workspaceId": "", "last_key": None, "last_state_mtime": 0.0}
+    state = {"workspaceId": "", "last_key": None, "last_state_mtime": 0.0, "last_jobs": None}
     stop_flag = asyncio.Event()
 
     def _snapshot() -> dict[str, Any]:
@@ -804,6 +875,9 @@ async def pipeline_ws(websocket: WebSocket) -> None:
         run = get_run(workspace_id)
         snap = run.snapshot() if run else {"workspaceId": workspace_id, "status": "idle", "log": []}
         return {"type": "status", **snap}
+
+    def _jobs_frame(workspace_id: str) -> dict[str, Any]:
+        return {"type": "jobs", "workspaceId": workspace_id, "jobs": _list_workspace_jobs(workspace_id)}
 
     def _page_state_path(workspace_id: str) -> Path:
         return _imports_root(_workspace_root(workspace_id)) / "page_state.json"
@@ -853,6 +927,17 @@ async def pipeline_ws(websocket: WebSocket) -> None:
                         except Exception:  # noqa: BLE001
                             stop_flag.set()
                             return
+                # Frame extractor / scene detector / importer job progress, so a
+                # reconnected browser sees and can cancel in-progress server work.
+                jobs_frame = await asyncio.to_thread(_jobs_frame, workspace_id)
+                jobs_key = json.dumps(jobs_frame["jobs"], sort_keys=True)
+                if jobs_key != state["last_jobs"]:
+                    state["last_jobs"] = jobs_key
+                    try:
+                        await websocket.send_json(jobs_frame)
+                    except Exception:  # noqa: BLE001
+                        stop_flag.set()
+                        return
             await asyncio.sleep(0.6)
 
     async def receive_loop() -> None:
@@ -873,6 +958,10 @@ async def pipeline_ws(websocket: WebSocket) -> None:
                 if command in ("subscribe", "status"):
                     state["last_key"] = None  # force an immediate push
                     state["last_state_mtime"] = 0.0  # force a gallery/state push
+                    state["last_jobs"] = None  # force a jobs push
+                elif command == "cancelJob":
+                    await asyncio.to_thread(_cancel_workspace_job, workspace_id, str(message.get("jobId") or ""))
+                    state["last_jobs"] = None
                 elif command == "start":
                     concurrency = message.get("concurrency")
                     await asyncio.to_thread(
@@ -949,6 +1038,11 @@ def _save_page_state_payload(payload: dict[str, Any]) -> dict[str, Any]:
     clear_shards_raw = payload.get("clearShards")
     force_clear = {str(key) for key in clear_shards_raw} if isinstance(clear_shards_raw, list) else set()
     state = _compact_page_state(state)
+    # Stamp a fresh server timestamp so the filesystem copy is always the newest
+    # after any server-side write (pipeline/job progress). The page's restore
+    # picks the newest snapshot, so this guarantees a reload / new browser
+    # re-hydrates the latest server state rather than a stale browser copy.
+    state["at"] = _utc_now()
     container = _imports_root(_workspace_root(workspace_id))
     path = container / "page_state.json"
     with _page_state_lock(workspace_id):
@@ -1327,6 +1421,9 @@ def download_start(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
         "path": None,
         "duration": None,
         "error": None,
+        "workspaceId": workspace_id, "kind": "download",
+        "label": f"Import video · {requested_name or url}",
+        "startedAt": _utc_now(),
     }
     threading.Thread(
         target=_download_worker,
@@ -1771,6 +1868,9 @@ def extract_frames(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
         "id": job_id, "state": "running", "done": 0, "total": estimated_frames,
         "elapsedSeconds": 0.0, "etaSeconds": estimated_seconds, "frames": [],
         "framesDir": None, "error": None,
+        "workspaceId": workspace_id, "kind": "extract",
+        "label": f"Extract frames · {Path(video_rel).parent.name or Path(video_rel).name}",
+        "startedAt": _utc_now(),
     }
     _extract_jobs[job_id] = job
 
@@ -3737,6 +3837,9 @@ def detect_scenes(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
         "id": job_id, "state": "running", "done": 0, "total": int(window) or 1,
         "elapsedSeconds": 0.0, "etaSeconds": estimated_seconds, "frames": [],
         "markers": [], "error": None,
+        "workspaceId": workspace_id, "kind": "scenes",
+        "label": f"Detect scenes · {Path(video_rel).parent.name or Path(video_rel).name}",
+        "startedAt": _utc_now(),
     }
     _extract_jobs[job_id] = job
 

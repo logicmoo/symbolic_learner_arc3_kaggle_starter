@@ -1214,3 +1214,12 @@
 .video-import-recognition-info ul { margin: 4px 0 0; padding-left: 14px; display: flex; flex-direction: column; gap: 2px; }
 .video-import-recognition-info a { color: #52c7d9; }
 .video-import-recognition-conf { opacity: 0.75; }
+
+/* --- Active server jobs banner (reconnect-safe) --- */
+.video-import-jobs-banner { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 6px 14px; background: rgba(82,199,217,0.08); border-bottom: 1px solid rgba(82,199,217,0.25); font-size: 12px; }
+.video-import-jobs-banner > b { color: #52c7d9; }
+.video-import-jobs-note { opacity: 0.7; font-style: italic; }
+.video-import-job { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 2px 8px; }
+.video-import-job-label { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.video-import-job-progress { font-variant-numeric: tabular-nums; opacity: 0.85; }
+.video-import-job button { font-size: 11px; padding: 1px 6px; }

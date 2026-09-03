@@ -2769,6 +2769,7 @@ export function VideoImportPage({
   const [expandedCallPrompt, setExpandedCallPrompt] = useState<keyof LlmCallConcurrency | null>(null);
   const [turtleArtifacts, setTurtleArtifacts] = useState<Record<string, TurtleArtifact>>({});
   const [recognitions, setRecognitions] = useState<Record<string, any>>({});
+  const [serverJobs, setServerJobs] = useState<any[]>([]);
   const [models, setModels] = useState<ModelChoice[]>([]);
   const [memberModel, setMemberModel] = useState("");
   const [allCallsModel, setAllCallsModel] = useState("");
@@ -3567,6 +3568,7 @@ export function VideoImportPage({
           }
         }
         else if (msg.type === "cleared") { pipelineLogSeenRef.current = 0; }
+        else if (msg.type === "jobs") { if (Array.isArray(msg.jobs)) setServerJobs(msg.jobs); }
       };
       socket.onclose = () => {
         wsAlive = false;
@@ -3697,9 +3699,13 @@ export function VideoImportPage({
       say("■ requested server pipeline stop");
     } catch { /* best effort */ }
   };
-  // Start a single server-side stage (describe/outline/extract) over the websocket
-  // (falls back to HTTP). The existing per-stage "Call LLM" buttons use this so a
-  // button click is a server interaction.
+  const cancelServerJob = (jobId: string) => {
+    const socket = pipelineSocketRef.current;
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      try { socket.send(JSON.stringify({ cmd: "cancelJob", workspaceId, jobId })); say(`■ cancelling job ${jobId}`); return; } catch { /* fall through */ }
+    }
+    void api("jobs/cancel", { workspaceId, jobId }).then(() => say(`■ cancelling job ${jobId}`)).catch(() => undefined);
+  };
   const startServerStage = (stage: string) => {
     pipelineLogSeenRef.current = 0;
     const socket = pipelineSocketRef.current;
@@ -6039,6 +6045,21 @@ export function VideoImportPage({
           ))}
         </nav>
       </div>
+
+      {serverJobs.filter((j) => j.state === "running" || j.state === "starting").length > 0 && (
+        <div className="video-import-jobs-banner" role="status" aria-live="polite">
+          <b>▶ Server jobs</b>
+          <span className="video-import-jobs-note">running server-side — safe to reload or open in another browser; work continues</span>
+          {serverJobs.filter((j) => j.state === "running" || j.state === "starting").map((j) => (
+            <span className="video-import-job" key={j.id}>
+              <b>{j.kind}</b>
+              <span className="video-import-job-label">{j.label}</span>
+              <span className="video-import-job-progress">{j.percent != null ? `${Math.round(j.percent)}%` : (j.total ? `${j.done ?? 0}/${j.total}` : (j.message || "…"))}</span>
+              <button title="Interrupt this server job" onClick={() => cancelServerJob(j.id)}>■ cancel</button>
+            </span>
+          ))}
+        </div>
+      )}
 
       <div className="video-import-activity" role="status" aria-live="polite">
         <div className="video-import-activity-controls">
