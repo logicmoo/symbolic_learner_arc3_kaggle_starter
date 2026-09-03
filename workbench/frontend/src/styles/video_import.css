@@ -1228,6 +1228,11 @@
 .video-import-recognition-rows { margin-top: 8px; }
 .video-import-reco-group-head { font-size: 11px; letter-spacing: 0.08em; opacity: 0.7; margin: 12px 0 4px; text-transform: uppercase; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 8px; }
 .video-import-reco-group-head:first-child { border-top: none; padding-top: 0; margin-top: 0; }
+.video-import-reco-enrolled { margin: 8px 0 4px; }
+.video-import-reco-enrolled-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; }
+.video-import-reco-enrolled-item { margin: 0; text-align: center; }
+.video-import-reco-enrolled-item img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; background: rgba(0,0,0,0.25); border: 1px solid rgba(120,200,140,0.35); }
+.video-import-reco-enrolled-item figcaption { font-size: 10px; opacity: 0.8; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* --- Active server jobs banner (reconnect-safe) --- */
 .video-import-jobs-banner { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 6px 14px; background: rgba(82,199,217,0.08); border-bottom: 1px solid rgba(82,199,217,0.25); font-size: 12px; }

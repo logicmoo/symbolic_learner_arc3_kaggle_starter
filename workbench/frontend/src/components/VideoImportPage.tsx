@@ -2811,6 +2811,7 @@ export function VideoImportPage({
   const [recognitionMembers, setRecognitionMembers] = useState<any[]>([]);
   const [recognitionMatches, setRecognitionMatches] = useState<Record<string, any>>({});
   const [recognitionInventories, setRecognitionInventories] = useState<any[]>([]);
+  const [recognitionGallery, setRecognitionGallery] = useState<any[]>([]);
   const [recognitionUploading, setRecognitionUploading] = useState(false);
   // Recognition stage-row state — dedicated per-row model + prompt, decoupled
   // from the Objects-page prompts. Persisted under the keys the server reads.
@@ -3245,7 +3246,7 @@ export function VideoImportPage({
     frames, frameSources, selectedFrameSourceId, picked, kept: kept ? [...kept] : null, memberInputPaths: [...memberInputPaths], selectedWorkflowGalleryPaths: [...selectedWorkflowGalleryPaths], previewSource, galleryScope,
     filterId, filterParams, chain, candidateCount, fullSelectors,
     gallery, output, outputMode, outputLabel, appliedIds, trail, probes,
-    members, memberInventories, memberScenes, memberDescriptionPrompt, objectPromptWriter, memberDecompositionPrompt, memberOrderPrompt, memberOutlinerPrompt, memberExtractorPrompt, turtlePrompt, turtlePngPrompt, turtleArtifacts, recognitions, recognitionInputs, recognitionMembers, recognitionMatches, recognitionInventories, memberGoal, memberFill,
+    members, memberInventories, memberScenes, memberDescriptionPrompt, objectPromptWriter, memberDecompositionPrompt, memberOrderPrompt, memberOutlinerPrompt, memberExtractorPrompt, turtlePrompt, turtlePngPrompt, turtleArtifacts, recognitions, recognitionInputs, recognitionMembers, recognitionMatches, recognitionInventories, recognitionGallery, memberGoal, memberFill,
     recognizeOnepassModel: recOnepassModel, recognizeOnepassPrompt: recOnepassPrompt, recognizeOnepassPromptSelection: recOnepassPromptSelection,
     recognizeObjectsTurtleModel: recObjectsTurtleModel, recognizeObjectsTurtlePrompt: recObjectsTurtlePrompt, recognizeObjectsTurtlePromptSelection: recObjectsTurtlePromptSelection,
     recognizeTurtleModel: recTurtleModel, recognizeTurtlePrompt: recTurtlePrompt, recognizeTurtlePromptSelection: recTurtlePromptSelection,
@@ -3395,6 +3396,7 @@ export function VideoImportPage({
     if (Array.isArray(s.recognitionMembers)) setRecognitionMembers(s.recognitionMembers);
     if (s.recognitionMatches && typeof s.recognitionMatches === "object") setRecognitionMatches(s.recognitionMatches);
     if (Array.isArray(s.recognitionInventories)) setRecognitionInventories(s.recognitionInventories);
+    if (Array.isArray(s.recognitionGallery)) setRecognitionGallery(s.recognitionGallery);
     if (typeof s.recognizeOnepassModel === "string") setRecOnepassModel(s.recognizeOnepassModel);
     if (typeof s.recognizeOnepassPrompt === "string") setRecOnepassPrompt(s.recognizeOnepassPrompt);
     if (s.recognizeOnepassPromptSelection === "workspace" || s.recognizeOnepassPromptSelection === "default") setRecOnepassPromptSelection(s.recognizeOnepassPromptSelection);
@@ -3652,6 +3654,7 @@ export function VideoImportPage({
             if (Array.isArray(msg.recognitionMembers)) setRecognitionMembers(msg.recognitionMembers);
             if (msg.recognitionMatches && typeof msg.recognitionMatches === "object") setRecognitionMatches(msg.recognitionMatches);
             if (Array.isArray(msg.recognitionInventories)) setRecognitionInventories(msg.recognitionInventories);
+            if (Array.isArray(msg.recognitionGallery)) setRecognitionGallery(msg.recognitionGallery);
           }
         }
         else if (msg.type === "cleared") { pipelineLogSeenRef.current = 0; }
@@ -7492,6 +7495,20 @@ export function VideoImportPage({
             </div>
           </div>
 
+          {recognitionGallery.length > 0 && (
+            <div className="video-import-reco-enrolled">
+              <h3 className="video-import-recognition-subhead">Enrolled — the learned {recognitionGallery.length}</h3>
+              <div className="video-import-reco-enrolled-grid">
+                {recognitionGallery.map((g: any) => (
+                  <figure key={g.slug || g.image} className="video-import-reco-enrolled-item">
+                    <img src={asset(g.image)} alt={g.name || g.slug} loading="lazy" />
+                    <figcaption>{g.name || g.slug}</figcaption>
+                  </figure>
+                ))}
+              </div>
+            </div>
+          )}
+
           {recognitionInputs.length > 0 && (
             <div className="video-import-recognition-inputs">
               {recognitionInputs.map((inp: any) => (
@@ -7505,7 +7522,7 @@ export function VideoImportPage({
 
           {recognitionMembers.length > 0 && (
             <>
-              <h3 className="video-import-recognition-subhead">One-pass cutouts &amp; object matches</h3>
+              <h3 className="video-import-recognition-subhead">Test set · {recognitionMembers.length} probes (the {recognitionGallery.length || 20} distributed)</h3>
               <div className="video-import-recognition-grid">
                 {recognitionMembers.map((m: any, i: number) => {
                   const match = recognitionMatches[m.cutout];
