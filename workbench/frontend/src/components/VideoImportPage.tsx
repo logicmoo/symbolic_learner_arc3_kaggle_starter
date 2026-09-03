@@ -2850,6 +2850,9 @@ export function VideoImportPage({
   // Reduce section shows a collapsible char-grouped grid above a flat
   // one-row-per-image list (all 200); "reduceListQuery" filters the list.
   const [reduceListQuery, setReduceListQuery] = useState("");
+  // Two tab views: "inputs" = the 20x10 input-image grid; "extractions" = the
+  // per-image reduction list.
+  const [reduceTab, setReduceTab] = useState<"inputs" | "extractions">("inputs");
   // Per-character collapse in the flat list — each character's 10 condition
   // rows can be folded away from its separator header.
   const [collapsedReduceChars, setCollapsedReduceChars] = useState<Set<string>>(new Set());
@@ -7622,8 +7625,14 @@ export function VideoImportPage({
           )}
 
           {recognitionReduce && Array.isArray(recognitionReduce.items) && recognitionReduce.items.length > 0 && (
-            <details className="video-import-reduce-collapse" open>
-              <summary className="video-import-reduce-collapse-summary">By character · 20 × 10 condition grid</summary>
+            <div className="video-import-reduce-tabs" role="tablist" aria-label="Reduction views">
+              <button type="button" role="tab" aria-selected={reduceTab === "inputs"} className={reduceTab === "inputs" ? "is-active" : ""} onClick={() => setReduceTab("inputs")}>Inputs · 20 × 10</button>
+              <button type="button" role="tab" aria-selected={reduceTab === "extractions"} className={reduceTab === "extractions" ? "is-active" : ""} onClick={() => setReduceTab("extractions")}>Extractions · {recognitionReduce.items.filter((it: any) => (it.rows || []).length > 0).length}/{recognitionReduce.items.length}</button>
+            </div>
+          )}
+
+          {recognitionReduce && Array.isArray(recognitionReduce.items) && recognitionReduce.items.length > 0 && reduceTab === "inputs" && (
+            <div className="video-import-reduce-collapse">
               {(() => {
             const SLUG_ORDER = ["bart_simpson","lisa_simpson","homer_simpson","marge_simpson","maggie_simpson","grandpa_simpson","spongebob","patrick_star","squidward","scooby_doo","shaggy","mickey_mouse","minnie_mouse","donald_duck","goofy","bugs_bunny","pikachu","mario","sonic","moana"];
             const COND_ORDER = ["c1_bw","c2_flip","c3_rot45","c4_busy","c5_new","c6_verybusy","c7_withchars","c8_typical","c9_colorful","c10_modality"];
@@ -7636,9 +7645,10 @@ export function VideoImportPage({
             for (const it of items) { const arr = bySlug.get(it.slug) || []; arr.push(it); bySlug.set(it.slug, arr); }
             const orderedSlugs = [...SLUG_ORDER.filter((s) => bySlug.has(s)), ...[...bySlug.keys()].filter((s) => !SLUG_ORDER.includes(s))];
             const condRank = (c: string) => { const i = COND_ORDER.indexOf(c); return i < 0 ? 99 : i; };
+            const gridReduced = recognitionReduce.items.filter((it: any) => (it.rows || []).length > 0).length;
             return (
               <div className="video-import-reduce">
-                <h3 className="video-import-recognition-subhead">Reduction stress-test · {orderedSlugs.length} character(s) × up to 10 conditions</h3>
+                <h3 className="video-import-recognition-subhead">Reduction stress-test · {gridReduced}/{recognitionReduce.items.length} reduced · {orderedSlugs.length} character(s) × up to 10 conditions</h3>
                 <div className="video-import-reduce-explain">Fewer calls on a <b>smart</b> model (1-shot) vs more calls on a <b>cheaper</b> model (N-shot) should converge on the same symbolic part-graph. Each condition card shows the best N-shot <b>agreement</b> with the 1-shot reference; click a card for the full symbolic strip. Web scenes are <b>real fetched images</b> (source link shown) — not generated.</div>
                 <label className="video-import-toggle"><input type="checkbox" checked={reduceOnlyGood} onChange={(e) => setReduceOnlyGood(e.target.checked)} /> Only characters with a condition where a cheaper N-shot AGREES (good, ≥70%) with 1-shot</label>
                 <div className="video-import-reduce-grid">
@@ -7706,10 +7716,10 @@ export function VideoImportPage({
               </div>
             );
           })()}
-            </details>
+            </div>
           )}
 
-          {recognitionReduce && Array.isArray(recognitionReduce.items) && recognitionReduce.items.length > 0 && (() => {
+          {recognitionReduce && Array.isArray(recognitionReduce.items) && recognitionReduce.items.length > 0 && reduceTab === "extractions" && (() => {
             const SLUG_ORDER = ["bart_simpson","lisa_simpson","homer_simpson","marge_simpson","maggie_simpson","grandpa_simpson","spongebob","patrick_star","squidward","scooby_doo","shaggy","mickey_mouse","minnie_mouse","donald_duck","goofy","bugs_bunny","pikachu","mario","sonic","moana"];
             const COND_ORDER = ["c1_bw","c2_flip","c3_rot45","c4_busy","c5_new","c6_verybusy","c7_withchars","c8_typical","c9_colorful","c10_modality"];
             const COND_LABELS: Record<string, string> = { c1_bw: "greyscale", c2_flip: "flip H", c3_rot45: "rotate 45°", c4_busy: "busy scene", c5_new: "new style", c6_verybusy: "crowd", c7_withchars: "with others", c8_typical: "episode still", c9_colorful: "colorful", c10_modality: "other medium" };
@@ -7723,7 +7733,11 @@ export function VideoImportPage({
             if (q) list = list.filter((it: any) => String(it.id || "").toLowerCase().includes(q) || String(nameBySlug.get(it.slug) || it.slug || "").toLowerCase().includes(q) || String(COND_LABELS[it.cond] || it.cond || "").toLowerCase().includes(q));
             list.sort((a: any, b: any) => (slugRank(a.slug) - slugRank(b.slug)) || (condRank(a.cond) - condRank(b.cond)));
             const countBySlug = new Map<string, number>();
-            for (const it of list) countBySlug.set(it.slug, (countBySlug.get(it.slug) || 0) + 1);
+            const reducedBySlug = new Map<string, number>();
+            for (const it of list) {
+              countBySlug.set(it.slug, (countBySlug.get(it.slug) || 0) + 1);
+              if ((it.rows || []).length > 0) reducedBySlug.set(it.slug, (reducedBySlug.get(it.slug) || 0) + 1);
+            }
             const orderedSlugsInList: string[] = Array.from(new Set<string>(list.map((it: any) => String(it.slug))));
             const toggleChar = (slug: string) => setCollapsedReduceChars((prev) => { const next = new Set(prev); if (next.has(slug)) next.delete(slug); else next.add(slug); return next; });
             const collapseAll = () => setCollapsedReduceChars(new Set(orderedSlugsInList));
@@ -7759,7 +7773,7 @@ export function VideoImportPage({
                         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleChar(it.slug); } }}>
                         <span className="video-import-reduce-sepchevron">{charCollapsed ? "▸" : "▾"}</span>
                         <span className="video-import-reduce-sepname">{nameBySlug.get(it.slug) || it.slug}</span>
-                        <span className="video-import-reduce-sepcount">{countBySlug.get(it.slug) || 0} conditions</span>
+                        <span className="video-import-reduce-sepcount">{reducedBySlug.get(it.slug) || 0}/{countBySlug.get(it.slug) || 0} reduced</span>
                       </div>
                     );
                     if (charCollapsed) return els;

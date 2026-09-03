@@ -1288,8 +1288,10 @@
 
 /* --- Reduce char-grid collapsible wrapper --- */
 .video-import-reduce-collapse { margin: 4px 0 10px; }
-.video-import-reduce-collapse-summary { cursor: pointer; user-select: none; font-size: 12px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: #27dcc2; padding: 6px 10px; background: rgba(39,220,194,0.08); border: 1px solid rgba(39,220,194,0.25); border-radius: 8px; display: inline-block; }
-.video-import-reduce-collapse[open] .video-import-reduce-collapse-summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.video-import-reduce-tabs { display: inline-flex; gap: 0; margin: 6px 0 12px; border: 1px solid rgba(255,255,255,0.14); border-radius: 8px; overflow: hidden; }
+.video-import-reduce-tabs button { background: transparent; border: none; color: rgba(255,255,255,0.72); font-size: 12px; font-weight: 700; letter-spacing: 0.02em; padding: 7px 16px; cursor: pointer; }
+.video-import-reduce-tabs button + button { border-left: 1px solid rgba(255,255,255,0.14); }
+.video-import-reduce-tabs button.is-active { background: rgba(39,220,194,0.16); color: #27dcc2; }
 
 /* --- Flat 200-row reduce listbox (one row per image, windowed) --- */
 .video-import-reduce-listctrls { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin: 4px 0 8px; }
