@@ -2812,6 +2812,10 @@ export function VideoImportPage({
   const [recognitionMatches, setRecognitionMatches] = useState<Record<string, any>>({});
   const [recognitionInventories, setRecognitionInventories] = useState<any[]>([]);
   const [recognitionGallery, setRecognitionGallery] = useState<any[]>([]);
+  // Reduction stress-test (shot-tier agreement) manifest + UI state.
+  const [recognitionReduce, setRecognitionReduce] = useState<any | null>(null);
+  const [reduceOnlyGood, setReduceOnlyGood] = useState(false);
+  const [reduceMetta, setReduceMetta] = useState<Record<string, string>>({});
   const [recognitionUploading, setRecognitionUploading] = useState(false);
   // Recognition stage-row state — dedicated per-row model + prompt, decoupled
   // from the Objects-page prompts. Persisted under the keys the server reads.
@@ -3246,7 +3250,7 @@ export function VideoImportPage({
     frames, frameSources, selectedFrameSourceId, picked, kept: kept ? [...kept] : null, memberInputPaths: [...memberInputPaths], selectedWorkflowGalleryPaths: [...selectedWorkflowGalleryPaths], previewSource, galleryScope,
     filterId, filterParams, chain, candidateCount, fullSelectors,
     gallery, output, outputMode, outputLabel, appliedIds, trail, probes,
-    members, memberInventories, memberScenes, memberDescriptionPrompt, objectPromptWriter, memberDecompositionPrompt, memberOrderPrompt, memberOutlinerPrompt, memberExtractorPrompt, turtlePrompt, turtlePngPrompt, turtleArtifacts, recognitions, recognitionInputs, recognitionMembers, recognitionMatches, recognitionInventories, recognitionGallery, memberGoal, memberFill,
+    members, memberInventories, memberScenes, memberDescriptionPrompt, objectPromptWriter, memberDecompositionPrompt, memberOrderPrompt, memberOutlinerPrompt, memberExtractorPrompt, turtlePrompt, turtlePngPrompt,     turtleArtifacts, recognitions, recognitionInputs, recognitionMembers, recognitionMatches, recognitionInventories, recognitionGallery, recognitionReduce, memberGoal, memberFill,
     recognizeOnepassModel: recOnepassModel, recognizeOnepassPrompt: recOnepassPrompt, recognizeOnepassPromptSelection: recOnepassPromptSelection,
     recognizeObjectsTurtleModel: recObjectsTurtleModel, recognizeObjectsTurtlePrompt: recObjectsTurtlePrompt, recognizeObjectsTurtlePromptSelection: recObjectsTurtlePromptSelection,
     recognizeTurtleModel: recTurtleModel, recognizeTurtlePrompt: recTurtlePrompt, recognizeTurtlePromptSelection: recTurtlePromptSelection,
@@ -3397,6 +3401,7 @@ export function VideoImportPage({
     if (s.recognitionMatches && typeof s.recognitionMatches === "object") setRecognitionMatches(s.recognitionMatches);
     if (Array.isArray(s.recognitionInventories)) setRecognitionInventories(s.recognitionInventories);
     if (Array.isArray(s.recognitionGallery)) setRecognitionGallery(s.recognitionGallery);
+    if (s.recognitionReduce && typeof s.recognitionReduce === "object") setRecognitionReduce(s.recognitionReduce);
     if (typeof s.recognizeOnepassModel === "string") setRecOnepassModel(s.recognizeOnepassModel);
     if (typeof s.recognizeOnepassPrompt === "string") setRecOnepassPrompt(s.recognizeOnepassPrompt);
     if (s.recognizeOnepassPromptSelection === "workspace" || s.recognizeOnepassPromptSelection === "default") setRecOnepassPromptSelection(s.recognizeOnepassPromptSelection);
@@ -3655,6 +3660,7 @@ export function VideoImportPage({
             if (msg.recognitionMatches && typeof msg.recognitionMatches === "object") setRecognitionMatches(msg.recognitionMatches);
             if (Array.isArray(msg.recognitionInventories)) setRecognitionInventories(msg.recognitionInventories);
             if (Array.isArray(msg.recognitionGallery)) setRecognitionGallery(msg.recognitionGallery);
+            if (msg.recognitionReduce && typeof msg.recognitionReduce === "object") setRecognitionReduce(msg.recognitionReduce);
           }
         }
         else if (msg.type === "cleared") { pipelineLogSeenRef.current = 0; }
@@ -3856,8 +3862,25 @@ export function VideoImportPage({
       finally { turtleRenderInFlight.current.delete(sourceImage); }
     })();
   }, [workspaceId]);
-  // Render one Recognition stage row, reusing the exact Objects-page
-  // stage-row markup (video-import-llm-call-row). The run action starts the
+  // Lazily fetch a reduce-tier MeTTa part-graph text (from the workspace) when a
+  // row's panel is expanded; cached by its workspace-relative path.
+  const loadReduceMetta = useCallback((mettaRel: string) => {
+    if (!mettaRel || reduceMetta[mettaRel] !== undefined) return;
+    setReduceMetta((cur) => ({ ...cur, [mettaRel]: "" }));
+    void (async () => {
+      try {
+        const url = `/workbench/workspaces/${encodeURIComponent(workspaceId)}/asset?path=${encodeURIComponent(mettaRel)}`;
+        const resp = await fetch(url);
+        const text = resp.ok ? await resp.text() : `(could not load ${mettaRel})`;
+        setReduceMetta((cur) => ({ ...cur, [mettaRel]: text }));
+      } catch {
+        setReduceMetta((cur) => ({ ...cur, [mettaRel]: `(failed to load ${mettaRel})` }));
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reduceMetta]);
+  // Render one Recognition stage row, reusing the exact Objects-page stage-row
+  // markup (video-import-llm-call-row). The run action starts the
   // server stage; stat cells reflect live pipeline counts when a server run
   // owns that stage (the client scheduler is disabled).
   const renderRecognitionRow = (opts: {
@@ -7502,6 +7525,48 @@ export function VideoImportPage({
             </div>
           )}
 
+          {recognitionReduce && Array.isArray(recognitionReduce.items) && recognitionReduce.items.length > 0 && (() => {
+            const nameBySlug = new Map(recognitionGallery.map((g: any) => [g.slug, g.name]));
+            const items = recognitionReduce.items.filter((it: any) => !reduceOnlyGood || (it.rows || []).some((r: any) => r.kind !== "oneshot" && r.agree?.verdict === "good"));
+            return (
+              <div className="video-import-reduce">
+                <h3 className="video-import-recognition-subhead">Reduction stress-test · shot-tier agreement ({recognitionReduce.items.length} item(s){reduceOnlyGood ? ` · ${items.length} shown` : ""})</h3>
+                <div className="video-import-reduce-explain">Fewer calls on a <b>smart</b> model (1-shot) vs more calls on a <b>cheaper</b> model (N-shot) should converge on the same symbolic part-graph. Each N-shot row shows its <b>agreement</b> with the 1-shot reference — the green rows are "the cheap model was good enough."</div>
+                <label className="video-import-toggle"><input type="checkbox" checked={reduceOnlyGood} onChange={(e) => setReduceOnlyGood(e.target.checked)} /> Only items where a cheaper N-shot AGREES (good) with 1-shot</label>
+                <div className="video-import-reduce-list">
+                  {items.map((it: any) => {
+                    const chipRel = it.chipPath || `data/recognition_reduce/chips/${it.chip}`;
+                    return (
+                    <div className="video-import-reduce-card" key={it.id}>
+                      <div className="video-import-reduce-head"><b>{nameBySlug.get(it.slug) || it.slug}</b> <span>· {it.label}</span></div>
+                      {it.chip && <img className="video-import-reduce-strip" src={asset(chipRel)} alt={it.id} loading="lazy" />}
+                      <div className="video-import-reduce-tiers">
+                        {(it.rows || []).map((row: any, ri: number) => {
+                          const isRef = row.kind === "oneshot";
+                          const verdict = row.agree?.verdict || (isRef ? "ref" : "");
+                          const pct = Math.round((row.agree?.score ?? 0) * 100);
+                          const mettaRel = row.mettaPath || `data/recognition_reduce/sym/${row.metta}`;
+                          return (
+                            <details className="video-import-reduce-row" key={ri} onToggle={(e: any) => { if (e.currentTarget.open) loadReduceMetta(mettaRel); }}>
+                              <summary>
+                                <span className="video-import-reduce-tier">{row.shots}-shot</span>
+                                <span className="video-import-reduce-model">{row.model}</span>
+                                <span className="video-import-reduce-parts">{row.nparts} parts · {row.nrels} rels</span>
+                                <span className={`video-import-reduce-badge v-${verdict}`}>{isRef ? "reference" : `vs 1-shot: ${pct}% · ${String(verdict).toUpperCase()}`}</span>
+                              </summary>
+                              <pre className="video-import-reduce-metta">{reduceMetta[mettaRel] || "loading…"}</pre>
+                            </details>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
           {recognitionGallery.length > 0 && (
             <div className="video-import-reco-enrolled">
               <h3 className="video-import-recognition-subhead">Enrolled — the learned {recognitionGallery.length} (prepass, once)</h3>
@@ -7566,7 +7631,7 @@ export function VideoImportPage({
                             <pre>{m.metta}</pre>
                           </details>
                         ) : null}
-                        {match ? (
+                        {match && false ? (
                           match.matchedName ? (
                             <div className="video-import-recognition-match">
                               {match.matchedCutout && <img className="video-import-recognition-match-thumb" src={asset(match.matchedCutout)} alt={match.matchedName} loading="lazy" />}
@@ -7574,7 +7639,7 @@ export function VideoImportPage({
                               {match.reason ? <em>{match.reason}</em> : null}
                             </div>
                           ) : <em>no object match</em>
-                        ) : <em>not matched yet</em>}
+                        ) : null}
                       </div>
                     </div>
                   );

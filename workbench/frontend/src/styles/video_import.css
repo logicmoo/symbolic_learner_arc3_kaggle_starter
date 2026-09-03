@@ -1246,6 +1246,26 @@
 .video-import-reco-symbolic { margin-top: 4px; font-size: 11px; }
 .video-import-reco-symbolic > summary { cursor: pointer; opacity: 0.8; user-select: none; }
 .video-import-reco-symbolic > pre { margin: 4px 0 0; padding: 8px; max-height: 260px; overflow: auto; background: rgba(0,0,0,0.35); border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); font-size: 10.5px; line-height: 1.4; white-space: pre-wrap; word-break: break-word; }
+/* --- Reduction stress-test (shot-tier agreement) --- */
+.video-import-reduce { margin: 12px 0; }
+.video-import-reduce-explain { font-size: 12px; opacity: 0.9; line-height: 1.5; margin: 2px 0 6px; }
+.video-import-reduce-list { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+.video-import-reduce-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 10px; }
+.video-import-reduce-head { font-size: 13px; margin-bottom: 6px; }
+.video-import-reduce-head span { opacity: 0.75; }
+.video-import-reduce-strip { width: 100%; height: auto; object-fit: contain; border-radius: 6px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); }
+.video-import-reduce-tiers { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+.video-import-reduce-row > summary { cursor: pointer; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12px; list-style: none; padding: 4px 6px; border-radius: 6px; background: rgba(255,255,255,0.03); }
+.video-import-reduce-row > summary::-webkit-details-marker { display: none; }
+.video-import-reduce-tier { font-weight: 600; min-width: 52px; }
+.video-import-reduce-model { opacity: 0.7; }
+.video-import-reduce-parts { opacity: 0.85; }
+.video-import-reduce-badge { margin-left: auto; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; }
+.video-import-reduce-badge.v-ref { background: rgba(82,199,217,0.18); color: #52c7d9; }
+.video-import-reduce-badge.v-good { background: rgba(123,216,143,0.2); color: #7bd88f; }
+.video-import-reduce-badge.v-partial { background: rgba(230,173,69,0.2); color: #e6ad45; }
+.video-import-reduce-badge.v-poor { background: rgba(230,90,90,0.2); color: #e65a5a; }
+.video-import-reduce-metta { margin: 4px 0 2px; padding: 8px; max-height: 240px; overflow: auto; background: rgba(0,0,0,0.35); border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); font-size: 10.5px; line-height: 1.4; white-space: pre-wrap; word-break: break-word; }
 
 /* --- Active server jobs banner (reconnect-safe) --- */
 .video-import-jobs-banner { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 6px 14px; background: rgba(82,199,217,0.08); border-bottom: 1px solid rgba(82,199,217,0.25); font-size: 12px; }

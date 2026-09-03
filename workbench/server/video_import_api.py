@@ -899,6 +899,7 @@ async def pipeline_ws(websocket: WebSocket) -> None:
             "recognitionInventories": page.get("recognitionInventories") or [],
             "recognitionMembers": page.get("recognitionMembers") or [],
             "recognitionGallery": page.get("recognitionGallery") or [],
+            "recognitionReduce": page.get("recognitionReduce") or None,
             "recognitionMatches": page.get("recognitionMatches") or {},
         }
 
