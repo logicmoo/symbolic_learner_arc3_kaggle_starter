@@ -1214,6 +1214,15 @@
 .video-import-recognition-info ul { margin: 4px 0 0; padding-left: 14px; display: flex; flex-direction: column; gap: 2px; }
 .video-import-recognition-info a { color: #52c7d9; }
 .video-import-recognition-conf { opacity: 0.75; }
+.video-import-recognition-subhead { margin: 12px 0 0; font-size: 13px; opacity: 0.85; }
+.video-import-recognition-upload { display: inline-flex; }
+.video-import-recognition-inputs { display: flex; gap: 8px; flex-wrap: wrap; }
+.video-import-recognition-input { margin: 0; width: 88px; }
+.video-import-recognition-input img { width: 88px; height: 88px; object-fit: contain; background: rgba(0,0,0,0.25); border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); }
+.video-import-recognition-input figcaption { font-size: 10px; opacity: 0.7; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.video-import-recognition-match { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+.video-import-recognition-match-thumb { width: 40px; height: 40px; object-fit: contain; background: rgba(0,0,0,0.25); border-radius: 4px; }
+.video-import-recognition-match em { flex-basis: 100%; opacity: 0.7; font-size: 11px; }
 
 /* --- Active server jobs banner (reconnect-safe) --- */
 .video-import-jobs-banner { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 6px 14px; background: rgba(82,199,217,0.08); border-bottom: 1px solid rgba(82,199,217,0.25); font-size: 12px; }

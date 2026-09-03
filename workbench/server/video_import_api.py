@@ -896,6 +896,9 @@ async def pipeline_ws(websocket: WebSocket) -> None:
             "members": page.get("members") or [],
             "turtleArtifacts": page.get("turtleArtifacts") or {},
             "recognitions": page.get("recognitions") or {},
+            "recognitionInventories": page.get("recognitionInventories") or [],
+            "recognitionMembers": page.get("recognitionMembers") or [],
+            "recognitionMatches": page.get("recognitionMatches") or {},
         }
 
     async def push_loop() -> None:
@@ -1690,6 +1693,86 @@ async def upload_image_archive(
         filename,
         file.file,
     )
+
+
+def _import_recognition_images(
+    workspace_id: str,
+    uploads: list[tuple[str, bytes]],
+) -> dict[str, Any]:
+    from PIL import Image  # noqa: PLC0415
+
+    root = _workspace_root(workspace_id)
+    output_dir = _vision_frames_root(root) / "recognition_inputs"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    added: list[dict[str, Any]] = []
+    for filename, raw in uploads:
+        if not raw:
+            continue
+        stem = _slug(Path(filename).stem or "image") or "image"
+        target = output_dir / f"{stem}-{uuid.uuid4().hex[:6]}.png"
+        try:
+            with Image.open(io.BytesIO(raw)) as image:
+                image.load()
+                rgba = image.convert("RGBA")
+                _save_image_with_provenance(
+                    root,
+                    rgba,
+                    target,
+                    operation="recognition_input_upload",
+                    source={"originalName": filename},
+                    image_format="PNG",
+                )
+        except (OSError, ValueError) as error:
+            raise HTTPException(
+                status_code=400,
+                detail=f"'{filename}' is not a valid image",
+            ) from error
+        rel = target.relative_to(root).as_posix()
+        added.append({
+            "path": rel,
+            "name": Path(filename).stem or rel,
+            "addedAt": _utc_now(),
+        })
+    with _page_state_lock(workspace_id):
+        container = _imports_root(root)
+        path = container / "page_state.json"
+        state: dict[str, Any] = {}
+        if path.is_file():
+            try:
+                state = json.loads(path.read_text(encoding="utf-8"))
+                shards = state.pop("stateShards", {})
+                if isinstance(shards, dict):
+                    shard_root = container / "page_state"
+                    for key, shard_name in _PAGE_STATE_SHARDS.items():
+                        if shards.get(key) != shard_name:
+                            continue
+                        shard_path = shard_root / shard_name
+                        if shard_path.is_file():
+                            state[key] = json.loads(shard_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                state = {}
+        existing = state.get("recognitionInputs")
+        existing = existing if isinstance(existing, list) else []
+        existing.extend(added)
+        state["recognitionInputs"] = existing
+        _save_page_state_payload({"workspaceId": workspace_id, "state": state})
+    return {"added": added, "recognitionInputs": existing}
+
+
+@router.post("/recognition/upload")
+async def upload_recognition_images(
+    workspaceId: str = Form(...),
+    files: list[UploadFile] = File(...),
+) -> dict[str, Any]:
+    """Accept one or more images to recognize; save them under
+    data/vision_frames/recognition_inputs/ and append to recognitionInputs."""
+    uploads: list[tuple[str, bytes]] = []
+    for upload in files:
+        raw = await upload.read()
+        uploads.append((upload.filename or "image.png", raw))
+    if not uploads:
+        raise HTTPException(status_code=400, detail="no images uploaded")
+    return await asyncio.to_thread(_import_recognition_images, workspaceId, uploads)
 
 
 @router.get("/stream")

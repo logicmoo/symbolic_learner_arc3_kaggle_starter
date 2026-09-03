@@ -1742,6 +1742,371 @@ def run_recognize(
     return summary
 
 
+# --------------------------------------------------------------------------- #
+# Recognition experiment: one-pass describe+outline+extract, then match        #
+# --------------------------------------------------------------------------- #
+
+DEFAULT_ONEPASS_PROMPT = "\n".join([
+    "ONE-PASS OBJECT DESCRIBE + OUTLINE.",
+    "In a SINGLE pass, identify each distinct extractable object in this image AND give its exact pixel outline.",
+    "{{goal}}",
+    "PIXEL COORDINATE SPACE: width={{imageWidth}}, height={{imageHeight}}. Use x=0..{{maxX}} and y=0..{{maxY}} only.",
+    "For each object return: name, a short description, polygons (one or more rings of >=3 pixel-coordinate [x,y] points tracing the visible silhouette), optional holes, an optional box [x0,y0,x1,y1] fallback, and a normalized 0..1000 traceTurtle (move/line commands) of the main contour.",
+    "Trace only the pixels of each object; exclude neighbors, shadows, and background.",
+    'Answer ONLY with JSON: {"description":"scene description","objects":[{"name":"short unique name","description":"visual identity","polygons":[[[x,y],...]],"holes":[],"box":[x0,y0,x1,y1],"traceTurtle":[{"op":"move","x":0,"y":0},{"op":"line","x":0,"y":0}]}]}',
+])
+
+
+def _recognition_inputs(state: dict[str, Any]) -> list[dict[str, Any]]:
+    """Images loaded on the Recognition page; fall back to the selected frames."""
+    inputs = [f for f in (state.get("recognitionInputs") or []) if isinstance(f, dict) and f.get("path")]
+    if inputs:
+        return inputs
+    return _selected_frame_paths(state, only_selected=True)
+
+
+def persist_recognition_result(
+    workspace_id: str, inventory: dict[str, Any], new_members: list[dict[str, Any]]
+) -> None:
+    with _page_state_lock(workspace_id):
+        state = load_state(workspace_id)
+        invs = [i for i in (state.get("recognitionInventories") or []) if isinstance(i, dict) and i.get("id") != inventory.get("id")]
+        invs.append(inventory)
+        state["recognitionInventories"] = invs
+        members = [m for m in (state.get("recognitionMembers") or []) if isinstance(m, dict) and m.get("inventoryId") != inventory.get("id")]
+        members.extend(new_members)
+        state["recognitionMembers"] = members
+        _save_page_state_payload({"workspaceId": workspace_id, "state": state})
+
+
+def parse_onepass_output(raw: str) -> dict[str, Any]:
+    parsed = detect_json(raw)
+    if not isinstance(parsed, dict):
+        return {"description": "", "objects": []}
+    objects: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for obj in parsed.get("objects") or []:
+        if not isinstance(obj, dict):
+            continue
+        name = str(obj.get("name") or "").strip()[:60]
+        key = name.lower()
+        if not name or key in seen:
+            continue
+        seen.add(key)
+        geom = parse_outline_geometry(json.dumps(obj))
+        objects.append({
+            "name": name,
+            "description": str(obj.get("description") or name).strip()[:320],
+            "polygons": geom.get("polygons") or [],
+            "holes": geom.get("holes") or [],
+            "box": geom.get("box"),
+            "traceTurtle": geom.get("traceTurtle") or [],
+        })
+    return {"description": str(parsed.get("description") or "").strip(), "objects": objects}
+
+
+def run_recognize_onepass(
+    workspace_id: str,
+    *,
+    model_override: str | None = None,
+    goal_override: str | None = None,
+    only_selected: bool = True,
+    concurrency_override: int | None = None,
+    stop_event: threading.Event | None = None,
+    log: Callable[[str], None] | None = None,
+    counts: dict[str, int] | None = None,
+) -> str:
+    """Describe + outline every object in ONE model call per image, then extract
+    each outlined object into a cutout. A different 'cutting' than the Objects
+    page (which describes, then outlines, then extracts in separate passes)."""
+    emit = log or (lambda _msg: None)
+    counts = counts if counts is not None else {}
+    root = _workspace_root(workspace_id)
+    state = load_state(workspace_id)
+    model_id = _effective_stage_model(state, "describerModel", model_override)
+    if not model_id:
+        raise RuntimeError("no model configured (set describerModel/allCallsModel or pass --model)")
+    goal = goal_override or str(state.get("memberGoal") or "any")
+    goal_text = MEMBER_INVENTORY_GOALS.get(goal, MEMBER_INVENTORY_GOALS["any"])
+    template = str(state.get("onepassPrompt") or "").strip() or DEFAULT_ONEPASS_PROMPT
+    fill_mode = str(state.get("memberFill") or "transparent")
+    inputs = _recognition_inputs(state)
+    if not inputs:
+        emit(f"{_ts()} no recognition images loaded (upload images or select frames)")
+        return "no recognition images"
+    concurrency = _stage_concurrency(state, "recognizer", concurrency_override, 2)
+    counts["stage"] = "recognizeOnepass"
+    counts["total"] = len(inputs)
+    counts["done"] = 0
+    counts["failed"] = 0
+    counts["active"] = 0
+    active = _Active(counts)
+    step_lock = threading.Lock()
+    step_counter = {"n": int(state.get("recognitionStep") or 0)}
+
+    def next_step() -> int:
+        with step_lock:
+            step_counter["n"] += 1
+            return step_counter["n"]
+
+    emit(f"{_ts()} one-pass start · {len(inputs)} image(s) · model {model_id} · concurrency {concurrency}")
+
+    def onepass_one(frame: dict[str, Any]) -> None:
+        if stop_event is not None and stop_event.is_set():
+            return
+        path = str(frame.get("path"))
+        index = int(frame.get("index") or 0)
+        inventory_id = f"recog:{path}"
+        dims = image_dimensions(root, path)
+        if not dims:
+            counts["failed"] += 1
+            emit(f"{_ts()} ✗ one-pass #{index}: could not load {path}")
+            return
+        width, height = dims
+        prompt = (
+            template.replace("{{goal}}", goal_text)
+            .replace("{{imageWidth}}", str(width)).replace("{{imageHeight}}", str(height))
+            .replace("{{maxX}}", str(max(0, width - 1))).replace("{{maxY}}", str(max(0, height - 1)))
+        )
+        image = image_to_data_url(root, path)
+        try:
+            with active:
+                raw = invoke_model(root, model_id, prompt, image, 180).strip()
+        except Exception as error:  # noqa: BLE001
+            counts["failed"] += 1
+            emit(f"{_ts()} ✗ one-pass #{index}: {error}")
+            return
+        parsed = parse_onepass_output(raw)
+        objects = parsed["objects"]
+        things: list[dict[str, Any]] = []
+        new_members: list[dict[str, Any]] = []
+        for obj in objects:
+            if stop_event is not None and stop_event.is_set():
+                break
+            name = obj["name"]
+            geom = clamp_geometry(obj, width, height)
+            polygons = geom.get("polygons") or []
+            box = geom.get("box")
+            trace = obj.get("traceTurtle") or []
+            thing: dict[str, Any] = {"name": name, "description": obj["description"], "status": "listed"}
+            if (polygons or box) and trace:
+                try:
+                    verification = outline_verification({
+                        "workspaceId": workspace_id, "image": path, "name": name,
+                        "polygons": polygons, "holes": geom.get("holes") or [], "box": box,
+                        "traceTurtle": trace, "plannerNumber": len(things) + 1,
+                    })
+                    cut = member_cut({
+                        "workspaceId": workspace_id, "image": path,
+                        "outlineSourceImage": path, "outlineSourceDimensions": {"width": width, "height": height},
+                        "polygons": polygons, "holes": geom.get("holes") or [], "box": box,
+                        "outlineVerificationImage": verification.get("verificationImage"),
+                        "outlineGeometryHash": verification.get("geometryHash"),
+                        "name": name, "step": next_step(), "fill": fill_mode, "fillInstructions": {},
+                    })
+                    cutout = str(cut.get("cutout") or "")
+                    thing.update({
+                        "status": "extracted", "outputImages": [cutout],
+                        "outlinePolygons": polygons, "outlineBox": box, "outlineImage": path,
+                        "outlineDimensions": {"width": width, "height": height},
+                        "outlineVerificationImage": verification.get("verificationImage"),
+                        "outlineGeometryHash": verification.get("geometryHash"),
+                    })
+                    new_members.append({
+                        "framePath": path, "frameIndex": index, "name": name, "cutout": cutout,
+                        "box": cut.get("box") or box or [0, 0, 0, 0], "step": step_counter["n"],
+                        "status": "pending", "probeIndex": -1, "probeLabel": "recognition",
+                        "inventoryId": inventory_id, "depth": 0,
+                        "provenance": str(cut.get("cutoutProvenance") or ""),
+                    })
+                except Exception as error:  # noqa: BLE001
+                    thing.update({"status": "failed", "error": f"one-pass cut failed: {getattr(error, 'detail', None) or error}"})
+            things.append(thing)
+        inventory = {
+            "id": inventory_id, "framePath": path, "frameIndex": index, "probeIndex": 0,
+            "probeLabel": "recognition", "goal": goal, "sourceImage": path,
+            "descriptionOutput": raw, "sceneDescription": parsed["description"],
+            "modelId": model_id, "depth": 0, "subjectName": f"recog_{index}",
+            "status": "done", "things": things,
+            "extractionOrder": [t["name"] for t in things],
+            "parallelGroups": [[t["name"] for t in things]] if things else [],
+        }
+        persist_recognition_result(workspace_id, inventory, new_members)
+        counts["done"] += 1
+        emit(f"{_ts()} ✦ #{index}: {len(objects)} object(s), {len(new_members)} cut in one pass")
+
+    if concurrency <= 1:
+        for frame in inputs:
+            if stop_event is not None and stop_event.is_set():
+                break
+            onepass_one(frame)
+    else:
+        with ThreadPoolExecutor(max_workers=concurrency) as pool:
+            list(pool.map(onepass_one, inputs))
+    summary = f"one-pass complete: {counts.get('done', 0)} image(s), {counts.get('failed', 0)} failed of {counts.get('total', 0)}"
+    emit(f"{_ts()} {summary}")
+    return summary
+
+
+# --- Matching: recognition cutouts vs Objects-page cutouts, with probability ---
+
+def _load_thumb(root: Path, rel: str, size: int) -> Any:
+    from PIL import Image  # noqa: PLC0415
+    if not rel:
+        return None
+    p = (root / rel).resolve()
+    try:
+        p.relative_to(root.resolve())
+    except ValueError:
+        return None
+    if not p.is_file():
+        return None
+    try:
+        im = Image.open(p).convert("RGBA")
+    except Exception:  # noqa: BLE001
+        return None
+    im.thumbnail((size, size))
+    return im
+
+
+def _contact_sheet(root: Path, members: list[dict[str, Any]], cols: int = 5, cell: int = 150) -> Any:
+    from PIL import Image, ImageDraw, ImageFont  # noqa: PLC0415
+    rows = max(1, (len(members) + cols - 1) // cols)
+    sheet = Image.new("RGBA", (cols * cell, rows * cell), (18, 22, 28, 255))
+    draw = ImageDraw.Draw(sheet)
+    try:
+        font = ImageFont.truetype("DejaVuSans-Bold.ttf", 18)
+    except OSError:
+        font = ImageFont.load_default()
+    for idx, m in enumerate(members):
+        r, c = divmod(idx, cols)
+        x, y = c * cell, r * cell
+        thumb = _load_thumb(root, m.get("cutout") or "", cell - 26)
+        if thumb is not None:
+            sheet.alpha_composite(thumb, (x + 13, y + 24))
+        draw.text((x + 6, y + 4), str(idx + 1), fill=(255, 230, 0, 255), font=font)
+    return sheet
+
+
+def _img_to_dataurl(im: Any) -> str:
+    import io  # noqa: PLC0415
+    buf = io.BytesIO()
+    im.convert("RGBA").save(buf, format="PNG")
+    return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode("ascii")
+
+
+def run_recognize_match(
+    workspace_id: str,
+    *,
+    model_override: str | None = None,
+    goal_override: str | None = None,
+    only_selected: bool = True,
+    concurrency_override: int | None = None,
+    stop_event: threading.Event | None = None,
+    log: Callable[[str], None] | None = None,
+    counts: dict[str, int] | None = None,
+) -> str:
+    """Match each recognition cutout against the Objects-page cutouts and record
+    the best match with a probability. Uses one model call per recognition cutout:
+    the query image over a numbered contact sheet of all object cutouts."""
+    from PIL import Image  # noqa: PLC0415
+    emit = log or (lambda _msg: None)
+    counts = counts if counts is not None else {}
+    root = _workspace_root(workspace_id)
+    state = load_state(workspace_id)
+    model_id = _effective_stage_model(state, "describerModel", model_override)
+    if not model_id:
+        raise RuntimeError("no model configured (set describerModel/allCallsModel or pass --model)")
+    object_members = [m for m in (state.get("members") or []) if isinstance(m, dict) and m.get("cutout")]
+    recog_members = [m for m in (state.get("recognitionMembers") or []) if isinstance(m, dict) and m.get("cutout")]
+    if not object_members:
+        emit(f"{_ts()} no Objects-page cutouts to match against (extract on the Objects page first)")
+        return "no object cutouts"
+    if not recog_members:
+        emit(f"{_ts()} no recognition cutouts (run one-pass first)")
+        return "no recognition cutouts"
+    sheet = _contact_sheet(root, object_members)
+    concurrency = _stage_concurrency(state, "recognizer", concurrency_override, 2)
+    counts["stage"] = "recognizeMatch"
+    counts["total"] = len(recog_members)
+    counts["done"] = 0
+    counts["failed"] = 0
+    counts["active"] = 0
+    active = _Active(counts)
+    emit(f"{_ts()} match start · {len(recog_members)} query cutout(s) vs {len(object_members)} object cutout(s) · model {model_id}")
+    prompt = (
+        "The TOP image is a QUERY object. Below it is a numbered grid of CANDIDATE objects (1.."
+        f"{len(object_members)}). Which candidate is the SAME object/character as the query? "
+        'Answer ONLY with JSON: {"bestIndex": <1-based index, or 0 if none match>, "probability": 0.0, "reason": "..."}.'
+    )
+    results: dict[str, Any] = {}
+    results_lock = threading.Lock()
+
+    def match_one(query: dict[str, Any]) -> None:
+        if stop_event is not None and stop_event.is_set():
+            return
+        thumb = _load_thumb(root, query.get("cutout") or "", 220)
+        if thumb is None:
+            counts["failed"] += 1
+            return
+        canvas = Image.new("RGBA", (max(thumb.width, sheet.width), thumb.height + sheet.height + 12), (10, 12, 16, 255))
+        canvas.alpha_composite(thumb, (0, 0))
+        canvas.alpha_composite(sheet, (0, thumb.height + 12))
+        try:
+            with active:
+                raw = invoke_model(root, model_id, prompt, _img_to_dataurl(canvas), 120).strip()
+        except Exception as error:  # noqa: BLE001
+            counts["failed"] += 1
+            emit(f"{_ts()} ✗ match {query.get('name')}: {error}")
+            return
+        parsed = detect_json(raw)
+        best_index = 0
+        probability = 0.0
+        reason = ""
+        if isinstance(parsed, dict):
+            try:
+                best_index = int(parsed.get("bestIndex") or 0)
+            except (TypeError, ValueError):
+                best_index = 0
+            try:
+                probability = round(float(parsed.get("probability") or 0.0), 2)
+            except (TypeError, ValueError):
+                probability = 0.0
+            reason = str(parsed.get("reason") or "")
+        matched = object_members[best_index - 1] if 1 <= best_index <= len(object_members) else None
+        entry = {
+            "queryCutout": query.get("cutout"),
+            "queryName": query.get("name"),
+            "matchedCutout": matched.get("cutout") if matched else None,
+            "matchedName": matched.get("name") if matched else None,
+            "probability": probability,
+            "reason": reason,
+        }
+        with results_lock:
+            results[query.get("cutout")] = entry
+        counts["done"] += 1
+        label = f"{matched.get('name')} ({probability:.0%})" if matched else "no match"
+        emit(f"{_ts()} 🔗 {query.get('name')} → {label}")
+
+    if concurrency <= 1:
+        for query in recog_members:
+            if stop_event is not None and stop_event.is_set():
+                break
+            match_one(query)
+    else:
+        with ThreadPoolExecutor(max_workers=concurrency) as pool:
+            list(pool.map(match_one, recog_members))
+    with _page_state_lock(workspace_id):
+        state = load_state(workspace_id)
+        existing = state.get("recognitionMatches") if isinstance(state.get("recognitionMatches"), dict) else {}
+        existing.update(results)
+        state["recognitionMatches"] = existing
+        _save_page_state_payload({"workspaceId": workspace_id, "state": state})
+    summary = f"match complete: {counts.get('done', 0)} matched, {counts.get('failed', 0)} failed of {counts.get('total', 0)}"
+    emit(f"{_ts()} {summary}")
+    return summary
+
+
 def run_full(
     workspace_id: str,
     *,
@@ -1820,6 +2185,8 @@ _STAGE_RUNNERS: dict[str, Callable[..., str]] = {
     "turtle": run_turtle,
     "turtlePng": run_turtle_png,
     "recognize": run_recognize,
+    "recognizeOnepass": run_recognize_onepass,
+    "recognizeMatch": run_recognize_match,
     "full": run_full,
 }
 

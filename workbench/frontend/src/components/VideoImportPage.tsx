@@ -2769,6 +2769,11 @@ export function VideoImportPage({
   const [expandedCallPrompt, setExpandedCallPrompt] = useState<keyof LlmCallConcurrency | null>(null);
   const [turtleArtifacts, setTurtleArtifacts] = useState<Record<string, TurtleArtifact>>({});
   const [recognitions, setRecognitions] = useState<Record<string, any>>({});
+  const [recognitionInputs, setRecognitionInputs] = useState<any[]>([]);
+  const [recognitionMembers, setRecognitionMembers] = useState<any[]>([]);
+  const [recognitionMatches, setRecognitionMatches] = useState<Record<string, any>>({});
+  const [recognitionInventories, setRecognitionInventories] = useState<any[]>([]);
+  const [recognitionUploading, setRecognitionUploading] = useState(false);
   const [serverJobs, setServerJobs] = useState<any[]>([]);
   const [models, setModels] = useState<ModelChoice[]>([]);
   const [memberModel, setMemberModel] = useState("");
@@ -3184,7 +3189,7 @@ export function VideoImportPage({
     frames, frameSources, selectedFrameSourceId, picked, kept: kept ? [...kept] : null, memberInputPaths: [...memberInputPaths], selectedWorkflowGalleryPaths: [...selectedWorkflowGalleryPaths], previewSource, galleryScope,
     filterId, filterParams, chain, candidateCount, fullSelectors,
     gallery, output, outputMode, outputLabel, appliedIds, trail, probes,
-    members, memberInventories, memberScenes, memberDescriptionPrompt, objectPromptWriter, memberDecompositionPrompt, memberOrderPrompt, memberOutlinerPrompt, memberExtractorPrompt, turtlePrompt, turtlePngPrompt, turtleArtifacts, recognitions, memberGoal, memberFill,
+    members, memberInventories, memberScenes, memberDescriptionPrompt, objectPromptWriter, memberDecompositionPrompt, memberOrderPrompt, memberOutlinerPrompt, memberExtractorPrompt, turtlePrompt, turtlePngPrompt, turtleArtifacts, recognitions, recognitionInputs, recognitionMembers, recognitionMatches, recognitionInventories, memberGoal, memberFill,
     allCallsModel, describerModel, plannerModel, outlinerModel, extractorModel, turtleModel, turtlePngModel, captionModel,
     describerPromptSelection, plannerPromptSelection, outlinerPromptSelection, extractorPromptSelection, turtlePromptSelection, turtlePngPromptSelection,
     pipeForkSelections, pipeForkHistory, selectedPipeFork, pipeParentView, selectedRecursiveInventoryId, collapsedLeftGalleries, recursiveAutomation, llmCallConcurrency, llmCallMetrics, totalLlmConcurrency, manualWorkerHold,
@@ -3326,6 +3331,10 @@ export function VideoImportPage({
     if (typeof s.turtlePngPrompt === "string" && s.turtlePngPrompt.includes("{{draftProgram}}")) setTurtlePngPrompt(s.turtlePngPrompt);
     if (s.turtleArtifacts && typeof s.turtleArtifacts === "object") setTurtleArtifacts(s.turtleArtifacts);
     if (s.recognitions && typeof s.recognitions === "object") setRecognitions(s.recognitions);
+    if (Array.isArray(s.recognitionInputs)) setRecognitionInputs(s.recognitionInputs);
+    if (Array.isArray(s.recognitionMembers)) setRecognitionMembers(s.recognitionMembers);
+    if (s.recognitionMatches && typeof s.recognitionMatches === "object") setRecognitionMatches(s.recognitionMatches);
+    if (Array.isArray(s.recognitionInventories)) setRecognitionInventories(s.recognitionInventories);
     if (typeof s.allCallsModel === "string") { allCallsModelTouchedRef.current = true; setAllCallsModel(s.allCallsModel); }
     if (typeof s.describerModel === "string") { describerModelTouchedRef.current = true; setDescriberModel(s.describerModel); }
     if (typeof s.plannerModel === "string") { plannerModelTouchedRef.current = true; setPlannerModel(s.plannerModel); }
@@ -3565,6 +3574,10 @@ export function VideoImportPage({
             if (Array.isArray(msg.members)) setMembers(msg.members);
             if (msg.turtleArtifacts && typeof msg.turtleArtifacts === "object") setTurtleArtifacts(msg.turtleArtifacts);
             if (msg.recognitions && typeof msg.recognitions === "object") setRecognitions(msg.recognitions);
+            if (Array.isArray(msg.recognitionInputs)) setRecognitionInputs(msg.recognitionInputs);
+            if (Array.isArray(msg.recognitionMembers)) setRecognitionMembers(msg.recognitionMembers);
+            if (msg.recognitionMatches && typeof msg.recognitionMatches === "object") setRecognitionMatches(msg.recognitionMatches);
+            if (Array.isArray(msg.recognitionInventories)) setRecognitionInventories(msg.recognitionInventories);
           }
         }
         else if (msg.type === "cleared") { pipelineLogSeenRef.current = 0; }
@@ -3716,6 +3729,26 @@ export function VideoImportPage({
     void api("pipeline/start", { workspaceId, stage, onlySelected: true })
       .then(() => say(`▶ server ${stage}`))
       .catch((reason) => say(`✗ could not start server ${stage}: ${reason instanceof Error ? reason.message : String(reason)}`));
+  };
+  const uploadRecognitionImages = (files: FileList | null) => {
+    if (!files || !files.length) return;
+    setRecognitionUploading(true);
+    const form = new FormData();
+    form.append("workspaceId", workspaceId);
+    Array.from(files).forEach((file) => form.append("files", file, file.name));
+    void (async () => {
+      try {
+        const response = await fetch(`${API}/recognition/upload`, { method: "POST", body: form });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(String(payload.detail || payload.error || response.statusText));
+        if (Array.isArray(payload.recognitionInputs)) setRecognitionInputs(payload.recognitionInputs);
+        say(`🖼 loaded ${(payload.added as any[] | undefined)?.length || 0} recognition image(s)`);
+      } catch (reason) {
+        say(`✗ recognition upload failed: ${reason instanceof Error ? reason.message : String(reason)}`);
+      } finally {
+        setRecognitionUploading(false);
+      }
+    })();
   };
   // JSON CONFIG editor draft: null = tracking the live config. Edits apply to
   // the flow LIVE as soon as the JSON parses (debounced).
@@ -7235,41 +7268,97 @@ export function VideoImportPage({
         <section className="video-import-recognition">
           <div className="video-import-recognition-head">
             <h2>Recognition</h2>
-            <p>Identify well-known characters/objects in each selected frame (or extracted cutout), with a web-search link for each. Runs on the server.</p>
+            <p>Load images, then in <b>one pass</b> the server describes + outlines + extracts every object (a different cut than the Objects page), and can match each cutout against your Objects-page cutouts with a probability. All runs are server-side and reconnect-safe.</p>
             <div className="video-import-recognition-actions">
+              <label className="video-import-recognition-upload">
+                <input type="file" accept="image/*" multiple style={{ display: "none" }}
+                  disabled={recognitionUploading}
+                  onChange={(e) => { uploadRecognitionImages(e.target.files); e.currentTarget.value = ""; }} />
+                <span className="video-import-toggle" role="button">{recognitionUploading ? "… uploading" : "＋ load images"}</span>
+              </label>
               {pipelineRunStatus === "running"
                 ? <button onClick={() => void stopServerPipeline()}>■ stop</button>
-                : <button className="primary" disabled={!isRunnableVisionModel(effectiveDescriberModel) || !memberInputPaths.size} onClick={() => startServerStage("recognize")}>🔎 Recognize characters</button>}
+                : <>
+                    <button className="primary" disabled={!isRunnableVisionModel(effectiveDescriberModel) || !(recognitionInputs.length || memberInputPaths.size)} onClick={() => startServerStage("recognizeOnepass")}>✦ Recognize (one pass)</button>
+                    <button disabled={!recognitionMembers.length || !members.length} onClick={() => startServerStage("recognizeMatch")}>🔗 Match against objects</button>
+                    <button disabled={!isRunnableVisionModel(effectiveDescriberModel) || !(recognitionInputs.length || memberInputPaths.size)} onClick={() => startServerStage("recognize")}>🔎 Name characters</button>
+                  </>}
               <span className="video-import-toggle">server: {pipelineRunStatus}</span>
-              <span className="video-import-toggle">{Object.keys(recognitions).length} image(s) recognized</span>
+              <span className="video-import-toggle">{recognitionInputs.length} loaded · {recognitionMembers.length} cut · {Object.keys(recognitionMatches).length} matched</span>
             </div>
           </div>
-          <div className="video-import-recognition-grid">
-            {Object.values(recognitions).length === 0 && (
-              <p className="video-import-games-todo-note">No recognitions yet. Select input images and click “Recognize characters”.</p>
-            )}
-            {Object.values(recognitions)
-              .sort((a: any, b: any) => (a.frameIndex ?? 0) - (b.frameIndex ?? 0))
-              .map((rec: any) => (
-                <div className="video-import-recognition-card" key={rec.image}>
-                  <img src={asset(rec.image)} alt={rec.label} loading="lazy" />
-                  <div className="video-import-recognition-info">
-                    <b>{rec.label}</b>
-                    {(rec.characters || []).length === 0 && <em>nothing recognized</em>}
-                    <ul>
-                      {(rec.characters || []).map((c: any, i: number) => (
-                        <li key={i}>
-                          <a href={c.webSearchUrl} target="_blank" rel="noreferrer"><b>{c.name}</b></a>
-                          {c.franchise ? <span> · {c.franchise}</span> : null}
-                          <span className="video-import-recognition-conf"> · {Math.round((c.confidence || 0) * 100)}%</span>
-                          {c.where ? <em> · {c.where}</em> : null}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
+
+          {recognitionInputs.length > 0 && (
+            <div className="video-import-recognition-inputs">
+              {recognitionInputs.map((inp: any) => (
+                <figure key={inp.path} className="video-import-recognition-input">
+                  <img src={asset(inp.path)} alt={inp.name || inp.path} loading="lazy" />
+                  <figcaption>{inp.name || inp.path}</figcaption>
+                </figure>
               ))}
-          </div>
+            </div>
+          )}
+
+          {recognitionMembers.length > 0 && (
+            <>
+              <h3 className="video-import-recognition-subhead">One-pass cutouts &amp; object matches</h3>
+              <div className="video-import-recognition-grid">
+                {recognitionMembers.map((m: any, i: number) => {
+                  const match = recognitionMatches[m.cutout];
+                  return (
+                    <div className="video-import-recognition-card" key={`${m.cutout || m.name}-${i}`}>
+                      <img src={asset(m.cutout)} alt={m.name} loading="lazy" />
+                      <div className="video-import-recognition-info">
+                        <b>{m.name}</b>
+                        {match ? (
+                          match.matchedName ? (
+                            <div className="video-import-recognition-match">
+                              {match.matchedCutout && <img className="video-import-recognition-match-thumb" src={asset(match.matchedCutout)} alt={match.matchedName} loading="lazy" />}
+                              <span>→ <b>{match.matchedName}</b> <span className="video-import-recognition-conf">{Math.round((match.probability || 0) * 100)}%</span></span>
+                              {match.reason ? <em>{match.reason}</em> : null}
+                            </div>
+                          ) : <em>no object match</em>
+                        ) : <em>not matched yet</em>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
+          {Object.values(recognitions).length > 0 && (
+            <>
+              <h3 className="video-import-recognition-subhead">Named characters</h3>
+              <div className="video-import-recognition-grid">
+                {Object.values(recognitions)
+                  .sort((a: any, b: any) => (a.frameIndex ?? 0) - (b.frameIndex ?? 0))
+                  .map((rec: any) => (
+                    <div className="video-import-recognition-card" key={rec.image}>
+                      <img src={asset(rec.image)} alt={rec.label} loading="lazy" />
+                      <div className="video-import-recognition-info">
+                        <b>{rec.label}</b>
+                        {(rec.characters || []).length === 0 && <em>nothing recognized</em>}
+                        <ul>
+                          {(rec.characters || []).map((c: any, i: number) => (
+                            <li key={i}>
+                              <a href={c.webSearchUrl} target="_blank" rel="noreferrer"><b>{c.name}</b></a>
+                              {c.franchise ? <span> · {c.franchise}</span> : null}
+                              <span className="video-import-recognition-conf"> · {Math.round((c.confidence || 0) * 100)}%</span>
+                              {c.where ? <em> · {c.where}</em> : null}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </>
+          )}
+
+          {recognitionInputs.length === 0 && recognitionMembers.length === 0 && Object.values(recognitions).length === 0 && (
+            <p className="video-import-games-todo-note">No recognition images yet. Click “load images”, then “Recognize (one pass)”.</p>
+          )}
         </section>
       )}
       {activeSubview === "advanced" && (
