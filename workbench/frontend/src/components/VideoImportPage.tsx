@@ -2827,6 +2827,9 @@ export function VideoImportPage({
   const [recTurtlePngPrompt, setRecTurtlePngPrompt] = useState(DEFAULT_RECOGNIZE_TURTLE_PNG_PROMPT);
   const [recTurtlePngPromptSelection, setRecTurtlePngPromptSelection] = useState<PromptSelection>("workspace");
   const [recognizerConcurrency, setRecognizerConcurrency] = useState<number | AutoPolicy>("reserve");
+  // "Make PNG from Turtle" (#4) is a low-priority UI-only render — default it to
+  // a single worker so it never competes with the real recognition stages.
+  const [recTurtlePngConcurrency, setRecTurtlePngConcurrency] = useState<number | AutoPolicy>(1);
   const [serverJobs, setServerJobs] = useState<any[]>([]);
   const [models, setModels] = useState<ModelChoice[]>([]);
   const [memberModel, setMemberModel] = useState("");
@@ -3249,7 +3252,7 @@ export function VideoImportPage({
     recognizeTurtlePngModel: recTurtlePngModel, recognizeTurtlePngPrompt: recTurtlePngPrompt, recognizeTurtlePngPromptSelection: recTurtlePngPromptSelection,
     allCallsModel, describerModel, plannerModel, outlinerModel, extractorModel, turtleModel, turtlePngModel, captionModel,
     describerPromptSelection, plannerPromptSelection, outlinerPromptSelection, extractorPromptSelection, turtlePromptSelection, turtlePngPromptSelection,
-    pipeForkSelections, pipeForkHistory, selectedPipeFork, pipeParentView, selectedRecursiveInventoryId, collapsedLeftGalleries, recursiveAutomation, llmCallConcurrency: { ...llmCallConcurrency, recognizer: recognizerConcurrency }, llmCallMetrics, totalLlmConcurrency, manualWorkerHold,
+    pipeForkSelections, pipeForkHistory, selectedPipeFork, pipeParentView, selectedRecursiveInventoryId, collapsedLeftGalleries, recursiveAutomation, llmCallConcurrency: { ...llmCallConcurrency, recognizer: recognizerConcurrency, recognizeTurtlePng: recTurtlePngConcurrency }, llmCallMetrics, totalLlmConcurrency, manualWorkerHold,
     modelResponseCache,
     autoClearData, autoClearAlgorithm, autoNext77,
     collapsedMap, pinnedMap,
@@ -3405,6 +3408,7 @@ export function VideoImportPage({
     if (typeof s.recognizeTurtlePngPrompt === "string") setRecTurtlePngPrompt(s.recognizeTurtlePngPrompt);
     if (s.recognizeTurtlePngPromptSelection === "workspace" || s.recognizeTurtlePngPromptSelection === "default") setRecTurtlePngPromptSelection(s.recognizeTurtlePngPromptSelection);
     if (s.llmCallConcurrency && (typeof s.llmCallConcurrency.recognizer === "number" || isAutoPolicy(String(s.llmCallConcurrency.recognizer)))) setRecognizerConcurrency(s.llmCallConcurrency.recognizer);
+    if (s.llmCallConcurrency && (typeof s.llmCallConcurrency.recognizeTurtlePng === "number" || isAutoPolicy(String(s.llmCallConcurrency.recognizeTurtlePng)))) setRecTurtlePngConcurrency(s.llmCallConcurrency.recognizeTurtlePng);
     if (typeof s.allCallsModel === "string") { allCallsModelTouchedRef.current = true; setAllCallsModel(s.allCallsModel); }
     if (typeof s.describerModel === "string") { describerModelTouchedRef.current = true; setDescriberModel(s.describerModel); }
     if (typeof s.plannerModel === "string") { plannerModelTouchedRef.current = true; setPlannerModel(s.plannerModel); }
@@ -3824,8 +3828,14 @@ export function VideoImportPage({
   // Best-effort + non-blocking — never gates any pipeline step. In-flight guard
   // prevents duplicate renders of the same source.
   const turtleRenderInFlight = useRef<Set<string>>(new Set());
+  // Global low cap for the UI-only PNG render path (shared by Objects
+  // hover/detail and Recognition): at most 2 concurrent local renders so it
+  // never competes with the real recognition/extraction stages. Each completion
+  // updates state, re-running the caller effect to pick up the next one.
+  const TURTLE_RENDER_MAX_INFLIGHT = 2;
   const ensureTurtleImage = useCallback((sourceImage: string) => {
     if (!sourceImage || turtleRenderInFlight.current.has(sourceImage)) return;
+    if (turtleRenderInFlight.current.size >= TURTLE_RENDER_MAX_INFLIGHT) return;
     const art = turtleArtifactsRef.current[sourceImage];
     if (!art || !art.rawProgram || art.renderedImage) return;
     turtleRenderInFlight.current.add(sourceImage);
@@ -7478,7 +7488,7 @@ export function VideoImportPage({
               <div className="video-import-reco-group-head">ONE SHOT</div>
               {renderRecognitionRow({ stage: "recognizeObjectsTurtle", label: "Make Turtle Programs for Objects Found in Image", model: recObjectsTurtleModel, setModel: setRecObjectsTurtleModel, promptSelection: recObjectsTurtlePromptSelection, setPromptSelection: setRecObjectsTurtlePromptSelection, concurrencyValue: recognizerConcurrency, onConcurrency: setRecognizerConcurrency, disabled: !isRunnableVisionModel(recObjectsTurtleModel || allCallsModel) || !(recognitionInputs.length || memberInputPaths.size) })}
               <div className="video-import-reco-group-head">FOR UI</div>
-              {renderRecognitionRow({ stage: "recognizeTurtlePng", label: "Make PNG from Turtle", model: recTurtlePngModel, setModel: setRecTurtlePngModel, promptSelection: recTurtlePngPromptSelection, setPromptSelection: setRecTurtlePngPromptSelection, concurrencyValue: llmCallConcurrency.turtlePng, onConcurrency: (v) => setCallConcurrency("turtlePng", v), disabled: !recognitionMembers.length })}
+              {renderRecognitionRow({ stage: "recognizeTurtlePng", label: "Make PNG from Turtle", model: recTurtlePngModel, setModel: setRecTurtlePngModel, promptSelection: recTurtlePngPromptSelection, setPromptSelection: setRecTurtlePngPromptSelection, concurrencyValue: recTurtlePngConcurrency, onConcurrency: setRecTurtlePngConcurrency, disabled: !recognitionMembers.length })}
             </div>
           </div>
 

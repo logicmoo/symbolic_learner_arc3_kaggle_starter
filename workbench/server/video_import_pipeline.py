@@ -2163,7 +2163,7 @@ def run_recognize_objects_turtle(
             return
         path = str(frame.get("path"))
         index = int(frame.get("index") or 0)
-        inventory_id = f"recog:{path}"
+        inventory_id = f"recog:one_shot:{path}"
         dims = image_dimensions(root, path)
         if not dims:
             counts["failed"] += 1
@@ -2513,7 +2513,7 @@ def _turtle_render_local(
     if not candidates:
         emit(f"{_ts()} nothing to render (no un-rendered turtle programs)")
         return "nothing to render"
-    concurrency = _stage_concurrency(state, "turtlePng", concurrency_override, 2)
+    concurrency = _stage_concurrency(state, "recognizeTurtlePng", concurrency_override, 1)
     counts["stage"] = "turtlePng"
     counts["total"] = len(candidates)
     counts["done"] = 0
