@@ -7268,7 +7268,7 @@ export function VideoImportPage({
         <section className="video-import-recognition">
           <div className="video-import-recognition-head">
             <h2>Recognition</h2>
-            <p>Load images, then in <b>one pass</b> the server describes + outlines + extracts every object (a different cut than the Objects page), and can match each cutout against your Objects-page cutouts with a probability. All runs are server-side and reconnect-safe.</p>
+            <p>Load images, then run the thread buttons: <b>find the object outlines</b> across your image set, <b>turtleize the content inside each outline</b> (turtle → rendered PNG), or do <b>both in one step</b>. You can also match found objects against your Objects-page cutouts. Everything runs server-side and is reconnect-safe.</p>
             <div className="video-import-recognition-actions">
               <label className="video-import-recognition-upload">
                 <input type="file" accept="image/*" multiple style={{ display: "none" }}
@@ -7276,13 +7276,12 @@ export function VideoImportPage({
                   onChange={(e) => { uploadRecognitionImages(e.target.files); e.currentTarget.value = ""; }} />
                 <span className="video-import-toggle" role="button">{recognitionUploading ? "… uploading" : "＋ load images"}</span>
               </label>
-              {pipelineRunStatus === "running"
-                ? <button onClick={() => void stopServerPipeline()}>■ stop</button>
-                : <>
-                    <button className="primary" disabled={!isRunnableVisionModel(effectiveDescriberModel) || !(recognitionInputs.length || memberInputPaths.size)} onClick={() => startServerStage("recognizeOnepass")}>✦ Recognize (one pass)</button>
-                    <button disabled={!recognitionMembers.length || !members.length} onClick={() => startServerStage("recognizeMatch")}>🔗 Match against objects</button>
-                    <button disabled={!isRunnableVisionModel(effectiveDescriberModel) || !(recognitionInputs.length || memberInputPaths.size)} onClick={() => startServerStage("recognize")}>🔎 Name characters</button>
-                  </>}
+              <button disabled={pipelineRunStatus === "running" || !isRunnableVisionModel(effectiveDescriberModel) || !(recognitionInputs.length || memberInputPaths.size)} onClick={() => startServerStage("recognizeOnepass")}>Call LLM · Find Object Outlines On Image Sets</button>
+              <button disabled={pipelineRunStatus === "running" || !isRunnableVisionModel(effectiveTurtleModel) || !recognitionMembers.length} onClick={() => startServerStage("recognizeTurtle")}>Call LLM · Make Turtle From Content Inside the Outlines</button>
+              <button className="primary" disabled={pipelineRunStatus === "running" || !isRunnableVisionModel(effectiveDescriberModel) || !(recognitionInputs.length || memberInputPaths.size)} onClick={() => startServerStage("recognizeAll")}>Call LLM · Find Objects and Turtllize Each</button>
+              {pipelineRunStatus === "running" && <button onClick={() => void stopServerPipeline()}>■ stop</button>}
+              <button disabled={pipelineRunStatus === "running" || !recognitionMembers.length || !members.length} onClick={() => startServerStage("recognizeMatch")}>🔗 Match against objects</button>
+              <button disabled={pipelineRunStatus === "running" || !isRunnableVisionModel(effectiveDescriberModel) || !(recognitionInputs.length || memberInputPaths.size)} onClick={() => startServerStage("recognize")}>🔎 Name characters</button>
               <span className="video-import-toggle">server: {pipelineRunStatus}</span>
               <span className="video-import-toggle">{recognitionInputs.length} loaded · {recognitionMembers.length} cut · {Object.keys(recognitionMatches).length} matched</span>
             </div>
@@ -7305,11 +7304,14 @@ export function VideoImportPage({
               <div className="video-import-recognition-grid">
                 {recognitionMembers.map((m: any, i: number) => {
                   const match = recognitionMatches[m.cutout];
+                  const turtle = turtleArtifacts[m.cutout];
                   return (
                     <div className="video-import-recognition-card" key={`${m.cutout || m.name}-${i}`}>
                       <img src={asset(m.cutout)} alt={m.name} loading="lazy" />
+                      {turtle?.renderedImage && <img className="video-import-recognition-turtle" src={asset(turtle.renderedImage)} alt={`${m.name} turtle render`} loading="lazy" />}
                       <div className="video-import-recognition-info">
                         <b>{m.name}</b>
+                        {turtle && !turtle.renderedImage && <em className="video-import-recognition-turtle-status">🐢 {turtle.status || "pending"}</em>}
                         {match ? (
                           match.matchedName ? (
                             <div className="video-import-recognition-match">

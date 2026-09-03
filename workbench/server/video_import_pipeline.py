@@ -1404,18 +1404,21 @@ def _collect_turtle_leaves(state: dict[str, Any]) -> list[dict[str, Any]]:
     return leaves
 
 
-def run_turtle(
+def _turtle_gen(
     workspace_id: str,
+    leaves: list[dict[str, Any]],
     *,
     model_override: str | None = None,
-    goal_override: str | None = None,
-    only_selected: bool = True,
     concurrency_override: int | None = None,
     stop_event: threading.Event | None = None,
     log: Callable[[str], None] | None = None,
     counts: dict[str, int] | None = None,
 ) -> str:
-    """Generate a Turtle drawing program for every extracted leaf cutout."""
+    """Generate a Turtle drawing program for each supplied leaf cutout.
+
+    Shared core for the Objects-page turtle stage (leaves from
+    memberInventories) and the Recognition-page turtle stage (leaves from
+    recognitionInventories)."""
     emit = log or (lambda _msg: None)
     counts = counts if counts is not None else {}
     root = _workspace_root(workspace_id)
@@ -1427,7 +1430,6 @@ def run_turtle(
     if not template or state.get("turtlePromptSelection") == "default":
         template = DEFAULT_TURTLE_PROMPT
     artifacts = state.get("turtleArtifacts") if isinstance(state.get("turtleArtifacts"), dict) else {}
-    leaves = _collect_turtle_leaves(state)
     candidates = [
         leaf for leaf in leaves
         if not (artifacts.get(leaf["sourceImage"]) or {}).get("rawProgram")
@@ -1490,7 +1492,7 @@ def run_turtle(
     return summary
 
 
-def run_turtle_png(
+def run_turtle(
     workspace_id: str,
     *,
     model_override: str | None = None,
@@ -1501,7 +1503,32 @@ def run_turtle_png(
     log: Callable[[str], None] | None = None,
     counts: dict[str, int] | None = None,
 ) -> str:
-    """Turn each generated Turtle program into a rendered PNG (the final output)."""
+    """Generate a Turtle drawing program for every extracted Objects-page leaf."""
+    state = load_state(workspace_id)
+    return _turtle_gen(
+        workspace_id,
+        _collect_turtle_leaves(state),
+        model_override=model_override,
+        concurrency_override=concurrency_override,
+        stop_event=stop_event,
+        log=log,
+        counts=counts,
+    )
+
+
+def _turtle_png(
+    workspace_id: str,
+    *,
+    source_filter: set[str] | None = None,
+    model_override: str | None = None,
+    concurrency_override: int | None = None,
+    stop_event: threading.Event | None = None,
+    log: Callable[[str], None] | None = None,
+    counts: dict[str, int] | None = None,
+) -> str:
+    """Turn generated Turtle programs into rendered PNGs. When source_filter is
+    given, only artifacts whose sourceImage is in that set are rendered (so the
+    Recognition stage renders only its own cutouts, not Objects-page leaves)."""
     emit = log or (lambda _msg: None)
     counts = counts if counts is not None else {}
     root = _workspace_root(workspace_id)
@@ -1516,6 +1543,7 @@ def run_turtle_png(
     candidates = [
         (src, art) for src, art in artifacts.items()
         if isinstance(art, dict) and art.get("rawProgram") and not art.get("renderedImage")
+        and (source_filter is None or src in source_filter)
     ]
     if not candidates:
         emit(f"{_ts()} nothing to render (generate turtle programs first)")
@@ -1584,6 +1612,29 @@ def run_turtle_png(
     summary = f"turtle-png complete: {counts.get('done', 0)} PNG(s), {counts.get('failed', 0)} failed of {counts.get('total', 0)}"
     emit(f"{_ts()} {summary}")
     return summary
+
+
+def run_turtle_png(
+    workspace_id: str,
+    *,
+    model_override: str | None = None,
+    goal_override: str | None = None,
+    only_selected: bool = True,
+    concurrency_override: int | None = None,
+    stop_event: threading.Event | None = None,
+    log: Callable[[str], None] | None = None,
+    counts: dict[str, int] | None = None,
+) -> str:
+    """Turn every generated Turtle program into a rendered PNG (the final output)."""
+    return _turtle_png(
+        workspace_id,
+        source_filter=None,
+        model_override=model_override,
+        concurrency_override=concurrency_override,
+        stop_event=stop_event,
+        log=log,
+        counts=counts,
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -2107,6 +2158,103 @@ def run_recognize_match(
     return summary
 
 
+# --- Recognition turtle: turtleize the content inside recognition outlines --- #
+
+def _collect_recognition_turtle_leaves(state: dict[str, Any]) -> list[dict[str, Any]]:
+    """Every recognition cutout (content inside a found outline) is a leaf for
+    turtle rendering — same shape as _collect_turtle_leaves but sourced from the
+    Recognition page's recognitionInventories."""
+    leaves: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for inv in state.get("recognitionInventories") or []:
+        if not isinstance(inv, dict):
+            continue
+        for thing in inv.get("things") or []:
+            outs = thing.get("outputImages") or []
+            if outs and outs[0] not in seen:
+                seen.add(outs[0])
+                leaves.append({
+                    "sourceImage": outs[0],
+                    "subjectName": str(thing.get("name") or "object"),
+                    "description": str(thing.get("description") or ""),
+                })
+    return leaves
+
+
+def run_recognize_turtle(
+    workspace_id: str,
+    *,
+    model_override: str | None = None,
+    goal_override: str | None = None,
+    only_selected: bool = True,
+    concurrency_override: int | None = None,
+    stop_event: threading.Event | None = None,
+    log: Callable[[str], None] | None = None,
+    counts: dict[str, int] | None = None,
+) -> str:
+    """Make a Turtle program from the content inside each recognition outline,
+    then render it to a PNG. Scoped to recognition cutouts only."""
+    emit = log or (lambda _msg: None)
+    counts = counts if counts is not None else {}
+    state = load_state(workspace_id)
+    leaves = _collect_recognition_turtle_leaves(state)
+    if not leaves:
+        emit(f"{_ts()} no recognition cutouts to turtle (run 'Find Object Outlines' first)")
+        return "no recognition cutouts"
+    rec_sources = {leaf["sourceImage"] for leaf in leaves}
+    emit(f"{_ts()} === recognition turtle: generate programs ===")
+    _turtle_gen(
+        workspace_id, leaves,
+        model_override=model_override, concurrency_override=concurrency_override,
+        stop_event=stop_event, log=emit, counts=counts,
+    )
+    if stop_event is not None and stop_event.is_set():
+        return "stopped after turtle gen"
+    emit(f"{_ts()} === recognition turtle: render PNGs ===")
+    _turtle_png(
+        workspace_id, source_filter=rec_sources,
+        model_override=model_override, concurrency_override=concurrency_override,
+        stop_event=stop_event, log=emit, counts=counts,
+    )
+    summary = f"recognition turtle+png complete: {len(rec_sources)} cutout(s)"
+    emit(f"{_ts()} {summary}")
+    return summary
+
+
+def run_recognize_all(
+    workspace_id: str,
+    *,
+    model_override: str | None = None,
+    goal_override: str | None = None,
+    only_selected: bool = True,
+    concurrency_override: int | None = None,
+    stop_event: threading.Event | None = None,
+    log: Callable[[str], None] | None = None,
+    counts: dict[str, int] | None = None,
+) -> str:
+    """One-step: find objects/outlines (one pass), then turtleize each and
+    render to PNG. Runs server-side as a single reconnect-safe run."""
+    emit = log or (lambda _msg: None)
+    counts = counts if counts is not None else {}
+    common = dict(
+        model_override=model_override,
+        goal_override=goal_override,
+        only_selected=only_selected,
+        concurrency_override=concurrency_override,
+        stop_event=stop_event,
+        log=emit,
+    )
+    emit(f"{_ts()} === find objects (one pass) ===")
+    run_recognize_onepass(workspace_id, counts=counts, **common)
+    if stop_event is not None and stop_event.is_set():
+        return "stopped after find objects"
+    emit(f"{_ts()} === turtleize each (turtle + png) ===")
+    run_recognize_turtle(workspace_id, counts=counts, **common)
+    summary = "find + turtleize complete"
+    emit(f"{_ts()} {summary}")
+    return summary
+
+
 def run_full(
     workspace_id: str,
     *,
@@ -2187,6 +2335,8 @@ _STAGE_RUNNERS: dict[str, Callable[..., str]] = {
     "recognize": run_recognize,
     "recognizeOnepass": run_recognize_onepass,
     "recognizeMatch": run_recognize_match,
+    "recognizeTurtle": run_recognize_turtle,
+    "recognizeAll": run_recognize_all,
     "full": run_full,
 }
 

@@ -1223,6 +1223,8 @@
 .video-import-recognition-match { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
 .video-import-recognition-match-thumb { width: 40px; height: 40px; object-fit: contain; background: rgba(0,0,0,0.25); border-radius: 4px; }
 .video-import-recognition-match em { flex-basis: 100%; opacity: 0.7; font-size: 11px; }
+.video-import-recognition-turtle { width: 96px; height: 96px; object-fit: contain; background: rgba(0,0,0,0.35); border-radius: 6px; flex: 0 0 auto; border: 1px solid rgba(120,200,140,0.4); }
+.video-import-recognition-turtle-status { opacity: 0.75; font-size: 11px; }
 
 /* --- Active server jobs banner (reconnect-safe) --- */
 .video-import-jobs-banner { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 6px 14px; background: rgba(82,199,217,0.08); border-bottom: 1px solid rgba(82,199,217,0.25); font-size: 12px; }
