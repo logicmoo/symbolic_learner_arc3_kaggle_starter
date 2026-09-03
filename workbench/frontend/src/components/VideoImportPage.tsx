@@ -637,6 +637,42 @@ const DEFAULT_TURTLE_PNG_PROMPT = [
   "{{draftProgram}}",
   "Answer ONLY with the final JSON object. Do not include Markdown or Python.",
 ].join("\n");
+// Recognition-page prompts — dedicated per-row defaults, decoupled from the
+// Objects-page prompts. Prompts 1/2/3 are pure (no image); prompt 4 is the
+// turtle→PNG row (rendered locally).
+const DEFAULT_RECOGNIZE_ONEPASS_PROMPT = [
+  "MAKE OUTLINE FROM IMAGE.",
+  "Identify each distinct extractable object in this image AND give its exact pixel outline.",
+  "{{goal}}",
+  "PIXEL COORDINATE SPACE: width={{imageWidth}}, height={{imageHeight}}. Use x=0..{{maxX}} and y=0..{{maxY}} only.",
+  "For each object return: name, a short description, polygons (rings of >=3 pixel [x,y] points), optional holes, an optional box [x0,y0,x1,y1], and a normalized 0..1000 traceTurtle (move/line) of the main contour. NO drawing program, NO image.",
+  "Answer ONLY with JSON: {\"description\":\"scene\",\"objects\":[{\"name\":\"...\",\"description\":\"...\",\"polygons\":[[[x,y]]],\"holes\":[],\"box\":[x0,y0,x1,y1],\"traceTurtle\":[{\"op\":\"move\",\"x\":0,\"y\":0}]}]}",
+].join("\n");
+const DEFAULT_RECOGNIZE_TURTLE_PROMPT = [
+  "MAKE TURTLE FROM CONTENT INSIDE THE OUTLINE.",
+  "The attached image is a single extracted object: {{subjectName}}.",
+  "Description: {{description}}",
+  "Write a turtle drawing program that reconstructs this one object as faithfully as possible. Coordinates normalized 0..1000, origin top-left.",
+  "Allowed ops: pen, move, line, polyline, polygon, rectangle, ellipse, dot. rectangle/ellipse require box:[x0,y0,x1,y1]; polyline/polygon require points:[[x,y],...]. At most 120 commands.",
+  "EXAMPLE (a red circle): {\"version\":1,\"background\":\"transparent\",\"penColor\":\"#c0392b\",\"penWidth\":6,\"commands\":[{\"op\":\"ellipse\",\"box\":[250,250,750,750],\"fill\":\"#e74c3c\"}]}",
+  "Answer ONLY with the JSON object.",
+].join("\n");
+const DEFAULT_RECOGNIZE_OBJECTS_TURTLE_PROMPT = [
+  "MAKE TURTLE PROGRAMS FOR OBJECTS FOUND IN IMAGE (one call).",
+  "In a SINGLE pass, identify each object, give its pixel outline, AND a turtle program that reconstructs it.",
+  "{{goal}}",
+  "PIXEL COORDINATE SPACE for outlines: width={{imageWidth}}, height={{imageHeight}}. Use x=0..{{maxX}}, y=0..{{maxY}}.",
+  "Per object: name, description, polygons, optional holes, optional box, a normalized 0..1000 traceTurtle of the contour, AND turtleProgram (coords 0..1000; ops pen/move/line/polyline/polygon/rectangle/ellipse/dot; rectangle/ellipse need box, polyline/polygon need points).",
+  "EXAMPLE turtleProgram (red circle): {\"version\":1,\"background\":\"transparent\",\"penColor\":\"#c0392b\",\"penWidth\":6,\"commands\":[{\"op\":\"ellipse\",\"box\":[250,250,750,750],\"fill\":\"#e74c3c\"}]}",
+  "Answer ONLY with JSON: {\"description\":\"scene\",\"objects\":[{\"name\":\"...\",\"description\":\"...\",\"polygons\":[[[x,y]]],\"holes\":[],\"box\":[x0,y0,x1,y1],\"traceTurtle\":[{\"op\":\"move\",\"x\":0,\"y\":0}],\"turtleProgram\":{\"version\":1,\"background\":\"transparent\",\"penColor\":\"#RRGGBB\",\"penWidth\":4,\"commands\":[]}}]}",
+].join("\n");
+const DEFAULT_RECOGNIZE_TURTLE_PNG_PROMPT = [
+  "MAKE PNG FROM TURTLE.",
+  "Object {{subjectName}} — {{description}}.",
+  "The turtle program below is rendered to a PNG locally for viewing in the UI.",
+  "TURTLE PROGRAM:",
+  "{{draftProgram}}",
+].join("\n");
 const renderTurtlePrompt = (template: string, subjectName: string, description: string) => template
   .replaceAll("{{subjectName}}", subjectName)
   .replaceAll("{{description}}", description || "No additional description.");
@@ -2768,12 +2804,29 @@ export function VideoImportPage({
   const [turtlePngPromptSelection, setTurtlePngPromptSelection] = useState<PromptSelection>("workspace");
   const [expandedCallPrompt, setExpandedCallPrompt] = useState<keyof LlmCallConcurrency | null>(null);
   const [turtleArtifacts, setTurtleArtifacts] = useState<Record<string, TurtleArtifact>>({});
+  const turtleArtifactsRef = useRef<Record<string, TurtleArtifact>>({});
+  turtleArtifactsRef.current = turtleArtifacts;
   const [recognitions, setRecognitions] = useState<Record<string, any>>({});
   const [recognitionInputs, setRecognitionInputs] = useState<any[]>([]);
   const [recognitionMembers, setRecognitionMembers] = useState<any[]>([]);
   const [recognitionMatches, setRecognitionMatches] = useState<Record<string, any>>({});
   const [recognitionInventories, setRecognitionInventories] = useState<any[]>([]);
   const [recognitionUploading, setRecognitionUploading] = useState(false);
+  // Recognition stage-row state — dedicated per-row model + prompt, decoupled
+  // from the Objects-page prompts. Persisted under the keys the server reads.
+  const [recOnepassModel, setRecOnepassModel] = useState("");
+  const [recOnepassPrompt, setRecOnepassPrompt] = useState(DEFAULT_RECOGNIZE_ONEPASS_PROMPT);
+  const [recOnepassPromptSelection, setRecOnepassPromptSelection] = useState<PromptSelection>("workspace");
+  const [recObjectsTurtleModel, setRecObjectsTurtleModel] = useState("");
+  const [recObjectsTurtlePrompt, setRecObjectsTurtlePrompt] = useState(DEFAULT_RECOGNIZE_OBJECTS_TURTLE_PROMPT);
+  const [recObjectsTurtlePromptSelection, setRecObjectsTurtlePromptSelection] = useState<PromptSelection>("workspace");
+  const [recTurtleModel, setRecTurtleModel] = useState("");
+  const [recTurtlePrompt, setRecTurtlePrompt] = useState(DEFAULT_RECOGNIZE_TURTLE_PROMPT);
+  const [recTurtlePromptSelection, setRecTurtlePromptSelection] = useState<PromptSelection>("workspace");
+  const [recTurtlePngModel, setRecTurtlePngModel] = useState("");
+  const [recTurtlePngPrompt, setRecTurtlePngPrompt] = useState(DEFAULT_RECOGNIZE_TURTLE_PNG_PROMPT);
+  const [recTurtlePngPromptSelection, setRecTurtlePngPromptSelection] = useState<PromptSelection>("workspace");
+  const [recognizerConcurrency, setRecognizerConcurrency] = useState<number | AutoPolicy>("reserve");
   const [serverJobs, setServerJobs] = useState<any[]>([]);
   const [models, setModels] = useState<ModelChoice[]>([]);
   const [memberModel, setMemberModel] = useState("");
@@ -3190,9 +3243,13 @@ export function VideoImportPage({
     filterId, filterParams, chain, candidateCount, fullSelectors,
     gallery, output, outputMode, outputLabel, appliedIds, trail, probes,
     members, memberInventories, memberScenes, memberDescriptionPrompt, objectPromptWriter, memberDecompositionPrompt, memberOrderPrompt, memberOutlinerPrompt, memberExtractorPrompt, turtlePrompt, turtlePngPrompt, turtleArtifacts, recognitions, recognitionInputs, recognitionMembers, recognitionMatches, recognitionInventories, memberGoal, memberFill,
+    recognizeOnepassModel: recOnepassModel, recognizeOnepassPrompt: recOnepassPrompt, recognizeOnepassPromptSelection: recOnepassPromptSelection,
+    recognizeObjectsTurtleModel: recObjectsTurtleModel, recognizeObjectsTurtlePrompt: recObjectsTurtlePrompt, recognizeObjectsTurtlePromptSelection: recObjectsTurtlePromptSelection,
+    recognizeTurtleModel: recTurtleModel, recognizeTurtlePrompt: recTurtlePrompt, recognizeTurtlePromptSelection: recTurtlePromptSelection,
+    recognizeTurtlePngModel: recTurtlePngModel, recognizeTurtlePngPrompt: recTurtlePngPrompt, recognizeTurtlePngPromptSelection: recTurtlePngPromptSelection,
     allCallsModel, describerModel, plannerModel, outlinerModel, extractorModel, turtleModel, turtlePngModel, captionModel,
     describerPromptSelection, plannerPromptSelection, outlinerPromptSelection, extractorPromptSelection, turtlePromptSelection, turtlePngPromptSelection,
-    pipeForkSelections, pipeForkHistory, selectedPipeFork, pipeParentView, selectedRecursiveInventoryId, collapsedLeftGalleries, recursiveAutomation, llmCallConcurrency, llmCallMetrics, totalLlmConcurrency, manualWorkerHold,
+    pipeForkSelections, pipeForkHistory, selectedPipeFork, pipeParentView, selectedRecursiveInventoryId, collapsedLeftGalleries, recursiveAutomation, llmCallConcurrency: { ...llmCallConcurrency, recognizer: recognizerConcurrency }, llmCallMetrics, totalLlmConcurrency, manualWorkerHold,
     modelResponseCache,
     autoClearData, autoClearAlgorithm, autoNext77,
     collapsedMap, pinnedMap,
@@ -3335,6 +3392,19 @@ export function VideoImportPage({
     if (Array.isArray(s.recognitionMembers)) setRecognitionMembers(s.recognitionMembers);
     if (s.recognitionMatches && typeof s.recognitionMatches === "object") setRecognitionMatches(s.recognitionMatches);
     if (Array.isArray(s.recognitionInventories)) setRecognitionInventories(s.recognitionInventories);
+    if (typeof s.recognizeOnepassModel === "string") setRecOnepassModel(s.recognizeOnepassModel);
+    if (typeof s.recognizeOnepassPrompt === "string") setRecOnepassPrompt(s.recognizeOnepassPrompt);
+    if (s.recognizeOnepassPromptSelection === "workspace" || s.recognizeOnepassPromptSelection === "default") setRecOnepassPromptSelection(s.recognizeOnepassPromptSelection);
+    if (typeof s.recognizeObjectsTurtleModel === "string") setRecObjectsTurtleModel(s.recognizeObjectsTurtleModel);
+    if (typeof s.recognizeObjectsTurtlePrompt === "string") setRecObjectsTurtlePrompt(s.recognizeObjectsTurtlePrompt);
+    if (s.recognizeObjectsTurtlePromptSelection === "workspace" || s.recognizeObjectsTurtlePromptSelection === "default") setRecObjectsTurtlePromptSelection(s.recognizeObjectsTurtlePromptSelection);
+    if (typeof s.recognizeTurtleModel === "string") setRecTurtleModel(s.recognizeTurtleModel);
+    if (typeof s.recognizeTurtlePrompt === "string") setRecTurtlePrompt(s.recognizeTurtlePrompt);
+    if (s.recognizeTurtlePromptSelection === "workspace" || s.recognizeTurtlePromptSelection === "default") setRecTurtlePromptSelection(s.recognizeTurtlePromptSelection);
+    if (typeof s.recognizeTurtlePngModel === "string") setRecTurtlePngModel(s.recognizeTurtlePngModel);
+    if (typeof s.recognizeTurtlePngPrompt === "string") setRecTurtlePngPrompt(s.recognizeTurtlePngPrompt);
+    if (s.recognizeTurtlePngPromptSelection === "workspace" || s.recognizeTurtlePngPromptSelection === "default") setRecTurtlePngPromptSelection(s.recognizeTurtlePngPromptSelection);
+    if (s.llmCallConcurrency && (typeof s.llmCallConcurrency.recognizer === "number" || isAutoPolicy(String(s.llmCallConcurrency.recognizer)))) setRecognizerConcurrency(s.llmCallConcurrency.recognizer);
     if (typeof s.allCallsModel === "string") { allCallsModelTouchedRef.current = true; setAllCallsModel(s.allCallsModel); }
     if (typeof s.describerModel === "string") { describerModelTouchedRef.current = true; setDescriberModel(s.describerModel); }
     if (typeof s.plannerModel === "string") { plannerModelTouchedRef.current = true; setPlannerModel(s.plannerModel); }
@@ -3749,6 +3819,112 @@ export function VideoImportPage({
         setRecognitionUploading(false);
       }
     })();
+  };
+  // Render-on-demand: locally rasterize a turtle program to a PNG for the UI.
+  // Best-effort + non-blocking — never gates any pipeline step. In-flight guard
+  // prevents duplicate renders of the same source.
+  const turtleRenderInFlight = useRef<Set<string>>(new Set());
+  const ensureTurtleImage = useCallback((sourceImage: string) => {
+    if (!sourceImage || turtleRenderInFlight.current.has(sourceImage)) return;
+    const art = turtleArtifactsRef.current[sourceImage];
+    if (!art || !art.rawProgram || art.renderedImage) return;
+    turtleRenderInFlight.current.add(sourceImage);
+    void (async () => {
+      try {
+        const payload = await api("turtle/render-on-demand", { workspaceId, sourceImage });
+        if (payload && typeof payload.renderedImage === "string" && payload.renderedImage) {
+          setTurtleArtifacts((current) => {
+            const existing = current[sourceImage];
+            if (!existing) return current;
+            return { ...current, [sourceImage]: { ...existing, renderedImage: payload.renderedImage, status: "rendered" } };
+          });
+        }
+      } catch { /* best-effort: leave the program without an image */ }
+      finally { turtleRenderInFlight.current.delete(sourceImage); }
+    })();
+  }, [workspaceId]);
+  // Render one Recognition stage row, reusing the exact Objects-page
+  // stage-row markup (video-import-llm-call-row). The run action starts the
+  // server stage; stat cells reflect live pipeline counts when a server run
+  // owns that stage (the client scheduler is disabled).
+  const renderRecognitionRow = (opts: {
+    stage: string; label: string;
+    model: string; setModel: (v: string) => void;
+    promptSelection: PromptSelection; setPromptSelection: (v: PromptSelection) => void;
+    concurrencyValue: number | AutoPolicy; onConcurrency: (v: number | AutoPolicy) => void;
+    disabled: boolean;
+  }) => {
+    const { stage, label } = opts;
+    const serverActive = pipelineRunStatus === "running" && pipelineCounts.stage === stage;
+    const sProcessing = serverActive ? Number(pipelineCounts.active || 0) : 0;
+    const sDone = serverActive ? Number(pipelineCounts.done || 0) : 0;
+    const sFailed = serverActive ? Number(pipelineCounts.failed || 0) : 0;
+    const sPending = serverActive
+      ? Math.max(0, Number(pipelineCounts.total || 0) - sDone - sFailed - sProcessing)
+      : 0;
+    return (
+      <div className="video-import-llm-call-row" key={stage}>
+        <button
+          type="button"
+          className={`${serverActive ? "is-on has-workers" : ""}`}
+          aria-pressed={serverActive}
+          disabled={!serverActive && opts.disabled}
+          onClick={() => { if (serverActive) { void stopServerPipeline(); } else { startServerStage(stage); } }}
+        >
+          <span>{label}</span>
+          <small>{serverActive ? "RUNNING" : "RUN"}</small>
+          <em>{sProcessing} ACTIVE WORKER{sProcessing === 1 ? "" : "S"}</em>
+        </button>
+        <div className="video-import-llm-call-metrics" aria-label={`${label} job metrics`}>
+          <span title="Jobs running right now on a worker for this stage."><b>{sProcessing}</b><small>PROCESSING</small></span>
+          <span title="Server-side stage: waiting is not tracked separately."><b>—</b><small>WAITING</small></span>
+          <span title="Jobs still left for this stage."><b>{sPending}</b><small>PENDING</small></span>
+          <span title="Server-side stage: retry is not tracked separately."><b>—</b><small>RETRY</small></span>
+          <span title="Jobs in a failed/error state for this stage." className={sFailed ? "has-errors" : ""}><b>{sFailed}</b><small>ERRORS</small></span>
+          <span><b>{sDone}</b><small>COMPLETED</small></span>
+          <span title="Server-side stage: per-job average is not tracked."><b>—</b><small>AVG / JOB</small></span>
+        </div>
+        <label>max processes
+          <div className="video-import-max-proc-combo">
+            <ColoredTagCombobox
+              value={String(opts.concurrencyValue)}
+              ids={CONCURRENCY_OPTION_IDS}
+              ariaLabel={`${label} max processes`}
+              describe={describeConcurrencyOption}
+              closedWidth="100%"
+              openWidth="30ch"
+              closedShow={{ tags: true }}
+              onChange={(value) => opts.onConcurrency(isAutoPolicy(value) ? value : Number(value))}
+            />
+          </div>
+        </label>
+        <label>prompt
+          <ColoredTagCombobox
+            value={opts.promptSelection}
+            ids={["workspace", "default"]}
+            ariaLabel={`${label} prompt`}
+            describe={(id) => id === "workspace"
+              ? { label: `workspace-edited ${label} prompt`, groupKey: "0", groupLabel: "PROMPT", tags: [{ text: "ws", color: "#27dcc2" }] }
+              : { label: `built-in default ${label} prompt`, groupKey: "0", groupLabel: "PROMPT", tags: [{ text: "default", color: "#8aa0aa" }] }}
+            closedShow={{ tags: true }}
+            openWidth="26ch"
+            onChange={(value) => opts.setPromptSelection(value as PromptSelection)}
+          />
+        </label>
+        <label>model
+          <ColoredTagCombobox
+            value={opts.model}
+            ids={videoModelIds}
+            ariaLabel={`${label} model`}
+            allowNone
+            noneLabel={`<use global${allCallsModel ? ` · ${allCallsModel}` : ""}>`}
+            describe={describeVideoModel}
+            openWidth="32ch"
+            onChange={(value) => opts.setModel(value)}
+          />
+        </label>
+      </div>
+    );
   };
   // JSON CONFIG editor draft: null = tracking the live config. Edits apply to
   // the flow LIVE as soon as the JSON parses (debounced).
@@ -6037,6 +6213,19 @@ export function VideoImportPage({
       )
     : undefined;
   const renderedTurtleArtifacts = Object.values(turtleArtifacts).filter((artifact) => artifact.status === "rendered" && artifact.renderedImage);
+  // Render-on-demand (UI-only, best-effort): wherever a turtle PROGRAM is shown
+  // without a rendered image, lazily render it locally so the user sees it.
+  useEffect(() => {
+    for (const m of recognitionMembers) {
+      const art = m && m.cutout ? turtleArtifacts[m.cutout] : undefined;
+      if (art && art.rawProgram && !art.renderedImage) ensureTurtleImage(m.cutout);
+    }
+  }, [recognitionMembers, turtleArtifacts, ensureTurtleImage]);
+  useEffect(() => {
+    if (activeTurtleArtifact && activeTurtleArtifact.rawProgram && !activeTurtleArtifact.renderedImage) {
+      ensureTurtleImage(activeTurtleArtifact.sourceImage);
+    }
+  }, [activeTurtleArtifact, ensureTurtleImage]);
   useEffect(() => {
     const imagePath = activeImageContext?.imagePath;
     if (!imagePath) {
@@ -7268,7 +7457,7 @@ export function VideoImportPage({
         <section className="video-import-recognition">
           <div className="video-import-recognition-head">
             <h2>Recognition</h2>
-            <p>Load images, then run the thread buttons: <b>find the object outlines</b> across your image set, <b>turtleize the content inside each outline</b> (turtle → rendered PNG), or do <b>both in one step</b>. You can also match found objects against your Objects-page cutouts. Everything runs server-side and is reconnect-safe.</p>
+            <p>Load images, then run the four discrete stage rows below. <b>TWO-SHOT</b>: make outlines, then make a turtle program from each cutout. <b>ONE SHOT</b>: get objects + a turtle program per object in a single call. <b>FOR UI</b>: render each turtle program to a PNG (local). Everything runs server-side and is reconnect-safe.</p>
             <div className="video-import-recognition-actions">
               <label className="video-import-recognition-upload">
                 <input type="file" accept="image/*" multiple style={{ display: "none" }}
@@ -7276,14 +7465,20 @@ export function VideoImportPage({
                   onChange={(e) => { uploadRecognitionImages(e.target.files); e.currentTarget.value = ""; }} />
                 <span className="video-import-toggle" role="button">{recognitionUploading ? "… uploading" : "＋ load images"}</span>
               </label>
-              <button disabled={pipelineRunStatus === "running" || !isRunnableVisionModel(effectiveDescriberModel) || !(recognitionInputs.length || memberInputPaths.size)} onClick={() => startServerStage("recognizeOnepass")}>Call LLM · Find Object Outlines On Image Sets</button>
-              <button disabled={pipelineRunStatus === "running" || !isRunnableVisionModel(effectiveTurtleModel) || !recognitionMembers.length} onClick={() => startServerStage("recognizeTurtle")}>Call LLM · Make Turtle From Content Inside the Outlines</button>
-              <button className="primary" disabled={pipelineRunStatus === "running" || !isRunnableVisionModel(effectiveDescriberModel) || !(recognitionInputs.length || memberInputPaths.size)} onClick={() => startServerStage("recognizeAll")}>Call LLM · Find Objects and Turtllize Each</button>
               {pipelineRunStatus === "running" && <button onClick={() => void stopServerPipeline()}>■ stop</button>}
               <button disabled={pipelineRunStatus === "running" || !recognitionMembers.length || !members.length} onClick={() => startServerStage("recognizeMatch")}>🔗 Match against objects</button>
-              <button disabled={pipelineRunStatus === "running" || !isRunnableVisionModel(effectiveDescriberModel) || !(recognitionInputs.length || memberInputPaths.size)} onClick={() => startServerStage("recognize")}>🔎 Name characters</button>
+              <button disabled={pipelineRunStatus === "running" || !isRunnableVisionModel(recOnepassModel || allCallsModel) || !(recognitionInputs.length || memberInputPaths.size)} onClick={() => startServerStage("recognize")}>🔎 Name characters</button>
               <span className="video-import-toggle">server: {pipelineRunStatus}</span>
               <span className="video-import-toggle">{recognitionInputs.length} loaded · {recognitionMembers.length} cut · {Object.keys(recognitionMatches).length} matched</span>
+            </div>
+            <div className="video-import-llm-call-rows video-import-recognition-rows">
+              <div className="video-import-reco-group-head">TWO-SHOT PROCESS</div>
+              {renderRecognitionRow({ stage: "recognizeOnepass", label: "Make Outline from Image", model: recOnepassModel, setModel: setRecOnepassModel, promptSelection: recOnepassPromptSelection, setPromptSelection: setRecOnepassPromptSelection, concurrencyValue: recognizerConcurrency, onConcurrency: setRecognizerConcurrency, disabled: !isRunnableVisionModel(recOnepassModel || allCallsModel) || !(recognitionInputs.length || memberInputPaths.size) })}
+              {renderRecognitionRow({ stage: "recognizeTurtle", label: "Make Turtle from what's inside Each Outline", model: recTurtleModel, setModel: setRecTurtleModel, promptSelection: recTurtlePromptSelection, setPromptSelection: setRecTurtlePromptSelection, concurrencyValue: llmCallConcurrency.turtle, onConcurrency: (v) => setCallConcurrency("turtle", v), disabled: !isRunnableVisionModel(recTurtleModel || allCallsModel) || !recognitionMembers.length })}
+              <div className="video-import-reco-group-head">ONE SHOT</div>
+              {renderRecognitionRow({ stage: "recognizeObjectsTurtle", label: "Make Turtle Programs for Objects Found in Image", model: recObjectsTurtleModel, setModel: setRecObjectsTurtleModel, promptSelection: recObjectsTurtlePromptSelection, setPromptSelection: setRecObjectsTurtlePromptSelection, concurrencyValue: recognizerConcurrency, onConcurrency: setRecognizerConcurrency, disabled: !isRunnableVisionModel(recObjectsTurtleModel || allCallsModel) || !(recognitionInputs.length || memberInputPaths.size) })}
+              <div className="video-import-reco-group-head">FOR UI</div>
+              {renderRecognitionRow({ stage: "recognizeTurtlePng", label: "Make PNG from Turtle", model: recTurtlePngModel, setModel: setRecTurtlePngModel, promptSelection: recTurtlePngPromptSelection, setPromptSelection: setRecTurtlePngPromptSelection, concurrencyValue: llmCallConcurrency.turtlePng, onConcurrency: (v) => setCallConcurrency("turtlePng", v), disabled: !recognitionMembers.length })}
             </div>
           </div>
 

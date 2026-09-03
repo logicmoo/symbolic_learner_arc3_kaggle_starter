@@ -1440,6 +1440,7 @@ def _turtle_gen(
     model_override: str | None = None,
     model_state_key: str = "turtleModel",
     template_override: str | None = None,
+    extra_artifact_fields: dict[str, Any] | None = None,
     concurrency_override: int | None = None,
     stop_event: threading.Event | None = None,
     log: Callable[[str], None] | None = None,
@@ -1510,6 +1511,7 @@ def _turtle_gen(
         persist_turtle_artifact(workspace_id, src, {
             "sourceImage": src, "subjectName": leaf["subjectName"], "prompt": prompt,
             "rawProgram": raw, "status": "generated", "error": None, "failedStage": None,
+            **(extra_artifact_fields or {}),
         })
         counts["done"] += 1
         emit(f"{_ts()} 🐢 generated turtle program for {leaf['subjectName']} ({counts['done']}/{counts['total']})")
@@ -1910,6 +1912,16 @@ def persist_recognition_result(
         _save_page_state_payload({"workspaceId": workspace_id, "state": state})
 
 
+def _persist_recognition_step(workspace_id: str, step: int) -> None:
+    """Persist the recognition cutout step counter so subsequent runs keep
+    advancing it — one-shot and two-shot cutouts then never share a filename."""
+    with _page_state_lock(workspace_id):
+        state = load_state(workspace_id)
+        if int(state.get("recognitionStep") or 0) < step:
+            state["recognitionStep"] = step
+            _save_page_state_payload({"workspaceId": workspace_id, "state": state})
+
+
 def parse_onepass_output(raw: str, *, capture_turtle: bool = False) -> dict[str, Any]:
     parsed = detect_json(raw)
     if not isinstance(parsed, dict):
@@ -1992,7 +2004,7 @@ def run_recognize_onepass(
             return
         path = str(frame.get("path"))
         index = int(frame.get("index") or 0)
-        inventory_id = f"recog:{path}"
+        inventory_id = f"recog:two_shot:{path}"
         dims = image_dimensions(root, path)
         if not dims:
             counts["failed"] += 1
@@ -2052,7 +2064,7 @@ def run_recognize_onepass(
                         "framePath": path, "frameIndex": index, "name": name, "cutout": cutout,
                         "box": cut.get("box") or box or [0, 0, 0, 0], "step": step_counter["n"],
                         "status": "pending", "probeIndex": -1, "probeLabel": "recognition",
-                        "inventoryId": inventory_id, "depth": 0,
+                        "inventoryId": inventory_id, "depth": 0, "method": "two_shot",
                         "provenance": str(cut.get("cutoutProvenance") or ""),
                     })
                 except Exception as error:  # noqa: BLE001
@@ -2060,7 +2072,7 @@ def run_recognize_onepass(
             things.append(thing)
         inventory = {
             "id": inventory_id, "framePath": path, "frameIndex": index, "probeIndex": 0,
-            "probeLabel": "recognition", "goal": goal, "sourceImage": path,
+            "probeLabel": "recognition", "goal": goal, "sourceImage": path, "method": "two_shot",
             "descriptionOutput": raw, "sceneDescription": parsed["description"],
             "modelId": model_id, "depth": 0, "subjectName": f"recog_{index}",
             "status": "done", "things": things,
@@ -2079,6 +2091,7 @@ def run_recognize_onepass(
     else:
         with ThreadPoolExecutor(max_workers=concurrency) as pool:
             list(pool.map(onepass_one, inputs))
+    _persist_recognition_step(workspace_id, step_counter["n"])
     summary = f"one-pass complete: {counts.get('done', 0)} image(s), {counts.get('failed', 0)} failed of {counts.get('total', 0)}"
     emit(f"{_ts()} {summary}")
     return summary
@@ -2196,7 +2209,7 @@ def run_recognize_objects_turtle(
                         "framePath": path, "frameIndex": index, "name": name, "cutout": cutout,
                         "box": cut.get("box") or box or [0, 0, 0, 0], "step": step_counter["n"],
                         "status": "pending", "probeIndex": -1, "probeLabel": "recognition",
-                        "inventoryId": inventory_id, "depth": 0,
+                        "inventoryId": inventory_id, "depth": 0, "method": "one_shot",
                         "provenance": str(cut.get("cutoutProvenance") or ""),
                     })
                     prog = obj.get("turtleProgram")
@@ -2207,7 +2220,7 @@ def run_recognize_objects_turtle(
             things.append(thing)
         inventory = {
             "id": inventory_id, "framePath": path, "frameIndex": index, "probeIndex": 0,
-            "probeLabel": "recognition", "goal": goal, "sourceImage": path,
+            "probeLabel": "recognition", "goal": goal, "sourceImage": path, "method": "one_shot",
             "descriptionOutput": raw, "sceneDescription": parsed["description"],
             "modelId": model_id, "depth": 0, "subjectName": f"recog_{index}",
             "status": "done", "things": things,
@@ -2221,7 +2234,7 @@ def run_recognize_objects_turtle(
             persist_turtle_artifact(workspace_id, cutout, {
                 "sourceImage": cutout, "subjectName": name, "description": description,
                 "prompt": "", "rawProgram": json.dumps(prog, ensure_ascii=False),
-                "status": "generated", "error": None, "failedStage": None,
+                "status": "generated", "error": None, "failedStage": None, "method": "one_shot",
             })
         counts["done"] += 1
         emit(f"{_ts()} ✦ #{index}: {len(objects)} object(s), {len(new_members)} cut, {len(turtle_arts)} turtle program(s)")
@@ -2234,6 +2247,7 @@ def run_recognize_objects_turtle(
     else:
         with ThreadPoolExecutor(max_workers=concurrency) as pool:
             list(pool.map(pass_one, inputs))
+    _persist_recognition_step(workspace_id, step_counter["n"])
     summary = f"objects+turtle complete: {counts.get('done', 0)} image(s), {counts.get('failed', 0)} failed of {counts.get('total', 0)}"
     emit(f"{_ts()} {summary}")
     return summary
@@ -2400,14 +2414,17 @@ def run_recognize_match(
 
 # --- Recognition turtle: turtleize the content inside recognition outlines --- #
 
-def _collect_recognition_turtle_leaves(state: dict[str, Any]) -> list[dict[str, Any]]:
+def _collect_recognition_turtle_leaves(state: dict[str, Any], method: str | None = None) -> list[dict[str, Any]]:
     """Every recognition cutout (content inside a found outline) is a leaf for
     turtle rendering — same shape as _collect_turtle_leaves but sourced from the
-    Recognition page's recognitionInventories."""
+    Recognition page's recognitionInventories. When `method` is given, only
+    inventories tagged with that method (e.g. 'two_shot') are considered."""
     leaves: list[dict[str, Any]] = []
     seen: set[str] = set()
     for inv in state.get("recognitionInventories") or []:
         if not isinstance(inv, dict):
+            continue
+        if method is not None and str(inv.get("method") or "") != method:
             continue
         for thing in inv.get("things") or []:
             outs = thing.get("outputImages") or []
@@ -2433,18 +2450,20 @@ def run_recognize_turtle(
     counts: dict[str, int] | None = None,
 ) -> str:
     """Make a Turtle program from the content inside each recognition outline
-    (generation only — the PNG render is a separate pass, run_recognize_turtle_png)."""
+    (generation only — the PNG render is a separate pass, run_recognize_turtle_png).
+    Step 2 of the TWO-SHOT path: scoped to two_shot cutouts, tagged two_shot."""
     emit = log or (lambda _msg: None)
     counts = counts if counts is not None else {}
     state = load_state(workspace_id)
-    leaves = _collect_recognition_turtle_leaves(state)
+    leaves = _collect_recognition_turtle_leaves(state, method="two_shot")
     if not leaves:
-        emit(f"{_ts()} no recognition cutouts to turtle (run 'Find Object Outlines' first)")
+        emit(f"{_ts()} no recognition cutouts to turtle (run 'Make Outline from Image' first)")
         return "no recognition cutouts"
     template = _recognition_prompt(state, "recognizeTurtlePrompt", "recognizeTurtlePromptSelection", DEFAULT_RECOGNIZE_TURTLE_PROMPT)
     return _turtle_gen(
         workspace_id, leaves,
         model_state_key="recognizeTurtleModel", template_override=template,
+        extra_artifact_fields={"method": "two_shot"},
         model_override=model_override, concurrency_override=concurrency_override,
         stop_event=stop_event, log=emit, counts=counts,
     )
