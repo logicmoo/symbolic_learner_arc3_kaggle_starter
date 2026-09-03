@@ -7498,14 +7498,25 @@ export function VideoImportPage({
           {recognitionGallery.length > 0 && (
             <div className="video-import-reco-enrolled">
               <h3 className="video-import-recognition-subhead">Enrolled — the learned {recognitionGallery.length}</h3>
-              <div className="video-import-reco-enrolled-grid">
-                {recognitionGallery.map((g: any) => (
-                  <figure key={g.slug || g.image} className="video-import-reco-enrolled-item">
-                    <img src={asset(g.image)} alt={g.name || g.slug} loading="lazy" />
-                    <figcaption>{g.name || g.slug}</figcaption>
-                  </figure>
-                ))}
-              </div>
+              {recognitionGallery.some((g: any) => g.chip) ? (
+                <div className="video-import-reco-chip-list">
+                  {recognitionGallery.map((g: any) => (
+                    <figure key={g.slug || g.image} className="video-import-reco-chip-row">
+                      <img className="video-import-reco-chip" src={asset(g.chip || g.image)} alt={g.name || g.slug} loading="lazy" />
+                      <figcaption>{g.name || g.slug}</figcaption>
+                    </figure>
+                  ))}
+                </div>
+              ) : (
+                <div className="video-import-reco-enrolled-grid">
+                  {recognitionGallery.map((g: any) => (
+                    <figure key={g.slug || g.image} className="video-import-reco-enrolled-item">
+                      <img src={asset(g.image)} alt={g.name || g.slug} loading="lazy" />
+                      <figcaption>{g.name || g.slug}</figcaption>
+                    </figure>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -7523,17 +7534,19 @@ export function VideoImportPage({
           {recognitionMembers.length > 0 && (
             <>
               <h3 className="video-import-recognition-subhead">Test set · {recognitionMembers.length} probes (the {recognitionGallery.length || 20} distributed)</h3>
-              <div className="video-import-recognition-grid">
+              <div className={recognitionMembers.some((m: any) => m.chip) ? "video-import-reco-chip-list" : "video-import-recognition-grid"}>
                 {recognitionMembers.map((m: any, i: number) => {
                   const match = recognitionMatches[m.cutout];
                   const turtle = turtleArtifacts[m.cutout];
                   return (
-                    <div className="video-import-recognition-card" key={`${m.cutout || m.name}-${i}`}>
-                      <img src={asset(m.cutout)} alt={m.name} loading="lazy" />
-                      {turtle?.renderedImage && <img className="video-import-recognition-turtle" src={asset(turtle.renderedImage)} alt={`${m.name} turtle render`} loading="lazy" />}
+                    <div className={`video-import-recognition-card${m.chip ? " is-chip" : ""}`} key={`${m.cutout || m.name}-${i}`}>
+                      {m.chip
+                        ? <img className="video-import-reco-chip" src={asset(m.chip)} alt={m.name} loading="lazy" />
+                        : <img src={asset(m.cutout)} alt={m.name} loading="lazy" />}
+                      {!m.chip && turtle?.renderedImage && <img className="video-import-recognition-turtle" src={asset(turtle.renderedImage)} alt={`${m.name} turtle render`} loading="lazy" />}
                       <div className="video-import-recognition-info">
                         <b>{m.name}</b>
-                        {turtle && !turtle.renderedImage && <em className="video-import-recognition-turtle-status">🐢 {turtle.status || "pending"}</em>}
+                        {!m.chip && turtle && !turtle.renderedImage && <em className="video-import-recognition-turtle-status">🐢 {turtle.status || "pending"}</em>}
                         {match ? (
                           match.matchedName ? (
                             <div className="video-import-recognition-match">

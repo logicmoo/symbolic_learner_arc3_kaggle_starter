@@ -1233,6 +1233,12 @@
 .video-import-reco-enrolled-item { margin: 0; text-align: center; }
 .video-import-reco-enrolled-item img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; background: rgba(0,0,0,0.25); border: 1px solid rgba(120,200,140,0.35); }
 .video-import-reco-enrolled-item figcaption { font-size: 10px; opacity: 0.8; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.video-import-reco-chip-list { display: flex; flex-direction: column; gap: 10px; }
+.video-import-reco-chip-row { margin: 0; }
+.video-import-reco-chip-row figcaption { font-size: 11px; opacity: 0.85; margin-top: 2px; }
+.video-import-reco-chip { width: 100%; height: auto; object-fit: contain; border-radius: 6px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); }
+.video-import-recognition-card.is-chip { display: block; }
+.video-import-recognition-card.is-chip .video-import-recognition-info { margin-top: 4px; }
 
 /* --- Active server jobs banner (reconnect-safe) --- */
 .video-import-jobs-banner { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 6px 14px; background: rgba(82,199,217,0.08); border-bottom: 1px solid rgba(82,199,217,0.25); font-size: 12px; }
