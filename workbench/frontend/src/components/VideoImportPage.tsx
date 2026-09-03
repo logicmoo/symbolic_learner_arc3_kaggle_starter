@@ -7496,14 +7496,27 @@ export function VideoImportPage({
           </div>
 
           {recognitionGallery.length > 0 && (
+            <div className="video-import-reco-explainer">
+              <b>Reduction prepass — pixels in, symbols out.</b>
+              <span>Each image is reduced to a compact <b>symbolic part-graph</b> before any matching: <i>original pixels → parts located (outline boxes) → each part re-expressed as a turtle/logo program (one-shot &amp; two-shot) → a labeled part-graph (parts · colors · sizes · positions · above/left-of relations)</i>. Recognition then becomes symbolic comparison of these graphs — not pixel matching, not an LLM.</span>
+            </div>
+          )}
+
+          {recognitionGallery.length > 0 && (
             <div className="video-import-reco-enrolled">
-              <h3 className="video-import-recognition-subhead">Enrolled — the learned {recognitionGallery.length}</h3>
+              <h3 className="video-import-recognition-subhead">Enrolled — the learned {recognitionGallery.length} (prepass, once)</h3>
               {recognitionGallery.some((g: any) => g.chip) ? (
                 <div className="video-import-reco-chip-list">
                   {recognitionGallery.map((g: any) => (
                     <figure key={g.slug || g.image} className="video-import-reco-chip-row">
+                      <figcaption><b>{g.name || g.slug}</b>{g.nparts ? <span className="video-import-reco-symcount"> · {g.nparts} parts · {g.nrels} relations</span> : null}</figcaption>
                       <img className="video-import-reco-chip" src={asset(g.chip || g.image)} alt={g.name || g.slug} loading="lazy" />
-                      <figcaption>{g.name || g.slug}</figcaption>
+                      {g.metta ? (
+                        <details className="video-import-reco-symbolic">
+                          <summary>Symbolic part-graph (MeTTa)</summary>
+                          <pre>{g.metta}</pre>
+                        </details>
+                      ) : null}
                     </figure>
                   ))}
                 </div>
@@ -7547,6 +7560,12 @@ export function VideoImportPage({
                       <div className="video-import-recognition-info">
                         <b>{m.name}</b>
                         {!m.chip && turtle && !turtle.renderedImage && <em className="video-import-recognition-turtle-status">🐢 {turtle.status || "pending"}</em>}
+                        {m.metta ? (
+                          <details className="video-import-reco-symbolic">
+                            <summary>Symbolic part-graph (MeTTa){m.nparts ? ` · ${m.nparts} parts` : ""}</summary>
+                            <pre>{m.metta}</pre>
+                          </details>
+                        ) : null}
                         {match ? (
                           match.matchedName ? (
                             <div className="video-import-recognition-match">
