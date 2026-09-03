@@ -1302,15 +1302,34 @@
 .video-import-reduce-sepname { flex: 0 0 auto; }
 .video-import-reduce-sepcount { font-weight: 500; letter-spacing: 0; text-transform: none; opacity: 0.55; font-size: 10.5px; }
 .video-import-reduce-foldbtn { font-size: 11px; padding: 4px 10px; }
+.video-import-reduce-runbtn { font-size: 11.5px; font-weight: 700; padding: 5px 12px; border-radius: 6px; background: rgba(39,220,194,0.16); color: #27dcc2; border: 1px solid rgba(39,220,194,0.5); cursor: pointer; }
+.video-import-reduce-runbtn:hover:not(:disabled) { background: rgba(39,220,194,0.26); }
+.video-import-reduce-runbtn.is-running { background: rgba(230,173,69,0.16); color: #e6ad45; border-color: rgba(230,173,69,0.5); cursor: default; }
 .video-import-reduce-listrow { content-visibility: auto; contain-intrinsic-size: auto 60px; border-bottom: 1px solid rgba(255,255,255,0.06); }
 .video-import-reduce-listrow.is-open { content-visibility: visible; background: rgba(39,220,194,0.05); }
 .video-import-reduce-listmain { display: flex; align-items: stretch; gap: 8px; padding: 6px 10px; cursor: pointer; overflow-x: auto; }
 .video-import-reduce-listmain:hover { background: rgba(255,255,255,0.04); }
 .video-import-reduce-listcell { flex: 0 0 auto; display: flex; flex-direction: column; justify-content: center; gap: 3px; border-radius: 6px; padding: 5px 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); }
 .video-import-reduce-listcell.is-input { flex-direction: row; align-items: center; gap: 10px; min-width: 240px; background: rgba(255,255,255,0.05); }
-.video-import-reduce-listcell.is-tier { min-width: 110px; align-items: flex-start; }
+.video-import-reduce-listcell.is-tier { min-width: 140px; align-items: flex-start; }
+.video-import-reduce-listcell.is-tier.is-ref { border-color: rgba(82,199,217,0.4); background: rgba(82,199,217,0.06); }
 .video-import-reduce-listcell.is-pending { justify-content: center; align-items: center; min-width: 110px; font-size: 11px; font-style: italic; opacity: 0.55; }
-.video-import-reduce-rowstrip { flex: 0 0 auto; height: 150px; width: auto; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); background: #fff; }
+/* Native per-tier reduction stage panels (parts overlay + part map + graph). */
+.video-import-reduce-tiergroup { flex: 0 0 auto; display: flex; flex-direction: column; gap: 4px; padding: 6px 8px; border-radius: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); }
+.video-import-reduce-tiergroup.is-ref { border-color: rgba(214,39,40,0.4); background: rgba(214,39,40,0.05); }
+.video-import-reduce-tierhead { display: flex; align-items: center; gap: 8px; font-size: 11px; white-space: nowrap; }
+.video-import-reduce-tierhead b { font-size: 12px; }
+.video-import-reduce-tierhead > span { opacity: 0.7; }
+.video-import-reduce-tiernums { font-variant-numeric: tabular-nums; }
+.video-import-reduce-stages { display: flex; align-items: flex-start; gap: 6px; }
+.video-import-reduce-stage { margin: 0; display: flex; flex-direction: column; gap: 2px; }
+.video-import-reduce-stage figcaption { font-size: 9.5px; letter-spacing: 0.03em; text-transform: uppercase; opacity: 0.6; text-align: center; }
+.video-import-reduce-svg { width: 130px; height: 130px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); background: #fff; }
+.video-import-reduce-svg.is-map { background: #ffffff; }
+.video-import-reduce-stageimg { width: 130px; height: 130px; object-fit: contain; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); background: #fff; }
+.video-import-reduce-stagemissing { width: 130px; height: 130px; display: flex; align-items: center; justify-content: center; text-align: center; border-radius: 6px; border: 1px dashed rgba(255,255,255,0.15); font-size: 10px; font-style: italic; opacity: 0.5; }
+.video-import-reduce-stage.is-graph { min-width: 240px; align-self: stretch; }
+.video-import-reduce-graphmini { width: 240px; height: 150px; margin: 0; overflow: auto; padding: 6px; background: #0d1117; color: #7ee787; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); font-size: 8.5px; line-height: 1.35; white-space: pre-wrap; word-break: break-word; }
 .video-import-reduce-listthumb { flex: 0 0 auto; width: 44px; height: 44px; object-fit: cover; border-radius: 5px; background: rgba(0,0,0,0.35); }
 .video-import-reduce-listlabel { display: flex; flex-direction: column; gap: 2px; line-height: 1.25; overflow: hidden; }
 .video-import-reduce-listlabel b { font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

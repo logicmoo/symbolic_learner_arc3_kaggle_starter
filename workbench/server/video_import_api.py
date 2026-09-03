@@ -2268,6 +2268,12 @@ def reduce_manifest(workspaceId: str) -> dict[str, Any]:
                 metta = base_name(row.get("metta"))
                 if metta:
                     normalized["mettaPath"] = resolve("sym", metta)
+                stages = row.get("stages")
+                if isinstance(stages, dict):
+                    normalized["stagePaths"] = {
+                        key: resolve("stages", base_name(val))
+                        for key, val in stages.items() if val
+                    }
                 rows.append(normalized)
             item["rows"] = rows
             items.append(item)

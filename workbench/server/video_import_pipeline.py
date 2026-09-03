@@ -27,6 +27,7 @@ import argparse
 import base64
 import json
 import mimetypes
+import os
 import re
 import sys
 import threading
@@ -2702,6 +2703,210 @@ def run_full(
     return summary
 
 
+_REDUCE_SLUG_ORDER = [
+    "bart_simpson", "lisa_simpson", "homer_simpson", "marge_simpson",
+    "maggie_simpson", "grandpa_simpson", "spongebob", "patrick_star",
+    "squidward", "scooby_doo", "shaggy", "mickey_mouse", "minnie_mouse",
+    "donald_duck", "goofy", "bugs_bunny", "pikachu", "mario", "sonic", "moana",
+]
+_REDUCE_COND_ORDER = [
+    "c1_bw", "c2_flip", "c3_rot45", "c4_busy", "c5_new",
+    "c6_verybusy", "c7_withchars", "c8_typical", "c9_colorful", "c10_modality",
+]
+_REDUCE_TRANSFORMS = {"c1_bw", "c2_flip", "c3_rot45"}
+# Independent per-tier stage panels (NO composite blob). Each of these is saved
+# as its OWN PNG so every image/stage is fully independent in the UI.
+_REDUCE_STAGE_KEYS = ["parts", "turtle", "partmap"]
+_reduce_manifest_lock = threading.Lock()
+
+
+def _reduce_lab_dir() -> Path:
+    """The parent turtle_prompt_lab that owns the proven reduction code."""
+    override = os.environ.get("REDUCE_LAB_DIR")
+    if override and Path(override).is_dir():
+        return Path(override)
+    default = Path.home() / ".copilot" / "session-state" / \
+        "d8ae6703-980e-4204-b654-bd655b9bf145" / "files" / "turtle_prompt_lab"
+    return default
+
+
+def run_reduce(
+    workspace_id: str,
+    *,
+    model_override: str | None = None,
+    goal_override: str | None = None,
+    only_selected: bool = True,
+    concurrency_override: int | None = None,
+    stop_event: threading.Event | None = None,
+    log: Callable[[str], None] | None = None,
+    counts: dict[str, int] | None = None,
+) -> str:
+    """Reduction PREPASS as a pooled server stage that uses the PARENT'S proven
+    turtle code (turtle_prompt_lab): for every condition image it runs the parent
+    1-shot + 2-shot extraction, renders each stage panel (parts / turtle-to-PNG
+    with colors / part-map) as its OWN independent PNG (never a composite blob),
+    writes per-tier .metta, and streams counts. All images fan out through one
+    ThreadPoolExecutor at the configured max-processes."""
+    emit = log or (lambda _msg: None)
+    counts = counts if counts is not None else {}
+    root = _workspace_root(workspace_id)
+    state = load_state(workspace_id)
+
+    lab = _reduce_lab_dir()
+    if not lab.is_dir():
+        raise RuntimeError(f"parent turtle_prompt_lab not found: {lab} (set REDUCE_LAB_DIR)")
+    if str(lab) not in sys.path:
+        sys.path.insert(0, str(lab))
+    import reduce_pool as rp  # noqa: PLC0415  (parent's proven reduction module)
+    from PIL import Image  # noqa: PLC0415
+
+    bases = ["data/recognition_reduce", "data/arc3_games/curated/recognition_reduce"]
+    base_rel = next((b for b in bases if (root / b / "pool").is_dir()), bases[0])
+    ws_dir = root / base_rel
+    stages_dir = ws_dir / "stages"
+    sym_dir = ws_dir / "sym"
+    stages_dir.mkdir(parents=True, exist_ok=True)
+    sym_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path = ws_dir / "manifest.json"
+
+    prov: dict[str, Any] = {}
+    for b in bases:
+        pp = root / b / "provenance.json"
+        if pp.is_file():
+            try:
+                loaded = json.loads(pp.read_text(encoding="utf-8"))
+                if isinstance(loaded, dict):
+                    prov = loaded
+                break
+            except (OSError, json.JSONDecodeError):
+                pass
+
+    def order_key(idv: str) -> tuple[int, int]:
+        slug, _, cond = idv.partition("__")
+        s = _REDUCE_SLUG_ORDER.index(slug) if slug in _REDUCE_SLUG_ORDER else 99
+        c = _REDUCE_COND_ORDER.index(cond) if cond in _REDUCE_COND_ORDER else 99
+        return (s, c)
+
+    pool_dir = ws_dir / "pool"
+    canon = {f"{s}__{c}" for s in _REDUCE_SLUG_ORDER for c in _REDUCE_COND_ORDER}
+    entries = [e for e in rp.build_pool() if (pool_dir / f"{e['id']}.jpg").is_file() and e["id"] in canon]
+    entries.sort(key=lambda e: order_key(e["id"]))
+
+    # Tiers to run. The parent's 2-shot (nshot) extraction is currently broken
+    # (returns empty), so we run the reliable 1-shot tier only unless
+    # REDUCE_TIERS is explicitly set in the environment. Each tier spec is
+    # re-created per item inside reduce_one via _tier_specs() so parallel workers
+    # don't share mutable tier dicts.
+    def _tier_specs() -> list[dict[str, Any]]:
+        specs = rp._tiers()
+        return specs if os.environ.get("REDUCE_TIERS") else specs[:1]
+
+    tiers_meta = [{"shots": t["shots"], "kind": t["kind"], "model": rp._short(t["model"])} for t in _tier_specs()]
+    manifest_rows: dict[str, dict[str, Any]] = {}
+    if manifest_path.is_file():
+        try:
+            existing = json.loads(manifest_path.read_text(encoding="utf-8"))
+            for it in (existing.get("items") or []):
+                if isinstance(it, dict) and it.get("id"):
+                    manifest_rows[str(it["id"])] = it
+        except (OSError, json.JSONDecodeError):
+            pass
+
+    nocache = os.environ.get("REDUCE_NOCACHE") == "1"
+    counts["stage"] = "reduce"
+    counts["total"] = len(entries)
+    counts["done"] = 0
+    counts["failed"] = 0
+    counts["active"] = 0
+    active = _Active(counts)
+    # Reduction is I/O-bound on the model relay, so allow a wide fan-out. Default
+    # to 19 workers (cap 19) to get all 200 done fast; overridable per call.
+    concurrency = min(19, concurrency_override or _stage_concurrency(state, "recognizer", None, 19))
+    emit(f"{_ts()} reduce start · {len(entries)} image(s) · tiers "
+         f"{', '.join(f'{t['shots']}-shot/{t['model']}' for t in tiers_meta)} · concurrency {concurrency}")
+
+    def _write_manifest() -> None:
+        ordered = [manifest_rows[i] for i in sorted(manifest_rows, key=order_key)]
+        payload = {"tiers": tiers_meta, "count": len(ordered), "items": ordered}
+        with _reduce_manifest_lock:
+            manifest_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+    def _save_png(img: "Image.Image", name: str) -> str:
+        (stages_dir / name).parent.mkdir(parents=True, exist_ok=True)
+        img.convert("RGB").save(stages_dir / name, quality=92)
+        return f"{base_rel}/stages/{name}"
+
+    def reduce_one(entry: dict[str, Any]) -> None:
+        if stop_event is not None and stop_event.is_set():
+            return
+        idv, slug, cond = entry["id"], entry["slug"], entry["cond"]
+        src_path = pool_dir / f"{idv}.jpg"
+        expected_sym = [sym_dir / f"{idv}__{t['shots']}shot.metta" for t in tiers_meta]
+        expected_png = [stages_dir / f"{idv}__t{t['shots']}__{k}.png" for t in tiers_meta for k in _REDUCE_STAGE_KEYS]
+        if (not nocache and idv in manifest_rows
+                and all(p.is_file() for p in expected_sym)
+                and all(p.is_file() for p in expected_png)):
+            counts["done"] += 1
+            return
+        try:
+            with active:
+                src = Image.open(src_path).convert("RGB")
+                scene = cond in rp.SCENE_CONDS
+                tiers = _tier_specs()
+                for tier in tiers:
+                    tier["data"] = rp._extract_tier(src_path, tier, idv, scene)
+                    tier["facts"] = rp._tier_facts(slug, tier)
+                ref = tiers[0]["facts"]
+                for tier in tiers[1:]:
+                    tier["agree"] = rp.agreement(ref, tier["facts"])
+                rows: list[dict[str, Any]] = []
+                for tier in tiers:
+                    # parent panels: [input, parts-found, turtle-render, part-map, graph]
+                    panels, _boxes = rp._tier_panels(tier, src)
+                    shots = tier["shots"]
+                    stage_imgs = {"parts": panels[1], "turtle": panels[2], "partmap": panels[3]}
+                    stage_paths = {k: _save_png(stage_imgs[k], f"{idv}__t{shots}__{k}.png") for k in _REDUCE_STAGE_KEYS}
+                    sym_path = sym_dir / f"{idv}__{shots}shot.metta"
+                    sym_path.write_text(rp.to_metta(tier["facts"]), encoding="utf-8")
+                    rows.append({
+                        "shots": shots, "kind": tier["kind"], "model": rp._short(tier["model"]),
+                        "nparts": tier["facts"]["nparts"], "nrels": len(tier["facts"]["relations"]),
+                        "metta": sym_path.name, "stages": stage_paths,
+                        "agree": tier.get("agree", {"score": 1.0, "verdict": "ref"}),
+                    })
+        except Exception as error:  # noqa: BLE001
+            counts["failed"] += 1
+            emit(f"{_ts()} ✗ reduce {idv}: {error}")
+            return
+        pv = prov.get(idv) or {}
+        source = pv.get("source") or ("web" if cond in rp.WEB_CONDS else "transform")
+        manifest_rows[idv] = {
+            "id": idv, "slug": slug, "cond": cond, "label": entry.get("label") or slug.replace("_", " "),
+            "input": f"{idv}.jpg", "source": source, "source_url": pv.get("source_url", ""),
+            "scene": cond in rp.SCENE_CONDS, "rows": rows,
+        }
+        _write_manifest()
+        counts["done"] += 1
+        ag = rows[1]["agree"].get("verdict") if len(rows) > 1 else "ref"
+        emit(f"{_ts()} ✦ {idv}: {rows[0]['nparts']}p / {rows[-1]['nparts']}p · agree {ag}")
+
+    if not entries:
+        emit(f"{_ts()} no pool images in {base_rel}/pool (nothing to reduce)")
+        return "no pool images"
+    if concurrency <= 1:
+        for entry in entries:
+            if stop_event is not None and stop_event.is_set():
+                break
+            reduce_one(entry)
+    else:
+        with ThreadPoolExecutor(max_workers=concurrency) as pool:
+            list(pool.map(reduce_one, entries))
+    _write_manifest()
+    summary = f"reduce complete: {counts.get('done', 0)} image(s), {counts.get('failed', 0)} failed of {counts.get('total', 0)}"
+    emit(f"{_ts()} {summary}")
+    return summary
+
+
 _STAGE_RUNNERS: dict[str, Callable[..., str]] = {
     "describe": run_describe,
     "outline": run_outline,
@@ -2714,6 +2919,7 @@ _STAGE_RUNNERS: dict[str, Callable[..., str]] = {
     "recognizeMatch": run_recognize_match,
     "recognizeTurtle": run_recognize_turtle,
     "recognizeTurtlePng": run_recognize_turtle_png,
+    "reduce": run_reduce,
     "full": run_full,
 }
 
