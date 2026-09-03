@@ -39,6 +39,31 @@ def test_existing_box_is_preserved() -> None:
     assert prog["commands"][0]["box"] == [1, 2, 3, 4]
 
 
+def test_map_form_command_is_unwrapped_to_op_form() -> None:
+    prog = normalize_turtle_program({"commands": [{"rectangle": {"box": [0, 0, 10, 20], "fill": "#abc"}}]})
+    assert prog is not None
+    cmd = prog["commands"][0]
+    assert cmd["op"] == "rectangle"
+    assert cmd["box"] == [0, 0, 10, 20]
+    assert cmd["fill"] == "#abc"
+
+
+def test_map_form_alias_and_center_radius() -> None:
+    prog = normalize_turtle_program({"commands": [{"circle": {"cx": 100, "cy": 100, "r": 40, "fill": "#e74c3c"}}]})
+    assert prog is not None
+    cmd = prog["commands"][0]
+    assert cmd["op"] == "ellipse"  # circle alias
+    assert cmd["box"] == [60, 60, 140, 140]  # center+radius coerced to box
+
+
+def test_map_form_polygon_points_normalized() -> None:
+    prog = normalize_turtle_program({"commands": [{"polygon": {"points": [{"x": 1, "y": 2}, {"x": 3, "y": 4}, {"x": 5, "y": 6}]}}]})
+    assert prog is not None
+    cmd = prog["commands"][0]
+    assert cmd["op"] == "polygon"
+    assert cmd["points"] == [[1, 2], [3, 4], [5, 6]]
+
+
 def test_combined_parser_captures_turtle_program() -> None:
     import json
 

@@ -296,12 +296,27 @@ def normalize_turtle_program(program: Any) -> dict[str, Any] | None:
     if not isinstance(commands, list):
         return prog
     aliases = {"rect": "rectangle", "circle": "ellipse", "oval": "ellipse"}
-    for command in commands:
+    allowed_ops = {"pen", "move", "line", "polyline", "polygon", "rectangle", "ellipse", "dot"}
+
+    def canon_op(name: Any) -> str:
+        n = str(name or "").lower()
+        return aliases.get(n, n)
+
+    for i, command in enumerate(commands):
         if not isinstance(command, dict):
             continue
-        op = str(command.get("op") or "").lower()
-        if op in aliases:
-            op = aliases[op]
+        # MAP FORM tolerance: one-shot models often emit {"rectangle":{"box":...}}
+        # instead of {"op":"rectangle","box":...}. Unwrap the single key whose
+        # value is a dict and whose (aliased) name is an allowed op, so a strict
+        # op-reader doesn't silently drop the command (blank PNGs).
+        if not command.get("op"):
+            for key, value in list(command.items()):
+                if isinstance(value, dict) and canon_op(key) in allowed_ops:
+                    command = {"op": canon_op(key), **value}
+                    commands[i] = command
+                    break
+        op = canon_op(command.get("op"))
+        if op:
             command["op"] = op
         if op in ("rectangle", "ellipse"):
             box = command.get("box")
