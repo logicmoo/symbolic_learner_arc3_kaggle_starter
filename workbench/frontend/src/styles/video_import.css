@@ -1280,6 +1280,36 @@
 .video-import-reduce-badge.v-poor { background: rgba(230,90,90,0.2); color: #e65a5a; }
 .video-import-reduce-metta { margin: 4px 0 2px; padding: 8px; max-height: 240px; overflow: auto; background: rgba(0,0,0,0.35); border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); font-size: 10.5px; line-height: 1.4; white-space: pre-wrap; word-break: break-word; }
 
+/* --- Reduce char-grid collapsible wrapper --- */
+.video-import-reduce-collapse { margin: 4px 0 10px; }
+.video-import-reduce-collapse-summary { cursor: pointer; user-select: none; font-size: 12px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: #27dcc2; padding: 6px 10px; background: rgba(39,220,194,0.08); border: 1px solid rgba(39,220,194,0.25); border-radius: 8px; display: inline-block; }
+.video-import-reduce-collapse[open] .video-import-reduce-collapse-summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+
+/* --- Flat 200-row reduce listbox (one row per image, windowed) --- */
+.video-import-reduce-listctrls { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin: 4px 0 8px; }
+.video-import-reduce-search { flex: 0 1 320px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.14); border-radius: 6px; color: #fff; font-size: 12px; padding: 5px 10px; }
+.video-import-reduce-listbox { max-height: 72vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; }
+.video-import-reduce-listsep { position: sticky; left: 0; padding: 5px 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #27dcc2; background: rgba(39,220,194,0.08); border-top: 1px solid rgba(39,220,194,0.25); border-bottom: 1px solid rgba(255,255,255,0.06); }
+.video-import-reduce-listrow { content-visibility: auto; contain-intrinsic-size: auto 60px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.video-import-reduce-listrow.is-open { content-visibility: visible; background: rgba(39,220,194,0.05); }
+.video-import-reduce-listmain { display: flex; align-items: stretch; gap: 8px; padding: 6px 10px; cursor: pointer; overflow-x: auto; }
+.video-import-reduce-listmain:hover { background: rgba(255,255,255,0.04); }
+.video-import-reduce-listcell { flex: 0 0 auto; display: flex; flex-direction: column; justify-content: center; gap: 3px; border-radius: 6px; padding: 5px 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); }
+.video-import-reduce-listcell.is-input { flex-direction: row; align-items: center; gap: 10px; min-width: 240px; background: rgba(255,255,255,0.05); }
+.video-import-reduce-listcell.is-tier { min-width: 110px; align-items: flex-start; }
+.video-import-reduce-listcell.is-pending { justify-content: center; align-items: center; min-width: 110px; font-size: 11px; font-style: italic; opacity: 0.55; }
+.video-import-reduce-listthumb { flex: 0 0 auto; width: 44px; height: 44px; object-fit: cover; border-radius: 5px; background: rgba(0,0,0,0.35); }
+.video-import-reduce-listlabel { display: flex; flex-direction: column; gap: 2px; line-height: 1.25; overflow: hidden; }
+.video-import-reduce-listlabel b { font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.video-import-reduce-listlabel > span { font-size: 11px; opacity: 0.65; }
+.video-import-reduce-listsrc { display: inline-flex; align-items: center; gap: 6px; }
+.video-import-reduce-listsrc a { font-size: 10.5px; color: #52c7d9; text-decoration: none; }
+.video-import-reduce-listsrc a:hover { text-decoration: underline; }
+.video-import-reduce-tierhead { font-size: 11.5px; font-weight: 700; }
+.video-import-reduce-tiermeta { font-size: 10.5px; opacity: 0.8; font-variant-numeric: tabular-nums; }
+.video-import-reduce-listrow .video-import-reduce-expanded { padding: 4px 12px 12px 24px; }
+.video-import-reduce-empty { font-size: 11.5px; opacity: 0.6; font-style: italic; padding: 4px 0; }
+
 /* --- Active server jobs banner (reconnect-safe) --- */
 .video-import-jobs-banner { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 6px 14px; background: rgba(82,199,217,0.08); border-bottom: 1px solid rgba(82,199,217,0.25); font-size: 12px; }
 .video-import-jobs-banner > b { color: #52c7d9; }

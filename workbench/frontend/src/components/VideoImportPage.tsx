@@ -2817,6 +2817,9 @@ export function VideoImportPage({
   const [reduceOnlyGood, setReduceOnlyGood] = useState(false);
   const [reduceMetta, setReduceMetta] = useState<Record<string, string>>({});
   const [expandedReduceId, setExpandedReduceId] = useState<string | null>(null);
+  // Reduce section shows a collapsible char-grouped grid above a flat
+  // one-row-per-image list (all 200); "reduceListQuery" filters the list.
+  const [reduceListQuery, setReduceListQuery] = useState("");
   const [recognitionUploading, setRecognitionUploading] = useState(false);
   // Recognition stage-row state — dedicated per-row model + prompt, decoupled
   // from the Objects-page prompts. Persisted under the keys the server reads.
@@ -7526,7 +7529,10 @@ export function VideoImportPage({
             </div>
           )}
 
-          {recognitionReduce && Array.isArray(recognitionReduce.items) && recognitionReduce.items.length > 0 && (() => {
+          {recognitionReduce && Array.isArray(recognitionReduce.items) && recognitionReduce.items.length > 0 && (
+            <details className="video-import-reduce-collapse" open>
+              <summary className="video-import-reduce-collapse-summary">By character · 20 × 10 condition grid</summary>
+              {(() => {
             const SLUG_ORDER = ["bart_simpson","lisa_simpson","homer_simpson","marge_simpson","maggie_simpson","grandpa_simpson","spongebob","patrick_star","squidward","scooby_doo","shaggy","mickey_mouse","minnie_mouse","donald_duck","goofy","bugs_bunny","pikachu","mario","sonic","moana"];
             const COND_ORDER = ["c1_bw","c2_flip","c3_rot45","c4_busy","c5_new","c6_verybusy","c7_withchars","c8_typical","c9_colorful","c10_modality"];
             const COND_LABELS: Record<string, string> = { c1_bw: "greyscale", c2_flip: "flip H", c3_rot45: "rotate 45°", c4_busy: "busy scene", c5_new: "new style", c6_verybusy: "crowd", c7_withchars: "with others", c8_typical: "episode still", c9_colorful: "colorful", c10_modality: "other medium" };
@@ -7610,6 +7616,106 @@ export function VideoImportPage({
               </div>
             );
           })()}
+            </details>
+          )}
+
+          {recognitionReduce && Array.isArray(recognitionReduce.items) && recognitionReduce.items.length > 0 && (() => {
+            const SLUG_ORDER = ["bart_simpson","lisa_simpson","homer_simpson","marge_simpson","maggie_simpson","grandpa_simpson","spongebob","patrick_star","squidward","scooby_doo","shaggy","mickey_mouse","minnie_mouse","donald_duck","goofy","bugs_bunny","pikachu","mario","sonic","moana"];
+            const COND_ORDER = ["c1_bw","c2_flip","c3_rot45","c4_busy","c5_new","c6_verybusy","c7_withchars","c8_typical","c9_colorful","c10_modality"];
+            const COND_LABELS: Record<string, string> = { c1_bw: "greyscale", c2_flip: "flip H", c3_rot45: "rotate 45°", c4_busy: "busy scene", c5_new: "new style", c6_verybusy: "crowd", c7_withchars: "with others", c8_typical: "episode still", c9_colorful: "colorful", c10_modality: "other medium" };
+            const nameBySlug = new Map(recognitionGallery.map((g: any) => [g.slug, g.name]));
+            const isWeb = (it: any) => (it.source ? it.source === "web" : !["c1_bw", "c2_flip", "c3_rot45"].includes(it.cond));
+            const slugRank = (s: string) => { const i = SLUG_ORDER.indexOf(s); return i < 0 ? 99 : i; };
+            const condRank = (c: string) => { const i = COND_ORDER.indexOf(c); return i < 0 ? 99 : i; };
+            const q = reduceListQuery.trim().toLowerCase();
+            let list = recognitionReduce.items.slice();
+            list = list.filter((it: any) => !reduceOnlyGood || (it.rows || []).some((r: any) => r.kind !== "oneshot" && (r.agree?.score ?? 0) >= 0.7));
+            if (q) list = list.filter((it: any) => String(it.id || "").toLowerCase().includes(q) || String(nameBySlug.get(it.slug) || it.slug || "").toLowerCase().includes(q) || String(COND_LABELS[it.cond] || it.cond || "").toLowerCase().includes(q));
+            list.sort((a: any, b: any) => (slugRank(a.slug) - slugRank(b.slug)) || (condRank(a.cond) - condRank(b.cond)));
+            return (
+              <div className="video-import-reduce">
+                <h3 className="video-import-recognition-subhead">All images · {list.length} of {recognitionReduce.items.length} reduced</h3>
+                <div className="video-import-reduce-explain">One row per image. Each row is a reduction pipeline that <b>grows rightward</b> as the image gets reduced: the input, then one cell per shot-tier (1-shot reference, then cheaper N-shot passes) with its part/relation counts and <b>agreement</b> vs the 1-shot. Click a row for the full symbolic strip + per-tier MeTTa. Web scenes are <b>real fetched images</b> (source link) — not generated.</div>
+                <div className="video-import-reduce-listctrls">
+                  <input className="video-import-reduce-search" type="search" placeholder="Filter by character or condition…" value={reduceListQuery} onChange={(e) => setReduceListQuery(e.target.value)} />
+                  <label className="video-import-toggle"><input type="checkbox" checked={reduceOnlyGood} onChange={(e) => setReduceOnlyGood(e.target.checked)} /> Only where a cheaper N-shot AGREES (≥70%) with 1-shot</label>
+                </div>
+                <div className="video-import-reduce-listbox" role="listbox" aria-label="All reduced images">
+                  {list.flatMap((it: any, idx: number) => {
+                    const prev = idx > 0 ? list[idx - 1] : null;
+                    const newGroup = !prev || prev.slug !== it.slug;
+                    const inputRel = it.inputPath || `data/recognition_reduce/pool/${String(it.input || "").split("/").pop()}`;
+                    const web = isWeb(it);
+                    const open = it.id === expandedReduceId;
+                    const chipRel = it.chipPath || `data/recognition_reduce/chips/${String(it.chip || "").split("/").pop()}`;
+                    const tiers = (it.rows || []);
+                    const els: any[] = [];
+                    if (newGroup) els.push(<div className="video-import-reduce-listsep" key={`sep-${it.slug}`}>{nameBySlug.get(it.slug) || it.slug}</div>);
+                    els.push(
+                      <div className={`video-import-reduce-listrow${open ? " is-open" : ""}`} key={it.id} role="option" aria-selected={open}>
+                        <div className="video-import-reduce-listmain" role="button" tabIndex={0}
+                          onClick={() => setExpandedReduceId(open ? null : it.id)}
+                          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpandedReduceId(open ? null : it.id); } }}>
+                          <div className="video-import-reduce-listcell is-input">
+                            <img className="video-import-reduce-listthumb" src={asset(inputRel)} alt={it.cond} loading="lazy" />
+                            <div className="video-import-reduce-listlabel">
+                              <b>{nameBySlug.get(it.slug) || it.slug}</b>
+                              <span>{COND_LABELS[it.cond] || it.cond}</span>
+                              {web ? (
+                                <span className="video-import-reduce-listsrc">
+                                  <span className="video-import-reduce-tag web">web</span>
+                                  {it.source_url ? <a href={it.source_url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>source ↗</a> : null}
+                                </span>
+                              ) : <span className="video-import-reduce-tag derived">derived</span>}
+                            </div>
+                          </div>
+                          {tiers.length === 0
+                            ? <div className="video-import-reduce-listcell is-pending">reducing…</div>
+                            : tiers.map((row: any, ri: number) => {
+                                const isRef = row.kind === "oneshot";
+                                const rv = row.agree?.verdict || (isRef ? "ref" : "");
+                                const rp = Math.round((row.agree?.score ?? 0) * 100);
+                                return (
+                                  <div className="video-import-reduce-listcell is-tier" key={ri}>
+                                    <div className="video-import-reduce-tierhead">{row.shots}-shot</div>
+                                    <div className="video-import-reduce-tiermeta">{row.nparts}p · {row.nrels}r</div>
+                                    <span className={`video-import-reduce-badge v-${rv}`}>{isRef ? "REF" : `${rp}% ${String(rv).toUpperCase()}`}</span>
+                                  </div>
+                                );
+                              })}
+                        </div>
+                        {open && (
+                          <div className="video-import-reduce-expanded">
+                            {it.chip && <img className="video-import-reduce-strip" src={asset(chipRel)} alt={it.id} loading="lazy" />}
+                            <div className="video-import-reduce-tiers">
+                              {(it.rows || []).length === 0 ? <div className="video-import-reduce-empty">No reduction rows yet — generation in progress.</div> : (it.rows || []).map((row: any, ri: number) => {
+                                const isRef = row.kind === "oneshot";
+                                const rv = row.agree?.verdict || (isRef ? "ref" : "");
+                                const rp = Math.round((row.agree?.score ?? 0) * 100);
+                                const mettaRel = row.mettaPath || `data/recognition_reduce/sym/${String(row.metta || "").split("/").pop()}`;
+                                return (
+                                  <details className="video-import-reduce-row" key={ri} onToggle={(e: any) => { if (e.currentTarget.open) loadReduceMetta(mettaRel); }}>
+                                    <summary>
+                                      <span className="video-import-reduce-tier">{row.shots}-shot</span>
+                                      <span className="video-import-reduce-model">{row.model}</span>
+                                      <span className="video-import-reduce-parts">{row.nparts} parts · {row.nrels} rels</span>
+                                      <span className={`video-import-reduce-badge v-${rv}`}>{isRef ? "reference" : `vs 1-shot: ${rp}% · ${String(rv).toUpperCase()}`}</span>
+                                    </summary>
+                                    <pre className="video-import-reduce-metta">{reduceMetta[mettaRel] || "loading…"}</pre>
+                                  </details>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                    return els;
+                  })}
+                </div>
+              </div>
+            );
+          })()}
 
           {recognitionGallery.length > 0 && (
             <div className="video-import-reco-enrolled">
@@ -7688,35 +7794,6 @@ export function VideoImportPage({
                     </div>
                   );
                 })}
-              </div>
-            </>
-          )}
-
-          {Object.values(recognitions).length > 0 && (
-            <>
-              <h3 className="video-import-recognition-subhead">Named characters</h3>
-              <div className="video-import-recognition-grid">
-                {Object.values(recognitions)
-                  .sort((a: any, b: any) => (a.frameIndex ?? 0) - (b.frameIndex ?? 0))
-                  .map((rec: any) => (
-                    <div className="video-import-recognition-card" key={rec.image}>
-                      <img src={asset(rec.image)} alt={rec.label} loading="lazy" />
-                      <div className="video-import-recognition-info">
-                        <b>{rec.label}</b>
-                        {(rec.characters || []).length === 0 && <em>nothing recognized</em>}
-                        <ul>
-                          {(rec.characters || []).map((c: any, i: number) => (
-                            <li key={i}>
-                              <a href={c.webSearchUrl} target="_blank" rel="noreferrer"><b>{c.name}</b></a>
-                              {c.franchise ? <span> · {c.franchise}</span> : null}
-                              <span className="video-import-recognition-conf"> · {Math.round((c.confidence || 0) * 100)}%</span>
-                              {c.where ? <em> · {c.where}</em> : null}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  ))}
               </div>
             </>
           )}
