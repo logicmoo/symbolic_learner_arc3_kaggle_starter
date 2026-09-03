@@ -2768,6 +2768,7 @@ export function VideoImportPage({
   const [turtlePngPromptSelection, setTurtlePngPromptSelection] = useState<PromptSelection>("workspace");
   const [expandedCallPrompt, setExpandedCallPrompt] = useState<keyof LlmCallConcurrency | null>(null);
   const [turtleArtifacts, setTurtleArtifacts] = useState<Record<string, TurtleArtifact>>({});
+  const [recognitions, setRecognitions] = useState<Record<string, any>>({});
   const [models, setModels] = useState<ModelChoice[]>([]);
   const [memberModel, setMemberModel] = useState("");
   const [allCallsModel, setAllCallsModel] = useState("");
@@ -3182,7 +3183,7 @@ export function VideoImportPage({
     frames, frameSources, selectedFrameSourceId, picked, kept: kept ? [...kept] : null, memberInputPaths: [...memberInputPaths], selectedWorkflowGalleryPaths: [...selectedWorkflowGalleryPaths], previewSource, galleryScope,
     filterId, filterParams, chain, candidateCount, fullSelectors,
     gallery, output, outputMode, outputLabel, appliedIds, trail, probes,
-    members, memberInventories, memberScenes, memberDescriptionPrompt, objectPromptWriter, memberDecompositionPrompt, memberOrderPrompt, memberOutlinerPrompt, memberExtractorPrompt, turtlePrompt, turtlePngPrompt, turtleArtifacts, memberGoal, memberFill,
+    members, memberInventories, memberScenes, memberDescriptionPrompt, objectPromptWriter, memberDecompositionPrompt, memberOrderPrompt, memberOutlinerPrompt, memberExtractorPrompt, turtlePrompt, turtlePngPrompt, turtleArtifacts, recognitions, memberGoal, memberFill,
     allCallsModel, describerModel, plannerModel, outlinerModel, extractorModel, turtleModel, turtlePngModel, captionModel,
     describerPromptSelection, plannerPromptSelection, outlinerPromptSelection, extractorPromptSelection, turtlePromptSelection, turtlePngPromptSelection,
     pipeForkSelections, pipeForkHistory, selectedPipeFork, pipeParentView, selectedRecursiveInventoryId, collapsedLeftGalleries, recursiveAutomation, llmCallConcurrency, llmCallMetrics, totalLlmConcurrency, manualWorkerHold,
@@ -3323,6 +3324,7 @@ export function VideoImportPage({
     else if (typeof s.turtlePrompt === "string") setTurtlePrompt(DEFAULT_TURTLE_PROMPT);
     if (typeof s.turtlePngPrompt === "string" && s.turtlePngPrompt.includes("{{draftProgram}}")) setTurtlePngPrompt(s.turtlePngPrompt);
     if (s.turtleArtifacts && typeof s.turtleArtifacts === "object") setTurtleArtifacts(s.turtleArtifacts);
+    if (s.recognitions && typeof s.recognitions === "object") setRecognitions(s.recognitions);
     if (typeof s.allCallsModel === "string") { allCallsModelTouchedRef.current = true; setAllCallsModel(s.allCallsModel); }
     if (typeof s.describerModel === "string") { describerModelTouchedRef.current = true; setDescriberModel(s.describerModel); }
     if (typeof s.plannerModel === "string") { plannerModelTouchedRef.current = true; setPlannerModel(s.plannerModel); }
@@ -3561,6 +3563,7 @@ export function VideoImportPage({
             if (msg.memberScenes && typeof msg.memberScenes === "object") setMemberScenes(msg.memberScenes);
             if (Array.isArray(msg.members)) setMembers(msg.members);
             if (msg.turtleArtifacts && typeof msg.turtleArtifacts === "object") setTurtleArtifacts(msg.turtleArtifacts);
+            if (msg.recognitions && typeof msg.recognitions === "object") setRecognitions(msg.recognitions);
           }
         }
         else if (msg.type === "cleared") { pipelineLogSeenRef.current = 0; }
@@ -7208,10 +7211,44 @@ export function VideoImportPage({
       </div>
       )}
       {activeSubview === "recognition" && (
-        <section className="video-import-games-todo">
-          <h2>Recognition</h2>
-          <p>Coming soon: recognize objects, patterns, and rules from the finished game states and materialized artifacts.</p>
-          <p className="video-import-games-todo-note">Not built yet. This step will learn/label structure from the completed pipeline output.</p>
+        <section className="video-import-recognition">
+          <div className="video-import-recognition-head">
+            <h2>Recognition</h2>
+            <p>Identify well-known characters/objects in each selected frame (or extracted cutout), with a web-search link for each. Runs on the server.</p>
+            <div className="video-import-recognition-actions">
+              {pipelineRunStatus === "running"
+                ? <button onClick={() => void stopServerPipeline()}>■ stop</button>
+                : <button className="primary" disabled={!isRunnableVisionModel(effectiveDescriberModel) || !memberInputPaths.size} onClick={() => startServerStage("recognize")}>🔎 Recognize characters</button>}
+              <span className="video-import-toggle">server: {pipelineRunStatus}</span>
+              <span className="video-import-toggle">{Object.keys(recognitions).length} image(s) recognized</span>
+            </div>
+          </div>
+          <div className="video-import-recognition-grid">
+            {Object.values(recognitions).length === 0 && (
+              <p className="video-import-games-todo-note">No recognitions yet. Select input images and click “Recognize characters”.</p>
+            )}
+            {Object.values(recognitions)
+              .sort((a: any, b: any) => (a.frameIndex ?? 0) - (b.frameIndex ?? 0))
+              .map((rec: any) => (
+                <div className="video-import-recognition-card" key={rec.image}>
+                  <img src={asset(rec.image)} alt={rec.label} loading="lazy" />
+                  <div className="video-import-recognition-info">
+                    <b>{rec.label}</b>
+                    {(rec.characters || []).length === 0 && <em>nothing recognized</em>}
+                    <ul>
+                      {(rec.characters || []).map((c: any, i: number) => (
+                        <li key={i}>
+                          <a href={c.webSearchUrl} target="_blank" rel="noreferrer"><b>{c.name}</b></a>
+                          {c.franchise ? <span> · {c.franchise}</span> : null}
+                          <span className="video-import-recognition-conf"> · {Math.round((c.confidence || 0) * 100)}%</span>
+                          {c.where ? <em> · {c.where}</em> : null}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              ))}
+          </div>
         </section>
       )}
       {activeSubview === "advanced" && (

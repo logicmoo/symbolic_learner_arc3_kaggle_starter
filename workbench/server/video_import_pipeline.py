@@ -1586,6 +1586,162 @@ def run_turtle_png(
     return summary
 
 
+# --------------------------------------------------------------------------- #
+# Recognition stage                                                           #
+# --------------------------------------------------------------------------- #
+
+import urllib.parse as _urlparse  # noqa: E402
+
+
+DEFAULT_RECOGNIZE_PROMPT = "\n".join([
+    "CHARACTER / OBJECT RECOGNITION.",
+    "Identify each well-known character, person, mascot, logo, or recognizable object visible in this image.",
+    "For each, give the canonical name, the franchise/source it comes from, a confidence 0..1, where it is in the image, and a short web search query that would find reference images of it.",
+    'Answer ONLY with JSON: {"characters":[{"name":"<canonical name>","franchise":"<movie/show/brand>","confidence":0.0,"where":"<position>","searchQuery":"<web search query>"}]}.',
+    "If nothing recognizable is present, return an empty characters array.",
+])
+
+
+def persist_recognition(workspace_id: str, key: str, entry: dict[str, Any]) -> None:
+    """Merge one recognition result (keyed by frame/cutout path) into page-state."""
+    with _page_state_lock(workspace_id):
+        state = load_state(workspace_id)
+        recognitions = state.get("recognitions")
+        if not isinstance(recognitions, dict):
+            recognitions = {}
+        recognitions[key] = entry
+        state["recognitions"] = recognitions
+        _save_page_state_payload({"workspaceId": workspace_id, "state": state})
+
+
+def _web_search_url(query: str) -> str:
+    return "https://www.bing.com/images/search?q=" + _urlparse.quote(query)
+
+
+def _recognition_targets(state: dict[str, Any], only_selected: bool) -> list[dict[str, Any]]:
+    """Prefer per-object extracted cutouts; fall back to whole input frames.
+
+    Recognizing cutouts identifies each isolated character; recognizing frames
+    identifies every character present in the scene ("identify them in images").
+    """
+    members = state.get("members") or []
+    targets: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for m in members:
+        if isinstance(m, dict) and m.get("cutout") and m["cutout"] not in seen:
+            seen.add(m["cutout"])
+            targets.append({"image": m["cutout"], "kind": "object", "label": m.get("name") or "object", "frameIndex": m.get("frameIndex")})
+    if targets:
+        return targets
+    for frame in _selected_frame_paths(state, only_selected):
+        path = frame.get("path")
+        if path and path not in seen:
+            seen.add(path)
+            targets.append({"image": path, "kind": "frame", "label": f"frame #{frame.get('index', 0)}", "frameIndex": frame.get("index")})
+    return targets
+
+
+def run_recognize(
+    workspace_id: str,
+    *,
+    model_override: str | None = None,
+    goal_override: str | None = None,
+    only_selected: bool = True,
+    concurrency_override: int | None = None,
+    stop_event: threading.Event | None = None,
+    log: Callable[[str], None] | None = None,
+    counts: dict[str, int] | None = None,
+) -> str:
+    """Identify well-known characters/objects in each frame (or extracted cutout)
+    and attach web-search references for each."""
+    emit = log or (lambda _msg: None)
+    counts = counts if counts is not None else {}
+    root = _workspace_root(workspace_id)
+    state = load_state(workspace_id)
+    model_id = _effective_stage_model(state, "recognizerModel", model_override)
+    if not model_id:
+        raise RuntimeError("no recognizer model configured (set recognizerModel/allCallsModel or pass --model)")
+    template = str(state.get("recognizePrompt") or "").strip() or DEFAULT_RECOGNIZE_PROMPT
+    targets = _recognition_targets(state, only_selected)
+    existing = state.get("recognitions") if isinstance(state.get("recognitions"), dict) else {}
+    candidates = [t for t in targets if t["image"] not in existing]
+    if not candidates:
+        emit(f"{_ts()} nothing to recognize (extract objects or select frames first)")
+        return "nothing to recognize"
+    concurrency = _stage_concurrency(state, "recognizer", concurrency_override, 3)
+    counts["stage"] = "recognize"
+    counts["total"] = len(candidates)
+    counts["done"] = 0
+    counts["failed"] = 0
+    counts["active"] = 0
+    active = _Active(counts)
+    emit(f"{_ts()} recognize start · {len(candidates)} {candidates[0]['kind']}(s) · model {model_id} · concurrency {concurrency}")
+
+    def recognize_one(target: dict[str, Any]) -> None:
+        if stop_event is not None and stop_event.is_set():
+            return
+        img_rel = target["image"]
+        image = image_to_data_url(root, img_rel)
+        if not image:
+            counts["failed"] += 1
+            emit(f"{_ts()} ✗ recognize {target['label']}: could not load {img_rel}")
+            return
+        try:
+            with active:
+                raw = invoke_model(root, model_id, template, image, 120).strip()
+        except Exception as error:  # noqa: BLE001
+            counts["failed"] += 1
+            emit(f"{_ts()} ✗ recognize {target['label']}: {error}")
+            persist_recognition(workspace_id, img_rel, {"image": img_rel, "kind": target["kind"], "label": target["label"], "frameIndex": target.get("frameIndex"), "characters": [], "error": str(error)})
+            return
+        parsed = detect_json(raw)
+        characters: list[dict[str, Any]] = []
+        raw_chars = parsed.get("characters") if isinstance(parsed, dict) else None
+        for c in raw_chars or []:
+            if not isinstance(c, dict):
+                continue
+            name = str(c.get("name") or "").strip()
+            if not name:
+                continue
+            franchise = str(c.get("franchise") or "").strip()
+            try:
+                confidence = float(c.get("confidence"))
+            except (TypeError, ValueError):
+                confidence = 0.0
+            query = str(c.get("searchQuery") or f"{name} {franchise}".strip())
+            characters.append({
+                "name": name,
+                "franchise": franchise,
+                "confidence": round(confidence, 2),
+                "where": str(c.get("where") or ""),
+                "searchQuery": query,
+                "webSearchUrl": _web_search_url(query),
+            })
+        persist_recognition(workspace_id, img_rel, {
+            "image": img_rel,
+            "kind": target["kind"],
+            "label": target["label"],
+            "frameIndex": target.get("frameIndex"),
+            "characters": characters,
+            "rawOutput": raw,
+        })
+        counts["done"] += 1
+        names = ", ".join(f"{c['name']} ({c['confidence']:.0%})" for c in characters[:6]) or "none recognized"
+        emit(f"{_ts()} 🔎 {target['label']}: {names}")
+
+    if concurrency <= 1:
+        for target in candidates:
+            if stop_event is not None and stop_event.is_set():
+                break
+            recognize_one(target)
+    else:
+        with ThreadPoolExecutor(max_workers=concurrency) as pool:
+            list(pool.map(recognize_one, candidates))
+    summary = f"recognize complete: {counts.get('done', 0)} image(s), {counts.get('failed', 0)} failed of {counts.get('total', 0)}"
+    emit(f"{_ts()} {summary}")
+    return summary
+
+
 def run_full(
     workspace_id: str,
     *,
@@ -1663,6 +1819,7 @@ _STAGE_RUNNERS: dict[str, Callable[..., str]] = {
     "extract": run_extract,
     "turtle": run_turtle,
     "turtlePng": run_turtle_png,
+    "recognize": run_recognize,
     "full": run_full,
 }
 
