@@ -221,6 +221,35 @@ def _derive_box(command: dict[str, Any]) -> list[float] | None:
     height = num("height") if "height" in command else num("h")
     if None not in (x, y, width, height):
         return [x, y, x + width, y + height]  # type: ignore[operator]
+    # Center + radius variants (models often emit ellipse/circle as cx/cy/r,
+    # rx/ry, or center:[x,y] + radius:r|[rx,ry] instead of a box).
+    cx, cy = num("cx"), num("cy")
+    center = command.get("center")
+    if (cx is None or cy is None) and isinstance(center, (list, tuple)) and len(center) >= 2:
+        try:
+            cx, cy = float(center[0]), float(center[1])
+        except (TypeError, ValueError):
+            pass
+    rx, ry = num("rx"), num("ry")
+    radius_scalar = num("r") if "r" in command else num("radius")
+    radius_value = command.get("radius")
+    if (rx is None or ry is None) and isinstance(radius_value, (list, tuple)) and len(radius_value) >= 2:
+        try:
+            rx, ry = float(radius_value[0]), float(radius_value[1])
+        except (TypeError, ValueError):
+            pass
+    if rx is None and radius_scalar is not None:
+        rx = radius_scalar
+    if ry is None and radius_scalar is not None:
+        ry = radius_scalar
+    # When x/y are present with a radius (and no width/height), treat them as the
+    # center rather than a top-left corner.
+    if cx is None and x is not None and rx is not None:
+        cx = x
+    if cy is None and y is not None and ry is not None:
+        cy = y
+    if None not in (cx, cy, rx, ry):
+        return [cx - rx, cy - ry, cx + rx, cy + ry]  # type: ignore[operator]
     return None
 
 
@@ -1409,6 +1438,8 @@ def _turtle_gen(
     leaves: list[dict[str, Any]],
     *,
     model_override: str | None = None,
+    model_state_key: str = "turtleModel",
+    template_override: str | None = None,
     concurrency_override: int | None = None,
     stop_event: threading.Event | None = None,
     log: Callable[[str], None] | None = None,
@@ -1418,17 +1449,21 @@ def _turtle_gen(
 
     Shared core for the Objects-page turtle stage (leaves from
     memberInventories) and the Recognition-page turtle stage (leaves from
-    recognitionInventories)."""
+    recognitionInventories). model_state_key / template_override let the
+    Recognition rows use their own model + prompt."""
     emit = log or (lambda _msg: None)
     counts = counts if counts is not None else {}
     root = _workspace_root(workspace_id)
     state = load_state(workspace_id)
-    model_id = _effective_stage_model(state, "turtleModel", model_override)
+    model_id = _effective_stage_model(state, model_state_key, model_override)
     if not model_id:
-        raise RuntimeError("no turtle model configured (set turtleModel/allCallsModel or pass --model)")
-    template = str(state.get("turtlePrompt") or "").strip()
-    if not template or state.get("turtlePromptSelection") == "default":
-        template = DEFAULT_TURTLE_PROMPT
+        raise RuntimeError(f"no turtle model configured (set {model_state_key}/allCallsModel or pass --model)")
+    if template_override is not None:
+        template = template_override
+    else:
+        template = str(state.get("turtlePrompt") or "").strip()
+        if not template or state.get("turtlePromptSelection") == "default":
+            template = DEFAULT_TURTLE_PROMPT
     artifacts = state.get("turtleArtifacts") if isinstance(state.get("turtleArtifacts"), dict) else {}
     candidates = [
         leaf for leaf in leaves
@@ -1807,6 +1842,51 @@ DEFAULT_ONEPASS_PROMPT = "\n".join([
     'Answer ONLY with JSON: {"description":"scene description","objects":[{"name":"short unique name","description":"visual identity","polygons":[[[x,y],...]],"holes":[],"box":[x0,y0,x1,y1],"traceTurtle":[{"op":"move","x":0,"y":0},{"op":"line","x":0,"y":0}]}]}',
 ])
 
+# Recognition-page prompts — each stage row has its OWN editable prompt, decoupled
+# from the Objects-page prompts. Prompts 1/2/3 are pure (no image instructions);
+# only prompt 4 (Turtle → Image) is a real image-gen prompt.
+DEFAULT_RECOGNIZE_ONEPASS_PROMPT = DEFAULT_ONEPASS_PROMPT
+
+DEFAULT_RECOGNIZE_TURTLE_PROMPT = "\n".join([
+    "TURTLE PROGRAM FROM A CUTOUT.",
+    "The attached image is a single extracted object: {{subjectName}}.",
+    "Description: {{description}}",
+    "Write a turtle drawing program that reconstructs this one object as faithfully as possible.",
+    "Coordinates are normalized 0..1000 with the origin at the top-left.",
+    "Allowed ops: pen, move, line, polyline, polygon, rectangle, ellipse, dot. rectangle/ellipse require box:[x0,y0,x1,y1]; polyline/polygon require points:[[x,y],...]. Use at most 120 commands.",
+    "EXAMPLE (a red circle on a transparent background):",
+    '{"version":1,"background":"transparent","penColor":"#c0392b","penWidth":6,"commands":[{"op":"ellipse","box":[250,250,750,750],"fill":"#e74c3c"}]}',
+    "Answer ONLY with the JSON object.",
+])
+
+DEFAULT_RECOGNIZE_OBJECTS_TURTLE_PROMPT = "\n".join([
+    "ONE-PASS OBJECTS + TURTLE PROGRAMS.",
+    "In a SINGLE pass, identify each distinct extractable object in this image, give its exact pixel outline, AND a turtle drawing program that reconstructs it.",
+    "{{goal}}",
+    "PIXEL COORDINATE SPACE for outlines: width={{imageWidth}}, height={{imageHeight}}. Use x=0..{{maxX}} and y=0..{{maxY}} only.",
+    "For each object return: name, a short description, polygons (rings of >=3 pixel [x,y] points), optional holes, an optional box [x0,y0,x1,y1], a normalized 0..1000 traceTurtle (move/line) of the main contour, AND turtleProgram (a full turtle drawing program with coords normalized 0..1000; ops pen/move/line/polyline/polygon/rectangle/ellipse/dot; rectangle/ellipse need box, polyline/polygon need points).",
+    'EXAMPLE turtleProgram (a red circle): {"version":1,"background":"transparent","penColor":"#c0392b","penWidth":6,"commands":[{"op":"ellipse","box":[250,250,750,750],"fill":"#e74c3c"}]}',
+    'Answer ONLY with JSON: {"description":"scene description","objects":[{"name":"short unique name","description":"visual identity","polygons":[[[x,y],...]],"holes":[],"box":[x0,y0,x1,y1],"traceTurtle":[{"op":"move","x":0,"y":0}],"turtleProgram":{"version":1,"background":"transparent","penColor":"#RRGGBB","penWidth":4,"commands":[]}}]}',
+])
+
+DEFAULT_RECOGNIZE_TURTLE_PNG_PROMPT = "\n".join([
+    "TURTLE → IMAGE.",
+    "Render the object {{subjectName}} described by the turtle program below as a clean, faithful image.",
+    "Description: {{description}}",
+    "TURTLE PROGRAM:",
+    "{{draftProgram}}",
+    "Match the silhouette, colors, holes, and visible details. Transparent background unless the object needs one.",
+])
+
+
+def _recognition_prompt(state: dict[str, Any], key: str, selection_key: str, default: str) -> str:
+    """Resolve a recognition stage prompt: workspace-edited text unless the row's
+    selection is 'default'. Decoupled from the Objects-page prompts."""
+    template = str(state.get(key) or "").strip()
+    if not template or state.get(selection_key) == "default":
+        return default
+    return template
+
 
 def _recognition_inputs(state: dict[str, Any]) -> list[dict[str, Any]]:
     """Images loaded on the Recognition page; fall back to the selected frames."""
@@ -1830,7 +1910,7 @@ def persist_recognition_result(
         _save_page_state_payload({"workspaceId": workspace_id, "state": state})
 
 
-def parse_onepass_output(raw: str) -> dict[str, Any]:
+def parse_onepass_output(raw: str, *, capture_turtle: bool = False) -> dict[str, Any]:
     parsed = detect_json(raw)
     if not isinstance(parsed, dict):
         return {"description": "", "objects": []}
@@ -1845,14 +1925,19 @@ def parse_onepass_output(raw: str) -> dict[str, Any]:
             continue
         seen.add(key)
         geom = parse_outline_geometry(json.dumps(obj))
-        objects.append({
+        entry = {
             "name": name,
             "description": str(obj.get("description") or name).strip()[:320],
             "polygons": geom.get("polygons") or [],
             "holes": geom.get("holes") or [],
             "box": geom.get("box"),
             "traceTurtle": geom.get("traceTurtle") or [],
-        })
+        }
+        if capture_turtle:
+            prog = obj.get("turtleProgram")
+            if isinstance(prog, dict) and isinstance(prog.get("commands"), list):
+                entry["turtleProgram"] = prog
+        objects.append(entry)
     return {"description": str(parsed.get("description") or "").strip(), "objects": objects}
 
 
@@ -1874,12 +1959,12 @@ def run_recognize_onepass(
     counts = counts if counts is not None else {}
     root = _workspace_root(workspace_id)
     state = load_state(workspace_id)
-    model_id = _effective_stage_model(state, "describerModel", model_override)
+    model_id = _effective_stage_model(state, "recognizeOnepassModel", model_override)
     if not model_id:
-        raise RuntimeError("no model configured (set describerModel/allCallsModel or pass --model)")
+        raise RuntimeError("no model configured (set recognizeOnepassModel/allCallsModel or pass --model)")
     goal = goal_override or str(state.get("memberGoal") or "any")
     goal_text = MEMBER_INVENTORY_GOALS.get(goal, MEMBER_INVENTORY_GOALS["any"])
-    template = str(state.get("onepassPrompt") or "").strip() or DEFAULT_ONEPASS_PROMPT
+    template = _recognition_prompt(state, "recognizeOnepassPrompt", "recognizeOnepassPromptSelection", DEFAULT_RECOGNIZE_ONEPASS_PROMPT)
     fill_mode = str(state.get("memberFill") or "transparent")
     inputs = _recognition_inputs(state)
     if not inputs:
@@ -1995,6 +2080,161 @@ def run_recognize_onepass(
         with ThreadPoolExecutor(max_workers=concurrency) as pool:
             list(pool.map(onepass_one, inputs))
     summary = f"one-pass complete: {counts.get('done', 0)} image(s), {counts.get('failed', 0)} failed of {counts.get('total', 0)}"
+    emit(f"{_ts()} {summary}")
+    return summary
+
+
+def run_recognize_objects_turtle(
+    workspace_id: str,
+    *,
+    model_override: str | None = None,
+    goal_override: str | None = None,
+    only_selected: bool = True,
+    concurrency_override: int | None = None,
+    stop_event: threading.Event | None = None,
+    log: Callable[[str], None] | None = None,
+    counts: dict[str, int] | None = None,
+) -> str:
+    """Combined 1+2 in a SINGLE model call per image: find objects (+ outlines →
+    cutouts) AND emit a turtle program per object. A one-shot alternative to
+    running onepass then turtle. The PNG render stays a separate pass."""
+    emit = log or (lambda _msg: None)
+    counts = counts if counts is not None else {}
+    root = _workspace_root(workspace_id)
+    state = load_state(workspace_id)
+    model_id = _effective_stage_model(state, "recognizeObjectsTurtleModel", model_override)
+    if not model_id:
+        raise RuntimeError("no model configured (set recognizeObjectsTurtleModel/allCallsModel or pass --model)")
+    goal = goal_override or str(state.get("memberGoal") or "any")
+    goal_text = MEMBER_INVENTORY_GOALS.get(goal, MEMBER_INVENTORY_GOALS["any"])
+    template = _recognition_prompt(state, "recognizeObjectsTurtlePrompt", "recognizeObjectsTurtlePromptSelection", DEFAULT_RECOGNIZE_OBJECTS_TURTLE_PROMPT)
+    fill_mode = str(state.get("memberFill") or "transparent")
+    inputs = _recognition_inputs(state)
+    if not inputs:
+        emit(f"{_ts()} no recognition images loaded (upload images or select frames)")
+        return "no recognition images"
+    concurrency = _stage_concurrency(state, "recognizer", concurrency_override, 2)
+    counts["stage"] = "recognizeObjectsTurtle"
+    counts["total"] = len(inputs)
+    counts["done"] = 0
+    counts["failed"] = 0
+    counts["active"] = 0
+    active = _Active(counts)
+    step_lock = threading.Lock()
+    step_counter = {"n": int(state.get("recognitionStep") or 0)}
+
+    def next_step() -> int:
+        with step_lock:
+            step_counter["n"] += 1
+            return step_counter["n"]
+
+    emit(f"{_ts()} objects+turtle start · {len(inputs)} image(s) · model {model_id} · concurrency {concurrency}")
+
+    def pass_one(frame: dict[str, Any]) -> None:
+        if stop_event is not None and stop_event.is_set():
+            return
+        path = str(frame.get("path"))
+        index = int(frame.get("index") or 0)
+        inventory_id = f"recog:{path}"
+        dims = image_dimensions(root, path)
+        if not dims:
+            counts["failed"] += 1
+            emit(f"{_ts()} ✗ objects+turtle #{index}: could not load {path}")
+            return
+        width, height = dims
+        prompt = (
+            template.replace("{{goal}}", goal_text)
+            .replace("{{imageWidth}}", str(width)).replace("{{imageHeight}}", str(height))
+            .replace("{{maxX}}", str(max(0, width - 1))).replace("{{maxY}}", str(max(0, height - 1)))
+        )
+        image = image_to_data_url(root, path)
+        try:
+            with active:
+                raw = invoke_model(root, model_id, prompt, image, 180).strip()
+        except Exception as error:  # noqa: BLE001
+            counts["failed"] += 1
+            emit(f"{_ts()} ✗ objects+turtle #{index}: {error}")
+            return
+        parsed = parse_onepass_output(raw, capture_turtle=True)
+        objects = parsed["objects"]
+        things: list[dict[str, Any]] = []
+        new_members: list[dict[str, Any]] = []
+        turtle_arts: list[tuple[str, str, str, dict[str, Any]]] = []
+        for obj in objects:
+            if stop_event is not None and stop_event.is_set():
+                break
+            name = obj["name"]
+            geom = clamp_geometry(obj, width, height)
+            polygons = geom.get("polygons") or []
+            box = geom.get("box")
+            trace = obj.get("traceTurtle") or []
+            thing: dict[str, Any] = {"name": name, "description": obj["description"], "status": "listed"}
+            if (polygons or box) and trace:
+                try:
+                    verification = outline_verification({
+                        "workspaceId": workspace_id, "image": path, "name": name,
+                        "polygons": polygons, "holes": geom.get("holes") or [], "box": box,
+                        "traceTurtle": trace, "plannerNumber": len(things) + 1,
+                    })
+                    cut = member_cut({
+                        "workspaceId": workspace_id, "image": path,
+                        "outlineSourceImage": path, "outlineSourceDimensions": {"width": width, "height": height},
+                        "polygons": polygons, "holes": geom.get("holes") or [], "box": box,
+                        "outlineVerificationImage": verification.get("verificationImage"),
+                        "outlineGeometryHash": verification.get("geometryHash"),
+                        "name": name, "step": next_step(), "fill": fill_mode, "fillInstructions": {},
+                    })
+                    cutout = str(cut.get("cutout") or "")
+                    thing.update({
+                        "status": "extracted", "outputImages": [cutout],
+                        "outlinePolygons": polygons, "outlineBox": box, "outlineImage": path,
+                        "outlineDimensions": {"width": width, "height": height},
+                        "outlineVerificationImage": verification.get("verificationImage"),
+                        "outlineGeometryHash": verification.get("geometryHash"),
+                    })
+                    new_members.append({
+                        "framePath": path, "frameIndex": index, "name": name, "cutout": cutout,
+                        "box": cut.get("box") or box or [0, 0, 0, 0], "step": step_counter["n"],
+                        "status": "pending", "probeIndex": -1, "probeLabel": "recognition",
+                        "inventoryId": inventory_id, "depth": 0,
+                        "provenance": str(cut.get("cutoutProvenance") or ""),
+                    })
+                    prog = obj.get("turtleProgram")
+                    if cutout and isinstance(prog, dict) and isinstance(prog.get("commands"), list):
+                        turtle_arts.append((cutout, name, obj["description"], prog))
+                except Exception as error:  # noqa: BLE001
+                    thing.update({"status": "failed", "error": f"objects+turtle cut failed: {getattr(error, 'detail', None) or error}"})
+            things.append(thing)
+        inventory = {
+            "id": inventory_id, "framePath": path, "frameIndex": index, "probeIndex": 0,
+            "probeLabel": "recognition", "goal": goal, "sourceImage": path,
+            "descriptionOutput": raw, "sceneDescription": parsed["description"],
+            "modelId": model_id, "depth": 0, "subjectName": f"recog_{index}",
+            "status": "done", "things": things,
+            "extractionOrder": [t["name"] for t in things],
+            "parallelGroups": [[t["name"] for t in things]] if things else [],
+        }
+        persist_recognition_result(workspace_id, inventory, new_members)
+        # Persist the turtle PROGRAM per cutout (no image — the PNG is a separate
+        # local-render pass). rawProgram lets the render/render-on-demand fill in.
+        for cutout, name, description, prog in turtle_arts:
+            persist_turtle_artifact(workspace_id, cutout, {
+                "sourceImage": cutout, "subjectName": name, "description": description,
+                "prompt": "", "rawProgram": json.dumps(prog, ensure_ascii=False),
+                "status": "generated", "error": None, "failedStage": None,
+            })
+        counts["done"] += 1
+        emit(f"{_ts()} ✦ #{index}: {len(objects)} object(s), {len(new_members)} cut, {len(turtle_arts)} turtle program(s)")
+
+    if concurrency <= 1:
+        for frame in inputs:
+            if stop_event is not None and stop_event.is_set():
+                break
+            pass_one(frame)
+    else:
+        with ThreadPoolExecutor(max_workers=concurrency) as pool:
+            list(pool.map(pass_one, inputs))
+    summary = f"objects+turtle complete: {counts.get('done', 0)} image(s), {counts.get('failed', 0)} failed of {counts.get('total', 0)}"
     emit(f"{_ts()} {summary}")
     return summary
 
@@ -2192,8 +2432,8 @@ def run_recognize_turtle(
     log: Callable[[str], None] | None = None,
     counts: dict[str, int] | None = None,
 ) -> str:
-    """Make a Turtle program from the content inside each recognition outline,
-    then render it to a PNG. Scoped to recognition cutouts only."""
+    """Make a Turtle program from the content inside each recognition outline
+    (generation only — the PNG render is a separate pass, run_recognize_turtle_png)."""
     emit = log or (lambda _msg: None)
     counts = counts if counts is not None else {}
     state = load_state(workspace_id)
@@ -2201,27 +2441,98 @@ def run_recognize_turtle(
     if not leaves:
         emit(f"{_ts()} no recognition cutouts to turtle (run 'Find Object Outlines' first)")
         return "no recognition cutouts"
-    rec_sources = {leaf["sourceImage"] for leaf in leaves}
-    emit(f"{_ts()} === recognition turtle: generate programs ===")
-    _turtle_gen(
+    template = _recognition_prompt(state, "recognizeTurtlePrompt", "recognizeTurtlePromptSelection", DEFAULT_RECOGNIZE_TURTLE_PROMPT)
+    return _turtle_gen(
         workspace_id, leaves,
+        model_state_key="recognizeTurtleModel", template_override=template,
         model_override=model_override, concurrency_override=concurrency_override,
         stop_event=stop_event, log=emit, counts=counts,
     )
-    if stop_event is not None and stop_event.is_set():
-        return "stopped after turtle gen"
-    emit(f"{_ts()} === recognition turtle: render PNGs ===")
-    _turtle_png(
-        workspace_id, source_filter=rec_sources,
-        model_override=model_override, concurrency_override=concurrency_override,
-        stop_event=stop_event, log=emit, counts=counts,
-    )
-    summary = f"recognition turtle+png complete: {len(rec_sources)} cutout(s)"
+
+
+def _turtle_render_local(
+    workspace_id: str,
+    leaves: list[dict[str, Any]],
+    *,
+    concurrency_override: int | None = None,
+    stop_event: threading.Event | None = None,
+    log: Callable[[str], None] | None = None,
+    counts: dict[str, int] | None = None,
+) -> str:
+    """Render each turtle program to a PNG with the LOCAL deterministic renderer
+    (no model / no prompt). Best-effort: per-item failures are recorded, never
+    raised, so a slow or bad render never fails a stage."""
+    emit = log or (lambda _msg: None)
+    counts = counts if counts is not None else {}
+    state = load_state(workspace_id)
+    artifacts = state.get("turtleArtifacts") if isinstance(state.get("turtleArtifacts"), dict) else {}
+    candidates: list[tuple[dict[str, Any], dict[str, Any]]] = []
+    seen: set[str] = set()
+    for leaf in leaves:
+        src = leaf["sourceImage"]
+        if src in seen:
+            continue
+        seen.add(src)
+        art = artifacts.get(src) or {}
+        if art.get("rawProgram") and not art.get("renderedImage"):
+            candidates.append((leaf, art))
+    if not candidates:
+        emit(f"{_ts()} nothing to render (no un-rendered turtle programs)")
+        return "nothing to render"
+    concurrency = _stage_concurrency(state, "turtlePng", concurrency_override, 2)
+    counts["stage"] = "turtlePng"
+    counts["total"] = len(candidates)
+    counts["done"] = 0
+    counts["failed"] = 0
+    counts["active"] = 0
+    active = _Active(counts)
+    emit(f"{_ts()} local turtle render start · {len(candidates)} program(s) · concurrency {concurrency}")
+
+    def render_one(pair: tuple[dict[str, Any], dict[str, Any]]) -> None:
+        if stop_event is not None and stop_event.is_set():
+            return
+        leaf, art = pair
+        src = leaf["sourceImage"]
+        subject = str(art.get("subjectName") or leaf.get("subjectName") or "object")
+        raw = str(art.get("rawProgram") or "")
+        program = normalize_turtle_program(raw) or raw
+        try:
+            with active:
+                result = turtle_render({
+                    "workspaceId": workspace_id, "sourceImage": src,
+                    "subjectName": subject, "modelId": "local", "prompt": "",
+                    "program": program,
+                })
+        except Exception as error:  # noqa: BLE001
+            counts["failed"] += 1
+            message = str(getattr(error, "detail", None) or error)
+            emit(f"{_ts()} ✗ local render {subject}: {message}")
+            persist_turtle_artifact(workspace_id, src, {**art, "status": "failed", "failedStage": "png", "error": message})
+            return
+        persist_turtle_artifact(workspace_id, src, {
+            **art,
+            "programPath": str(result.get("programPath") or ""),
+            "renderedImage": str(result.get("renderedImage") or ""),
+            "provenance": str(result.get("provenance") or ""),
+            "status": "rendered", "error": None, "failedStage": None,
+        })
+        counts["done"] += 1
+        emit(f"{_ts()} 🐢 rendered {subject} ({counts['done']}/{counts['total']}): {result.get('renderedImage')}")
+
+    if concurrency <= 1:
+        for pair in candidates:
+            if stop_event is not None and stop_event.is_set():
+                break
+            render_one(pair)
+    else:
+        with ThreadPoolExecutor(max_workers=concurrency) as pool:
+            list(pool.map(render_one, candidates))
+    summary = f"local turtle render complete: {counts.get('done', 0)} rendered, {counts.get('failed', 0)} failed of {counts.get('total', 0)}"
     emit(f"{_ts()} {summary}")
     return summary
 
 
-def run_recognize_all(
+def run_recognize_turtle_png(
     workspace_id: str,
     *,
     model_override: str | None = None,
@@ -2232,27 +2543,21 @@ def run_recognize_all(
     log: Callable[[str], None] | None = None,
     counts: dict[str, int] | None = None,
 ) -> str:
-    """One-step: find objects/outlines (one pass), then turtleize each and
-    render to PNG. Runs server-side as a single reconnect-safe run."""
+    """Denote each recognition Turtle program with its locally-rendered image —
+    a pure local code render (turtle_render → PNG), no model/prompt. UI-only and
+    best-effort. Scoped to recognition cutouts only."""
     emit = log or (lambda _msg: None)
     counts = counts if counts is not None else {}
-    common = dict(
-        model_override=model_override,
-        goal_override=goal_override,
-        only_selected=only_selected,
+    state = load_state(workspace_id)
+    leaves = _collect_recognition_turtle_leaves(state)
+    if not leaves:
+        emit(f"{_ts()} no recognition turtle programs to render (run 'Make Turtle' first)")
+        return "no recognition cutouts"
+    return _turtle_render_local(
+        workspace_id, leaves,
         concurrency_override=concurrency_override,
-        stop_event=stop_event,
-        log=emit,
+        stop_event=stop_event, log=emit, counts=counts,
     )
-    emit(f"{_ts()} === find objects (one pass) ===")
-    run_recognize_onepass(workspace_id, counts=counts, **common)
-    if stop_event is not None and stop_event.is_set():
-        return "stopped after find objects"
-    emit(f"{_ts()} === turtleize each (turtle + png) ===")
-    run_recognize_turtle(workspace_id, counts=counts, **common)
-    summary = "find + turtleize complete"
-    emit(f"{_ts()} {summary}")
-    return summary
 
 
 def run_full(
@@ -2334,9 +2639,10 @@ _STAGE_RUNNERS: dict[str, Callable[..., str]] = {
     "turtlePng": run_turtle_png,
     "recognize": run_recognize,
     "recognizeOnepass": run_recognize_onepass,
+    "recognizeObjectsTurtle": run_recognize_objects_turtle,
     "recognizeMatch": run_recognize_match,
     "recognizeTurtle": run_recognize_turtle,
-    "recognizeAll": run_recognize_all,
+    "recognizeTurtlePng": run_recognize_turtle_png,
     "full": run_full,
 }
 

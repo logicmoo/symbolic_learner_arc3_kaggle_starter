@@ -1775,6 +1775,55 @@ async def upload_recognition_images(
     return await asyncio.to_thread(_import_recognition_images, workspaceId, uploads)
 
 
+def _render_turtle_on_demand(workspace_id: str, source_rel: str) -> dict[str, Any]:
+    """UI-only, best-effort local render of a turtle program that already exists
+    in turtleArtifacts (keyed by sourceImage). Never raises for a bad program —
+    returns a status so the caller can show the program plus a note instead."""
+    import video_import_pipeline as vip  # noqa: PLC0415
+
+    state = vip.load_state(workspace_id)
+    artifacts = state.get("turtleArtifacts") if isinstance(state.get("turtleArtifacts"), dict) else {}
+    art = artifacts.get(source_rel) if isinstance(artifacts.get(source_rel), dict) else None
+    if not art or not art.get("rawProgram"):
+        return {"renderedImage": "", "status": "missing", "reason": "no turtle program for that source"}
+    if art.get("renderedImage"):
+        return {"renderedImage": art["renderedImage"], "status": "rendered", "cached": True}
+    subject = str(art.get("subjectName") or "object")
+    raw = str(art.get("rawProgram") or "")
+    program = vip.normalize_turtle_program(raw) or raw
+    try:
+        result = turtle_render({
+            "workspaceId": workspace_id, "sourceImage": source_rel,
+            "subjectName": subject, "modelId": "local", "prompt": "", "program": program,
+        })
+    except HTTPException as error:
+        message = str(error.detail)
+        vip.persist_turtle_artifact(workspace_id, source_rel, {**art, "status": "failed", "failedStage": "png", "error": message})
+        return {"renderedImage": "", "status": "failed", "reason": message}
+    except Exception as error:  # noqa: BLE001
+        return {"renderedImage": "", "status": "failed", "reason": str(error)}
+    vip.persist_turtle_artifact(workspace_id, source_rel, {
+        **art,
+        "programPath": str(result.get("programPath") or ""),
+        "renderedImage": str(result.get("renderedImage") or ""),
+        "provenance": str(result.get("provenance") or ""),
+        "status": "rendered", "error": None, "failedStage": None,
+    })
+    return {"renderedImage": str(result.get("renderedImage") or ""), "status": "rendered"}
+
+
+@router.post("/turtle/render-on-demand")
+async def turtle_render_on_demand(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
+    """Render-on-demand: locally rasterize an existing turtle program to a PNG so
+    the UI can show an image wherever a program appears. Best-effort and
+    non-blocking — a failure returns a status, never a 500."""
+    workspace_id = str(payload.get("workspaceId") or "")
+    source_rel = str(payload.get("sourceImage") or "")
+    if not workspace_id or not source_rel:
+        raise HTTPException(status_code=400, detail="workspaceId and sourceImage are required")
+    return await asyncio.to_thread(_render_turtle_on_demand, workspace_id, source_rel)
+
+
 @router.get("/stream")
 def stream_video(workspaceId: str, path: str, request: Request) -> Response:
     """Serve an imported video with HTTP Range support so the browser's
