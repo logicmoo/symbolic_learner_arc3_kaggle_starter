@@ -820,6 +820,7 @@ async def pipeline_ws(websocket: WebSocket) -> None:
             "memberInventories": page.get("memberInventories") or [],
             "memberScenes": page.get("memberScenes") or {},
             "members": page.get("members") or [],
+            "turtleArtifacts": page.get("turtleArtifacts") or {},
         }
 
     async def push_loop() -> None:

@@ -3560,6 +3560,7 @@ export function VideoImportPage({
             if (Array.isArray(msg.memberInventories)) setMemberInventories(msg.memberInventories);
             if (msg.memberScenes && typeof msg.memberScenes === "object") setMemberScenes(msg.memberScenes);
             if (Array.isArray(msg.members)) setMembers(msg.members);
+            if (msg.turtleArtifacts && typeof msg.turtleArtifacts === "object") setTurtleArtifacts(msg.turtleArtifacts);
           }
         }
         else if (msg.type === "cleared") { pipelineLogSeenRef.current = 0; }
@@ -6725,7 +6726,7 @@ export function VideoImportPage({
             // When a server-side run owns this stage, its live counts (pushed over
             // the websocket) drive the stat row instead of the (disabled) client
             // scheduler.
-            const serverStageFor: Record<string, string> = { describer: "describe", outliner: "outline", extractor: "extract" };
+            const serverStageFor: Record<string, string> = { describer: "describe", outliner: "outline", extractor: "extract", turtle: "turtle", turtlePng: "turtlePng" };
             const serverActive = pipelineRunStatus === "running" && pipelineCounts.stage === serverStageFor[type];
             const sProcessing = serverActive ? Number(pipelineCounts.active || 0) : llmSchedulerRef.current.byType[type];
             const sCompleted = serverActive ? Number(pipelineCounts.done || 0) : completed;
@@ -7185,7 +7186,7 @@ export function VideoImportPage({
                 <textarea value={turtlePrompt} disabled={busy} onChange={(event) => { setTurtlePromptSelection("workspace"); setTurtlePrompt(event.target.value); }} spellCheck={false} />
               </label>
             </details>
-            <button disabled={busy || !isRunnableVisionModel(effectiveTurtleModel) || !turtleLeafCandidates.length} onClick={() => void generateTurtlePrograms()}>Call LLM · Turtle Gen</button>
+            <button disabled={busy || !isRunnableVisionModel(effectiveTurtleModel) || !members.length} onClick={() => startServerStage("turtle")}>Call LLM · Turtle Gen</button>
             <b>TURTLE PNG</b>
             <label>model
               <ColoredTagCombobox value={turtlePngModel} ids={videoModelIds} ariaLabel="Turtle PNG model" allowNone noneLabel={`<use global · ${allCallsModel || "none"}>`} describe={describeVideoModel} disabled={busy} onChange={(value) => { turtlePngModelTouchedRef.current = true; setTurtlePngModel(value); }} />
@@ -7197,7 +7198,7 @@ export function VideoImportPage({
                 <textarea value={turtlePngPrompt} disabled={busy} onChange={(event) => { setTurtlePngPromptSelection("workspace"); setTurtlePngPrompt(event.target.value); }} spellCheck={false} />
               </label>
             </details>
-            <button disabled={busy || !isRunnableVisionModel(effectiveTurtlePngModel) || !Object.values(turtleArtifacts).some((artifact) => artifact.status === "generated")} onClick={() => void drawTurtlePngs()}>Call LLM · Turtle PNG</button>
+            <button disabled={busy || !isRunnableVisionModel(effectiveTurtlePngModel) || !Object.values(turtleArtifacts).some((artifact) => artifact.rawProgram && !artifact.renderedImage)} onClick={() => startServerStage("turtlePng")}>Call LLM · Turtle PNG</button>
             <b>IMPORT GAME</b>
             <label>game id <input type="text" value={gameId} disabled={busy} onChange={(event) => setGameId(event.target.value)} /></label>
             <button disabled={busy || !frames.length || !gameId.trim()} onClick={() => void materialize()}>Materialize as recording</button>

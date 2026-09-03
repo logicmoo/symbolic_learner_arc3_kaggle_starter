@@ -54,6 +54,7 @@ from video_import_api import (
     get_page_state,
     member_cut,
     outline_verification,
+    turtle_render,
 )
 
 # --------------------------------------------------------------------------- #
@@ -164,6 +165,128 @@ def render_extractor_prompt(
         .replace("{{plannerPosition}}", str(position))
         .replace("{{plannerTotal}}", str(total))
     )
+
+
+DEFAULT_TURTLE_PROMPT = "\n".join([
+    "TURTLE LEAF RENDERER.",
+    "The attached image is the terminal object {{subjectName}}. Its recursive Describer found no further sub-objects.",
+    "Object description: {{description}}",
+    "Write a constrained turtle drawing program that reconstructs this one object.",
+    "Use normalized coordinates from 0 to 1000 with origin at the top-left.",
+    "Allowed commands: pen, move, line, polyline, polygon, rectangle, ellipse, dot.",
+    "Use transparent background unless the object itself requires a background. Use at most 100 commands.",
+    'Answer ONLY with JSON: {"version":1,"background":"transparent","penColor":"#RRGGBB","penWidth":4,"commands":[{"op":"move","x":0,"y":0},...]}',
+])
+
+DEFAULT_TURTLE_PNG_PROMPT = "\n".join([
+    "TURTLE PNG DRAW STEP.",
+    "The attached image is terminal object {{subjectName}}.",
+    "Object description: {{description}}",
+    "Review the draft Turtle program below and return the final drawing program that should be rendered to PNG.",
+    "Preserve accurate silhouette, colors, holes, and visible internal details. Coordinates are normalized from 0 to 1000 with top-left origin.",
+    "Allowed commands: pen, move, line, polyline, polygon, rectangle, ellipse, dot. Use at most 200 commands.",
+    "DRAFT TURTLE PROGRAM:",
+    "{{draftProgram}}",
+    "Answer ONLY with the final JSON object. Do not include Markdown or Python.",
+])
+
+
+def render_turtle_prompt(template: str, subject_name: str, description: str) -> str:
+    return (
+        template.replace("{{subjectName}}", subject_name)
+        .replace("{{description}}", description or "No additional description.")
+    )
+
+
+def render_turtle_png_prompt(template: str, subject_name: str, description: str, draft_program: str) -> str:
+    return (
+        template.replace("{{subjectName}}", subject_name)
+        .replace("{{description}}", description or "No additional description.")
+        .replace("{{draftProgram}}", draft_program)
+    )
+
+
+def _derive_box(command: dict[str, Any]) -> list[float] | None:
+    def num(key: str) -> float | None:
+        try:
+            return float(command[key])
+        except (KeyError, TypeError, ValueError):
+            return None
+
+    if all(k in command for k in ("x0", "y0", "x1", "y1")):
+        vals = [num("x0"), num("y0"), num("x1"), num("y1")]
+        return vals if None not in vals else None  # type: ignore[return-value]
+    x, y = num("x"), num("y")
+    width = num("width") if "width" in command else num("w")
+    height = num("height") if "height" in command else num("h")
+    if None not in (x, y, width, height):
+        return [x, y, x + width, y + height]  # type: ignore[operator]
+    return None
+
+
+def _normalize_points(value: Any) -> list[list[float]] | None:
+    if not isinstance(value, list):
+        return None
+    points: list[list[float]] = []
+    for pt in value:
+        if isinstance(pt, (list, tuple)) and len(pt) >= 2:
+            try:
+                points.append([float(pt[0]), float(pt[1])])
+            except (TypeError, ValueError):
+                return None
+        elif isinstance(pt, dict) and "x" in pt and "y" in pt:
+            try:
+                points.append([float(pt["x"]), float(pt["y"])])
+            except (TypeError, ValueError):
+                return None
+        else:
+            return None
+    return points
+
+
+def normalize_turtle_program(program: Any) -> dict[str, Any] | None:
+    """Reconcile common model variations to the shape turtle_render expects:
+    rectangle/ellipse need box=[x0,y0,x1,y1] (models often emit x/y/width/height),
+    and polygon/polyline points may arrive as {x,y} objects."""
+    prog: Any
+    if isinstance(program, dict):
+        prog = program
+    elif isinstance(program, str):
+        match = re.search(r"\{[\s\S]*\}", program)
+        if not match:
+            return None
+        try:
+            prog = json.loads(match.group(0))
+        except (json.JSONDecodeError, ValueError):
+            return None
+    else:
+        return None
+    if not isinstance(prog, dict):
+        return None
+    commands = prog.get("commands")
+    if not isinstance(commands, list):
+        return prog
+    aliases = {"rect": "rectangle", "circle": "ellipse", "oval": "ellipse"}
+    for command in commands:
+        if not isinstance(command, dict):
+            continue
+        op = str(command.get("op") or "").lower()
+        if op in aliases:
+            op = aliases[op]
+            command["op"] = op
+        if op in ("rectangle", "ellipse"):
+            box = command.get("box")
+            if not (isinstance(box, list) and len(box) == 4):
+                derived = _derive_box(command)
+                if derived:
+                    command["box"] = derived
+        elif op in ("polygon", "polyline"):
+            pts = _normalize_points(command.get("points") or command.get("vertices"))
+            if pts is not None:
+                command["points"] = pts
+    return prog
+
+
 
 
 def parse_outline_geometry(text: str) -> dict[str, Any]:
@@ -614,6 +737,19 @@ def update_thing(
             ]
             members.append(member)
             state["members"] = members
+        _save_page_state_payload({"workspaceId": workspace_id, "state": state})
+
+
+def persist_turtle_artifact(workspace_id: str, source_image: str, artifact: dict[str, Any]) -> None:
+    """Merge one turtle artifact (keyed by its source cutout) into page-state,
+    full-state safe."""
+    with _page_state_lock(workspace_id):
+        state = load_state(workspace_id)
+        artifacts = state.get("turtleArtifacts")
+        if not isinstance(artifacts, dict):
+            artifacts = {}
+        artifacts[source_image] = artifact
+        state["turtleArtifacts"] = artifacts
         _save_page_state_payload({"workspaceId": workspace_id, "state": state})
 
 
@@ -1249,6 +1385,207 @@ def run_extract(
     return summary
 
 
+def _collect_turtle_leaves(state: dict[str, Any]) -> list[dict[str, Any]]:
+    """Every extracted object cutout is a terminal leaf for turtle rendering."""
+    leaves: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for inv in state.get("memberInventories") or []:
+        if not isinstance(inv, dict):
+            continue
+        for thing in inv.get("things") or []:
+            outs = thing.get("outputImages") or []
+            if outs and outs[0] not in seen:
+                seen.add(outs[0])
+                leaves.append({
+                    "sourceImage": outs[0],
+                    "subjectName": str(thing.get("name") or "object"),
+                    "description": str(thing.get("description") or ""),
+                })
+    return leaves
+
+
+def run_turtle(
+    workspace_id: str,
+    *,
+    model_override: str | None = None,
+    goal_override: str | None = None,
+    only_selected: bool = True,
+    concurrency_override: int | None = None,
+    stop_event: threading.Event | None = None,
+    log: Callable[[str], None] | None = None,
+    counts: dict[str, int] | None = None,
+) -> str:
+    """Generate a Turtle drawing program for every extracted leaf cutout."""
+    emit = log or (lambda _msg: None)
+    counts = counts if counts is not None else {}
+    root = _workspace_root(workspace_id)
+    state = load_state(workspace_id)
+    model_id = _effective_stage_model(state, "turtleModel", model_override)
+    if not model_id:
+        raise RuntimeError("no turtle model configured (set turtleModel/allCallsModel or pass --model)")
+    template = str(state.get("turtlePrompt") or "").strip()
+    if not template or state.get("turtlePromptSelection") == "default":
+        template = DEFAULT_TURTLE_PROMPT
+    artifacts = state.get("turtleArtifacts") if isinstance(state.get("turtleArtifacts"), dict) else {}
+    leaves = _collect_turtle_leaves(state)
+    candidates = [
+        leaf for leaf in leaves
+        if not (artifacts.get(leaf["sourceImage"]) or {}).get("rawProgram")
+    ]
+    if not candidates:
+        emit(f"{_ts()} nothing to turtle (extract objects first, or all leaves already have programs)")
+        return "nothing to turtle"
+    concurrency = _stage_concurrency(state, "turtle", concurrency_override, 2)
+    counts["stage"] = "turtle"
+    counts["total"] = len(candidates)
+    counts["done"] = 0
+    counts["failed"] = 0
+    counts["active"] = 0
+    active = _Active(counts)
+    emit(f"{_ts()} turtle-gen start · {len(candidates)} leaf/leaves · model {model_id} · concurrency {concurrency}")
+
+    def turtle_one(leaf: dict[str, Any]) -> None:
+        if stop_event is not None and stop_event.is_set():
+            return
+        src = leaf["sourceImage"]
+        prompt = render_turtle_prompt(template, leaf["subjectName"], leaf["description"])
+        image = image_to_data_url(root, src)
+        if not image:
+            counts["failed"] += 1
+            emit(f"{_ts()} ✗ turtle {leaf['subjectName']}: could not load {src}")
+            persist_turtle_artifact(workspace_id, src, {
+                "sourceImage": src, "subjectName": leaf["subjectName"], "prompt": prompt,
+                "rawProgram": "", "status": "failed", "failedStage": "gen",
+                "error": f"could not load Turtle input: {src}",
+            })
+            return
+        try:
+            with active:
+                raw = invoke_model(root, model_id, prompt, image, 180).strip()
+        except Exception as error:  # noqa: BLE001
+            counts["failed"] += 1
+            emit(f"{_ts()} ✗ turtle {leaf['subjectName']}: {error}")
+            persist_turtle_artifact(workspace_id, src, {
+                "sourceImage": src, "subjectName": leaf["subjectName"], "prompt": prompt,
+                "rawProgram": "", "status": "failed", "failedStage": "gen", "error": str(error),
+            })
+            return
+        persist_turtle_artifact(workspace_id, src, {
+            "sourceImage": src, "subjectName": leaf["subjectName"], "prompt": prompt,
+            "rawProgram": raw, "status": "generated", "error": None, "failedStage": None,
+        })
+        counts["done"] += 1
+        emit(f"{_ts()} 🐢 generated turtle program for {leaf['subjectName']} ({counts['done']}/{counts['total']})")
+
+    if concurrency <= 1:
+        for leaf in candidates:
+            if stop_event is not None and stop_event.is_set():
+                break
+            turtle_one(leaf)
+    else:
+        with ThreadPoolExecutor(max_workers=concurrency) as pool:
+            list(pool.map(turtle_one, candidates))
+    summary = f"turtle-gen complete: {counts.get('done', 0)} program(s), {counts.get('failed', 0)} failed of {counts.get('total', 0)}"
+    emit(f"{_ts()} {summary}")
+    return summary
+
+
+def run_turtle_png(
+    workspace_id: str,
+    *,
+    model_override: str | None = None,
+    goal_override: str | None = None,
+    only_selected: bool = True,
+    concurrency_override: int | None = None,
+    stop_event: threading.Event | None = None,
+    log: Callable[[str], None] | None = None,
+    counts: dict[str, int] | None = None,
+) -> str:
+    """Turn each generated Turtle program into a rendered PNG (the final output)."""
+    emit = log or (lambda _msg: None)
+    counts = counts if counts is not None else {}
+    root = _workspace_root(workspace_id)
+    state = load_state(workspace_id)
+    model_id = _effective_stage_model(state, "turtlePngModel", model_override)
+    if not model_id:
+        raise RuntimeError("no turtle-png model configured (set turtlePngModel/allCallsModel or pass --model)")
+    template = str(state.get("turtlePngPrompt") or "").strip()
+    if not template or state.get("turtlePngPromptSelection") == "default":
+        template = DEFAULT_TURTLE_PNG_PROMPT
+    artifacts = state.get("turtleArtifacts") if isinstance(state.get("turtleArtifacts"), dict) else {}
+    candidates = [
+        (src, art) for src, art in artifacts.items()
+        if isinstance(art, dict) and art.get("rawProgram") and not art.get("renderedImage")
+    ]
+    if not candidates:
+        emit(f"{_ts()} nothing to render (generate turtle programs first)")
+        return "nothing to render"
+    concurrency = _stage_concurrency(state, "turtlePng", concurrency_override, 2)
+    counts["stage"] = "turtlePng"
+    counts["total"] = len(candidates)
+    counts["done"] = 0
+    counts["failed"] = 0
+    counts["active"] = 0
+    active = _Active(counts)
+    emit(f"{_ts()} turtle-png start · {len(candidates)} program(s) · model {model_id} · concurrency {concurrency}")
+
+    def png_one(pair: tuple[str, dict[str, Any]]) -> None:
+        if stop_event is not None and stop_event.is_set():
+            return
+        src, art = pair
+        subject = str(art.get("subjectName") or "object")
+        png_prompt = render_turtle_png_prompt(template, subject, str(art.get("description") or ""), str(art.get("rawProgram") or ""))
+        image = image_to_data_url(root, src)
+        try:
+            with active:
+                png_program = invoke_model(root, model_id, png_prompt, image, 180).strip() if image else str(art.get("rawProgram") or "")
+        except Exception as error:  # noqa: BLE001
+            counts["failed"] += 1
+            emit(f"{_ts()} ✗ turtle-png {subject}: {error}")
+            persist_turtle_artifact(workspace_id, src, {**art, "pngPrompt": png_prompt, "status": "failed", "failedStage": "png", "error": str(error)})
+            return
+        try:
+            result = turtle_render({
+                "workspaceId": workspace_id,
+                "sourceImage": src,
+                "subjectName": subject,
+                "modelId": model_id,
+                "prompt": png_prompt,
+                "program": normalize_turtle_program(png_program) or png_program,
+            })
+        except Exception as error:  # noqa: BLE001
+            message = str(getattr(error, "detail", None) or error)
+            counts["failed"] += 1
+            emit(f"{_ts()} ✗ turtle-png {subject}: render failed: {message}")
+            persist_turtle_artifact(workspace_id, src, {**art, "pngPrompt": png_prompt, "pngProgram": png_program, "status": "failed", "failedStage": "png", "error": message})
+            return
+        persist_turtle_artifact(workspace_id, src, {
+            **art,
+            "pngPrompt": png_prompt,
+            "pngProgram": png_program,
+            "programPath": str(result.get("programPath") or ""),
+            "renderedImage": str(result.get("renderedImage") or ""),
+            "provenance": str(result.get("provenance") or ""),
+            "status": "rendered",
+            "error": None,
+            "failedStage": None,
+        })
+        counts["done"] += 1
+        emit(f"{_ts()} 🖼 rendered turtle PNG for {subject} ({counts['done']}/{counts['total']}): {result.get('renderedImage')}")
+
+    if concurrency <= 1:
+        for pair in candidates:
+            if stop_event is not None and stop_event.is_set():
+                break
+            png_one(pair)
+    else:
+        with ThreadPoolExecutor(max_workers=concurrency) as pool:
+            list(pool.map(png_one, candidates))
+    summary = f"turtle-png complete: {counts.get('done', 0)} PNG(s), {counts.get('failed', 0)} failed of {counts.get('total', 0)}"
+    emit(f"{_ts()} {summary}")
+    return summary
+
+
 def run_full(
     workspace_id: str,
     *,
@@ -1300,7 +1637,22 @@ def run_full(
         if outlined_this == 0 and extracted_this == 0:
             emit(f"{_ts()} no further progress after round {round_index} — stopping")
             break
-    summary = f"full pipeline complete: {total_outlined} outlined, {total_extracted} extracted"
+    # Finally turn every extracted leaf cutout into a Turtle program and render it
+    # to a PNG (the terminal output of the pipeline).
+    total_turtle = 0
+    total_png = 0
+    if stop_event is None or not stop_event.is_set():
+        emit(f"{_ts()} === full pipeline: turtle-gen ===")
+        run_turtle(workspace_id, counts=counts, **common)
+        total_turtle = counts.get("done", 0)
+    if stop_event is None or not stop_event.is_set():
+        emit(f"{_ts()} === full pipeline: turtle-png ===")
+        run_turtle_png(workspace_id, counts=counts, **common)
+        total_png = counts.get("done", 0)
+    summary = (
+        f"full pipeline complete: {total_outlined} outlined, {total_extracted} extracted, "
+        f"{total_turtle} turtle program(s), {total_png} PNG(s)"
+    )
     emit(f"{_ts()} {summary}")
     return summary
 
@@ -1309,6 +1661,8 @@ _STAGE_RUNNERS: dict[str, Callable[..., str]] = {
     "describe": run_describe,
     "outline": run_outline,
     "extract": run_extract,
+    "turtle": run_turtle,
+    "turtlePng": run_turtle_png,
     "full": run_full,
 }
 
