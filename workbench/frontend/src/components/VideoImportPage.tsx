@@ -7528,8 +7528,8 @@ export function VideoImportPage({
 
           {recognitionReduce && Array.isArray(recognitionReduce.items) && recognitionReduce.items.length > 0 && (() => {
             const SLUG_ORDER = ["bart_simpson","lisa_simpson","homer_simpson","marge_simpson","maggie_simpson","grandpa_simpson","spongebob","patrick_star","squidward","scooby_doo","shaggy","mickey_mouse","minnie_mouse","donald_duck","goofy","bugs_bunny","pikachu","mario","sonic","moana"];
-            const COND_ORDER = ["c1_bw","c2_flip","c3_rot45","c4_busy","c5_new","c6_verybusy","c7_withchars","c8_typical"];
-            const COND_LABELS: Record<string, string> = { c1_bw: "greyscale", c2_flip: "flip H", c3_rot45: "rotate 45°", c4_busy: "busy scene", c5_new: "new style", c6_verybusy: "crowd", c7_withchars: "with others", c8_typical: "episode still" };
+            const COND_ORDER = ["c1_bw","c2_flip","c3_rot45","c4_busy","c5_new","c6_verybusy","c7_withchars","c8_typical","c9_colorful","c10_modality"];
+            const COND_LABELS: Record<string, string> = { c1_bw: "greyscale", c2_flip: "flip H", c3_rot45: "rotate 45°", c4_busy: "busy scene", c5_new: "new style", c6_verybusy: "crowd", c7_withchars: "with others", c8_typical: "episode still", c9_colorful: "colorful", c10_modality: "other medium" };
             const nameBySlug = new Map(recognitionGallery.map((g: any) => [g.slug, g.name]));
             const isWeb = (it: any) => (it.source ? it.source === "web" : !["c1_bw", "c2_flip", "c3_rot45"].includes(it.cond));
             const bestNshot = (it: any) => (it.rows || []).filter((r: any) => r.kind !== "oneshot").reduce((a: any, b: any) => ((b.agree?.score ?? 0) > (a?.agree?.score ?? -1) ? b : a), null);
@@ -7540,7 +7540,7 @@ export function VideoImportPage({
             const condRank = (c: string) => { const i = COND_ORDER.indexOf(c); return i < 0 ? 99 : i; };
             return (
               <div className="video-import-reduce">
-                <h3 className="video-import-recognition-subhead">Reduction stress-test · {orderedSlugs.length} character(s) × up to 8 conditions</h3>
+                <h3 className="video-import-recognition-subhead">Reduction stress-test · {orderedSlugs.length} character(s) × up to 10 conditions</h3>
                 <div className="video-import-reduce-explain">Fewer calls on a <b>smart</b> model (1-shot) vs more calls on a <b>cheaper</b> model (N-shot) should converge on the same symbolic part-graph. Each condition card shows the best N-shot <b>agreement</b> with the 1-shot reference; click a card for the full symbolic strip. Web scenes are <b>real fetched images</b> (source link shown) — not generated.</div>
                 <label className="video-import-toggle"><input type="checkbox" checked={reduceOnlyGood} onChange={(e) => setReduceOnlyGood(e.target.checked)} /> Only characters with a condition where a cheaper N-shot AGREES (good, ≥70%) with 1-shot</label>
                 <div className="video-import-reduce-grid">
