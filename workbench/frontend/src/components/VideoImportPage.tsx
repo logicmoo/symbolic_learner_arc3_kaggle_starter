@@ -2816,6 +2816,7 @@ export function VideoImportPage({
   const [recognitionReduce, setRecognitionReduce] = useState<any | null>(null);
   const [reduceOnlyGood, setReduceOnlyGood] = useState(false);
   const [reduceMetta, setReduceMetta] = useState<Record<string, string>>({});
+  const [expandedReduceId, setExpandedReduceId] = useState<string | null>(null);
   const [recognitionUploading, setRecognitionUploading] = useState(false);
   // Recognition stage-row state — dedicated per-row model + prompt, decoupled
   // from the Objects-page prompts. Persisted under the keys the server reads.
@@ -7526,40 +7527,83 @@ export function VideoImportPage({
           )}
 
           {recognitionReduce && Array.isArray(recognitionReduce.items) && recognitionReduce.items.length > 0 && (() => {
+            const SLUG_ORDER = ["bart_simpson","lisa_simpson","homer_simpson","marge_simpson","maggie_simpson","grandpa_simpson","spongebob","patrick_star","squidward","scooby_doo","shaggy","mickey_mouse","minnie_mouse","donald_duck","goofy","bugs_bunny","pikachu","mario","sonic","moana"];
+            const COND_ORDER = ["c1_bw","c2_flip","c3_rot45","c4_busy","c5_new","c6_verybusy","c7_withchars","c8_typical"];
+            const COND_LABELS: Record<string, string> = { c1_bw: "greyscale", c2_flip: "flip H", c3_rot45: "rotate 45°", c4_busy: "busy scene", c5_new: "new style", c6_verybusy: "crowd", c7_withchars: "with others", c8_typical: "episode still" };
             const nameBySlug = new Map(recognitionGallery.map((g: any) => [g.slug, g.name]));
-            const items = recognitionReduce.items.filter((it: any) => !reduceOnlyGood || (it.rows || []).some((r: any) => r.kind !== "oneshot" && r.agree?.verdict === "good"));
+            const isWeb = (it: any) => (it.source ? it.source === "web" : !["c1_bw", "c2_flip", "c3_rot45"].includes(it.cond));
+            const bestNshot = (it: any) => (it.rows || []).filter((r: any) => r.kind !== "oneshot").reduce((a: any, b: any) => ((b.agree?.score ?? 0) > (a?.agree?.score ?? -1) ? b : a), null);
+            const items = recognitionReduce.items.filter((it: any) => !reduceOnlyGood || (it.rows || []).some((r: any) => r.kind !== "oneshot" && (r.agree?.score ?? 0) >= 0.7));
+            const bySlug = new Map<string, any[]>();
+            for (const it of items) { const arr = bySlug.get(it.slug) || []; arr.push(it); bySlug.set(it.slug, arr); }
+            const orderedSlugs = [...SLUG_ORDER.filter((s) => bySlug.has(s)), ...[...bySlug.keys()].filter((s) => !SLUG_ORDER.includes(s))];
+            const condRank = (c: string) => { const i = COND_ORDER.indexOf(c); return i < 0 ? 99 : i; };
             return (
               <div className="video-import-reduce">
-                <h3 className="video-import-recognition-subhead">Reduction stress-test · shot-tier agreement ({recognitionReduce.items.length} item(s){reduceOnlyGood ? ` · ${items.length} shown` : ""})</h3>
-                <div className="video-import-reduce-explain">Fewer calls on a <b>smart</b> model (1-shot) vs more calls on a <b>cheaper</b> model (N-shot) should converge on the same symbolic part-graph. Each N-shot row shows its <b>agreement</b> with the 1-shot reference — the green rows are "the cheap model was good enough."</div>
-                <label className="video-import-toggle"><input type="checkbox" checked={reduceOnlyGood} onChange={(e) => setReduceOnlyGood(e.target.checked)} /> Only items where a cheaper N-shot AGREES (good) with 1-shot</label>
-                <div className="video-import-reduce-list">
-                  {items.map((it: any) => {
-                    const chipRel = it.chipPath || `data/recognition_reduce/chips/${it.chip}`;
+                <h3 className="video-import-recognition-subhead">Reduction stress-test · {orderedSlugs.length} character(s) × up to 8 conditions</h3>
+                <div className="video-import-reduce-explain">Fewer calls on a <b>smart</b> model (1-shot) vs more calls on a <b>cheaper</b> model (N-shot) should converge on the same symbolic part-graph. Each condition card shows the best N-shot <b>agreement</b> with the 1-shot reference; click a card for the full symbolic strip. Web scenes are <b>real fetched images</b> (source link shown) — not generated.</div>
+                <label className="video-import-toggle"><input type="checkbox" checked={reduceOnlyGood} onChange={(e) => setReduceOnlyGood(e.target.checked)} /> Only characters with a condition where a cheaper N-shot AGREES (good, ≥70%) with 1-shot</label>
+                <div className="video-import-reduce-grid">
+                  {orderedSlugs.map((slug) => {
+                    const conds = (bySlug.get(slug) || []).slice().sort((a, b) => condRank(a.cond) - condRank(b.cond));
+                    const expanded = conds.find((it) => it.id === expandedReduceId);
                     return (
-                    <div className="video-import-reduce-card" key={it.id}>
-                      <div className="video-import-reduce-head"><b>{nameBySlug.get(it.slug) || it.slug}</b> <span>· {it.label}</span></div>
-                      {it.chip && <img className="video-import-reduce-strip" src={asset(chipRel)} alt={it.id} loading="lazy" />}
-                      <div className="video-import-reduce-tiers">
-                        {(it.rows || []).map((row: any, ri: number) => {
-                          const isRef = row.kind === "oneshot";
-                          const verdict = row.agree?.verdict || (isRef ? "ref" : "");
-                          const pct = Math.round((row.agree?.score ?? 0) * 100);
-                          const mettaRel = row.mettaPath || `data/recognition_reduce/sym/${row.metta}`;
+                      <div className="video-import-reduce-charrow" key={slug}>
+                        <div className="video-import-reduce-charname">{nameBySlug.get(slug) || slug}</div>
+                        <div className="video-import-reduce-condstrip">
+                          {conds.map((it: any) => {
+                            const inputRel = it.inputPath || `data/recognition_reduce/pool/${String(it.input || "").split("/").pop()}`;
+                            const web = isWeb(it);
+                            const best = bestNshot(it);
+                            const verdict = best?.agree?.verdict || "";
+                            const pct = best ? Math.round((best.agree?.score ?? 0) * 100) : null;
+                            return (
+                              <div className={`video-import-reduce-condcard${it.id === expandedReduceId ? " is-open" : ""}`} key={it.id} role="button" tabIndex={0}
+                                onClick={() => setExpandedReduceId(it.id === expandedReduceId ? null : it.id)}>
+                                <img className="video-import-reduce-condthumb" src={asset(inputRel)} alt={it.cond} loading="lazy" />
+                                <div className="video-import-reduce-condlabel">{COND_LABELS[it.cond] || it.cond}</div>
+                                {best ? <span className={`video-import-reduce-badge v-${verdict}`}>{best.shots}-shot vs 1: {pct}% {String(verdict).toUpperCase()}</span> : <span className="video-import-reduce-badge v-ref">1-shot ref</span>}
+                                <div className="video-import-reduce-condsrc">
+                                  {web ? (
+                                    <>
+                                      <span className="video-import-reduce-tag web">web</span>
+                                      {it.source_url ? <a href={it.source_url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>source ↗</a> : null}
+                                    </>
+                                  ) : <span className="video-import-reduce-tag derived">derived</span>}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {expanded && (() => {
+                          const chipRel = expanded.chipPath || `data/recognition_reduce/chips/${String(expanded.chip || "").split("/").pop()}`;
                           return (
-                            <details className="video-import-reduce-row" key={ri} onToggle={(e: any) => { if (e.currentTarget.open) loadReduceMetta(mettaRel); }}>
-                              <summary>
-                                <span className="video-import-reduce-tier">{row.shots}-shot</span>
-                                <span className="video-import-reduce-model">{row.model}</span>
-                                <span className="video-import-reduce-parts">{row.nparts} parts · {row.nrels} rels</span>
-                                <span className={`video-import-reduce-badge v-${verdict}`}>{isRef ? "reference" : `vs 1-shot: ${pct}% · ${String(verdict).toUpperCase()}`}</span>
-                              </summary>
-                              <pre className="video-import-reduce-metta">{reduceMetta[mettaRel] || "loading…"}</pre>
-                            </details>
+                            <div className="video-import-reduce-expanded">
+                              <div className="video-import-reduce-head"><b>{nameBySlug.get(slug) || slug}</b> <span>· {COND_LABELS[expanded.cond] || expanded.cond}</span></div>
+                              {expanded.chip && <img className="video-import-reduce-strip" src={asset(chipRel)} alt={expanded.id} loading="lazy" />}
+                              <div className="video-import-reduce-tiers">
+                                {(expanded.rows || []).map((row: any, ri: number) => {
+                                  const isRef = row.kind === "oneshot";
+                                  const verdict = row.agree?.verdict || (isRef ? "ref" : "");
+                                  const pct = Math.round((row.agree?.score ?? 0) * 100);
+                                  const mettaRel = row.mettaPath || `data/recognition_reduce/sym/${String(row.metta || "").split("/").pop()}`;
+                                  return (
+                                    <details className="video-import-reduce-row" key={ri} onToggle={(e: any) => { if (e.currentTarget.open) loadReduceMetta(mettaRel); }}>
+                                      <summary>
+                                        <span className="video-import-reduce-tier">{row.shots}-shot</span>
+                                        <span className="video-import-reduce-model">{row.model}</span>
+                                        <span className="video-import-reduce-parts">{row.nparts} parts · {row.nrels} rels</span>
+                                        <span className={`video-import-reduce-badge v-${verdict}`}>{isRef ? "reference" : `vs 1-shot: ${pct}% · ${String(verdict).toUpperCase()}`}</span>
+                                      </summary>
+                                      <pre className="video-import-reduce-metta">{reduceMetta[mettaRel] || "loading…"}</pre>
+                                    </details>
+                                  );
+                                })}
+                              </div>
+                            </div>
                           );
-                        })}
+                        })()}
                       </div>
-                    </div>
                     );
                   })}
                 </div>
