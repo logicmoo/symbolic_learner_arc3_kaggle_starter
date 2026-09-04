@@ -6487,25 +6487,39 @@ export function VideoImportPage({
             );
   };
 
+  const describeImageSet = (id: string): ColoredTagDescription => {
+    if (id === OBJECTS_LIVE_SET) {
+      return { label: "Objects · live pipeline", groupKey: "0-live", groupLabel: "Objects", tags: [{ text: `${memberInventories.length} live`, color: "#27dcc2" }] };
+    }
+    const s = imageSetList.find((x: any) => x.id === id);
+    if (!s) return { label: id, groupKey: "9-other", groupLabel: "Other", tags: [] };
+    const tags: ColoredTag[] = [];
+    if (s.reducedCount) tags.push({ text: `${s.reducedCount} reduced`, color: "#7bd88f" });
+    tags.push({ text: `${s.imageCount} images`, color: "#8aa0aa" });
+    return { label: s.label || id, groupKey: s.groupKey || "4-loaded", groupLabel: s.group || "Sources", tags };
+  };
+
   const renderImageSetSelector = (scope: "recognition" | "objects") => {
-    const opts = scope === "objects"
-      ? [{ id: OBJECTS_LIVE_SET, label: "Objects · live pipeline", imageCount: memberInventories.length, reducedCount: memberInventories.length }, ...imageSetList]
-      : imageSetList;
-    if (!opts.length) return null;
+    const ids = scope === "objects"
+      ? [OBJECTS_LIVE_SET, ...imageSetList.map((s: any) => s.id)]
+      : imageSetList.map((s: any) => s.id);
+    if (!ids.length) return null;
     const value = scope === "objects" ? (objectsShowLive ? OBJECTS_LIVE_SET : selectedImageSet) : selectedImageSet;
     return (
       <label className="video-import-imageset-selector" title="Choose which image set to view — read straight from disk, so switching never redoes reduction work">
         <span>image set</span>
-        <select value={value} onChange={(e) => {
-          const v = e.target.value;
-          if (scope === "objects" && v === OBJECTS_LIVE_SET) { setObjectsShowLive(true); return; }
-          if (scope === "objects") setObjectsShowLive(false);
-          setSelectedImageSet(v);
-        }}>
-          {opts.map((s: any) => (
-            <option key={s.id} value={s.id}>{s.label}{typeof s.imageCount === "number" && s.id !== OBJECTS_LIVE_SET ? ` · ${s.reducedCount ?? 0}/${s.imageCount} reduced` : (s.id === OBJECTS_LIVE_SET ? ` · ${s.imageCount} live` : "")}</option>
-          ))}
-        </select>
+        <ColoredTagCombobox
+          value={value}
+          ids={ids}
+          ariaLabel="Image set"
+          describe={describeImageSet}
+          openWidth="30ch"
+          onChange={(v) => {
+            if (scope === "objects" && v === OBJECTS_LIVE_SET) { setObjectsShowLive(true); return; }
+            if (scope === "objects") setObjectsShowLive(false);
+            setSelectedImageSet(v);
+          }}
+        />
       </label>
     );
   };

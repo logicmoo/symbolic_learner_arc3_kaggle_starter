@@ -2164,27 +2164,60 @@ _CANONICAL_IMAGE_SET = "recognition_reduce"
 _IMAGE_SET_LABELS = {"recognition_reduce": "Recognition · 20×10 conditions"}
 
 
-def _list_image_sets(root: Path) -> list[dict[str, Any]]:
-    """Enumerate reduce-style image sets on disk.
+def _resolve_set_images(d: Path) -> list[Path]:
+    """Return the input images for an image-set directory, layout-aware.
 
-    An image set is any directory under ``data/`` that follows the reduction
-    layout (a ``pool/`` of input images and/or a ``manifest.json`` of reduced
-    rows). The canonical Recognition set is always listed first. Counts are read
-    straight from disk so the selector reflects real, reusable work — switching
-    between sets never has to redo anything already reduced.
+    Supports the reduction ``pool/`` layout, flat ``frame_*.png`` recording
+    dumps (``vision_frames/arc_recordings/*``), and the nested ARC game
+    recording layout (``<attempt>/<step>/image.png`` under
+    ``arc3_games/recordings/*``). Globs are depth-bounded so listing many
+    recordings stays fast.
+    """
+    if not d.is_dir():
+        return []
+    pool = d / "pool"
+    if pool.is_dir():
+        return sorted(p for p in pool.iterdir() if p.suffix.lower() in {".jpg", ".jpeg", ".png"})
+    flat = sorted(list(d.glob("frame_*.png")) + list(d.glob("frame_*.jpg")))
+    if flat:
+        return flat
+    for pattern in ("*/*/image.png", "*/image.png", "**/image.png"):
+        nested = sorted(d.glob(pattern))
+        if nested:
+            return nested
+    return sorted(list(d.glob("*.png")) + list(d.glob("*.jpg")))
+
+
+# Frame-based source families that are offered as image sets even though they
+# do not use the reduction ``pool/`` layout. Groups mirror the Objects page's
+# source combobox (describeFrameSource) so both pages organise identically.
+_FRAME_SET_FAMILIES = (
+    ("arc3_games/recordings", "ARC recordings", "2-arc"),
+    ("vision_frames/arc_recordings", "ARC recordings", "2-arc"),
+    ("vision_frames/curated_data", "Curated data", "1-curated"),
+    ("vision_frames/video", "Videos", "3-video"),
+)
+
+
+def _list_image_sets(root: Path) -> list[dict[str, Any]]:
+    """Enumerate image sets on disk for the shared selector.
+
+    Includes the canonical Recognition set, any ``data/*`` directory in the
+    reduction layout (``pool/`` and/or ``manifest.json``), and every frame-based
+    source family the Objects page offers (ARC recordings, curated data, videos)
+    — grouped the same way. Counts are read straight from disk so the selector
+    reflects real reusable work; switching sets never has to redo reduction.
     """
     data_dir = root / "data"
     sets: list[dict[str, Any]] = []
     seen: set[str] = set()
 
-    def add(set_id: str, rel_dir: str) -> None:
+    def add(set_id: str, rel_dir: str, label: str | None = None,
+            group: str = "Loaded sources", group_key: str = "4-loaded") -> None:
         if not set_id or set_id in seen:
             return
         d = root / rel_dir
-        pool = d / "pool"
-        image_count = 0
-        if pool.is_dir():
-            image_count = sum(1 for _ in pool.glob("*.jpg")) + sum(1 for _ in pool.glob("*.png"))
+        image_count = len(_resolve_set_images(d))
         reduced_count = 0
         mp = d / "manifest.json"
         if mp.is_file():
@@ -2200,41 +2233,49 @@ def _list_image_sets(root: Path) -> list[dict[str, Any]]:
         seen.add(set_id)
         sets.append({
             "id": set_id,
-            "label": _IMAGE_SET_LABELS.get(set_id, set_id.replace("_", " ")),
+            "label": label or _IMAGE_SET_LABELS.get(set_id, set_id.replace("_", " ")),
             "dir": rel_dir,
             "imageCount": image_count,
             "reducedCount": reduced_count,
             "canonical": set_id == _CANONICAL_IMAGE_SET,
+            "group": group,
+            "groupKey": group_key,
         })
 
-    add(_CANONICAL_IMAGE_SET, "data/recognition_reduce")
+    add(_CANONICAL_IMAGE_SET, "data/recognition_reduce", group="Recognition", group_key="0-recognition")
     if data_dir.is_dir():
         for child in sorted(data_dir.iterdir()):
             if child.is_dir() and child.name != _CANONICAL_IMAGE_SET and ((child / "pool").is_dir() or (child / "manifest.json").is_file()):
-                add(child.name, f"data/{child.name}")
+                add(child.name, f"data/{child.name}", group="Reduced sets", group_key="4-loaded")
+    # Frame-based source families (organised like the Objects source combobox).
+    for rec_base, group, group_key in _FRAME_SET_FAMILIES:
+        rec_dir = data_dir / rec_base
+        if not rec_dir.is_dir():
+            continue
+        for child in sorted(rec_dir.iterdir()):
+            if child.is_dir():
+                leaf = child.name.replace("data-arc3_games-recordings-", "").replace("data-arc3_games-curated-", "").replace("-", " ")
+                add(f"{rec_base}/{child.name}", f"data/{rec_base}/{child.name}", label=leaf, group=group, group_key=group_key)
     return sets
 
 
 def _flat_set_manifest(root: Path, set_id: str) -> dict[str, Any]:
     """Disk-driven reduction manifest for a non-canonical image set.
 
-    Synthesises a flat item list from ``data/<set>/pool/*`` and overlays any
-    reduced rows from ``data/<set>/manifest.json``. Mirrors the shape of
-    :func:`reduce_manifest` so the same frontend list/grid can render either.
+    Handles both the reduction ``pool/`` layout and frame-based recording sets
+    (all frames grouped under one slug). Overlays any reduced rows from
+    ``data/<set>/manifest.json``. Mirrors the shape of :func:`reduce_manifest`
+    so the same frontend list/grid renders either.
     """
+    parts = [p for p in set_id.replace("\\", "/").split("/") if p not in ("", ".")]
+    if any(p == ".." for p in parts):
+        return {"tiers": [], "count": 0, "items": [], "set": set_id}
     base = f"data/{set_id}"
     d = root / base
     pool = d / "pool"
 
     def base_name(value: Any) -> str:
         return str(value or "").replace("\\", "/").split("/")[-1]
-
-    def resolve(sub: str, name: Any) -> str:
-        leaf = base_name(name)
-        if not leaf:
-            return ""
-        rel = f"{base}/{sub}/{leaf}"
-        return rel if (root / rel).is_file() else f"{base}/{sub}/{leaf}"
 
     manifest: dict[str, Any] = {}
     tiers: list[Any] = []
@@ -2250,49 +2291,58 @@ def _flat_set_manifest(root: Path, set_id: str) -> dict[str, Any]:
         except (OSError, json.JSONDecodeError):
             pass
 
-    ids: set[str] = set(manifest.keys())
-    input_ext: dict[str, str] = {}
+    def normalize_rows(raw: Any) -> list[dict[str, Any]]:
+        out: list[dict[str, Any]] = []
+        for row in (raw or []):
+            if not isinstance(row, dict):
+                continue
+            nr = dict(row)
+            metta = base_name(row.get("metta"))
+            if metta:
+                nr["mettaPath"] = f"{base}/sym/{metta}"
+            stages = row.get("stages")
+            if isinstance(stages, dict):
+                nr["stagePaths"] = {k: f"{base}/stages/{base_name(v)}" for k, v in stages.items() if v}
+            out.append(nr)
+        return out
+
+    items: list[dict[str, Any]] = []
     if pool.is_dir():
+        ids: set[str] = set(manifest.keys())
+        input_ext: dict[str, str] = {}
         for image in sorted(list(pool.glob("*.jpg")) + list(pool.glob("*.png"))):
             ids.add(image.stem)
             input_ext.setdefault(image.stem, image.suffix)
-
-    items: list[dict[str, Any]] = []
-    for idv in sorted(ids):
-        m = manifest.get(idv) or {}
-        ext = input_ext.get(idv) or ".jpg"
-        input_name = base_name(m.get("input")) or f"{idv}{ext}"
-        item: dict[str, Any] = {
-            "id": idv,
-            "slug": idv,
-            "cond": "",
-            "label": m.get("label") or idv.replace("_", " "),
-            "input": input_name,
-            "inputPath": resolve("pool", input_name),
-            "source": m.get("source") or "set",
-            "source_url": m.get("source_url") or "",
-            "scene": True,
-            "startedAt": m.get("startedAt"),
-            "elapsedMs": m.get("elapsedMs"),
-            "rows": [],
-        }
-        rows: list[dict[str, Any]] = []
-        for row in (m.get("rows") or []):
-            if not isinstance(row, dict):
-                continue
-            normalized = dict(row)
-            metta = base_name(row.get("metta"))
-            if metta:
-                normalized["mettaPath"] = resolve("sym", metta)
-            stages = row.get("stages")
-            if isinstance(stages, dict):
-                normalized["stagePaths"] = {
-                    key: resolve("stages", base_name(val))
-                    for key, val in stages.items() if val
-                }
-            rows.append(normalized)
-        item["rows"] = rows
-        items.append(item)
+        for idv in sorted(ids):
+            m = manifest.get(idv) or {}
+            ext = input_ext.get(idv) or ".jpg"
+            input_name = base_name(m.get("input")) or f"{idv}{ext}"
+            items.append({
+                "id": idv, "slug": idv, "cond": "",
+                "label": m.get("label") or idv.replace("_", " "),
+                "input": input_name, "inputPath": f"{base}/pool/{input_name}",
+                "source": m.get("source") or "set", "source_url": m.get("source_url") or "",
+                "scene": True, "startedAt": m.get("startedAt"), "elapsedMs": m.get("elapsedMs"),
+                "rows": normalize_rows(m.get("rows")),
+            })
+    else:
+        # Frame-based recording set: one item per frame, all grouped under the
+        # set's leaf name so the Extractions list shows a single foldable group.
+        set_leaf = parts[-1] if parts else set_id
+        set_leaf = set_leaf.replace("data-arc3_games-recordings-", "")
+        for img in _resolve_set_images(d):
+            rel_to_d = img.relative_to(d).as_posix()
+            stem = rel_to_d.rsplit(".", 1)[0]
+            idv = re.sub(r"[^A-Za-z0-9]+", "_", stem).strip("_") or img.stem
+            m = manifest.get(idv) or {}
+            items.append({
+                "id": idv, "slug": set_leaf, "cond": stem,
+                "label": set_leaf.replace("_", " ").replace("-", " "),
+                "input": img.name, "inputPath": img.relative_to(root).as_posix(),
+                "source": "recording", "source_url": "",
+                "scene": True, "startedAt": m.get("startedAt"), "elapsedMs": m.get("elapsedMs"),
+                "rows": normalize_rows(m.get("rows")),
+            })
     return {"tiers": tiers, "count": len(items), "items": items, "set": set_id}
 
 
