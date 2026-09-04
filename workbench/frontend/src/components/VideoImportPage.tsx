@@ -6504,7 +6504,14 @@ export function VideoImportPage({
                             <b>{nameBySlug.get(it.slug) || it.slug}</b>
                             <span className="video-import-reduce-desccond">{COND_LABELS[it.cond] || it.cond}</span>
                             <code className="video-import-reduce-descid">{it.id}</code>
-                            {it.startedAt ? <span className="video-import-reduce-desctime">⏱ started {it.startedAt}{typeof it.elapsedMs === "number" ? ` · took ${(it.elapsedMs / 1000).toFixed(1)}s` : ""}</span> : null}
+                            {it.startedAt ? <span className="video-import-reduce-desctime">⏱ started {it.startedAt}</span> : null}
+                            {tiers.map((row: any, ri: number) => {
+                              const ms = typeof row.elapsedMs === "number" ? row.elapsedMs : (row.kind !== "prolog" && typeof it.elapsedMs === "number" ? it.elapsedMs : null);
+                              if (ms == null) return null;
+                              const secs = ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms`;
+                              const eng = row.kind === "prolog" ? "prolog" : `LLM · ${row.model}`;
+                              return <span key={ri} className="video-import-reduce-descstat">{eng} · {secs}</span>;
+                            })}
                             {web ? (
                               <span className="video-import-reduce-listsrc">
                                 <span className="video-import-reduce-tag web">web</span>

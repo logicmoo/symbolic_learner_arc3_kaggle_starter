@@ -3081,6 +3081,7 @@ def run_reduce(
                 tiers = _tier_specs()
                 partner = partner_by_id.get(idv) if pair_mode else None
                 for ti, tier in enumerate(tiers):
+                    _tms = time.monotonic()
                     if partner is not None and tier["kind"] == "oneshot" and ti == 0:
                         inv_text = _inventory_text() if carry_mode else ""
                         tier["data"] = _extract_pair(src_path, partner, idv, tier["model"], inv_text, use_cache=not carry_mode)
@@ -3091,6 +3092,7 @@ def run_reduce(
                     else:
                         tier["data"] = _extract_tier_with_retry(rp, src_path, tier, idv, scene, stop_event, emit)
                         tier["facts"] = rp._tier_facts(slug, tier)
+                    tier["_ms"] = int((time.monotonic() - _tms) * 1000)
                 ref = tiers[0]["facts"]
                 for tier in tiers[1:]:
                     tier["agree"] = rp.agreement(ref, tier["facts"])
@@ -3130,6 +3132,7 @@ def run_reduce(
                         "nparts": tier["facts"]["nparts"], "nrels": len(tier["facts"]["relations"]),
                         "ngroups": len(set(partof.values())) if partof else 0,
                         "metta": sym_path.name, "stages": stage_paths,
+                        "elapsedMs": tier.get("_ms", 0),
                         "agree": tier.get("agree", {"score": 1.0, "verdict": "ref"}),
                     })
                 # --- Prolog line: the identical parts/groups derived by SWI-Prolog
@@ -3141,7 +3144,9 @@ def run_reduce(
                     if _gvp not in sys.path:
                         sys.path.insert(0, _gvp)
                     _sa = importlib.import_module("symbolic_arc")
+                    _pms = time.monotonic()
                     pr = _sa.extract_frame(str(src_path), slug)
+                    _pms = int((time.monotonic() - _pms) * 1000)
                     if pr["nparts"] > 0 and pr["cols"] <= 160 and pr["rows"] <= 160:
                         (sym_dir / f"{idv}__prolog.metta").write_text(pr["metta"], encoding="utf-8")
                         (sym_dir / f"{idv}__prolog.parts.json").write_text(json.dumps(pr["geom"]), encoding="utf-8")
@@ -3149,6 +3154,7 @@ def run_reduce(
                             "shots": "P", "kind": "prolog", "model": "swi-prolog",
                             "nparts": pr["nparts"], "nrels": pr["nrels"], "ngroups": pr["ngroups"],
                             "metta": f"{idv}__prolog.metta", "stages": {},
+                            "elapsedMs": _pms,
                             "agree": {"score": 1.0, "verdict": "ref"},
                         })
                 except Exception as perr:  # noqa: BLE001
