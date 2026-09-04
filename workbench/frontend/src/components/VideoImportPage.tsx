@@ -6535,9 +6535,8 @@ export function VideoImportPage({
                                                 {bigGroups.map((g, gi) => {
                                                   const col = groupColor.get(g.id) || "#8a8f98";
                                                   const groupSel = !!hi && hi.size === g.parts.length && g.parts.every((p) => hi.has(p.id));
-                                                  const groupActive = !hi || g.parts.some((p) => hi.has(p.id));
                                                   return (
-                                                    <details key={gi} className="video-import-reduce-groupnode" open style={{ opacity: groupActive ? 1 : 0.1 }}>
+                                                    <details key={gi} className="video-import-reduce-groupnode" open>
                                                       <summary className={groupSel ? "is-sel" : ""} style={{ color: col }}
                                                         onClick={(e) => { e.preventDefault(); selectGroup(g); }}>
                                                         <span className="video-import-reduce-groupdot" style={{ background: col }} />{g.id} · {g.parts.length}
@@ -6545,9 +6544,8 @@ export function VideoImportPage({
                                                       <ul>
                                                         {g.parts.map((p, pi) => {
                                                           const partSel = !!hi && hi.size === 1 && hi.has(p.id);
-                                                          const partActive = !hi || hi.has(p.id);
                                                           return (
-                                                            <li key={pi} style={{ opacity: partActive ? 1 : 0.1 }}>
+                                                            <li key={pi}>
                                                               <button type="button" className={partSel ? "is-sel" : ""} onClick={() => selectPart(p.id)} title={`${p.label} · ${p.color}`}>{p.label}</button>
                                                             </li>
                                                           );
@@ -6558,7 +6556,7 @@ export function VideoImportPage({
                                                 })}
                                               </div>
                                               <svg viewBox="0 0 1000 1000" className="video-import-reduce-svg is-groups">
-                                                <image href={asset(inputRel)} x="0" y="0" width="1000" height="1000" preserveAspectRatio="xMidYMid meet" opacity="0.5" />
+                                                <image href={asset(inputRel)} x="0" y="0" width="1000" height="1000" preserveAspectRatio="xMidYMid meet" opacity={hi ? 0.06 : 0.5} />
                                                 {bigGroups.map((g) => {
                                                   const col = groupColor.get(g.id) || "#8a8f98";
                                                   return g.parts.map((p, pi) => {
