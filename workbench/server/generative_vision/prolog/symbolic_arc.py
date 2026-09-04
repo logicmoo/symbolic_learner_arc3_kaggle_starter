@@ -172,6 +172,16 @@ def _simplify(loop: list[tuple[int, int]]) -> list[tuple[int, int]]:
     return out or loop
 
 
+def _canon(loop: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    """Rotate a loop to start at its top-left-most vertex so identical shapes
+    yield the same vertex sequence — two translated copies then differ ONLY in
+    their x,y coordinates."""
+    if not loop:
+        return loop
+    k = min(range(len(loop)), key=lambda i: (loop[i][1], loop[i][0]))
+    return loop[k:] + loop[:k]
+
+
 def region_turtle(cells: np.ndarray, cols: int, rows: int, color: str) -> dict:
     """Turtle program that REDRAWS the object's outline.
 
@@ -281,35 +291,89 @@ def enclosures(region_info, pairs) -> list[tuple[int, int]]:
 
 from color_names import nearest_name as _color_name
 
+# dihedral group D4 (the 8 flips/rotations) as integer (x, y) maps.
+_D4 = (
+    ("identity", lambda x, y: (x, y)),
+    ("rot90", lambda x, y: (y, -x)),
+    ("rot180", lambda x, y: (-x, -y)),
+    ("rot270", lambda x, y: (-y, x)),
+    ("flip_h", lambda x, y: (-x, y)),
+    ("flip_v", lambda x, y: (x, -y)),
+    ("transpose", lambda x, y: (y, x)),
+    ("anti_transpose", lambda x, y: (-y, -x)),
+)
 
-def _shape_sig(cells: np.ndarray, hexs: str) -> tuple:
-    """Translation-invariant signature of a blob: its color + the set of cell
-    offsets from its top-left. Same shape+color that merely translated between
-    frames shares this signature."""
+
+def _offsets(cells: np.ndarray) -> tuple:
+    """Cell offsets from the blob's top-left (translation-normalized)."""
     ys, xs = np.where(cells)
     if xs.size == 0:
-        return (hexs, ())
+        return ()
     minx, miny = int(xs.min()), int(ys.min())
-    return (hexs, tuple(sorted(zip((xs - minx).tolist(), (ys - miny).tolist()))))
+    return tuple(sorted(zip((xs - minx).tolist(), (ys - miny).tolist())))
+
+
+def _norm(offs) -> frozenset:
+    if not offs:
+        return frozenset()
+    mnx = min(o[0] for o in offs)
+    mny = min(o[1] for o in offs)
+    return frozenset((o[0] - mnx, o[1] - mny) for o in offs)
+
+
+def _canon_key(offs) -> tuple:
+    """Shape key invariant under all 8 flips/rotations (smallest variant)."""
+    best = None
+    for _n, f in _D4:
+        t = tuple(sorted(_norm([f(x, y) for x, y in offs])))
+        if best is None or t < best:
+            best = t
+    return best or ()
+
+
+def _transform_between(off_a, off_b) -> str:
+    """The D4 transform that maps shape A onto shape B (else 'deformed')."""
+    nb = _norm(off_b)
+    for name, f in _D4:
+        if _norm([f(x, y) for x, y in off_a]) == nb:
+            return name
+    return "deformed"
+
+
+def _shape_sig(cells: np.ndarray, hexs: str) -> tuple:
+    """Color + D4-canonical shape: same up to flip / rotation / translation."""
+    return (hexs, _canon_key(_offsets(cells)))
 
 
 def _motion(info_a: dict, info_b: dict) -> dict:
-    """Match A-regions to B-regions by (color, exact shape); return
-    {gidA: (dx, dy)} centroid displacement (common fate)."""
+    """Match A-regions to B-regions by (color, D4-canonical shape) and describe
+    each match as a RIGID motion. For a rigid body the same transform R and the
+    same translation t = b - R(a) apply to every part, so parts of one object
+    share (tf, key) even under rotation/flip. Returns
+    {gidA: {"d": (dx, dy), "tf": name, "key": (kx, ky)}}."""
     from collections import defaultdict
+    fmap = dict(_D4)
     bysig: dict = defaultdict(list)
     for _g, b in info_b.items():
         bysig[b["sig"]].append(b)
     used: set = set()
-    disp: dict = {}
+    out: dict = {}
     for g, i in info_a.items():
         cands = [b for b in bysig.get(i["sig"], []) if id(b) not in used]
         if not cands:
             continue
         best = min(cands, key=lambda b: (b["cx"] - i["cx"]) ** 2 + (b["cy"] - i["cy"]) ** 2)
         used.add(id(best))
-        disp[g] = (best["cx"] - i["cx"], best["cy"] - i["cy"])
-    return disp
+        tf = _transform_between(i["off"], best["off"])
+        dx, dy = best["cx"] - i["cx"], best["cy"] - i["cy"]
+        f = fmap.get(tf)
+        if f:
+            fx, fy = f(i["cx"], i["cy"])
+            key = (best["cx"] - fx, best["cy"] - fy)   # rigid translation, shared by the object
+        else:
+            key = (dx, dy)
+        out[g] = {"d": (dx, dy), "tf": tf, "key": key}
+    return out
 
 
 def extract_frame(png_path: str, char: str, partner_path: str | None = None) -> dict:
@@ -317,26 +381,35 @@ def extract_frame(png_path: str, char: str, partner_path: str | None = None) -> 
     labels, info = label_regions(idx)
     for gid, i in info.items():
         i["hex"] = hexpal[i["color_id"]]
+        i["off"] = _offsets(i["cells"])
         i["sig"] = _shape_sig(i["cells"], i["hex"])
     pairs = adjacency(labels)
     enclos = enclosures(info, pairs)
     pof, obj = _run_prolog(info, pairs, enclos, cols, rows)
 
-    # common-fate grouping: parts that translate by the same vector between the
-    # two frames are one moving object.
+    # common-fate grouping across the two frames: parts sharing the same motion
+    # (displacement + flip/rotation) are one object. motion[rid] = (dx, dy, tf).
     move_group: dict = {}
+    motion: dict = {}
     if partner_path:
         try:
             idx_b, pal_b, _cb, _rb = decode_grid(partner_path)
             _lb, info_b = label_regions(idx_b)
             for _g, b in info_b.items():
                 b["hex"] = pal_b[b["color_id"]]
+                b["off"] = _offsets(b["cells"])
                 b["sig"] = _shape_sig(b["cells"], b["hex"])
-            for gid, d in _motion(info, info_b).items():
-                if d != (0, 0):
-                    move_group[f"r{gid}"] = f"move_{d[0]}_{d[1]}"
+            for gid, mo in _motion(info, info_b).items():
+                dx, dy = mo["d"]
+                tf = mo["tf"]
+                kx, ky = mo["key"]
+                motion[f"r{gid}"] = (dx, dy, tf)
+                if (dx, dy) != (0, 0) or tf != "identity":
+                    # group by the RIGID transform (shared across an object's
+                    # parts even when they rotate/flip), not raw displacement.
+                    move_group[f"r{gid}"] = f"move_{kx}_{ky}_{tf}"
         except Exception:  # noqa: BLE001
-            move_group = {}
+            move_group, motion = {}, {}
 
     # every part gets a partOf group: its adjacency-cluster object, else (a
     # background/large blob) its own group -> full coverage like the LLM line.
@@ -382,6 +455,10 @@ def extract_frame(png_path: str, char: str, partner_path: str | None = None) -> 
         mlines.append(f"(partOf {char} {pid} {g})")
     for inner, outer in pof:
         mlines.append(f"(inside {char} {pid_of.get(inner, inner)} {pid_of.get(outer, outer)})")
+    for rid, (dx, dy, tf) in motion.items():
+        pid = pid_of.get(rid)
+        if pid and ((dx, dy) != (0, 0) or tf != "identity"):
+            mlines.append(f"(moved {char} {pid} {dx} {dy} {tf})")
     metta = "\n".join(mlines) + "\n"
     return {"metta": metta, "geom": geom, "nparts": len(info),
             "nrels": len(pof) + len(obj), "cols": cols, "rows": rows,
