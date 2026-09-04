@@ -6517,10 +6517,6 @@ export function VideoImportPage({
                               </span>
                             ) : <span className="video-import-reduce-tag derived">derived</span>}
                           </div>
-                          <figure className="video-import-reduce-stage is-submitted">
-                            <img className="video-import-reduce-stageimg" src={asset(inputRel)} alt={it.id} loading="lazy" />
-                            <figcaption>submitted image</figcaption>
-                          </figure>
                           {tiers.length === 0
                             ? <div className="video-import-reduce-listcell is-pending">reducing…</div>
                             : (() => {
@@ -6563,8 +6559,11 @@ export function VideoImportPage({
                                   graphParts.push(`; ${row.shots}-shot · ${row.model} · ${row.nparts}p ${row.nrels}r${isRef ? " · REF" : ` · vs 1: ${rp}% ${String(rv).toUpperCase()}`}\n${mettaText === undefined ? "loading…" : (mettaText || "(no graph)")}`);
                                   return (
                                     <div className={`video-import-reduce-tiergroup${isRef ? " is-ref" : ""}`} key={ri}>
-                                      <div className={`video-import-reduce-enginetag is-${engine}`}>{engine === "prolog" ? "PROLOG · symbolic" : `LLM · ${row.model}`}<span className="video-import-reduce-enginenums"> · {row.nparts}p · {row.ngroups ?? 0}g</span></div>
                                       <div className="video-import-reduce-stages is-quad">
+                                        <figure className="video-import-reduce-stage is-submitted">
+                                          <img className="video-import-reduce-stageimg" src={asset(inputRel)} alt={it.id} loading="lazy" />
+                                          <figcaption>{engine === "prolog" ? "prolog · symbolic" : `LLM · ${row.model}`}</figcaption>
+                                        </figure>
                                         <figure className="video-import-reduce-stage is-treecol">
                                           <div className="video-import-reduce-grouptree">
                                             {bigGroups.length === 0
