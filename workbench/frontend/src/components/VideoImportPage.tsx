@@ -2901,6 +2901,11 @@ export function VideoImportPage({
   const [reduceRowView, setReduceRowView] = useState<ReduceRowView>(() => {
     try { return (window.localStorage.getItem("videoImport.reduceRowView") as ReduceRowView) || "groups"; } catch { return "groups"; }
   });
+  // Collapse the Recognition setup block (description + stage rows) so the
+  // Extractions table is the focus; defaults minimized.
+  const [recogHeadCollapsed, setRecogHeadCollapsed] = useState<boolean>(() => {
+    try { return (window.localStorage.getItem("videoImport.recogHeadCollapsed") ?? "1") !== "0"; } catch { return true; }
+  });
   // Objects page: "pipeline" = the existing rich extraction pipeline UI;
   // "extractions" = a reduction-style per-image row view over the same data.
   const [objectsTab, setObjectsTab] = useState<"pipeline" | "extractions">("pipeline");
@@ -4026,6 +4031,9 @@ export function VideoImportPage({
   useEffect(() => {
     try { window.localStorage.setItem("videoImport.reduceRowView", reduceRowView); } catch { /* ignore */ }
   }, [reduceRowView]);
+  useEffect(() => {
+    try { window.localStorage.setItem("videoImport.recogHeadCollapsed", recogHeadCollapsed ? "1" : "0"); } catch { /* ignore */ }
+  }, [recogHeadCollapsed]);
   // Prefetch the per-tier MeTTa part-graphs for every reduced item so the flat
   // list can render native parts/part-map panels along each row without waiting
   // for an expand. Only items that have rows carry mettaPaths; the set grows as
@@ -6384,8 +6392,27 @@ export function VideoImportPage({
             const reduceRunning = pipelineRunStatus === "running" && pipelineCounts.stage === "reduce";
             return (
               <div className="video-import-reduce">
-                <h3 className="video-import-recognition-subhead">All images · {reducedCount} of {recognitionReduce.items.length} reduced</h3>
-                <div className="video-import-reduce-explain">One row per image. Each row is a reduction pipeline that <b>grows rightward</b> as the image gets reduced: the input, then one cell per shot-tier (1-shot reference, then cheaper N-shot passes) with its part/relation counts and <b>agreement</b> vs the 1-shot. Click a row for the full symbolic strip + per-tier MeTTa. Web scenes are <b>real fetched images</b> (source link) — not generated.</div>
+                {!recogHeadCollapsed && <h3 className="video-import-recognition-subhead">All images · {reducedCount} of {recognitionReduce.items.length} reduced</h3>}
+                {!recogHeadCollapsed && <div className="video-import-reduce-explain">One row per image. Each row is a reduction pipeline that <b>grows rightward</b> as the image gets reduced: the input, then one cell per shot-tier (1-shot reference, then cheaper N-shot passes) with its part/relation counts and <b>agreement</b> vs the 1-shot. Click a row for the full symbolic strip + per-tier MeTTa. Web scenes are <b>real fetched images</b> (source link) — not generated.</div>}
+                {recognitionReduce.sequenceParts && Array.isArray(recognitionReduce.sequenceParts.parts) && recognitionReduce.sequenceParts.parts.length > 0 && (() => {
+                  const sp = recognitionReduce.sequenceParts;
+                  const byGroup = new Map<string, string[]>();
+                  for (const p of sp.parts) { const g = p.partOf || "(ungrouped)"; const a = byGroup.get(g) || []; a.push(p.label); byGroup.set(g, a); }
+                  const groups = [...byGroup.entries()];
+                  return (
+                    <details className="video-import-reduce-seqlist" open={!recogHeadCollapsed}>
+                      <summary><b>Sequence parts list</b> · {sp.parts.length} parts · {groups.length} groups <span>— consolidated across the whole sequence (reused names carried forward)</span></summary>
+                      <div className="video-import-reduce-seqgroups">
+                        {groups.map(([g, labels], gi) => (
+                          <div className="video-import-reduce-seqgroup" key={gi}>
+                            <div className="video-import-reduce-seqgroupname" style={{ color: GROUP_COLORS[gi % GROUP_COLORS.length] }}>{g} · {labels.length}</div>
+                            <div className="video-import-reduce-seqparts">{labels.map((l, li) => <span key={li} className="video-import-reduce-seqchip">{l}</span>)}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
+                  );
+                })()}
                 <div className="video-import-reduce-listctrls">
                   {reduceRunning
                     ? <><button type="button" className="video-import-reduce-runbtn is-running" disabled>Reducing {pipelineCounts.done ?? 0}/{pipelineCounts.total ?? list.length}… · {pipelineCounts.active ?? 0} active</button><button type="button" className="video-import-reduce-foldbtn" onClick={() => void stopServerPipeline()}>■ stop</button></>
@@ -8035,6 +8062,20 @@ export function VideoImportPage({
       )}
       {activeSubview === "recognition" && (
         <section className="video-import-recognition">
+          <div className="video-import-recognition-headbar">
+            <button type="button" className="video-import-reduce-foldbtn" onClick={() => setRecogHeadCollapsed((v) => !v)}>{recogHeadCollapsed ? "▸ Recognition setup" : "▾ Recognition setup"}</button>
+            {recogHeadCollapsed && (
+              <span className="video-import-recognition-headbar-actions">
+                <label className="video-import-recognition-upload">
+                  <input type="file" accept="image/*" multiple style={{ display: "none" }} disabled={recognitionUploading} onChange={(e) => { uploadRecognitionImages(e.target.files); e.currentTarget.value = ""; }} />
+                  <span className="video-import-toggle" role="button">{recognitionUploading ? "… uploading" : "＋ load images"}</span>
+                </label>
+                <span className="video-import-toggle">server: {pipelineRunStatus}</span>
+                <span className="video-import-toggle">{recognitionInputs.length} loaded · {recognitionMembers.length} cut · {Object.keys(recognitionMatches).length} matched</span>
+              </span>
+            )}
+          </div>
+          {!recogHeadCollapsed && (
           <div className="video-import-recognition-head">
             <h2>Recognition</h2>
             <p>Load images, then run the four discrete stage rows below. <b>TWO-SHOT</b>: make outlines, then make a turtle program from each cutout. <b>ONE SHOT</b>: get objects + a turtle program per object in a single call. <b>FOR UI</b>: render each turtle program to a PNG (local). Everything runs server-side and is reconnect-safe.</p>
@@ -8061,8 +8102,9 @@ export function VideoImportPage({
               {renderRecognitionRow({ stage: "recognizeTurtlePng", label: "Make PNG from Turtle", model: recTurtlePngModel, setModel: setRecTurtlePngModel, promptSelection: recTurtlePngPromptSelection, setPromptSelection: setRecTurtlePngPromptSelection, concurrencyValue: recTurtlePngConcurrency, onConcurrency: setRecTurtlePngConcurrency, disabled: !recognitionMembers.length })}
             </div>
           </div>
+          )}
 
-          {recognitionGallery.length > 0 && (
+          {!recogHeadCollapsed && recognitionGallery.length > 0 && (
             <div className="video-import-reco-explainer">
               <b>Reduction prepass — pixels in, symbols out.</b>
               <span>Each image is reduced to a compact <b>symbolic part-graph</b> before any matching: <i>original pixels → parts located (outline boxes) → each part re-expressed as a turtle/logo program (one-shot &amp; two-shot) → a labeled part-graph (parts · colors · sizes · positions · above/left-of relations)</i>. Recognition then becomes symbolic comparison of these graphs — not pixel matching, not an LLM.</span>

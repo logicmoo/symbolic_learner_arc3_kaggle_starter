@@ -2345,7 +2345,16 @@ def _flat_set_manifest(root: Path, set_id: str) -> dict[str, Any]:
                 "scene": True, "startedAt": m.get("startedAt"), "elapsedMs": m.get("elapsedMs"),
                 "rows": normalize_rows(m.get("rows")),
             })
-    return {"tiers": tiers, "count": len(items), "items": items, "set": set_id}
+    sequence_parts: dict[str, Any] | None = None
+    sp_path = d / "sequence_parts.json"
+    if sp_path.is_file():
+        try:
+            loaded = json.loads(sp_path.read_text(encoding="utf-8"))
+            if isinstance(loaded, dict) and loaded.get("parts"):
+                sequence_parts = loaded
+        except (OSError, json.JSONDecodeError):
+            sequence_parts = None
+    return {"tiers": tiers, "count": len(items), "items": items, "set": set_id, "sequenceParts": sequence_parts}
 
 
 @router.get("/image-sets")

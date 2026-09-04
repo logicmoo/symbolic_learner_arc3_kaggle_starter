@@ -1362,6 +1362,17 @@
 .video-import-reduce-graphline { max-height: 260px; overflow: auto; background: #0b0e12; border-radius: 6px; padding: 8px; font-size: 11px; line-height: 1.35; color: #cfe7e4; white-space: pre; margin: 0; }
 .video-import-reduce-rowline .video-import-reduce-svg.is-groups { width: 200px; height: 200px; }
 .video-import-reduce-rowline .video-import-reduce-grouptree { width: 170px; max-height: 200px; }
+/* consolidated sequence parts list (own full-width line) */
+.video-import-reduce-seqlist { margin: 4px 0 12px; border: 1px solid rgba(39,220,194,0.25); border-radius: 8px; background: rgba(39,220,194,0.05); padding: 8px 12px; }
+.video-import-reduce-seqlist > summary { cursor: pointer; font-size: 13px; color: #e9edf1; }
+.video-import-reduce-seqlist > summary span { color: rgba(255,255,255,0.5); font-weight: 400; font-size: 12px; }
+.video-import-reduce-seqgroups { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.video-import-reduce-seqgroup { border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 6px 8px; min-width: 160px; max-width: 320px; }
+.video-import-reduce-seqgroupname { font-weight: 700; font-size: 12px; margin-bottom: 4px; }
+.video-import-reduce-seqparts { display: flex; flex-wrap: wrap; gap: 4px; }
+.video-import-reduce-seqchip { font-size: 11px; background: rgba(255,255,255,0.07); border-radius: 4px; padding: 1px 6px; color: rgba(255,255,255,0.8); }
+.video-import-recognition-headbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 4px 0 10px; }
+.video-import-recognition-headbar-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .video-import-reduce-stageimg { width: 130px; height: 130px; object-fit: contain; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); background: #fff; }
 .video-import-reduce-stagemissing { width: 130px; height: 130px; display: flex; align-items: center; justify-content: center; text-align: center; border-radius: 6px; border: 1px dashed rgba(255,255,255,0.15); font-size: 10px; font-style: italic; opacity: 0.5; }
 .video-import-reduce-cutstrip { width: 150px; height: 130px; overflow: auto; display: flex; flex-wrap: wrap; gap: 3px; align-content: flex-start; padding: 3px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); background: #fff; }
