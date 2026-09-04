@@ -293,33 +293,36 @@ def extract_frame(png_path: str, char: str) -> dict:
 
     # every part gets a partOf group: its adjacency-cluster object, else (a
     # background/large blob) its own group -> full coverage like the LLM line.
-    def group_of(rid: str) -> str:
-        return obj.get(rid) or rid.replace("r", "g", 1)
+    # Members are named part_<name_color> (e.g. part_limegreen_1); the internal
+    # r<gid> ids are only used for the swipl facts and translated here.
     # draw big blobs first so nested / detail blobs render on top
     order = sorted(info.items(), key=lambda kv: -kv[1]["area"])
     mlines = [f"; symbolic (prolog) part-graph for {char}  ({len(info)} parts)",
               f"(character {char})"]
     geom = []
     partof_all: dict[str, str] = {}
+    pid_of: dict[str, str] = {}
     color_n: dict[str, int] = {}
     for gid, i in order:
         rid = f"r{gid}"
         cname = _color_name(i["hex"])
         color_n[cname] = color_n.get(cname, 0) + 1
         lbl = f"{cname}_{color_n[cname]}"
-        g = group_of(rid)
-        partof_all[rid] = g
-        mlines.append(f'(part {char} {rid} (label "{lbl}") (color {i["hex"]}))')
-        geom.append({"id": rid, "label": lbl, "color": i["hex"],
+        pid = f"part_{lbl}"
+        pid_of[rid] = pid
+        g = obj.get(rid) or f"g{gid}"
+        partof_all[pid] = g
+        mlines.append(f'(part {char} {pid} (label "{lbl}") (color {i["hex"]}))')
+        geom.append({"id": pid, "label": lbl, "color": i["hex"],
                      "partOf": g,
                      "turtle": region_turtle(i["cells"], cols, rows, i["hex"])})
     groups = sorted(set(partof_all.values()))
     for g in groups:
         mlines.append(f"(group {char} {g})")
-    for rid, g in partof_all.items():
-        mlines.append(f"(partOf {char} {rid} {g})")
+    for pid, g in partof_all.items():
+        mlines.append(f"(partOf {char} {pid} {g})")
     for inner, outer in pof:
-        mlines.append(f"(inside {char} {inner} {outer})")
+        mlines.append(f"(inside {char} {pid_of.get(inner, inner)} {pid_of.get(outer, outer)})")
     metta = "\n".join(mlines) + "\n"
     return {"metta": metta, "geom": geom, "nparts": len(info),
             "nrels": len(pof) + len(obj), "cols": cols, "rows": rows,
