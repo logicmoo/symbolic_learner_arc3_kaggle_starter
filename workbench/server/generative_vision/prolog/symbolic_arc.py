@@ -173,28 +173,60 @@ def _simplify(loop: list[tuple[int, int]]) -> list[tuple[int, int]]:
 
 
 def region_turtle(cells: np.ndarray, cols: int, rows: int, color: str) -> dict:
-    """Turtle program that TRACES the object's outline as a filled polygon
-    (the outline of the first-pass object). Falls back to run-rectangles for
-    degenerate shapes."""
+    """Turtle program that REDRAWS the object's outline.
+
+    Thick blobs: trace the boundary and stroke a filled polygon with a ~1-cell
+    brush. Thin blobs (outline pixels close together): collapse to a single
+    polyline stroked with a wider brush = the blob's thickness.
+    Falls back to run-rectangles for degenerate shapes."""
     sx, sy = 1000.0 / cols, 1000.0 / rows
     ys, xs = np.where(cells)
-    cellset = set(zip(xs.tolist(), ys.tolist()))
+    if xs.size == 0:
+        return {"version": 1, "background": "transparent", "penColor": color, "penWidth": 2, "commands": []}
+    minx, maxx, miny, maxy = int(xs.min()), int(xs.max()), int(ys.min()), int(ys.max())
+    wcell, hcell = maxx - minx + 1, maxy - miny + 1
+    brush = max(2, round(min(sx, sy)))
+
+    # thin object -> one wide-brush stroke down its length
+    if min(wcell, hcell) <= 2:
+        pts: list[list[int]] = []
+        if wcell >= hcell:
+            for cx in range(minx, maxx + 1):
+                col = ys[xs == cx]
+                if col.size:
+                    pts.append([round((cx + 0.5) * sx), round((float(col.mean()) + 0.5) * sy)])
+            thickness = max(brush, round(hcell * sy))
+        else:
+            for cy in range(miny, maxy + 1):
+                rowx = xs[ys == cy]
+                if rowx.size:
+                    pts.append([round((float(rowx.mean()) + 0.5) * sx), round((cy + 0.5) * sy)])
+            thickness = max(brush, round(wcell * sx))
+        if len(pts) >= 2:
+            return {"version": 1, "background": "transparent", "penColor": color, "penWidth": int(thickness),
+                    "commands": [{"op": "move", "x": pts[0][0], "y": pts[0][1]},
+                                 {"op": "polyline", "points": pts, "outline": color}]}
+        if len(pts) == 1:
+            return {"version": 1, "background": "transparent", "penColor": color, "penWidth": 2,
+                    "commands": [{"op": "dot", "x": pts[0][0], "y": pts[0][1], "radius": max(brush, round(min(sx, sy))), "color": color}]}
+
+    # thick object -> traced outline polygon, stroked with a ~1-cell brush
     cmds: list[dict] = []
     try:
+        cellset = set(zip(xs.tolist(), ys.tolist()))
         loops = _trace_outline(cellset, cols, rows)
-        # outer loop = largest bounding-box area
         loops.sort(key=lambda lp: (max(p[0] for p in lp) - min(p[0] for p in lp))
                    * (max(p[1] for p in lp) - min(p[1] for p in lp)), reverse=True)
         if loops:
-            pts = [[round(px * sx), round(py * sy)] for (px, py) in _simplify(loops[0])]
-            if len(pts) >= 3:
-                cmds = [{"op": "move", "x": pts[0][0], "y": pts[0][1]},
-                        {"op": "polygon", "points": pts, "fill": color, "outline": color}]
+            pts2 = [[round(px * sx), round(py * sy)] for (px, py) in _simplify(loops[0])]
+            if len(pts2) >= 3:
+                cmds = [{"op": "move", "x": pts2[0][0], "y": pts2[0][1]},
+                        {"op": "polygon", "points": pts2, "fill": color, "outline": color}]
     except Exception:  # noqa: BLE001
         cmds = []
     if not cmds:
         cmds = _region_rects(cells, cols, rows, color)
-    return {"version": 1, "background": "transparent", "penColor": color, "penWidth": 2, "commands": cmds}
+    return {"version": 1, "background": "transparent", "penColor": color, "penWidth": brush, "commands": cmds}
 
 
 def _run_prolog(region_info, pairs, enclos, cols, rows) -> tuple[list[tuple[str, str]], dict[str, str]]:
