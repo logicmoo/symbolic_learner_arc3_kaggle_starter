@@ -2730,6 +2730,51 @@ def _reduce_lab_dir() -> Path:
     return default
 
 
+def _extract_tier_with_retry(rp: Any, src_path: "Path", tier: dict[str, Any], idv: str,
+                             scene: bool, stop_event: "threading.Event | None",
+                             emit: Callable[[str], None]) -> dict[str, Any]:
+    """Call the parent extractor, retrying transient relay failures.
+
+    EmuLLM answers 503 (Service Unavailable) instantly when no worker is free
+    for the requested model rather than queuing, so a wide fan-out momentarily
+    exceeds the pool. Retry those (and timeouts) with jittered backoff so the run
+    makes progress instead of failing whole frames."""
+    import random  # noqa: PLC0415
+    last: Exception | None = None
+    for attempt in range(8):
+        if stop_event is not None and stop_event.is_set():
+            raise RuntimeError("stopped")
+        try:
+            return rp._extract_tier(src_path, tier, idv, scene)
+        except Exception as error:  # noqa: BLE001
+            msg = str(error).lower()
+            transient = ("503" in msg or "service unavailable" in msg
+                         or "timed out" in msg or "timeout" in msg
+                         or "connection" in msg or "502" in msg or "504" in msg)
+            if not transient:
+                raise
+            last = error
+            time.sleep(min(2 ** attempt, 30) + random.random() * 2)
+    raise last if last is not None else RuntimeError("extraction failed")
+
+
+def _reduce_set_images(d: Path) -> list["Path"]:
+    """Layout-aware input images for a reduce target dir (mirrors the API's
+    _resolve_set_images): reduction pool/, flat frame_*.png dumps, or the nested
+    ARC recording layout (<attempt>/<step>/image.png)."""
+    pool = d / "pool"
+    if pool.is_dir():
+        return sorted(p for p in pool.iterdir() if p.suffix.lower() in {".jpg", ".jpeg", ".png"})
+    flat = sorted(list(d.glob("frame_*.png")) + list(d.glob("frame_*.jpg")))
+    if flat:
+        return flat
+    for pattern in ("*/*/image.png", "*/image.png", "**/image.png"):
+        nested = sorted(d.glob(pattern))
+        if nested:
+            return nested
+    return sorted(list(d.glob("*.png")) + list(d.glob("*.jpg")))
+
+
 def run_reduce(
     workspace_id: str,
     *,
@@ -2737,6 +2782,7 @@ def run_reduce(
     goal_override: str | None = None,
     only_selected: bool = True,
     concurrency_override: int | None = None,
+    set_id: str | None = None,
     stop_event: threading.Event | None = None,
     log: Callable[[str], None] | None = None,
     counts: dict[str, int] | None = None,
@@ -2759,9 +2805,23 @@ def run_reduce(
         sys.path.insert(0, str(lab))
     import reduce_pool as rp  # noqa: PLC0415  (parent's proven reduction module)
     from PIL import Image  # noqa: PLC0415
+    # Parent submodules reused for the sequence-pair extraction path.
+    import common as _rc  # noqa: PLC0415
+    import make_chip as _mc  # noqa: PLC0415
+    import oneshot_extract as _ose  # noqa: PLC0415
+    import to_symbolic as _tsym  # noqa: PLC0415
+    import requests  # noqa: PLC0415
 
-    bases = ["data/recognition_reduce", "data/arc3_games/curated/recognition_reduce"]
-    base_rel = next((b for b in bases if (root / b / "pool").is_dir()), bases[0])
+    canonical = (set_id or "recognition_reduce") == "recognition_reduce"
+    if canonical:
+        bases = ["data/recognition_reduce", "data/arc3_games/curated/recognition_reduce"]
+        base_rel = next((b for b in bases if (root / b / "pool").is_dir()), bases[0])
+    else:
+        parts = [p for p in str(set_id).replace("\\", "/").split("/") if p not in ("", ".")]
+        if any(p == ".." for p in parts):
+            raise RuntimeError(f"invalid image set: {set_id}")
+        base_rel = "data/" + "/".join(parts)
+        bases = [base_rel]
     ws_dir = root / base_rel
     stages_dir = ws_dir / "stages"
     sym_dir = ws_dir / "sym"
@@ -2788,9 +2848,173 @@ def run_reduce(
         return (s, c)
 
     pool_dir = ws_dir / "pool"
-    canon = {f"{s}__{c}" for s in _REDUCE_SLUG_ORDER for c in _REDUCE_COND_ORDER}
-    entries = [e for e in rp.build_pool() if (pool_dir / f"{e['id']}.jpg").is_file() and e["id"] in canon]
-    entries.sort(key=lambda e: order_key(e["id"]))
+    if canonical:
+        canon = {f"{s}__{c}" for s in _REDUCE_SLUG_ORDER for c in _REDUCE_COND_ORDER}
+        entries = [e for e in rp.build_pool() if (pool_dir / f"{e['id']}.jpg").is_file() and e["id"] in canon]
+        entries.sort(key=lambda e: order_key(e["id"]))
+    else:
+        # Frame-based image set: one entry per resolved frame, treated as a scene.
+        set_leaf = base_rel.rsplit("/", 1)[-1].replace("data-arc3_games-recordings-", "")
+        entries = []
+        for img in _reduce_set_images(ws_dir):
+            rel_to_d = img.relative_to(ws_dir).as_posix()
+            stem = rel_to_d.rsplit(".", 1)[0]
+            idv = re.sub(r"[^A-Za-z0-9]+", "_", stem).strip("_") or img.stem
+            entries.append({"id": idv, "slug": set_leaf, "cond": stem, "src": img, "scene": True})
+    order_pos = {e["id"]: i for i, e in enumerate(entries)}
+
+    # Sequence-pair mode: for frame-based sets (ARC recordings, video/curated
+    # frame dumps) the frames form a time sequence, so we send the model a PAIR
+    # of neighbouring frames. The prompt tells it the pair reveals motion (parts
+    # that move together are one object) but to describe ONLY the first frame —
+    # our code tracks that the first image is the frame we care about. The model
+    # also assigns each part a partOf group (it may invent groups).
+    pair_mode = (not canonical) and os.environ.get("REDUCE_PAIR", "1") != "0"
+    partner_by_id: dict[str, "Path"] = {}
+    if pair_mode:
+        for i, e in enumerate(entries):
+            nb = entries[i + 1] if i + 1 < len(entries) else (entries[i - 1] if i > 0 else None)
+            if nb is not None and nb.get("src") is not None:
+                partner_by_id[e["id"]] = nb["src"]
+    pair_cache_dir = ws_dir / "cache"
+
+    # Sequential-carry mode: step frame-by-frame, accumulate the known parts
+    # (label -> group) and groups, feed them into each next frame's prompt so the
+    # model REUSES names and only ADDS new ones, and persist the growing
+    # consolidated list to <set>/sequence_parts.{metta,json}.
+    carry_mode = pair_mode and os.environ.get("REDUCE_CARRY", "1") != "0"
+    inv_parts: dict[str, str] = {}
+    inv_groups: list[str] = []
+    inv_order: list[str] = []  # part labels in first-seen order
+    _set_char = base_rel.rsplit("/", 1)[-1].replace("data-arc3_games-recordings-", "")
+
+    def _inventory_text() -> str:
+        if not inv_order:
+            return ""
+        groups = inv_groups[:80]
+        parts = inv_order[:250]
+        return (
+            "KNOWN OBJECTS SO FAR (from earlier frames of THIS sequence). REUSE these "
+            "EXACT label and partOf names whenever the same thing appears again; only "
+            "invent NEW names for genuinely NEW things.\n"
+            "known groups: " + (", ".join(groups) if groups else "(none)") + "\n"
+            "known parts: " + "; ".join(f"{lbl} (partOf {inv_parts.get(lbl) or '?'})" for lbl in parts) + "\n\n"
+        )
+
+    def _merge_inventory(objs: list[dict[str, Any]]) -> None:
+        for o in objs:
+            lbl = str(o.get("label") or "").strip()
+            if not lbl:
+                continue
+            grp = o.get("partOf") or o.get("part_of") or o.get("group")
+            grp = str(grp).strip() if grp else ""
+            if grp and grp not in inv_groups:
+                inv_groups.append(grp)
+            if lbl not in inv_parts:
+                inv_parts[lbl] = grp
+                inv_order.append(lbl)
+
+    def _write_sequence_list() -> None:
+        lines = [f"; consolidated sequence parts list for {_set_char}  ({len(inv_order)} parts, {len(inv_groups)} groups)",
+                 f"(sequence {_set_char})"]
+        for g in inv_groups:
+            lines.append(f"(group {_set_char} {_tsym.slugify(g, 'group')})")
+        for lbl in inv_order:
+            g = inv_parts.get(lbl) or ""
+            sid = _tsym.slugify(lbl, "part")
+            lines.append(f'(part {_set_char} {sid} (label "{lbl}")' + (f" (partOf {_tsym.slugify(g, 'group')})" if g else "") + ")")
+        try:
+            (ws_dir / "sequence_parts.metta").write_text("\n".join(lines) + "\n", encoding="utf-8")
+            (ws_dir / "sequence_parts.json").write_text(
+                json.dumps({"char": _set_char, "groups": inv_groups,
+                            "parts": [{"label": lbl, "partOf": inv_parts.get(lbl) or ""} for lbl in inv_order]}, indent=2),
+                encoding="utf-8")
+        except OSError:
+            pass
+
+    def _pair_prompt(inventory_text: str = "") -> str:
+        return (
+            (inventory_text or "") +
+            "You are given a PAIR of frames from the SAME sequence. They SHARE objects — "
+            "the same things generally appear in both frames. Use the SECOND image only "
+            "as extra context to help you recognise what is a real, consistent single "
+            "object (and which things belong together). DESCRIBE ONLY THE FIRST image.\n"
+            "Decompose the FIRST image into ALL its individual PARTS. For EACH part output "
+            "a turtle program that DRAWS that part in its real color, STARTING from a good "
+            "point roughly where the part sits. Position and size do NOT need to be exact — "
+            "a sensible start point and the right color/shape are what matter. "
+            "For EACH part also set \"partOf\" to the object or GROUP it belongs to; you MAY "
+            "INVENT group names for sets of parts that belong together (e.g. player, "
+            "enemy_1, wall_group, hud). Parts of the same object MUST share the same "
+            "partOf value.\n"
+            + _mc.IDENTITY_NEUTRAL + _ose.SCHEMA +
+            "Return STRICT JSON ONLY (no prose, no markdown fences): "
+            '{"objects":[{"label":"<name>","partOf":"<group>","turtle":{...program...}}, ...]}.'
+        )
+
+    def _extract_pair(care_path: "Path", ctx_path: "Path", idv: str, model: str,
+                      inventory_text: str = "", use_cache: bool = True) -> dict[str, Any]:
+        import random  # noqa: PLC0415
+        cache_f = pair_cache_dir / f"{idv}__pair1.json"
+        if use_cache and not nocache and cache_f.is_file():
+            try:
+                return json.loads(cache_f.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                pass
+        body = {"model": model, "messages": [{"role": "user", "content": [
+            {"type": "text", "text": _pair_prompt(inventory_text)},
+            {"type": "image_url", "image_url": {"url": _rc.data_url(care_path)}},
+            {"type": "image_url", "image_url": {"url": _rc.data_url(ctx_path)}},
+        ]}], "temperature": 0}
+        last: Exception | None = None
+        for attempt in range(8):
+            if stop_event is not None and stop_event.is_set():
+                raise RuntimeError("stopped")
+            try:
+                r = requests.post(_rc.EMULLM, json=body, timeout=300)
+                r.raise_for_status()
+                text = r.json()["choices"][0]["message"]["content"]
+                objs = _ose.parse_objects(_rc.extract_json(text))
+                data = {"one_objs": objs}
+                cache_f.parent.mkdir(parents=True, exist_ok=True)
+                cache_f.write_text(json.dumps(data), encoding="utf-8")
+                return data
+            except Exception as error:  # noqa: BLE001
+                msg = str(error).lower()
+                if any(t in msg for t in ("503", "502", "504", "service unavailable", "timed out", "timeout", "connection")):
+                    last = error
+                    time.sleep(min(2 ** attempt, 30) + random.random() * 2)
+                    continue
+                raise
+        raise last if last is not None else RuntimeError("pair extraction failed")
+
+    def _partof_map(objs: list[dict[str, Any]], facts: dict[str, Any]) -> dict[str, str]:
+        # facts["parts"] correspond 1:1, in order, to objs that had a valid turtle
+        # program + bbox (the same filter build_facts applies), so we can zip them.
+        valid = []
+        for o in objs:
+            prog = _tsym.normalize_obj_program(o.get("turtle"))
+            if not prog:
+                continue
+            if not _tsym.prog_bbox(prog):
+                continue
+            valid.append(o)
+        mapping: dict[str, str] = {}
+        for o, p in zip(valid, facts.get("parts", [])):
+            g = o.get("partOf") or o.get("part_of") or o.get("group")
+            if g:
+                mapping[p["id"]] = _tsym.slugify(str(g), "group")
+        return mapping
+
+    def _pair_metta(facts: dict[str, Any], partof: dict[str, str]) -> str:
+        base = rp.to_metta(facts).rstrip("\n")
+        lines = [base]
+        char = facts["character"]
+        for g in sorted(set(partof.values())):
+            lines.append(f"(group {char} {g})")
+        for pid, g in partof.items():
+            lines.append(f"(partOf {char} {pid} {g})")
+        return "\n".join(lines) + "\n"
 
     # Tiers to run. The parent's 2-shot (nshot) extraction is currently broken
     # (returns empty), so we run the reliable 1-shot tier only unless
@@ -2826,7 +3050,7 @@ def run_reduce(
          f"{', '.join(f'{t['shots']}-shot/{t['model']}' for t in tiers_meta)} · concurrency {concurrency}")
 
     def _write_manifest() -> None:
-        ordered = [manifest_rows[i] for i in sorted(manifest_rows, key=order_key)]
+        ordered = [manifest_rows[i] for i in sorted(manifest_rows, key=lambda i: order_pos.get(i, 10**9))]
         payload = {"tiers": tiers_meta, "count": len(ordered), "items": ordered}
         with _reduce_manifest_lock:
             manifest_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -2840,22 +3064,33 @@ def run_reduce(
         if stop_event is not None and stop_event.is_set():
             return
         idv, slug, cond = entry["id"], entry["slug"], entry["cond"]
-        src_path = pool_dir / f"{idv}.jpg"
+        src_path = entry.get("src") or (pool_dir / f"{idv}.jpg")
         expected_sym = [sym_dir / f"{idv}__{t['shots']}shot.metta" for t in tiers_meta]
         expected_png = [stages_dir / f"{idv}__t{t['shots']}__{k}.png" for t in tiers_meta for k in _REDUCE_STAGE_KEYS]
-        if (not nocache and idv in manifest_rows
+        if (not nocache and not carry_mode and idv in manifest_rows
                 and all(p.is_file() for p in expected_sym)
                 and all(p.is_file() for p in expected_png)):
             counts["done"] += 1
             return
         try:
+            started_wall = datetime.now(timezone.utc)
+            t0 = time.monotonic()
             with active:
                 src = Image.open(src_path).convert("RGB")
-                scene = cond in rp.SCENE_CONDS
+                scene = entry.get("scene", cond in rp.SCENE_CONDS)
                 tiers = _tier_specs()
-                for tier in tiers:
-                    tier["data"] = rp._extract_tier(src_path, tier, idv, scene)
-                    tier["facts"] = rp._tier_facts(slug, tier)
+                partner = partner_by_id.get(idv) if pair_mode else None
+                for ti, tier in enumerate(tiers):
+                    if partner is not None and tier["kind"] == "oneshot" and ti == 0:
+                        inv_text = _inventory_text() if carry_mode else ""
+                        tier["data"] = _extract_pair(src_path, partner, idv, tier["model"], inv_text, use_cache=not carry_mode)
+                        tier["facts"] = rp.build_facts(slug, tier["data"].get("one_objs", []))
+                        tier["_partof"] = _partof_map(tier["data"].get("one_objs", []), tier["facts"])
+                        if carry_mode:
+                            _merge_inventory(tier["data"].get("one_objs", []))
+                    else:
+                        tier["data"] = _extract_tier_with_retry(rp, src_path, tier, idv, scene, stop_event, emit)
+                        tier["facts"] = rp._tier_facts(slug, tier)
                 ref = tiers[0]["facts"]
                 for tier in tiers[1:]:
                     tier["agree"] = rp.agreement(ref, tier["facts"])
@@ -2867,13 +3102,57 @@ def run_reduce(
                     stage_imgs = {"parts": panels[1], "turtle": panels[2], "partmap": panels[3]}
                     stage_paths = {k: _save_png(stage_imgs[k], f"{idv}__t{shots}__{k}.png") for k in _REDUCE_STAGE_KEYS}
                     sym_path = sym_dir / f"{idv}__{shots}shot.metta"
-                    sym_path.write_text(rp.to_metta(tier["facts"]), encoding="utf-8")
+                    partof = tier.get("_partof") or {}
+                    metta = _pair_metta(tier["facts"], partof) if partof else rp.to_metta(tier["facts"])
+                    # bbox is a throwaway value derived from each turtle; keep the
+                    # turtle + spatial relations but never persist the raw box.
+                    metta = re.sub(r"\s*\(bbox\s+-?\d+\s+-?\d+\s+-?\d+\s+-?\d+\)", "", metta)
+                    sym_path.write_text(metta, encoding="utf-8")
+                    # Per-part turtle geometry sidecar so the UI can draw the actual
+                    # turtle shape of a selected part (not just its bbox).
+                    try:
+                        valid = []
+                        for o in tier["data"].get("one_objs", []):
+                            prog = _tsym.normalize_obj_program(o.get("turtle"))
+                            if not prog or not _tsym.prog_bbox(prog):
+                                continue
+                            valid.append(prog)
+                        geom = [
+                            {"id": p["id"], "label": p["label"], "color": p["color"],
+                             "partOf": partof.get(p["id"], ""), "turtle": prog}
+                            for prog, p in zip(valid, tier["facts"].get("parts", []))
+                        ]
+                        (sym_dir / f"{idv}__{shots}shot.parts.json").write_text(json.dumps(geom), encoding="utf-8")
+                    except Exception:  # noqa: BLE001
+                        pass
                     rows.append({
                         "shots": shots, "kind": tier["kind"], "model": rp._short(tier["model"]),
                         "nparts": tier["facts"]["nparts"], "nrels": len(tier["facts"]["relations"]),
+                        "ngroups": len(set(partof.values())) if partof else 0,
                         "metta": sym_path.name, "stages": stage_paths,
                         "agree": tier.get("agree", {"score": 1.0, "verdict": "ref"}),
                     })
+                # --- Prolog line: the identical parts/groups derived by SWI-Prolog
+                # (perception in Python, grouping in swipl), no LLM. ARC flat-color
+                # frames only; complex frames auto-skip via the grid-size guard.
+                try:
+                    import importlib  # noqa: PLC0415
+                    _gvp = os.path.join(os.path.dirname(__file__), "generative_vision", "prolog")
+                    if _gvp not in sys.path:
+                        sys.path.insert(0, _gvp)
+                    _sa = importlib.import_module("symbolic_arc")
+                    pr = _sa.extract_frame(str(src_path), slug)
+                    if pr["nparts"] > 0 and pr["cols"] <= 160 and pr["rows"] <= 160:
+                        (sym_dir / f"{idv}__prolog.metta").write_text(pr["metta"], encoding="utf-8")
+                        (sym_dir / f"{idv}__prolog.parts.json").write_text(json.dumps(pr["geom"]), encoding="utf-8")
+                        rows.append({
+                            "shots": "P", "kind": "prolog", "model": "swi-prolog",
+                            "nparts": pr["nparts"], "nrels": pr["nrels"], "ngroups": pr["ngroups"],
+                            "metta": f"{idv}__prolog.metta", "stages": {},
+                            "agree": {"score": 1.0, "verdict": "ref"},
+                        })
+                except Exception as perr:  # noqa: BLE001
+                    emit(f"{_ts()} (prolog line skipped for {idv}: {perr})")
         except Exception as error:  # noqa: BLE001
             counts["failed"] += 1
             emit(f"{_ts()} ✗ reduce {idv}: {error}")
@@ -2883,17 +3162,29 @@ def run_reduce(
         manifest_rows[idv] = {
             "id": idv, "slug": slug, "cond": cond, "label": entry.get("label") or slug.replace("_", " "),
             "input": f"{idv}.jpg", "source": source, "source_url": pv.get("source_url", ""),
-            "scene": cond in rp.SCENE_CONDS, "rows": rows,
+            "scene": cond in rp.SCENE_CONDS,
+            "startedAt": started_wall.strftime("%H:%M:%S"),
+            "elapsedMs": int((time.monotonic() - t0) * 1000),
+            "rows": rows,
         }
         _write_manifest()
+        if carry_mode:
+            _write_sequence_list()
         counts["done"] += 1
         ag = rows[1]["agree"].get("verdict") if len(rows) > 1 else "ref"
-        emit(f"{_ts()} ✦ {idv}: {rows[0]['nparts']}p / {rows[-1]['nparts']}p · agree {ag}")
+        carry_note = f" · seq {len(inv_order)}p/{len(inv_groups)}g" if carry_mode else ""
+        emit(f"{_ts()} ✦ {idv}: {rows[0]['nparts']}p / {rows[-1]['nparts']}p · agree {ag}{carry_note}")
 
     if not entries:
         emit(f"{_ts()} no pool images in {base_rel}/pool (nothing to reduce)")
         return "no pool images"
-    if concurrency <= 1:
+    if carry_mode:
+        emit(f"{_ts()} sequential carry: building one consolidated parts list across {len(entries)} frame(s)")
+        for entry in entries:
+            if stop_event is not None and stop_event.is_set():
+                break
+            reduce_one(entry)
+    elif concurrency <= 1:
         for entry in entries:
             if stop_event is not None and stop_event.is_set():
                 break
@@ -2902,7 +3193,11 @@ def run_reduce(
         with ThreadPoolExecutor(max_workers=concurrency) as pool:
             list(pool.map(reduce_one, entries))
     _write_manifest()
+    if carry_mode:
+        _write_sequence_list()
     summary = f"reduce complete: {counts.get('done', 0)} image(s), {counts.get('failed', 0)} failed of {counts.get('total', 0)}"
+    if carry_mode:
+        summary += f" · sequence parts list: {len(inv_order)} parts, {len(inv_groups)} groups"
     emit(f"{_ts()} {summary}")
     return summary
 
@@ -2932,6 +3227,7 @@ def start_run(
     goal_override: str | None = None,
     only_selected: bool = True,
     concurrency_override: int | None = None,
+    set_id: str | None = None,
 ) -> dict[str, Any]:
     """Start a background pipeline run for a workspace (one at a time)."""
     stage = stage or "describe"
@@ -2945,6 +3241,8 @@ def start_run(
         _runs[workspace_id] = run
 
     runner = _STAGE_RUNNERS[stage]
+    # Only the reduce runner is image-set aware; other stages keep their signature.
+    extra: dict[str, Any] = {"set_id": set_id} if stage == "reduce" else {}
 
     def worker() -> None:
         try:
@@ -2957,6 +3255,7 @@ def start_run(
                 stop_event=run.stop_event,
                 log=run.log.append,
                 counts=run.counts,
+                **extra,
             )
             run.summary = summary
             run.status = "stopped" if run.stop_event.is_set() else "done"
