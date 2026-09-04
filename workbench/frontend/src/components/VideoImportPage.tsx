@@ -403,12 +403,13 @@ const activeOutlineGroupNames = (inventory: MemberInventory): Set<string> | null
 type PipelineNext = { label: string; tone: "done" | "active" | "retry" | "wait" | "error" | "lost" };
 
 const API = "/workbench/video-import";
-// Parse a MeTTa symbolic part-graph into parts (bbox 0..1000 + color) and a
-// relation count, so the Recognition reduce rows can render each stage panel
-// NATIVELY (parts overlay + part-map) instead of a pre-baked composite image.
-type MettaPart = { id: string; label: string; color: string; bbox: [number, number, number, number] };
-type MettaGroup = { id: string; bbox: [number, number, number, number]; parts: MettaPart[] };
-// Distinct outline colors for partOf group boxes (cycled by group index).
+// Parse a MeTTa symbolic part-graph into parts (label + color) and a relation
+// count, so the Recognition reduce rows can render each stage panel NATIVELY
+// (turtle shapes) instead of a pre-baked composite image. bbox is intentionally
+// NOT parsed or required — the turtle is the shape; the box was a throwaway.
+type MettaPart = { id: string; label: string; color: string };
+type MettaGroup = { id: string; parts: MettaPart[] };
+// Distinct outline colors for partOf groups (cycled by group index).
 const GROUP_COLORS = ["#27dcc2","#ff7ab6","#f2c14e","#7c9cff","#8bd450","#ff8b5e","#c78bff","#4ecdc4","#ffd166","#ef476f"];
 const CSS_COLOR_WORDS = new Set(["yellow","white","black","red","blue","orange","green","pink","brown","gray","grey","purple","tan","cyan","magenta","gold","silver","beige","maroon","navy","teal","olive","lime","aqua","violet","indigo","peach","cream"]);
 const mettaColor = (c: string): string => {
@@ -423,9 +424,9 @@ function parseMettaParts(text: string): { parts: MettaPart[]; nrels: number; gro
   if (!text) return { parts, nrels, groups: [] };
   for (const raw of text.split("\n")) {
     const line = raw.trim();
-    const m = line.match(/^\(part\s+\S+\s+(\S+)\s+\(label\s+"([^"]*)"\)\s+\(color\s+([^)\s]+)\).*?\(bbox\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\)/);
+    const m = line.match(/^\(part\s+\S+\s+(\S+)\s+\(label\s+"([^"]*)"\)\s+\(color\s+([^)\s]+)\)/);
     if (m) {
-      parts.push({ id: m[1], label: m[2], color: m[3], bbox: [Number(m[4]), Number(m[5]), Number(m[6]), Number(m[7])] });
+      parts.push({ id: m[1], label: m[2], color: m[3] });
       continue;
     }
     const pm = line.match(/^\(partOf\s+\S+\s+(\S+)\s+(\S+)\)/);
@@ -441,15 +442,41 @@ function parseMettaParts(text: string): { parts: MettaPart[]; nrels: number; gro
     arr.push(p);
     gp.set(g, arr);
   }
-  const groups: MettaGroup[] = [...gp.entries()].map(([id, ps]) => {
-    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-    for (const p of ps) {
-      x0 = Math.min(x0, p.bbox[0]); y0 = Math.min(y0, p.bbox[1]);
-      x1 = Math.max(x1, p.bbox[2]); y1 = Math.max(y1, p.bbox[3]);
-    }
-    return { id, bbox: [x0, y0, x1, y1] as [number, number, number, number], parts: ps };
-  });
+  const groups: MettaGroup[] = [...gp.entries()].map(([id, ps]) => ({ id, parts: ps }));
   return { parts, nrels, groups };
+}
+// Render a normalized turtle program (from a part's parts.json) as SVG shapes in
+// the 0..1000 frame — the same look as the part map, for a single part.
+function turtleToSvg(prog: any, keyBase: string, fallbackColor: string, outlineOnly = false, flatFill = false): any[] {
+  const els: any[] = [];
+  if (!prog || !Array.isArray(prog.commands)) return els;
+  const pen = prog.penColor || fallbackColor || "#8a8f98";
+  const pw = prog.penWidth || 4;
+  const fillOf = (v: any) => outlineOnly ? "none" : (flatFill ? (fallbackColor || pen) : (v || "none"));
+  const strokeOf = (v: any) => outlineOnly ? (fallbackColor || pen) : (flatFill ? "#33373d" : (v || pen));
+  let cx = 0, cy = 0;
+  prog.commands.forEach((c: any, i: number) => {
+    const op = String(c.op || "").toLowerCase();
+    const key = `${keyBase}_${i}`;
+    if (op === "move") { cx = Number(c.x) || 0; cy = Number(c.y) || 0; }
+    else if (op === "rectangle" && Array.isArray(c.box)) {
+      const [x0, y0, x1, y1] = c.box;
+      els.push(<rect key={key} x={Math.min(x0, x1)} y={Math.min(y0, y1)} width={Math.abs(x1 - x0)} height={Math.abs(y1 - y0)} fill={fillOf(c.fill)} stroke={strokeOf(c.outline)} strokeWidth={pw} />);
+    } else if (op === "ellipse" && Array.isArray(c.box)) {
+      const [x0, y0, x1, y1] = c.box;
+      els.push(<ellipse key={key} cx={(x0 + x1) / 2} cy={(y0 + y1) / 2} rx={Math.abs(x1 - x0) / 2} ry={Math.abs(y1 - y0) / 2} fill={fillOf(c.fill)} stroke={strokeOf(c.outline)} strokeWidth={pw} />);
+    } else if (op === "polygon" && Array.isArray(c.points)) {
+      els.push(<polygon key={key} points={c.points.map((p: any) => p.join(",")).join(" ")} fill={fillOf(c.fill)} stroke={strokeOf(c.outline)} strokeWidth={pw} />);
+    } else if (op === "polyline" && Array.isArray(c.points)) {
+      els.push(<polyline key={key} points={c.points.map((p: any) => p.join(",")).join(" ")} fill="none" stroke={strokeOf(c.outline)} strokeWidth={pw} />);
+    } else if (op === "line") {
+      els.push(<line key={key} x1={cx} y1={cy} x2={Number(c.x) || 0} y2={Number(c.y) || 0} stroke={strokeOf(c.color)} strokeWidth={pw} />);
+      cx = Number(c.x) || 0; cy = Number(c.y) || 0;
+    } else if (op === "dot") {
+      els.push(<circle key={key} cx={Number(c.x) || 0} cy={Number(c.y) || 0} r={Number(c.radius) || 3} fill={outlineOnly ? "none" : (c.color || pen)} stroke={outlineOnly ? (fallbackColor || pen) : "none"} strokeWidth={pw} />);
+    }
+  });
+  return els;
 }
 const streamSlug = (value: string) =>
   value.toLowerCase().replace(/[^a-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "workbench";
@@ -2883,10 +2910,14 @@ export function VideoImportPage({
   });
   const [reduceOnlyGood, setReduceOnlyGood] = useState(false);
   const [reduceMetta, setReduceMetta] = useState<Record<string, string>>({});
+  const [reduceParts, setReduceParts] = useState<Record<string, any[]>>({});
   const [expandedReduceId, setExpandedReduceId] = useState<string | null>(null);
   // partOf tree ↔ groups-box highlight: which part ids to light up, scoped to one
   // reduce row/tier (keyed by that tier's metta path).
   const [groupHilite, setGroupHilite] = useState<{ key: string; ids: string[] } | null>(null);
+  // Which group tree nodes are expanded to reveal their parts (keyed metta#group),
+  // so the chevron expands independently of clicking the group to highlight it.
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
   // Reduce section shows a collapsible char-grouped grid above a flat
   // one-row-per-image list (all 200); "reduceListQuery" filters the list.
   const [reduceListQuery, setReduceListQuery] = useState("");
@@ -3976,6 +4007,21 @@ export function VideoImportPage({
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reduceMetta]);
+  const loadReduceParts = useCallback((partsRel: string) => {
+    if (!partsRel || reduceParts[partsRel] !== undefined) return;
+    setReduceParts((cur) => ({ ...cur, [partsRel]: [] }));
+    void (async () => {
+      try {
+        const url = `/workbench/workspaces/${encodeURIComponent(workspaceId)}/asset?path=${encodeURIComponent(partsRel)}`;
+        const resp = await fetch(url);
+        const data = resp.ok ? await resp.json() : [];
+        setReduceParts((cur) => ({ ...cur, [partsRel]: Array.isArray(data) ? data : [] }));
+      } catch {
+        setReduceParts((cur) => ({ ...cur, [partsRel]: [] }));
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reduceParts]);
   // Load the reduction manifest straight from the workspace filesystem
   // (server synthesizes it from data/recognition_reduce/pool + manifest.json +
   // provenance.json). This is fully independent of the page-state save, so the
@@ -4043,7 +4089,7 @@ export function VideoImportPage({
     for (const it of items) {
       for (const row of (it.rows || [])) {
         const rel = row.mettaPath || (row.metta ? `data/recognition_reduce/sym/${String(row.metta).split("/").pop()}` : "");
-        if (rel) loadReduceMetta(rel);
+        if (rel) { loadReduceMetta(rel); loadReduceParts(rel.replace(/\.metta$/, ".parts.json")); }
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -6438,6 +6484,10 @@ export function VideoImportPage({
                     const open = it.id === expandedReduceId;
                     const tiers = (it.rows || []);
                     const charCollapsed = collapsedReduceChars.has(it.slug);
+                    const firstTier = tiers[0];
+                    const firstMettaRel = firstTier ? (firstTier.mettaPath || (firstTier.metta ? `data/recognition_reduce/sym/${String(firstTier.metta).split("/").pop()}` : "")) : "";
+                    const descParsed = parseMettaParts(firstMettaRel ? (reduceMetta[firstMettaRel] || "") : "");
+                    const descBigGroups = descParsed.groups.filter((g) => g.parts.length >= 2);
                     const els: any[] = [];
                     if (newGroup) els.push(
                       <div className={`video-import-reduce-listsep${charCollapsed ? " is-collapsed" : ""}`} key={`sep-${it.slug}`} role="button" tabIndex={0}
@@ -6458,6 +6508,7 @@ export function VideoImportPage({
                             <b>{nameBySlug.get(it.slug) || it.slug}</b>
                             <span className="video-import-reduce-desccond">{COND_LABELS[it.cond] || it.cond}</span>
                             <code className="video-import-reduce-descid">{it.id}</code>
+                            {descParsed.parts.length ? <span className="video-import-reduce-descstat">{descParsed.parts.length} parts · {descBigGroups.length} groups</span> : null}
                             {it.startedAt ? <span className="video-import-reduce-desctime">⏱ started {it.startedAt}{typeof it.elapsedMs === "number" ? ` · took ${(it.elapsedMs / 1000).toFixed(1)}s` : ""}</span> : null}
                             {web ? (
                               <span className="video-import-reduce-listsrc">
@@ -6485,68 +6536,60 @@ export function VideoImportPage({
                                   const groupColor = new Map<string, string>();
                                   bigGroups.forEach((g, gi) => groupColor.set(g.id, GROUP_COLORS[gi % GROUP_COLORS.length]));
                                   const hi = (groupHilite && groupHilite.key === mettaRel) ? new Set(groupHilite.ids) : null;
-                                  const selectGroup = (g: MettaGroup) => setGroupHilite((prev) => {
-                                    const ids = g.parts.map((p) => p.id);
-                                    const same = prev && prev.key === mettaRel && prev.ids.length === ids.length && ids.every((i) => prev.ids.includes(i));
-                                    return same ? null : { key: mettaRel, ids };
-                                  });
-                                  const selectPart = (pid: string) => setGroupHilite((prev) => {
+                                  const partsRel = mettaRel.replace(/\.metta$/, ".parts.json");
+                                  const partsData = reduceParts[partsRel];
+                                  const selectGroup = (g: MettaGroup, additive: boolean) => { loadReduceParts(partsRel); setGroupHilite((prev) => {
+                                    const gids = g.parts.map((p) => p.id);
+                                    if (additive && prev && prev.key === mettaRel) {
+                                      const cur = new Set(prev.ids);
+                                      const allIn = gids.every((i) => cur.has(i));
+                                      if (allIn) { gids.forEach((i) => cur.delete(i)); } else { gids.forEach((i) => cur.add(i)); }
+                                      return cur.size ? { key: mettaRel, ids: [...cur] } : null;
+                                    }
+                                    const same = prev && prev.key === mettaRel && prev.ids.length === gids.length && gids.every((i) => prev.ids.includes(i));
+                                    return same ? null : { key: mettaRel, ids: gids };
+                                  }); };
+                                  const selectPart = (pid: string, additive: boolean) => { loadReduceParts(partsRel); setGroupHilite((prev) => {
+                                    if (additive && prev && prev.key === mettaRel) {
+                                      const cur = new Set(prev.ids);
+                                      if (cur.has(pid)) cur.delete(pid); else cur.add(pid);
+                                      return cur.size ? { key: mettaRel, ids: [...cur] } : null;
+                                    }
                                     const same = prev && prev.key === mettaRel && prev.ids.length === 1 && prev.ids[0] === pid;
                                     return same ? null : { key: mettaRel, ids: [pid] };
-                                  });
+                                  }); };
                                   const sp = row.stagePaths || {};
+                                  const engine = row.kind === "prolog" ? "prolog" : "llm";
                                   graphParts.push(`; ${row.shots}-shot · ${row.model} · ${row.nparts}p ${row.nrels}r${isRef ? " · REF" : ` · vs 1: ${rp}% ${String(rv).toUpperCase()}`}\n${mettaText === undefined ? "loading…" : (mettaText || "(no graph)")}`);
                                   return (
                                     <div className={`video-import-reduce-tiergroup${isRef ? " is-ref" : ""}`} key={ri}>
-                                      <div className="video-import-reduce-tierhead">
-                                        <b>{row.shots}-shot</b> <span>{row.model}</span>
-                                        <span className="video-import-reduce-tiernums">{row.nparts}p · {row.nrels}r</span>
-                                        <span className={`video-import-reduce-badge v-${rv}`}>{isRef ? "REF" : `vs 1: ${rp}% ${String(rv).toUpperCase()}`}</span>
-                                      </div>
-                                      <div className="video-import-reduce-stages">
-                                        <figure className="video-import-reduce-stage">
-                                          {sp.parts
-                                            ? <img className="video-import-reduce-stageimg" src={asset(sp.parts)} alt="parts found" loading="lazy" />
-                                            : <svg viewBox="0 0 1000 1000" className="video-import-reduce-svg">
-                                                <image href={asset(inputRel)} x="0" y="0" width="1000" height="1000" preserveAspectRatio="xMidYMid meet" />
-                                                {parts.map((p, pi) => { const [x0,y0,x1,y1] = p.bbox; return <rect key={pi} x={x0} y={y0} width={Math.max(0,x1-x0)} height={Math.max(0,y1-y0)} fill="none" stroke={isRef ? "#d62728" : "#1f6feb"} strokeWidth="4" />; })}
-                                              </svg>}
-                                          <figcaption>parts found · {row.nparts}</figcaption>
-                                        </figure>
-                                        <figure className="video-import-reduce-stage">
-                                          {sp.turtle
-                                            ? <img className="video-import-reduce-stageimg" src={asset(sp.turtle)} alt="turtle parts" loading="lazy" />
-                                            : <div className="video-import-reduce-stagemissing">turtle png<br/>pending</div>}
-                                          <figcaption>turtle parts</figcaption>
-                                        </figure>
-                                        <figure className="video-import-reduce-stage">
-                                          {sp.partmap
-                                            ? <img className="video-import-reduce-stageimg" src={asset(sp.partmap)} alt="part map" loading="lazy" />
-                                            : <svg viewBox="0 0 1000 1000" className="video-import-reduce-svg is-map">
-                                                {parts.map((p, pi) => { const [x0,y0,x1,y1] = p.bbox; return <rect key={pi} x={x0} y={y0} width={Math.max(0,x1-x0)} height={Math.max(0,y1-y0)} fill={mettaColor(p.color)} stroke="#333" strokeWidth="2" opacity="0.9"><title>{p.label} · {p.color}</title></rect>; })}
-                                              </svg>}
-                                          <figcaption>part map</figcaption>
-                                        </figure>
-                                      </div>
-                                        {reduceRowView === "groups" && bigGroups.length > 0 && (
-                                          <div className="video-import-reduce-rowline" onClick={(e) => e.stopPropagation()}>
-                                            <div className="video-import-reduce-grouprow">
-                                              <div className="video-import-reduce-grouptree">
-                                                {bigGroups.map((g, gi) => {
+                                      <div className={`video-import-reduce-enginetag is-${engine}`}>{engine === "prolog" ? "PROLOG · symbolic" : `LLM · ${row.model}`}<span className="video-import-reduce-enginenums"> · {row.nparts}p · {row.ngroups ?? 0}g</span></div>
+                                      <div className="video-import-reduce-stages is-quad">
+                                        <figure className="video-import-reduce-stage is-treecol">
+                                          <div className="video-import-reduce-grouptree">
+                                            {bigGroups.length === 0
+                                              ? <div className="video-import-reduce-treeempty">no groups</div>
+                                              : bigGroups.map((g, gi) => {
                                                   const col = groupColor.get(g.id) || "#8a8f98";
-                                                  const groupSel = !!hi && hi.size === g.parts.length && g.parts.every((p) => hi.has(p.id));
+                                                  const groupSel = !!hi && g.parts.length > 0 && g.parts.every((p) => hi.has(p.id));
+                                                  const gkey = mettaRel + "#" + g.id;
+                                                  const gopen = openGroups.has(gkey);
+                                                  const toggleOpen = () => setOpenGroups((prev) => { const n = new Set(prev); if (n.has(gkey)) n.delete(gkey); else n.add(gkey); return n; });
                                                   return (
-                                                    <details key={gi} className="video-import-reduce-groupnode" open>
+                                                    <details key={gi} className="video-import-reduce-groupnode" open={gopen}>
                                                       <summary className={groupSel ? "is-sel" : ""} style={{ color: col }}
-                                                        onClick={(e) => { e.preventDefault(); selectGroup(g); }}>
+                                                        onClick={(e) => { e.preventDefault(); selectGroup(g, e.shiftKey); }}>
+                                                        <span className="video-import-reduce-groupchev" role="button" tabIndex={0}
+                                                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleOpen(); }}
+                                                          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); toggleOpen(); } }}>{gopen ? "▾" : "▸"}</span>
                                                         <span className="video-import-reduce-groupdot" style={{ background: col }} />{g.id} · {g.parts.length}
                                                       </summary>
                                                       <ul>
                                                         {g.parts.map((p, pi) => {
-                                                          const partSel = !!hi && hi.size === 1 && hi.has(p.id);
+                                                          const partSel = !!hi && hi.has(p.id);
                                                           return (
                                                             <li key={pi}>
-                                                              <button type="button" className={partSel ? "is-sel" : ""} onClick={() => selectPart(p.id)} title={`${p.label} · ${p.color}`}>{p.label}</button>
+                                                              <button type="button" className={partSel ? "is-sel" : ""} onClick={(e) => selectPart(p.id, e.shiftKey)} title={`${p.label} · ${p.color}`}>{p.label}</button>
                                                             </li>
                                                           );
                                                         })}
@@ -6554,39 +6597,27 @@ export function VideoImportPage({
                                                     </details>
                                                   );
                                                 })}
-                                              </div>
-                                              <svg viewBox="0 0 1000 1000" className="video-import-reduce-svg is-groups">
-                                                <image href={asset(inputRel)} x="0" y="0" width="1000" height="1000" preserveAspectRatio="xMidYMid meet" opacity={hi ? 0.06 : 0.5} />
-                                                {bigGroups.map((g) => {
-                                                  const col = groupColor.get(g.id) || "#8a8f98";
-                                                  return g.parts.map((p, pi) => {
-                                                    if (hi && !hi.has(p.id)) return null;
-                                                    const [x0, y0, x1, y1] = p.bbox;
-                                                    return <rect key={g.id + "_" + pi} x={x0} y={y0} width={Math.max(0, x1 - x0)} height={Math.max(0, y1 - y0)}
-                                                      fill={col} fillOpacity={0.32} stroke={col} strokeWidth={6}><title>{p.label} · {g.id}</title></rect>;
-                                                  });
-                                                })}
-                                                {bigGroups.map((g, gi) => {
-                                                  const col = groupColor.get(g.id) || "#8a8f98";
-                                                  if (hi && !g.parts.some((p) => hi.has(p.id))) return null;
-                                                  const [x0, y0, x1, y1] = g.bbox;
-                                                  return (
-                                                    <g key={"u" + gi}>
-                                                      <rect x={x0} y={y0} width={Math.max(0, x1 - x0)} height={Math.max(0, y1 - y0)} fill="none" stroke={col} strokeWidth="3" strokeDasharray="14 8" rx="8" />
-                                                      <text x={x0 + 8} y={y0 + 30} fill={col} fontSize="30" fontWeight="700" stroke="#0b0e12" strokeWidth="0.6">{g.id}</text>
-                                                    </g>
-                                                  );
-                                                })}
-                                              </svg>
-                                            </div>
-                                          <div className="video-import-reduce-rowcap">partOf groups · {bigGroups.length} — click a group or part to highlight (only the selection shows)</div>
                                           </div>
-                                        )}
-                                        {reduceRowView === "graph" && (
-                                          <div className="video-import-reduce-rowline" onClick={(e) => e.stopPropagation()}>
-                                            <pre className="video-import-reduce-graphline">{mettaText === undefined ? "loading…" : (mettaText || "(no graph)")}</pre>
-                                          </div>
-                                        )}
+                                          <figcaption>{hi ? `tree · ${hi.size} selected` : "tree · click isolates, shift-click adds"}</figcaption>
+                                        </figure>
+                                        <figure className="video-import-reduce-stage">
+                                          <svg viewBox="0 0 1000 1000" className="video-import-reduce-svg">
+                                            <image href={asset(inputRel)} x="0" y="0" width="1000" height="1000" preserveAspectRatio="xMidYMid meet" opacity={hi ? 0.06 : 0.4} />
+                                            {Array.isArray(partsData) ? partsData.flatMap((gp: any, pi: number) => ((hi && !hi.has(gp.id)) || !gp.turtle) ? [] : turtleToSvg(gp.turtle, "tp" + pi, groupColor.get(gp.partOf) || mettaColor(gp.color))) : null}
+                                          </svg>
+                                          <figcaption>turtle parts{hi ? " · selected" : ""}</figcaption>
+                                        </figure>
+                                        <figure className="video-import-reduce-stage">
+                                          <svg viewBox="0 0 1000 1000" className="video-import-reduce-svg is-map">
+                                            {Array.isArray(partsData) ? partsData.flatMap((gp: any, pi: number) => ((hi && !hi.has(gp.id)) || !gp.turtle) ? [] : turtleToSvg(gp.turtle, "pm" + pi, groupColor.get(gp.partOf) || mettaColor(gp.color), false, true)) : null}
+                                          </svg>
+                                          <figcaption>part map{hi ? " · selected" : ""}</figcaption>
+                                        </figure>
+                                        <figure className="video-import-reduce-stage is-mettacol">
+                                          <pre className="video-import-reduce-graphcol">{mettaText === undefined ? "loading…" : (mettaText || "(no graph)")}</pre>
+                                          <figcaption>MeTTa · {row.nparts}p · {row.nrels}r</figcaption>
+                                        </figure>
+                                      </div>
                                     </div>
                                   );
                                 });

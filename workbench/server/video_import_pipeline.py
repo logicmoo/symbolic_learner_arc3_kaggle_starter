@@ -2941,8 +2941,8 @@ def run_reduce(
             "object (and which things belong together). DESCRIBE ONLY THE FIRST image.\n"
             "Decompose the FIRST image into ALL its individual PARTS. For EACH part output "
             "a turtle program that DRAWS that part in its real color, STARTING from a good "
-            "point roughly where the part sits. We do NOT care about exact bounding boxes "
-            "or size — a sensible start point and the right color/shape are what matter. "
+            "point roughly where the part sits. Position and size do NOT need to be exact — "
+            "a sensible start point and the right color/shape are what matter. "
             "For EACH part also set \"partOf\" to the object or GROUP it belongs to; you MAY "
             "INVENT group names for sets of parts that belong together (e.g. player, "
             "enemy_1, wall_group, hud). Parts of the same object MUST share the same "
@@ -3104,7 +3104,27 @@ def run_reduce(
                     sym_path = sym_dir / f"{idv}__{shots}shot.metta"
                     partof = tier.get("_partof") or {}
                     metta = _pair_metta(tier["facts"], partof) if partof else rp.to_metta(tier["facts"])
+                    # bbox is a throwaway value derived from each turtle; keep the
+                    # turtle + spatial relations but never persist the raw box.
+                    metta = re.sub(r"\s*\(bbox\s+-?\d+\s+-?\d+\s+-?\d+\s+-?\d+\)", "", metta)
                     sym_path.write_text(metta, encoding="utf-8")
+                    # Per-part turtle geometry sidecar so the UI can draw the actual
+                    # turtle shape of a selected part (not just its bbox).
+                    try:
+                        valid = []
+                        for o in tier["data"].get("one_objs", []):
+                            prog = _tsym.normalize_obj_program(o.get("turtle"))
+                            if not prog or not _tsym.prog_bbox(prog):
+                                continue
+                            valid.append(prog)
+                        geom = [
+                            {"id": p["id"], "label": p["label"], "color": p["color"],
+                             "partOf": partof.get(p["id"], ""), "turtle": prog}
+                            for prog, p in zip(valid, tier["facts"].get("parts", []))
+                        ]
+                        (sym_dir / f"{idv}__{shots}shot.parts.json").write_text(json.dumps(geom), encoding="utf-8")
+                    except Exception:  # noqa: BLE001
+                        pass
                     rows.append({
                         "shots": shots, "kind": tier["kind"], "model": rp._short(tier["model"]),
                         "nparts": tier["facts"]["nparts"], "nrels": len(tier["facts"]["relations"]),
@@ -3112,6 +3132,27 @@ def run_reduce(
                         "metta": sym_path.name, "stages": stage_paths,
                         "agree": tier.get("agree", {"score": 1.0, "verdict": "ref"}),
                     })
+                # --- Prolog line: the identical parts/groups derived by SWI-Prolog
+                # (perception in Python, grouping in swipl), no LLM. ARC flat-color
+                # frames only; complex frames auto-skip via the grid-size guard.
+                try:
+                    import importlib  # noqa: PLC0415
+                    _gvp = os.path.join(os.path.dirname(__file__), "generative_vision", "prolog")
+                    if _gvp not in sys.path:
+                        sys.path.insert(0, _gvp)
+                    _sa = importlib.import_module("symbolic_arc")
+                    pr = _sa.extract_frame(str(src_path), slug)
+                    if pr["nparts"] > 0 and pr["cols"] <= 160 and pr["rows"] <= 160:
+                        (sym_dir / f"{idv}__prolog.metta").write_text(pr["metta"], encoding="utf-8")
+                        (sym_dir / f"{idv}__prolog.parts.json").write_text(json.dumps(pr["geom"]), encoding="utf-8")
+                        rows.append({
+                            "shots": "P", "kind": "prolog", "model": "swi-prolog",
+                            "nparts": pr["nparts"], "nrels": pr["nrels"], "ngroups": pr["ngroups"],
+                            "metta": f"{idv}__prolog.metta", "stages": {},
+                            "agree": {"score": 1.0, "verdict": "ref"},
+                        })
+                except Exception as perr:  # noqa: BLE001
+                    emit(f"{_ts()} (prolog line skipped for {idv}: {perr})")
         except Exception as error:  # noqa: BLE001
             counts["failed"] += 1
             emit(f"{_ts()} ✗ reduce {idv}: {error}")
