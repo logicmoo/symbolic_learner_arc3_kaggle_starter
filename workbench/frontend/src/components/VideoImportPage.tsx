@@ -6622,9 +6622,9 @@ export function VideoImportPage({
                                   );
                                 });
                                 return (
-                                  <>
+                                  <div className="video-import-reduce-tierstack">
                                     {stageEls}
-                                  </>
+                                  </div>
                                 );
                               })()}
                         </div>

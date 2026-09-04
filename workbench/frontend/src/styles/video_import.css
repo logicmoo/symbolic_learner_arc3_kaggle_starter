@@ -1339,6 +1339,9 @@
 .video-import-reduce-tierhead > span { opacity: 0.7; }
 .video-import-reduce-tiernums { font-variant-numeric: tabular-nums; }
 .video-import-reduce-stages { display: flex; align-items: flex-start; gap: 6px; }
+.video-import-reduce-tierstack { display: flex; flex-direction: column; gap: 8px; flex: 1 1 auto; min-width: 0; }
+.video-import-reduce-tierstack .video-import-reduce-tiergroup { width: 100%; }
+.video-import-reduce-tierstack .video-import-reduce-stages { overflow-x: auto; }
 .video-import-reduce-stage { margin: 0; display: flex; flex-direction: column; gap: 2px; }
 .video-import-reduce-stage figcaption { font-size: 9.5px; letter-spacing: 0.03em; text-transform: uppercase; opacity: 0.6; text-align: center; }
 .video-import-reduce-svg { width: 130px; height: 130px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); background: #fff; }
