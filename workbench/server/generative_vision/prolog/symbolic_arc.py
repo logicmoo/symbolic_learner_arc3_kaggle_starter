@@ -302,6 +302,7 @@ def extract_frame(png_path: str, char: str) -> dict:
     geom = []
     partof_all: dict[str, str] = {}
     pid_of: dict[str, str] = {}
+    raw_of: dict[str, str] = {}
     color_n: dict[str, int] = {}
     for gid, i in order:
         rid = f"r{gid}"
@@ -310,13 +311,22 @@ def extract_frame(png_path: str, char: str) -> dict:
         lbl = f"{cname}_{color_n[cname]}"
         pid = f"part_{lbl}"
         pid_of[rid] = pid
-        g = obj.get(rid) or f"g{gid}"
-        partof_all[pid] = g
+        raw_of[pid] = obj.get(rid) or f"g{gid}"
         mlines.append(f'(part {char} {pid} (label "{lbl}") (color {i["hex"]}))')
         geom.append({"id": pid, "label": lbl, "color": i["hex"],
-                     "partOf": g,
+                     "partOf": "",
                      "turtle": region_turtle(i["cells"], cols, rows, i["hex"])})
-    groups = sorted(set(partof_all.values()))
+    # unify every group id (adjacency clusters + singletons) to obj_N, numbered
+    # in first-seen (big-first) order.
+    raw_order: list[str] = []
+    for g in raw_of.values():
+        if g not in raw_order:
+            raw_order.append(g)
+    gmap = {g: f"obj_{k}" for k, g in enumerate(raw_order, 1)}
+    partof_all = {pid: gmap[g] for pid, g in raw_of.items()}
+    for e in geom:
+        e["partOf"] = partof_all[e["id"]]
+    groups = [gmap[g] for g in raw_order]
     for g in groups:
         mlines.append(f"(group {char} {g})")
     for pid, g in partof_all.items():
