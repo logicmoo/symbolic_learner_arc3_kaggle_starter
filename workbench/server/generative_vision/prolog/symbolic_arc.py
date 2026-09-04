@@ -524,7 +524,91 @@ def induce_sequence_rules(metta_texts: list[str]) -> str:
     for (mc, tc), n in inter.most_common():
         lines.append(f"(rule-candidate moved-onto {mc} {tc} disappears (support {n}))")
     for (mc, tc), n in reveal.most_common():
-        lines.append(f"(rule-candidate moved-onto {mc} reveals {tc} (support {n}))")
+        lines.append(f"(rule-candidate moved-onto {mc} {tc} reveals (support {n}))")
+    return "\n".join(lines) + "\n"
+
+
+def _cname(color: str) -> str:
+    """Normalize a color (hex or word) to a stable name."""
+    return _color_name(color) if color.startswith("#") else color.lower()
+
+
+def _turtle_centroid(t: dict):
+    xs: list = []
+    ys: list = []
+    for c in (t or {}).get("commands", []):
+        box = c.get("box")
+        if isinstance(box, list) and len(box) == 4:
+            xs += [box[0], box[2]]
+            ys += [box[1], box[3]]
+        for p in c.get("points", []) or []:
+            if len(p) == 2:
+                xs.append(p[0])
+                ys.append(p[1])
+        if "x" in c and "y" in c:
+            xs.append(c["x"])
+            ys.append(c["y"])
+    if not xs:
+        return None
+    return (sum(xs) / len(xs), sum(ys) / len(ys))
+
+
+def frames_from_parts(parts_lists: list) -> list:
+    """Turn a sequence of parts.json lists (from EITHER the prolog or the LLM
+    line) into per-frame [{color, cx, cy}] using each part's turtle centroid."""
+    frames = []
+    for parts in parts_lists:
+        fr = []
+        for p in parts or []:
+            ce = _turtle_centroid(p.get("turtle") or {})
+            if ce is None:
+                continue
+            fr.append({"color": p.get("color", ""), "cx": ce[0], "cy": ce[1]})
+        frames.append(fr)
+    return frames
+
+
+def induce_from_frames(frames: list, move_min: int = 8, near: int = 60) -> str:
+    """Source-agnostic rule induction over a sequence of per-frame parts
+    (color + centroid, in 0..1000). Matches parts across consecutive frames by
+    color + nearest centroid, finds movers whose destination lands on a
+    vanished/newborn part, and aggregates those grounded links into
+    support-ranked Prolog rule candidates. Works on prolog OR LLM parts."""
+    from collections import Counter, defaultdict
+    inter: Counter = Counter()
+    reveal: Counter = Counter()
+    for a, b in zip(frames, frames[1:]):
+        byc: dict = defaultdict(list)
+        for j, pb in enumerate(b):
+            byc[pb["color"]].append(j)
+        used: set = set()
+        matched: dict = {}
+        for i, pa in enumerate(a):
+            cands = [j for j in byc.get(pa["color"], []) if j not in used]
+            if not cands:
+                continue
+            j = min(cands, key=lambda j: (b[j]["cx"] - pa["cx"]) ** 2 + (b[j]["cy"] - pa["cy"]) ** 2)
+            used.add(j)
+            matched[i] = j
+        disappeared = [i for i in range(len(a)) if i not in matched]
+        appeared = [j for j in range(len(b)) if j not in used]
+        for i, j in matched.items():
+            dx, dy = b[j]["cx"] - a[i]["cx"], b[j]["cy"] - a[i]["cy"]
+            if abs(dx) < move_min and abs(dy) < move_min:
+                continue
+            dxp, dyp = b[j]["cx"], b[j]["cy"]
+            for di in disappeared:
+                if abs(dxp - a[di]["cx"]) <= near and abs(dyp - a[di]["cy"]) <= near:
+                    inter[(_cname(a[i]["color"]), _cname(a[di]["color"]))] += 1
+            for aj in appeared:
+                if abs(dxp - b[aj]["cx"]) <= near and abs(dyp - b[aj]["cy"]) <= near:
+                    reveal[(_cname(a[i]["color"]), _cname(b[aj]["color"]))] += 1
+    lines = ["; induced sequence rules - grounded co-occurrences across the sequence",
+             f"; {sum(inter.values())} interactions, {sum(reveal.values())} reveals"]
+    for (mc, tc), n in inter.most_common():
+        lines.append(f"(rule-candidate moved-onto {mc} {tc} disappears (support {n}))")
+    for (mc, tc), n in reveal.most_common():
+        lines.append(f"(rule-candidate moved-onto {mc} {tc} reveals (support {n}))")
     return "\n".join(lines) + "\n"
 
 

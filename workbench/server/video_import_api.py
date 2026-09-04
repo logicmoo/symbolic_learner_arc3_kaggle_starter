@@ -2337,11 +2337,21 @@ def _flat_set_manifest(root: Path, set_id: str) -> dict[str, Any]:
             stem = rel_to_d.rsplit(".", 1)[0]
             idv = re.sub(r"[^A-Za-z0-9]+", "_", stem).strip("_") or img.stem
             m = manifest.get(idv) or {}
+            # action that produced this frame (ARC incomingAction), from the
+            # per-frame import provenance -> lets induction show "prev + ACTION = this".
+            action = ""
+            pp = img.parent / (img.stem + ".provenance.json")
+            if pp.is_file():
+                try:
+                    pj = json.loads(pp.read_text(encoding="utf-8"))
+                    action = (pj.get("source") or {}).get("incomingAction") or ""
+                except (OSError, json.JSONDecodeError):
+                    action = ""
             items.append({
                 "id": idv, "slug": set_leaf, "cond": stem,
                 "label": set_leaf.replace("_", " ").replace("-", " "),
                 "input": img.name, "inputPath": img.relative_to(root).as_posix(),
-                "source": "recording", "source_url": "",
+                "source": "recording", "source_url": "", "action": action,
                 "scene": True, "startedAt": m.get("startedAt"), "elapsedMs": m.get("elapsedMs"),
                 "rows": normalize_rows(m.get("rows")),
             })
@@ -2354,7 +2364,30 @@ def _flat_set_manifest(root: Path, set_id: str) -> dict[str, Any]:
                 sequence_parts = loaded
         except (OSError, json.JSONDecodeError):
             sequence_parts = None
-    return {"tiers": tiers, "count": len(items), "items": items, "set": set_id, "sequenceParts": sequence_parts}
+    # Induced candidate rules (from the grounded interacted/revealed links,
+    # aggregated across the sequence) - for both the prolog and LLM lines.
+    def _parse_rules(path: "Path") -> list[dict[str, Any]]:
+        rules: list[dict[str, Any]] = []
+        if not path.is_file():
+            return rules
+        try:
+            for line in path.read_text(encoding="utf-8").splitlines():
+                p = line.strip().rstrip(")").split()
+                if len(p) >= 7 and p[0] == "(rule-candidate":
+                    try:
+                        support = int(p[-1])
+                    except ValueError:
+                        continue
+                    rules.append({"mover": p[2], "target": p[3], "effect": p[4], "support": support})
+        except OSError:
+            pass
+        return rules
+
+    sequence_rules = _parse_rules(d / "sequence_rules.metta")
+    sequence_rules_llm = _parse_rules(d / "sequence_rules_llm.metta")
+    return {"tiers": tiers, "count": len(items), "items": items, "set": set_id,
+            "sequenceParts": sequence_parts, "sequenceRules": sequence_rules,
+            "sequenceRulesLlm": sequence_rules_llm}
 
 
 @router.get("/image-sets")
@@ -4038,14 +4071,9 @@ def import_arc_recording(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
         raise HTTPException(status_code=400, detail="ARC recording contains no image sequence")
     output_dir = _vision_frames_root(root) / "arc_recordings" / _slug(recording_rel)
     output_dir.mkdir(parents=True, exist_ok=True)
-    # Recording nodes are all named image.png; re-importing renames them by move
-    # number, so clear stale frame_* artifacts first to avoid orphaned files.
-    for stale in output_dir.glob("frame_*"):
-        if stale.is_file():
-            stale.unlink()
     frames: list[dict[str, Any]] = []
-    used_frame_names: set[str] = set()
     for index, source_path in enumerate(source_images):
+        output_path = output_dir / f"frame_{index:06d}.png"
         node_state_path = source_path.parent / "state.json"
         try:
             node_state = json.loads(node_state_path.read_text(encoding="utf-8"))
@@ -4057,13 +4085,6 @@ def import_arc_recording(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
             for move in recording_moves[:move_count]
             if isinstance(move, dict)
         ]
-        # Name frames by move number so the identically-named image.png files
-        # stay legible and move-ordered once imported.
-        frame_stem = f"frame_move_{move_count:06d}"
-        if frame_stem in used_frame_names:
-            frame_stem = f"{frame_stem}_{index:06d}"
-        used_frame_names.add(frame_stem)
-        output_path = output_dir / f"{frame_stem}.png"
         with Image.open(source_path) as image:
             provenance = _save_image_with_provenance(
                 root,
@@ -4090,7 +4111,6 @@ def import_arc_recording(body: dict[str, Any] = Body(...)) -> dict[str, Any]:
             {
                 "path": output_path.relative_to(root).as_posix(),
                 "index": index,
-                "moveNumber": move_count,
                 "atSeconds": float(index),
                 "scene": index + 1,
                 "provenance": provenance["provenance"],

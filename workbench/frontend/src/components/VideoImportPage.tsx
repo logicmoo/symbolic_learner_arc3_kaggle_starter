@@ -445,6 +445,30 @@ function parseMettaParts(text: string): { parts: MettaPart[]; nrels: number; gro
   const groups: MettaGroup[] = [...gp.entries()].map(([id, ps]) => ({ id, parts: ps }));
   return { parts, nrels, groups };
 }
+// Parse the cross-frame INDUCED event facts the Prolog recognizer emits into a
+// frame's *__prolog.metta (motion from this frame to the next): moved / gone /
+// appeared / interacted / revealed. The 2nd token (workspace slug) is skipped.
+type Induction = {
+  moved: Array<{ part: string; dx: number; dy: number; tf: string }>;
+  disappeared: string[];
+  appeared: Array<{ color: string; x: number; y: number }>;
+  interacted: Array<{ mover: string; target: string }>;
+  revealed: Array<{ mover: string; color: string; x: number; y: number }>;
+};
+function parseInduction(text: string): Induction {
+  const ind: Induction = { moved: [], disappeared: [], appeared: [], interacted: [], revealed: [] };
+  if (!text) return ind;
+  for (const raw of text.split("\n")) {
+    const s = raw.trim();
+    let m: RegExpMatchArray | null;
+    if ((m = s.match(/^\(moved\s+\S+\s+(\S+)\s+(-?\d+)\s+(-?\d+)\s+(\S+)\)/))) ind.moved.push({ part: m[1], dx: +m[2], dy: +m[3], tf: m[4] });
+    else if ((m = s.match(/^\(disappeared\s+\S+\s+(\S+)\)/))) ind.disappeared.push(m[1]);
+    else if ((m = s.match(/^\(appeared\s+\S+\s+(\S+)\s+(-?\d+)\s+(-?\d+)\)/))) ind.appeared.push({ color: m[1], x: +m[2], y: +m[3] });
+    else if ((m = s.match(/^\(interacted\s+\S+\s+(\S+)\s+(\S+)\)/))) ind.interacted.push({ mover: m[1], target: m[2] });
+    else if ((m = s.match(/^\(revealed\s+\S+\s+(\S+)\s+(\S+)\s+(-?\d+)\s+(-?\d+)\)/))) ind.revealed.push({ mover: m[1], color: m[2], x: +m[3], y: +m[4] });
+  }
+  return ind;
+}
 // Render a normalized turtle program (from a part's parts.json) as SVG shapes in
 // the 0..1000 frame — the same look as the part map, for a single part.
 function turtleToSvg(prog: any, keyBase: string, fallbackColor: string, outlineOnly = false, flatFill = false): any[] {
@@ -6621,9 +6645,50 @@ export function VideoImportPage({
                                     </div>
                                   );
                                 });
+                                const prologRow = tiers.find((r: any) => r.kind === "prolog");
+                                const nextItem = list[idx + 1];
+                                let inductionEl: any = null;
+                                if (prologRow && nextItem) {
+                                  const pRel = prologRow.mettaPath || `data/recognition_reduce/sym/${String(prologRow.metta || "").split("/").pop()}`;
+                                  const ind = parseInduction(reduceMetta[pRel] || "");
+                                  const nextRel = nextItem.inputPath || `data/recognition_reduce/pool/${String(nextItem.input || "").split("/").pop()}`;
+                                  const action = nextItem.action || "";
+                                  const nfacts = ind.moved.length + ind.disappeared.length + ind.appeared.length + ind.interacted.length + ind.revealed.length;
+                                  inductionEl = (
+                                    <div className="video-import-reduce-induction" key="induction-prolog">
+                                      <div className="video-import-reduce-indlabel">Induction · Prolog</div>
+                                      <div className="video-import-reduce-indbody">
+                                        <div className="video-import-reduce-indflow">
+                                          <figure className="video-import-reduce-indframe">
+                                            <img src={asset(inputRel)} alt={it.id} loading="lazy" />
+                                            <figcaption>{it.id}</figcaption>
+                                          </figure>
+                                          <div className="video-import-reduce-indop">+ <b>{action || "?"}</b> =</div>
+                                          <figure className="video-import-reduce-indframe">
+                                            <img src={asset(nextRel)} alt={nextItem.id} loading="lazy" />
+                                            <figcaption>{nextItem.id}</figcaption>
+                                          </figure>
+                                          <div className="video-import-reduce-indfacts">
+                                            {reduceMetta[pRel] === undefined ? <span className="video-import-reduce-indempty">loading…</span>
+                                              : nfacts === 0 ? <span className="video-import-reduce-indempty">no motion induced</span> : (
+                                              <>
+                                                {ind.moved.map((f, i) => <span key={"m" + i} className="video-import-reduce-indchip is-moved">{f.part} moved ({f.dx},{f.dy}){f.tf !== "identity" ? " · " + f.tf : ""}</span>)}
+                                                {ind.interacted.map((f, i) => <span key={"x" + i} className="video-import-reduce-indchip is-interacted">{f.mover} → {f.target}</span>)}
+                                                {ind.revealed.map((f, i) => <span key={"r" + i} className="video-import-reduce-indchip is-revealed">{f.mover} revealed {f.color}</span>)}
+                                                {ind.disappeared.map((f, i) => <span key={"d" + i} className="video-import-reduce-indchip is-gone">{f} gone</span>)}
+                                                {ind.appeared.map((f, i) => <span key={"a" + i} className="video-import-reduce-indchip is-new">{f.color} appeared</span>)}
+                                              </>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                }
                                 return (
                                   <div className="video-import-reduce-tierstack">
                                     {stageEls}
+                                    {inductionEl}
                                   </div>
                                 );
                               })()}

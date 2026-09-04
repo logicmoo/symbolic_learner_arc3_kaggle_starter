@@ -3201,6 +3201,35 @@ def run_reduce(
     _write_manifest()
     if carry_mode:
         _write_sequence_list()
+    # Induce grounded candidate rules across the whole sequence, from BOTH the
+    # prolog line and the LLM line (same source-agnostic inducer, so the two are
+    # directly comparable). LLM-free logic; output is Prolog either way.
+    try:
+        import importlib  # noqa: PLC0415
+        _gvp = os.path.join(os.path.dirname(__file__), "generative_vision", "prolog")
+        if _gvp not in sys.path:
+            sys.path.insert(0, _gvp)
+        _sa = importlib.import_module("symbolic_arc")
+
+        def _load_parts(paths: list) -> list:
+            out = []
+            for p in paths:
+                try:
+                    out.append(json.loads(p.read_text(encoding="utf-8")))
+                except (OSError, json.JSONDecodeError):
+                    out.append([])
+            return out
+
+        prolog_pj = sorted(sym_dir.glob("*__prolog.parts.json"))
+        if prolog_pj:
+            fr = _sa.frames_from_parts(_load_parts(prolog_pj))
+            (ws_dir / "sequence_rules.metta").write_text(_sa.induce_from_frames(fr), encoding="utf-8")
+        llm_pj = sorted(p for p in sym_dir.glob("*shot.parts.json"))
+        if llm_pj:
+            fr = _sa.frames_from_parts(_load_parts(llm_pj))
+            (ws_dir / "sequence_rules_llm.metta").write_text(_sa.induce_from_frames(fr), encoding="utf-8")
+    except Exception:  # noqa: BLE001
+        pass
     summary = f"reduce complete: {counts.get('done', 0)} image(s), {counts.get('failed', 0)} failed of {counts.get('total', 0)}"
     if carry_mode:
         summary += f" · sequence parts list: {len(inv_order)} parts, {len(inv_groups)} groups"
