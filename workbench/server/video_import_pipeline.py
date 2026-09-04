@@ -2805,6 +2805,12 @@ def run_reduce(
         sys.path.insert(0, str(lab))
     import reduce_pool as rp  # noqa: PLC0415  (parent's proven reduction module)
     from PIL import Image  # noqa: PLC0415
+    # Parent submodules reused for the sequence-pair extraction path.
+    import common as _rc  # noqa: PLC0415
+    import make_chip as _mc  # noqa: PLC0415
+    import oneshot_extract as _ose  # noqa: PLC0415
+    import to_symbolic as _tsym  # noqa: PLC0415
+    import requests  # noqa: PLC0415
 
     canonical = (set_id or "recognition_reduce") == "recognition_reduce"
     if canonical:
@@ -2856,6 +2862,103 @@ def run_reduce(
             idv = re.sub(r"[^A-Za-z0-9]+", "_", stem).strip("_") or img.stem
             entries.append({"id": idv, "slug": set_leaf, "cond": stem, "src": img, "scene": True})
     order_pos = {e["id"]: i for i, e in enumerate(entries)}
+
+    # Sequence-pair mode: for frame-based sets (ARC recordings, video/curated
+    # frame dumps) the frames form a time sequence, so we send the model a PAIR
+    # of neighbouring frames. The prompt tells it the pair reveals motion (parts
+    # that move together are one object) but to describe ONLY the first frame —
+    # our code tracks that the first image is the frame we care about. The model
+    # also assigns each part a partOf group (it may invent groups).
+    pair_mode = (not canonical) and os.environ.get("REDUCE_PAIR", "1") != "0"
+    partner_by_id: dict[str, "Path"] = {}
+    if pair_mode:
+        for i, e in enumerate(entries):
+            nb = entries[i + 1] if i + 1 < len(entries) else (entries[i - 1] if i > 0 else None)
+            if nb is not None and nb.get("src") is not None:
+                partner_by_id[e["id"]] = nb["src"]
+    pair_cache_dir = ws_dir / "cache"
+
+    def _pair_prompt() -> str:
+        return (
+            "You are given a PAIR of frames from the SAME sequence. They SHARE objects — "
+            "the same things generally appear in both frames. Use the SECOND image only "
+            "as extra context to help you recognise what is a real, consistent single "
+            "object (and which things belong together). DESCRIBE ONLY THE FIRST image.\n"
+            "Decompose the FIRST image into ALL its individual PARTS. For EACH part output "
+            "a turtle program that DRAWS that part in its real color, STARTING from a good "
+            "point roughly where the part sits. We do NOT care about exact bounding boxes "
+            "or size — a sensible start point and the right color/shape are what matter. "
+            "For EACH part also set \"partOf\" to the object or GROUP it belongs to; you MAY "
+            "INVENT group names for sets of parts that belong together (e.g. player, "
+            "enemy_1, wall_group, hud). Parts of the same object MUST share the same "
+            "partOf value.\n"
+            + _mc.IDENTITY_NEUTRAL + _ose.SCHEMA +
+            "Return STRICT JSON ONLY (no prose, no markdown fences): "
+            '{"objects":[{"label":"<name>","partOf":"<group>","turtle":{...program...}}, ...]}.'
+        )
+
+    def _extract_pair(care_path: "Path", ctx_path: "Path", idv: str, model: str) -> dict[str, Any]:
+        import random  # noqa: PLC0415
+        cache_f = pair_cache_dir / f"{idv}__pair1.json"
+        if not nocache and cache_f.is_file():
+            try:
+                return json.loads(cache_f.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                pass
+        body = {"model": model, "messages": [{"role": "user", "content": [
+            {"type": "text", "text": _pair_prompt()},
+            {"type": "image_url", "image_url": {"url": _rc.data_url(care_path)}},
+            {"type": "image_url", "image_url": {"url": _rc.data_url(ctx_path)}},
+        ]}], "temperature": 0}
+        last: Exception | None = None
+        for attempt in range(8):
+            if stop_event is not None and stop_event.is_set():
+                raise RuntimeError("stopped")
+            try:
+                r = requests.post(_rc.EMULLM, json=body, timeout=300)
+                r.raise_for_status()
+                text = r.json()["choices"][0]["message"]["content"]
+                objs = _ose.parse_objects(_rc.extract_json(text))
+                data = {"one_objs": objs}
+                cache_f.parent.mkdir(parents=True, exist_ok=True)
+                cache_f.write_text(json.dumps(data), encoding="utf-8")
+                return data
+            except Exception as error:  # noqa: BLE001
+                msg = str(error).lower()
+                if any(t in msg for t in ("503", "502", "504", "service unavailable", "timed out", "timeout", "connection")):
+                    last = error
+                    time.sleep(min(2 ** attempt, 30) + random.random() * 2)
+                    continue
+                raise
+        raise last if last is not None else RuntimeError("pair extraction failed")
+
+    def _partof_map(objs: list[dict[str, Any]], facts: dict[str, Any]) -> dict[str, str]:
+        # facts["parts"] correspond 1:1, in order, to objs that had a valid turtle
+        # program + bbox (the same filter build_facts applies), so we can zip them.
+        valid = []
+        for o in objs:
+            prog = _tsym.normalize_obj_program(o.get("turtle"))
+            if not prog:
+                continue
+            if not _tsym.prog_bbox(prog):
+                continue
+            valid.append(o)
+        mapping: dict[str, str] = {}
+        for o, p in zip(valid, facts.get("parts", [])):
+            g = o.get("partOf") or o.get("part_of") or o.get("group")
+            if g:
+                mapping[p["id"]] = _tsym.slugify(str(g), "group")
+        return mapping
+
+    def _pair_metta(facts: dict[str, Any], partof: dict[str, str]) -> str:
+        base = rp.to_metta(facts).rstrip("\n")
+        lines = [base]
+        char = facts["character"]
+        for g in sorted(set(partof.values())):
+            lines.append(f"(group {char} {g})")
+        for pid, g in partof.items():
+            lines.append(f"(partOf {char} {pid} {g})")
+        return "\n".join(lines) + "\n"
 
     # Tiers to run. The parent's 2-shot (nshot) extraction is currently broken
     # (returns empty), so we run the reliable 1-shot tier only unless
@@ -2920,9 +3023,15 @@ def run_reduce(
                 src = Image.open(src_path).convert("RGB")
                 scene = entry.get("scene", cond in rp.SCENE_CONDS)
                 tiers = _tier_specs()
-                for tier in tiers:
-                    tier["data"] = _extract_tier_with_retry(rp, src_path, tier, idv, scene, stop_event, emit)
-                    tier["facts"] = rp._tier_facts(slug, tier)
+                partner = partner_by_id.get(idv) if pair_mode else None
+                for ti, tier in enumerate(tiers):
+                    if partner is not None and tier["kind"] == "oneshot" and ti == 0:
+                        tier["data"] = _extract_pair(src_path, partner, idv, tier["model"])
+                        tier["facts"] = rp.build_facts(slug, tier["data"].get("one_objs", []))
+                        tier["_partof"] = _partof_map(tier["data"].get("one_objs", []), tier["facts"])
+                    else:
+                        tier["data"] = _extract_tier_with_retry(rp, src_path, tier, idv, scene, stop_event, emit)
+                        tier["facts"] = rp._tier_facts(slug, tier)
                 ref = tiers[0]["facts"]
                 for tier in tiers[1:]:
                     tier["agree"] = rp.agreement(ref, tier["facts"])
@@ -2934,10 +3043,13 @@ def run_reduce(
                     stage_imgs = {"parts": panels[1], "turtle": panels[2], "partmap": panels[3]}
                     stage_paths = {k: _save_png(stage_imgs[k], f"{idv}__t{shots}__{k}.png") for k in _REDUCE_STAGE_KEYS}
                     sym_path = sym_dir / f"{idv}__{shots}shot.metta"
-                    sym_path.write_text(rp.to_metta(tier["facts"]), encoding="utf-8")
+                    partof = tier.get("_partof") or {}
+                    metta = _pair_metta(tier["facts"], partof) if partof else rp.to_metta(tier["facts"])
+                    sym_path.write_text(metta, encoding="utf-8")
                     rows.append({
                         "shots": shots, "kind": tier["kind"], "model": rp._short(tier["model"]),
                         "nparts": tier["facts"]["nparts"], "nrels": len(tier["facts"]["relations"]),
+                        "ngroups": len(set(partof.values())) if partof else 0,
                         "metta": sym_path.name, "stages": stage_paths,
                         "agree": tier.get("agree", {"score": 1.0, "verdict": "ref"}),
                     })
