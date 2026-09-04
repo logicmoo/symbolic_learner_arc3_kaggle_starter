@@ -2892,7 +2892,15 @@ export function VideoImportPage({
   const [reduceListQuery, setReduceListQuery] = useState("");
   // Two tab views: "inputs" = the 20x10 input-image grid; "extractions" = the
   // per-image reduction list.
-  const [reduceTab, setReduceTab] = useState<"inputs" | "extractions">("inputs");
+  const [reduceTab, setReduceTab] = useState<"inputs" | "extractions">(() => {
+    try { return (window.localStorage.getItem("videoImport.reduceTab") as "inputs" | "extractions") || "extractions"; } catch { return "extractions"; }
+  });
+  // Which single "line" each Extractions row shows by default (keeps rows thin);
+  // the tree and the sequence list each render on their own full-width line.
+  type ReduceRowView = "stages" | "groups" | "graph" | "sequence";
+  const [reduceRowView, setReduceRowView] = useState<ReduceRowView>(() => {
+    try { return (window.localStorage.getItem("videoImport.reduceRowView") as ReduceRowView) || "groups"; } catch { return "groups"; }
+  });
   // Objects page: "pipeline" = the existing rich extraction pipeline UI;
   // "extractions" = a reduction-style per-image row view over the same data.
   const [objectsTab, setObjectsTab] = useState<"pipeline" | "extractions">("pipeline");
@@ -4012,6 +4020,12 @@ export function VideoImportPage({
   useEffect(() => {
     try { window.localStorage.setItem("videoImport.objectsShowLive", objectsShowLive ? "1" : "0"); } catch { /* ignore */ }
   }, [objectsShowLive]);
+  useEffect(() => {
+    try { window.localStorage.setItem("videoImport.reduceTab", reduceTab); } catch { /* ignore */ }
+  }, [reduceTab]);
+  useEffect(() => {
+    try { window.localStorage.setItem("videoImport.reduceRowView", reduceRowView); } catch { /* ignore */ }
+  }, [reduceRowView]);
   // Prefetch the per-tier MeTTa part-graphs for every reduced item so the flat
   // list can render native parts/part-map panels along each row without waiting
   // for an expand. Only items that have rows carry mettaPaths; the set grows as
@@ -6377,6 +6391,13 @@ export function VideoImportPage({
                     ? <><button type="button" className="video-import-reduce-runbtn is-running" disabled>Reducing {pipelineCounts.done ?? 0}/{pipelineCounts.total ?? list.length}… · {pipelineCounts.active ?? 0} active</button><button type="button" className="video-import-reduce-foldbtn" onClick={() => void stopServerPipeline()}>■ stop</button></>
                     : <button type="button" className="video-import-reduce-runbtn" disabled={pipelineRunStatus === "running"} title="Run the 1-shot + 2-shot reduction for ALL pool images on the server, pooled at the configured max processes" onClick={() => startServerStage("reduce")}>▶ Reduce all {recognitionReduce.items.length} on server</button>}
                   <input className="video-import-reduce-search" type="search" placeholder="Filter by character or condition…" value={reduceListQuery} onChange={(e) => setReduceListQuery(e.target.value)} />
+                  <label className="video-import-imageset-selector"><span>row line</span>
+                    <select value={reduceRowView} onChange={(e) => setReduceRowView(e.target.value as ReduceRowView)}>
+                      <option value="stages">Stages only (thin)</option>
+                      <option value="groups">PartOf groups (tree)</option>
+                      <option value="graph">Symbolic graph</option>
+                    </select>
+                  </label>
                   <button type="button" className="video-import-reduce-foldbtn" onClick={collapseAll}>Collapse all</button>
                   <button type="button" className="video-import-reduce-foldbtn" onClick={expandAll}>Expand all</button>
                   <label className="video-import-toggle"><input type="checkbox" checked={reduceOnlyGood} onChange={(e) => setReduceOnlyGood(e.target.checked)} /> Only where a cheaper N-shot AGREES (≥70%) with 1-shot</label>
@@ -6479,8 +6500,9 @@ export function VideoImportPage({
                                               </svg>}
                                           <figcaption>part map</figcaption>
                                         </figure>
-                                        {bigGroups.length > 0 && (
-                                          <figure className="video-import-reduce-stage is-groupwrap">
+                                      </div>
+                                        {reduceRowView === "groups" && bigGroups.length > 0 && (
+                                          <div className="video-import-reduce-rowline" onClick={(e) => e.stopPropagation()}>
                                             <div className="video-import-reduce-grouprow">
                                               <div className="video-import-reduce-grouptree">
                                                 {bigGroups.map((g, gi) => {
@@ -6530,20 +6552,20 @@ export function VideoImportPage({
                                                 })}
                                               </svg>
                                             </div>
-                                            <figcaption>partOf groups · {bigGroups.length} — click tree to highlight</figcaption>
-                                          </figure>
+                                          <div className="video-import-reduce-rowcap">partOf groups · {bigGroups.length} — click a group or part to highlight (only the selection shows)</div>
+                                          </div>
                                         )}
-                                      </div>
+                                        {reduceRowView === "graph" && (
+                                          <div className="video-import-reduce-rowline" onClick={(e) => e.stopPropagation()}>
+                                            <pre className="video-import-reduce-graphline">{mettaText === undefined ? "loading…" : (mettaText || "(no graph)")}</pre>
+                                          </div>
+                                        )}
                                     </div>
                                   );
                                 });
                                 return (
                                   <>
                                     {stageEls}
-                                    <figure className="video-import-reduce-stage is-graph">
-                                      <pre className="video-import-reduce-graphmini">{graphParts.join("\n\n")}</pre>
-                                      <figcaption>symbolic graph</figcaption>
-                                    </figure>
                                   </>
                                 );
                               })()}

@@ -1356,6 +1356,12 @@
 .video-import-reduce-grouptree li button { background: none; border: none; color: rgba(255,255,255,0.68); font-size: 11px; text-align: left; padding: 1px 5px; border-radius: 4px; cursor: pointer; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .video-import-reduce-grouptree li button:hover { background: rgba(255,255,255,0.06); color: #fff; }
 .video-import-reduce-grouptree li button.is-sel { background: rgba(39,220,194,0.22); color: #fff; }
+/* own-line row sections (tree / graph) toggled by the row-line dropdown */
+.video-import-reduce-rowline { width: 100%; margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 6px; }
+.video-import-reduce-rowcap { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 4px; }
+.video-import-reduce-graphline { max-height: 260px; overflow: auto; background: #0b0e12; border-radius: 6px; padding: 8px; font-size: 11px; line-height: 1.35; color: #cfe7e4; white-space: pre; margin: 0; }
+.video-import-reduce-rowline .video-import-reduce-svg.is-groups { width: 200px; height: 200px; }
+.video-import-reduce-rowline .video-import-reduce-grouptree { width: 170px; max-height: 200px; }
 .video-import-reduce-stageimg { width: 130px; height: 130px; object-fit: contain; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); background: #fff; }
 .video-import-reduce-stagemissing { width: 130px; height: 130px; display: flex; align-items: center; justify-content: center; text-align: center; border-radius: 6px; border: 1px dashed rgba(255,255,255,0.15); font-size: 10px; font-style: italic; opacity: 0.5; }
 .video-import-reduce-cutstrip { width: 150px; height: 130px; overflow: auto; display: flex; flex-wrap: wrap; gap: 3px; align-content: flex-start; padding: 3px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); background: #fff; }

@@ -2878,8 +2878,63 @@ def run_reduce(
                 partner_by_id[e["id"]] = nb["src"]
     pair_cache_dir = ws_dir / "cache"
 
-    def _pair_prompt() -> str:
+    # Sequential-carry mode: step frame-by-frame, accumulate the known parts
+    # (label -> group) and groups, feed them into each next frame's prompt so the
+    # model REUSES names and only ADDS new ones, and persist the growing
+    # consolidated list to <set>/sequence_parts.{metta,json}.
+    carry_mode = pair_mode and os.environ.get("REDUCE_CARRY", "1") != "0"
+    inv_parts: dict[str, str] = {}
+    inv_groups: list[str] = []
+    inv_order: list[str] = []  # part labels in first-seen order
+    _set_char = base_rel.rsplit("/", 1)[-1].replace("data-arc3_games-recordings-", "")
+
+    def _inventory_text() -> str:
+        if not inv_order:
+            return ""
+        groups = inv_groups[:80]
+        parts = inv_order[:250]
         return (
+            "KNOWN OBJECTS SO FAR (from earlier frames of THIS sequence). REUSE these "
+            "EXACT label and partOf names whenever the same thing appears again; only "
+            "invent NEW names for genuinely NEW things.\n"
+            "known groups: " + (", ".join(groups) if groups else "(none)") + "\n"
+            "known parts: " + "; ".join(f"{lbl} (partOf {inv_parts.get(lbl) or '?'})" for lbl in parts) + "\n\n"
+        )
+
+    def _merge_inventory(objs: list[dict[str, Any]]) -> None:
+        for o in objs:
+            lbl = str(o.get("label") or "").strip()
+            if not lbl:
+                continue
+            grp = o.get("partOf") or o.get("part_of") or o.get("group")
+            grp = str(grp).strip() if grp else ""
+            if grp and grp not in inv_groups:
+                inv_groups.append(grp)
+            if lbl not in inv_parts:
+                inv_parts[lbl] = grp
+                inv_order.append(lbl)
+
+    def _write_sequence_list() -> None:
+        lines = [f"; consolidated sequence parts list for {_set_char}  ({len(inv_order)} parts, {len(inv_groups)} groups)",
+                 f"(sequence {_set_char})"]
+        for g in inv_groups:
+            lines.append(f"(group {_set_char} {_tsym.slugify(g, 'group')})")
+        for lbl in inv_order:
+            g = inv_parts.get(lbl) or ""
+            sid = _tsym.slugify(lbl, "part")
+            lines.append(f'(part {_set_char} {sid} (label "{lbl}")' + (f" (partOf {_tsym.slugify(g, 'group')})" if g else "") + ")")
+        try:
+            (ws_dir / "sequence_parts.metta").write_text("\n".join(lines) + "\n", encoding="utf-8")
+            (ws_dir / "sequence_parts.json").write_text(
+                json.dumps({"char": _set_char, "groups": inv_groups,
+                            "parts": [{"label": lbl, "partOf": inv_parts.get(lbl) or ""} for lbl in inv_order]}, indent=2),
+                encoding="utf-8")
+        except OSError:
+            pass
+
+    def _pair_prompt(inventory_text: str = "") -> str:
+        return (
+            (inventory_text or "") +
             "You are given a PAIR of frames from the SAME sequence. They SHARE objects — "
             "the same things generally appear in both frames. Use the SECOND image only "
             "as extra context to help you recognise what is a real, consistent single "
@@ -2897,16 +2952,17 @@ def run_reduce(
             '{"objects":[{"label":"<name>","partOf":"<group>","turtle":{...program...}}, ...]}.'
         )
 
-    def _extract_pair(care_path: "Path", ctx_path: "Path", idv: str, model: str) -> dict[str, Any]:
+    def _extract_pair(care_path: "Path", ctx_path: "Path", idv: str, model: str,
+                      inventory_text: str = "", use_cache: bool = True) -> dict[str, Any]:
         import random  # noqa: PLC0415
         cache_f = pair_cache_dir / f"{idv}__pair1.json"
-        if not nocache and cache_f.is_file():
+        if use_cache and not nocache and cache_f.is_file():
             try:
                 return json.loads(cache_f.read_text(encoding="utf-8"))
             except (OSError, json.JSONDecodeError):
                 pass
         body = {"model": model, "messages": [{"role": "user", "content": [
-            {"type": "text", "text": _pair_prompt()},
+            {"type": "text", "text": _pair_prompt(inventory_text)},
             {"type": "image_url", "image_url": {"url": _rc.data_url(care_path)}},
             {"type": "image_url", "image_url": {"url": _rc.data_url(ctx_path)}},
         ]}], "temperature": 0}
@@ -3011,7 +3067,7 @@ def run_reduce(
         src_path = entry.get("src") or (pool_dir / f"{idv}.jpg")
         expected_sym = [sym_dir / f"{idv}__{t['shots']}shot.metta" for t in tiers_meta]
         expected_png = [stages_dir / f"{idv}__t{t['shots']}__{k}.png" for t in tiers_meta for k in _REDUCE_STAGE_KEYS]
-        if (not nocache and idv in manifest_rows
+        if (not nocache and not carry_mode and idv in manifest_rows
                 and all(p.is_file() for p in expected_sym)
                 and all(p.is_file() for p in expected_png)):
             counts["done"] += 1
@@ -3026,9 +3082,12 @@ def run_reduce(
                 partner = partner_by_id.get(idv) if pair_mode else None
                 for ti, tier in enumerate(tiers):
                     if partner is not None and tier["kind"] == "oneshot" and ti == 0:
-                        tier["data"] = _extract_pair(src_path, partner, idv, tier["model"])
+                        inv_text = _inventory_text() if carry_mode else ""
+                        tier["data"] = _extract_pair(src_path, partner, idv, tier["model"], inv_text, use_cache=not carry_mode)
                         tier["facts"] = rp.build_facts(slug, tier["data"].get("one_objs", []))
                         tier["_partof"] = _partof_map(tier["data"].get("one_objs", []), tier["facts"])
+                        if carry_mode:
+                            _merge_inventory(tier["data"].get("one_objs", []))
                     else:
                         tier["data"] = _extract_tier_with_retry(rp, src_path, tier, idv, scene, stop_event, emit)
                         tier["facts"] = rp._tier_facts(slug, tier)
@@ -3068,14 +3127,23 @@ def run_reduce(
             "rows": rows,
         }
         _write_manifest()
+        if carry_mode:
+            _write_sequence_list()
         counts["done"] += 1
         ag = rows[1]["agree"].get("verdict") if len(rows) > 1 else "ref"
-        emit(f"{_ts()} ✦ {idv}: {rows[0]['nparts']}p / {rows[-1]['nparts']}p · agree {ag}")
+        carry_note = f" · seq {len(inv_order)}p/{len(inv_groups)}g" if carry_mode else ""
+        emit(f"{_ts()} ✦ {idv}: {rows[0]['nparts']}p / {rows[-1]['nparts']}p · agree {ag}{carry_note}")
 
     if not entries:
         emit(f"{_ts()} no pool images in {base_rel}/pool (nothing to reduce)")
         return "no pool images"
-    if concurrency <= 1:
+    if carry_mode:
+        emit(f"{_ts()} sequential carry: building one consolidated parts list across {len(entries)} frame(s)")
+        for entry in entries:
+            if stop_event is not None and stop_event.is_set():
+                break
+            reduce_one(entry)
+    elif concurrency <= 1:
         for entry in entries:
             if stop_event is not None and stop_event.is_set():
                 break
@@ -3084,7 +3152,11 @@ def run_reduce(
         with ThreadPoolExecutor(max_workers=concurrency) as pool:
             list(pool.map(reduce_one, entries))
     _write_manifest()
+    if carry_mode:
+        _write_sequence_list()
     summary = f"reduce complete: {counts.get('done', 0)} image(s), {counts.get('failed', 0)} failed of {counts.get('total', 0)}"
+    if carry_mode:
+        summary += f" · sequence parts list: {len(inv_order)} parts, {len(inv_groups)} groups"
     emit(f"{_ts()} {summary}")
     return summary
 
