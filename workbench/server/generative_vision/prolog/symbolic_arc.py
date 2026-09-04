@@ -102,8 +102,8 @@ def adjacency(labels: np.ndarray) -> set[tuple[int, int]]:
     return pairs
 
 
-def region_turtle(cells: np.ndarray, cols: int, rows: int, color: str) -> dict:
-    """Exact region shape as merged horizontal-run rectangles in 0..1000."""
+def _region_rects(cells: np.ndarray, cols: int, rows: int, color: str) -> list[dict]:
+    """Fallback: exact region shape as merged horizontal-run rectangles."""
     sx, sy = 1000.0 / cols, 1000.0 / rows
     cmds = []
     for y in range(rows):
@@ -119,6 +119,81 @@ def region_turtle(cells: np.ndarray, cols: int, rows: int, color: str) -> dict:
                              "fill": color, "outline": color})
             else:
                 x += 1
+    return cmds
+
+
+def _trace_outline(cellset: set, cols: int, rows: int) -> list[list[tuple[int, int]]]:
+    """Find the object's outline: stitch the boundary edges between the object
+    and everything else into closed rectilinear loops (region kept on the right,
+    y-down). Returns loops as ordered corner-point lists."""
+    edges: dict[tuple[int, int], tuple[int, int]] = {}
+    for (x, y) in cellset:
+        if (x, y - 1) not in cellset:
+            edges[(x, y)] = (x + 1, y)
+        if (x + 1, y) not in cellset:
+            edges[(x + 1, y)] = (x + 1, y + 1)
+        if (x, y + 1) not in cellset:
+            edges[(x + 1, y + 1)] = (x, y + 1)
+        if (x - 1, y) not in cellset:
+            edges[(x, y + 1)] = (x, y)
+    loops: list[list[tuple[int, int]]] = []
+    used: set = set()
+    for start in list(edges.keys()):
+        if start in used or start not in edges:
+            continue
+        loop = [start]
+        cur = start
+        ok = True
+        for _ in range(len(edges) + 4):
+            used.add(cur)
+            nxt = edges.get(cur)
+            if nxt is None:
+                ok = False
+                break
+            if nxt == start:
+                break
+            loop.append(nxt)
+            cur = nxt
+        else:
+            ok = False
+        if ok and len(loop) >= 4:
+            loops.append(loop)
+    return loops
+
+
+def _simplify(loop: list[tuple[int, int]]) -> list[tuple[int, int]]:
+    """Drop collinear midpoints from a rectilinear loop."""
+    n = len(loop)
+    out = []
+    for i in range(n):
+        a, b, c = loop[i - 1], loop[i], loop[(i + 1) % n]
+        if (b[0] - a[0]) * (c[1] - b[1]) != (b[1] - a[1]) * (c[0] - b[0]):
+            out.append(b)
+    return out or loop
+
+
+def region_turtle(cells: np.ndarray, cols: int, rows: int, color: str) -> dict:
+    """Turtle program that TRACES the object's outline as a filled polygon
+    (the outline of the first-pass object). Falls back to run-rectangles for
+    degenerate shapes."""
+    sx, sy = 1000.0 / cols, 1000.0 / rows
+    ys, xs = np.where(cells)
+    cellset = set(zip(xs.tolist(), ys.tolist()))
+    cmds: list[dict] = []
+    try:
+        loops = _trace_outline(cellset, cols, rows)
+        # outer loop = largest bounding-box area
+        loops.sort(key=lambda lp: (max(p[0] for p in lp) - min(p[0] for p in lp))
+                   * (max(p[1] for p in lp) - min(p[1] for p in lp)), reverse=True)
+        if loops:
+            pts = [[round(px * sx), round(py * sy)] for (px, py) in _simplify(loops[0])]
+            if len(pts) >= 3:
+                cmds = [{"op": "move", "x": pts[0][0], "y": pts[0][1]},
+                        {"op": "polygon", "points": pts, "fill": color, "outline": color}]
+    except Exception:  # noqa: BLE001
+        cmds = []
+    if not cmds:
+        cmds = _region_rects(cells, cols, rows, color)
     return {"version": 1, "background": "transparent", "penColor": color, "penWidth": 2, "commands": cmds}
 
 
@@ -181,21 +256,29 @@ def extract_frame(png_path: str, char: str) -> dict:
     enclos = enclosures(info, pairs)
     pof, obj = _run_prolog(info, pairs, enclos, cols, rows)
 
-    # metta + parts.json in the SAME schema as the LLM line
-    groups = sorted(set(obj.values()))
+    # every part gets a partOf group: its adjacency-cluster object, else (a
+    # background/large blob) its own group -> full coverage like the LLM line.
+    def group_of(rid: str) -> str:
+        return obj.get(rid) or rid.replace("r", "g", 1)
+    # draw big blobs first so nested / detail blobs render on top
+    order = sorted(info.items(), key=lambda kv: -kv[1]["area"])
     mlines = [f"; symbolic (prolog) part-graph for {char}  ({len(info)} parts)",
               f"(character {char})"]
     geom = []
-    for gid, i in info.items():
+    partof_all: dict[str, str] = {}
+    for gid, i in order:
         rid = f"r{gid}"
         lbl = i["hex"]
+        g = group_of(rid)
+        partof_all[rid] = g
         mlines.append(f'(part {char} {rid} (label "{lbl}") (color {i["hex"]}))')
         geom.append({"id": rid, "label": lbl, "color": i["hex"],
-                     "partOf": obj.get(rid, ""),
+                     "partOf": g,
                      "turtle": region_turtle(i["cells"], cols, rows, i["hex"])})
+    groups = sorted(set(partof_all.values()))
     for g in groups:
         mlines.append(f"(group {char} {g})")
-    for rid, g in obj.items():
+    for rid, g in partof_all.items():
         mlines.append(f"(partOf {char} {rid} {g})")
     for inner, outer in pof:
         mlines.append(f"(inside {char} {inner} {outer})")
