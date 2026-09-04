@@ -32,7 +32,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any, Iterator
 
-from fastapi import APIRouter, Body, File, Form, HTTPException, Request, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Body, File, Form, HTTPException, Query, Request, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.responses import Response, StreamingResponse
 
 from arc3_play_api import (
@@ -2160,9 +2160,157 @@ def image_provenance(workspaceId: str, image: str) -> dict[str, Any]:
     return payload
 
 
+_CANONICAL_IMAGE_SET = "recognition_reduce"
+_IMAGE_SET_LABELS = {"recognition_reduce": "Recognition · 20×10 conditions"}
+
+
+def _list_image_sets(root: Path) -> list[dict[str, Any]]:
+    """Enumerate reduce-style image sets on disk.
+
+    An image set is any directory under ``data/`` that follows the reduction
+    layout (a ``pool/`` of input images and/or a ``manifest.json`` of reduced
+    rows). The canonical Recognition set is always listed first. Counts are read
+    straight from disk so the selector reflects real, reusable work — switching
+    between sets never has to redo anything already reduced.
+    """
+    data_dir = root / "data"
+    sets: list[dict[str, Any]] = []
+    seen: set[str] = set()
+
+    def add(set_id: str, rel_dir: str) -> None:
+        if not set_id or set_id in seen:
+            return
+        d = root / rel_dir
+        pool = d / "pool"
+        image_count = 0
+        if pool.is_dir():
+            image_count = sum(1 for _ in pool.glob("*.jpg")) + sum(1 for _ in pool.glob("*.png"))
+        reduced_count = 0
+        mp = d / "manifest.json"
+        if mp.is_file():
+            try:
+                mj = json.loads(mp.read_text(encoding="utf-8"))
+                reduced_count = sum(1 for it in (mj.get("items") or []) if isinstance(it, dict) and (it.get("rows") or []))
+                if not image_count:
+                    image_count = len([it for it in (mj.get("items") or []) if isinstance(it, dict) and it.get("id")])
+            except (OSError, json.JSONDecodeError):
+                pass
+        if image_count == 0 and reduced_count == 0 and set_id != _CANONICAL_IMAGE_SET:
+            return
+        seen.add(set_id)
+        sets.append({
+            "id": set_id,
+            "label": _IMAGE_SET_LABELS.get(set_id, set_id.replace("_", " ")),
+            "dir": rel_dir,
+            "imageCount": image_count,
+            "reducedCount": reduced_count,
+            "canonical": set_id == _CANONICAL_IMAGE_SET,
+        })
+
+    add(_CANONICAL_IMAGE_SET, "data/recognition_reduce")
+    if data_dir.is_dir():
+        for child in sorted(data_dir.iterdir()):
+            if child.is_dir() and child.name != _CANONICAL_IMAGE_SET and ((child / "pool").is_dir() or (child / "manifest.json").is_file()):
+                add(child.name, f"data/{child.name}")
+    return sets
+
+
+def _flat_set_manifest(root: Path, set_id: str) -> dict[str, Any]:
+    """Disk-driven reduction manifest for a non-canonical image set.
+
+    Synthesises a flat item list from ``data/<set>/pool/*`` and overlays any
+    reduced rows from ``data/<set>/manifest.json``. Mirrors the shape of
+    :func:`reduce_manifest` so the same frontend list/grid can render either.
+    """
+    base = f"data/{set_id}"
+    d = root / base
+    pool = d / "pool"
+
+    def base_name(value: Any) -> str:
+        return str(value or "").replace("\\", "/").split("/")[-1]
+
+    def resolve(sub: str, name: Any) -> str:
+        leaf = base_name(name)
+        if not leaf:
+            return ""
+        rel = f"{base}/{sub}/{leaf}"
+        return rel if (root / rel).is_file() else f"{base}/{sub}/{leaf}"
+
+    manifest: dict[str, Any] = {}
+    tiers: list[Any] = []
+    mp = d / "manifest.json"
+    if mp.is_file():
+        try:
+            mj = json.loads(mp.read_text(encoding="utf-8"))
+            if isinstance(mj.get("tiers"), list):
+                tiers = mj["tiers"]
+            for entry in (mj.get("items") or []):
+                if isinstance(entry, dict) and entry.get("id"):
+                    manifest[str(entry["id"])] = entry
+        except (OSError, json.JSONDecodeError):
+            pass
+
+    ids: set[str] = set(manifest.keys())
+    input_ext: dict[str, str] = {}
+    if pool.is_dir():
+        for image in sorted(list(pool.glob("*.jpg")) + list(pool.glob("*.png"))):
+            ids.add(image.stem)
+            input_ext.setdefault(image.stem, image.suffix)
+
+    items: list[dict[str, Any]] = []
+    for idv in sorted(ids):
+        m = manifest.get(idv) or {}
+        ext = input_ext.get(idv) or ".jpg"
+        input_name = base_name(m.get("input")) or f"{idv}{ext}"
+        item: dict[str, Any] = {
+            "id": idv,
+            "slug": idv,
+            "cond": "",
+            "label": m.get("label") or idv.replace("_", " "),
+            "input": input_name,
+            "inputPath": resolve("pool", input_name),
+            "source": m.get("source") or "set",
+            "source_url": m.get("source_url") or "",
+            "scene": True,
+            "startedAt": m.get("startedAt"),
+            "elapsedMs": m.get("elapsedMs"),
+            "rows": [],
+        }
+        rows: list[dict[str, Any]] = []
+        for row in (m.get("rows") or []):
+            if not isinstance(row, dict):
+                continue
+            normalized = dict(row)
+            metta = base_name(row.get("metta"))
+            if metta:
+                normalized["mettaPath"] = resolve("sym", metta)
+            stages = row.get("stages")
+            if isinstance(stages, dict):
+                normalized["stagePaths"] = {
+                    key: resolve("stages", base_name(val))
+                    for key, val in stages.items() if val
+                }
+            rows.append(normalized)
+        item["rows"] = rows
+        items.append(item)
+    return {"tiers": tiers, "count": len(items), "items": items, "set": set_id}
+
+
+@router.get("/image-sets")
+def image_sets(workspaceId: str) -> dict[str, Any]:
+    """List reduce-style image sets available on disk for this workspace.
+
+    Powers the shared image-set selector on both the Recognition and Objects
+    pages. Because every set is read straight from disk, selecting one shows any
+    reduction work already done for it without recomputing.
+    """
+    root = _workspace_root(workspaceId)
+    return {"sets": _list_image_sets(root)}
+
+
 @router.get("/reduce-manifest")
-def reduce_manifest(workspaceId: str) -> dict[str, Any]:
-    """Filesystem-driven reduction manifest for the Recognition page.
+def reduce_manifest(workspaceId: str, set_id: str = Query(_CANONICAL_IMAGE_SET, alias="set")) -> dict[str, Any]:
+    """Filesystem-driven reduction manifest for the Recognition/Objects pages.
 
     Builds the full 20x10 = 200 condition set by listing
     ``data/recognition_reduce/pool/*.jpg`` and overlays any generated rows and
@@ -2170,7 +2318,13 @@ def reduce_manifest(workspaceId: str) -> dict[str, Any]:
     attribution from ``data/recognition_reduce/provenance.json``. This is
     independent of the page-state save, so the view survives reloads, workspace
     switches, and multiple simultaneously-open windows.
+
+    Pass ``set`` to read a different disk-backed image set (see
+    ``/image-sets``); non-canonical sets are synthesised as a flat item list.
     """
+    set_id = (set_id or _CANONICAL_IMAGE_SET).strip() or _CANONICAL_IMAGE_SET
+    if set_id != _CANONICAL_IMAGE_SET:
+        return _flat_set_manifest(_workspace_root(workspaceId), set_id)
     root = _workspace_root(workspaceId)
     slug_order = [
         "bart_simpson", "lisa_simpson", "homer_simpson", "marge_simpson",
@@ -2254,6 +2408,8 @@ def reduce_manifest(workspaceId: str) -> dict[str, Any]:
                 "source": source,
                 "source_url": source_url,
                 "scene": cond not in transforms,
+                "startedAt": m.get("startedAt"),
+                "elapsedMs": m.get("elapsedMs"),
                 "rows": [],
             }
             chip = base_name(m.get("chip"))

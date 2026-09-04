@@ -2849,6 +2849,8 @@ def run_reduce(
             counts["done"] += 1
             return
         try:
+            started_wall = datetime.now(timezone.utc)
+            t0 = time.monotonic()
             with active:
                 src = Image.open(src_path).convert("RGB")
                 scene = cond in rp.SCENE_CONDS
@@ -2883,7 +2885,10 @@ def run_reduce(
         manifest_rows[idv] = {
             "id": idv, "slug": slug, "cond": cond, "label": entry.get("label") or slug.replace("_", " "),
             "input": f"{idv}.jpg", "source": source, "source_url": pv.get("source_url", ""),
-            "scene": cond in rp.SCENE_CONDS, "rows": rows,
+            "scene": cond in rp.SCENE_CONDS,
+            "startedAt": started_wall.strftime("%H:%M:%S"),
+            "elapsedMs": int((time.monotonic() - t0) * 1000),
+            "rows": rows,
         }
         _write_manifest()
         counts["done"] += 1

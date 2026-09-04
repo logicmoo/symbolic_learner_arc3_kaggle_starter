@@ -2844,6 +2844,20 @@ export function VideoImportPage({
   const [recognitionGallery, setRecognitionGallery] = useState<any[]>([]);
   // Reduction stress-test (shot-tier agreement) manifest + UI state.
   const [recognitionReduce, setRecognitionReduce] = useState<any | null>(null);
+  // Shared, disk-backed IMAGE SET selector (used by both the Recognition and
+  // Objects Extractions views). `selectedImageSet` is always a real reduce-style
+  // set on disk (default the canonical Recognition 20x10 set); the reduce
+  // manifest is fetched per-set, so switching sets/pages reuses on-disk work and
+  // never has to redo it. The Objects page additionally offers a "live pipeline"
+  // choice (objectsShowLive) that shows its own in-progress object-graphs.
+  const OBJECTS_LIVE_SET = "objects_live";
+  const [imageSetList, setImageSetList] = useState<any[]>([]);
+  const [selectedImageSet, setSelectedImageSet] = useState<string>(() => {
+    try { return window.localStorage.getItem("videoImport.imageSet") || "recognition_reduce"; } catch { return "recognition_reduce"; }
+  });
+  const [objectsShowLive, setObjectsShowLive] = useState<boolean>(() => {
+    try { return (window.localStorage.getItem("videoImport.objectsShowLive") ?? "1") !== "0"; } catch { return true; }
+  });
   const [reduceOnlyGood, setReduceOnlyGood] = useState(false);
   const [reduceMetta, setReduceMetta] = useState<Record<string, string>>({});
   const [expandedReduceId, setExpandedReduceId] = useState<string | null>(null);
@@ -2853,6 +2867,9 @@ export function VideoImportPage({
   // Two tab views: "inputs" = the 20x10 input-image grid; "extractions" = the
   // per-image reduction list.
   const [reduceTab, setReduceTab] = useState<"inputs" | "extractions">("inputs");
+  // Objects page: "pipeline" = the existing rich extraction pipeline UI;
+  // "extractions" = a reduction-style per-image row view over the same data.
+  const [objectsTab, setObjectsTab] = useState<"pipeline" | "extractions">("pipeline");
   // Per-character collapse in the flat list — each character's 10 condition
   // rows can be folded away from its separator header.
   const [collapsedReduceChars, setCollapsedReduceChars] = useState<Set<string>>(new Set());
@@ -3931,7 +3948,7 @@ export function VideoImportPage({
     let cancelled = false;
     void (async () => {
       try {
-        const resp = await fetch(`${API}/reduce-manifest?workspaceId=${encodeURIComponent(workspaceId)}`, { cache: "no-store" });
+        const resp = await fetch(`${API}/reduce-manifest?workspaceId=${encodeURIComponent(workspaceId)}&set=${encodeURIComponent(selectedImageSet)}`, { cache: "no-store" });
         if (!resp.ok) { if (!cancelled) setRecognitionReduce(null); return; }
         const mf = await resp.json();
         if (cancelled) return;
@@ -3939,7 +3956,36 @@ export function VideoImportPage({
       } catch { if (!cancelled) setRecognitionReduce(null); }
     })();
     return () => { cancelled = true; };
+  }, [workspaceId, selectedImageSet]);
+  // Discover the image sets available on disk for the shared selector. Purely
+  // filesystem-derived, so it reflects real reusable work per set.
+  useEffect(() => {
+    if (!workspaceId) { setImageSetList([]); return; }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const resp = await fetch(`${API}/image-sets?workspaceId=${encodeURIComponent(workspaceId)}`, { cache: "no-store" });
+        if (!resp.ok) { if (!cancelled) setImageSetList([]); return; }
+        const data = await resp.json();
+        if (cancelled) return;
+        const sets = Array.isArray(data?.sets) ? data.sets : [];
+        setImageSetList(sets);
+        // If the persisted selection is no longer present, fall back to canonical.
+        if (sets.length && !sets.some((s: any) => s.id === selectedImageSet)) {
+          setSelectedImageSet(sets.some((s: any) => s.id === "recognition_reduce") ? "recognition_reduce" : sets[0].id);
+        }
+      } catch { if (!cancelled) setImageSetList([]); }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceId]);
+  // Persist the shared image-set selection so switching pages/reloading keeps it.
+  useEffect(() => {
+    try { window.localStorage.setItem("videoImport.imageSet", selectedImageSet); } catch { /* ignore */ }
+  }, [selectedImageSet]);
+  useEffect(() => {
+    try { window.localStorage.setItem("videoImport.objectsShowLive", objectsShowLive ? "1" : "0"); } catch { /* ignore */ }
+  }, [objectsShowLive]);
   // Prefetch the per-tier MeTTa part-graphs for every reduced item so the flat
   // list can render native parts/part-map panels along each row without waiting
   // for an expand. Only items that have rows carry mettaPaths; the set grows as
@@ -3963,7 +4009,7 @@ export function VideoImportPage({
     let cancelled = false;
     const tick = async () => {
       try {
-        const resp = await fetch(`${API}/reduce-manifest?workspaceId=${encodeURIComponent(workspaceId)}`, { cache: "no-store" });
+        const resp = await fetch(`${API}/reduce-manifest?workspaceId=${encodeURIComponent(workspaceId)}&set=${encodeURIComponent(selectedImageSet)}`, { cache: "no-store" });
         if (resp.ok) { const mf = await resp.json(); if (!cancelled && mf && Array.isArray(mf.items)) setRecognitionReduce(mf); }
       } catch { /* ignore */ }
     };
@@ -6271,6 +6317,199 @@ export function VideoImportPage({
   // shows ONLY the parent image name, this object's own description, and its
   // relations to other objects — never the parent image's full pipeline context.
   const activeOutlineObject = activeImageContext?.outline?.object;
+  const renderReduceExtractions = () => {
+            const SLUG_ORDER = ["bart_simpson","lisa_simpson","homer_simpson","marge_simpson","maggie_simpson","grandpa_simpson","spongebob","patrick_star","squidward","scooby_doo","shaggy","mickey_mouse","minnie_mouse","donald_duck","goofy","bugs_bunny","pikachu","mario","sonic","moana"];
+            const COND_ORDER = ["c1_bw","c2_flip","c3_rot45","c4_busy","c5_new","c6_verybusy","c7_withchars","c8_typical","c9_colorful","c10_modality"];
+            const COND_LABELS: Record<string, string> = { c1_bw: "greyscale", c2_flip: "flip H", c3_rot45: "rotate 45°", c4_busy: "busy scene", c5_new: "new style", c6_verybusy: "crowd", c7_withchars: "with others", c8_typical: "episode still", c9_colorful: "colorful", c10_modality: "other medium" };
+            const nameBySlug = new Map(recognitionGallery.map((g: any) => [g.slug, g.name]));
+            const isWeb = (it: any) => (it.source ? it.source === "web" : !["c1_bw", "c2_flip", "c3_rot45"].includes(it.cond));
+            const slugRank = (s: string) => { const i = SLUG_ORDER.indexOf(s); return i < 0 ? 99 : i; };
+            const condRank = (c: string) => { const i = COND_ORDER.indexOf(c); return i < 0 ? 99 : i; };
+            const q = reduceListQuery.trim().toLowerCase();
+            let list = recognitionReduce.items.slice();
+            list = list.filter((it: any) => !reduceOnlyGood || (it.rows || []).some((r: any) => r.kind !== "oneshot" && (r.agree?.score ?? 0) >= 0.7));
+            if (q) list = list.filter((it: any) => String(it.id || "").toLowerCase().includes(q) || String(nameBySlug.get(it.slug) || it.slug || "").toLowerCase().includes(q) || String(COND_LABELS[it.cond] || it.cond || "").toLowerCase().includes(q));
+            list.sort((a: any, b: any) => (slugRank(a.slug) - slugRank(b.slug)) || (condRank(a.cond) - condRank(b.cond)));
+            const countBySlug = new Map<string, number>();
+            const reducedBySlug = new Map<string, number>();
+            for (const it of list) {
+              countBySlug.set(it.slug, (countBySlug.get(it.slug) || 0) + 1);
+              if ((it.rows || []).length > 0) reducedBySlug.set(it.slug, (reducedBySlug.get(it.slug) || 0) + 1);
+            }
+            const orderedSlugsInList: string[] = Array.from(new Set<string>(list.map((it: any) => String(it.slug))));
+            const toggleChar = (slug: string) => setCollapsedReduceChars((prev) => { const next = new Set(prev); if (next.has(slug)) next.delete(slug); else next.add(slug); return next; });
+            const collapseAll = () => setCollapsedReduceChars(new Set(orderedSlugsInList));
+            const expandAll = () => setCollapsedReduceChars(new Set());
+            const reducedCount = list.filter((it: any) => (it.rows || []).length > 0).length;
+            const reduceRunning = pipelineRunStatus === "running" && pipelineCounts.stage === "reduce";
+            return (
+              <div className="video-import-reduce">
+                <h3 className="video-import-recognition-subhead">All images · {reducedCount} of {recognitionReduce.items.length} reduced</h3>
+                <div className="video-import-reduce-explain">One row per image. Each row is a reduction pipeline that <b>grows rightward</b> as the image gets reduced: the input, then one cell per shot-tier (1-shot reference, then cheaper N-shot passes) with its part/relation counts and <b>agreement</b> vs the 1-shot. Click a row for the full symbolic strip + per-tier MeTTa. Web scenes are <b>real fetched images</b> (source link) — not generated.</div>
+                <div className="video-import-reduce-listctrls">
+                  {reduceRunning
+                    ? <><button type="button" className="video-import-reduce-runbtn is-running" disabled>Reducing {pipelineCounts.done ?? 0}/{pipelineCounts.total ?? list.length}… · {pipelineCounts.active ?? 0} active</button><button type="button" className="video-import-reduce-foldbtn" onClick={() => void stopServerPipeline()}>■ stop</button></>
+                    : <button type="button" className="video-import-reduce-runbtn" disabled={pipelineRunStatus === "running"} title="Run the 1-shot + 2-shot reduction for ALL pool images on the server, pooled at the configured max processes" onClick={() => startServerStage("reduce")}>▶ Reduce all {recognitionReduce.items.length} on server</button>}
+                  <input className="video-import-reduce-search" type="search" placeholder="Filter by character or condition…" value={reduceListQuery} onChange={(e) => setReduceListQuery(e.target.value)} />
+                  <button type="button" className="video-import-reduce-foldbtn" onClick={collapseAll}>Collapse all</button>
+                  <button type="button" className="video-import-reduce-foldbtn" onClick={expandAll}>Expand all</button>
+                  <label className="video-import-toggle"><input type="checkbox" checked={reduceOnlyGood} onChange={(e) => setReduceOnlyGood(e.target.checked)} /> Only where a cheaper N-shot AGREES (≥70%) with 1-shot</label>
+                </div>
+                <div className="video-import-reduce-listbox" role="listbox" aria-label="All reduced images">
+                  {list.flatMap((it: any, idx: number) => {
+                    const prev = idx > 0 ? list[idx - 1] : null;
+                    const newGroup = !prev || prev.slug !== it.slug;
+                    const inputRel = it.inputPath || `data/recognition_reduce/pool/${String(it.input || "").split("/").pop()}`;
+                    const web = isWeb(it);
+                    const open = it.id === expandedReduceId;
+                    const tiers = (it.rows || []);
+                    const charCollapsed = collapsedReduceChars.has(it.slug);
+                    const els: any[] = [];
+                    if (newGroup) els.push(
+                      <div className={`video-import-reduce-listsep${charCollapsed ? " is-collapsed" : ""}`} key={`sep-${it.slug}`} role="button" tabIndex={0}
+                        onClick={() => toggleChar(it.slug)}
+                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleChar(it.slug); } }}>
+                        <span className="video-import-reduce-sepchevron">{charCollapsed ? "▸" : "▾"}</span>
+                        <span className="video-import-reduce-sepname">{nameBySlug.get(it.slug) || it.slug}</span>
+                        <span className="video-import-reduce-sepcount">{reducedBySlug.get(it.slug) || 0}/{countBySlug.get(it.slug) || 0} reduced</span>
+                      </div>
+                    );
+                    if (charCollapsed) return els;
+                    els.push(
+                      <div className={`video-import-reduce-listrow${open ? " is-open" : ""}`} key={it.id} role="option" aria-selected={open}>
+                        <div className="video-import-reduce-listmain" role="button" tabIndex={0}
+                          onClick={() => setExpandedReduceId(open ? null : it.id)}
+                          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpandedReduceId(open ? null : it.id); } }}>
+                          <div className="video-import-reduce-listcell is-desc">
+                            <b>{nameBySlug.get(it.slug) || it.slug}</b>
+                            <span className="video-import-reduce-desccond">{COND_LABELS[it.cond] || it.cond}</span>
+                            <code className="video-import-reduce-descid">{it.id}</code>
+                            {it.startedAt ? <span className="video-import-reduce-desctime">⏱ started {it.startedAt}{typeof it.elapsedMs === "number" ? ` · took ${(it.elapsedMs / 1000).toFixed(1)}s` : ""}</span> : null}
+                            {web ? (
+                              <span className="video-import-reduce-listsrc">
+                                <span className="video-import-reduce-tag web">web</span>
+                                {it.source_url ? <a href={it.source_url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>source ↗</a> : null}
+                              </span>
+                            ) : <span className="video-import-reduce-tag derived">derived</span>}
+                          </div>
+                          <figure className="video-import-reduce-stage is-submitted">
+                            <img className="video-import-reduce-stageimg" src={asset(inputRel)} alt={it.id} loading="lazy" />
+                            <figcaption>submitted image</figcaption>
+                          </figure>
+                          {tiers.length === 0
+                            ? <div className="video-import-reduce-listcell is-pending">reducing…</div>
+                            : (() => {
+                                const graphParts: any[] = [];
+                                const stageEls = tiers.map((row: any, ri: number) => {
+                                  const isRef = row.kind === "oneshot";
+                                  const rv = row.agree?.verdict || (isRef ? "ref" : "");
+                                  const rp = Math.round((row.agree?.score ?? 0) * 100);
+                                  const mettaRel = row.mettaPath || `data/recognition_reduce/sym/${String(row.metta || "").split("/").pop()}`;
+                                  const mettaText = reduceMetta[mettaRel];
+                                  const { parts } = parseMettaParts(mettaText || "");
+                                  const sp = row.stagePaths || {};
+                                  graphParts.push(`; ${row.shots}-shot · ${row.model} · ${row.nparts}p ${row.nrels}r${isRef ? " · REF" : ` · vs 1: ${rp}% ${String(rv).toUpperCase()}`}\n${mettaText === undefined ? "loading…" : (mettaText || "(no graph)")}`);
+                                  return (
+                                    <div className={`video-import-reduce-tiergroup${isRef ? " is-ref" : ""}`} key={ri}>
+                                      <div className="video-import-reduce-tierhead">
+                                        <b>{row.shots}-shot</b> <span>{row.model}</span>
+                                        <span className="video-import-reduce-tiernums">{row.nparts}p · {row.nrels}r</span>
+                                        <span className={`video-import-reduce-badge v-${rv}`}>{isRef ? "REF" : `vs 1: ${rp}% ${String(rv).toUpperCase()}`}</span>
+                                      </div>
+                                      <div className="video-import-reduce-stages">
+                                        <figure className="video-import-reduce-stage">
+                                          {sp.parts
+                                            ? <img className="video-import-reduce-stageimg" src={asset(sp.parts)} alt="parts found" loading="lazy" />
+                                            : <svg viewBox="0 0 1000 1000" className="video-import-reduce-svg">
+                                                <image href={asset(inputRel)} x="0" y="0" width="1000" height="1000" preserveAspectRatio="xMidYMid meet" />
+                                                {parts.map((p, pi) => { const [x0,y0,x1,y1] = p.bbox; return <rect key={pi} x={x0} y={y0} width={Math.max(0,x1-x0)} height={Math.max(0,y1-y0)} fill="none" stroke={isRef ? "#d62728" : "#1f6feb"} strokeWidth="4" />; })}
+                                              </svg>}
+                                          <figcaption>parts found · {row.nparts}</figcaption>
+                                        </figure>
+                                        <figure className="video-import-reduce-stage">
+                                          {sp.turtle
+                                            ? <img className="video-import-reduce-stageimg" src={asset(sp.turtle)} alt="turtle parts" loading="lazy" />
+                                            : <div className="video-import-reduce-stagemissing">turtle png<br/>pending</div>}
+                                          <figcaption>turtle parts</figcaption>
+                                        </figure>
+                                        <figure className="video-import-reduce-stage">
+                                          {sp.partmap
+                                            ? <img className="video-import-reduce-stageimg" src={asset(sp.partmap)} alt="part map" loading="lazy" />
+                                            : <svg viewBox="0 0 1000 1000" className="video-import-reduce-svg is-map">
+                                                {parts.map((p, pi) => { const [x0,y0,x1,y1] = p.bbox; return <rect key={pi} x={x0} y={y0} width={Math.max(0,x1-x0)} height={Math.max(0,y1-y0)} fill={mettaColor(p.color)} stroke="#333" strokeWidth="2" opacity="0.9"><title>{p.label} · {p.color}</title></rect>; })}
+                                              </svg>}
+                                          <figcaption>part map</figcaption>
+                                        </figure>
+                                      </div>
+                                    </div>
+                                  );
+                                });
+                                return (
+                                  <>
+                                    {stageEls}
+                                    <figure className="video-import-reduce-stage is-graph">
+                                      <pre className="video-import-reduce-graphmini">{graphParts.join("\n\n")}</pre>
+                                      <figcaption>symbolic graph</figcaption>
+                                    </figure>
+                                  </>
+                                );
+                              })()}
+                        </div>
+                        {open && (
+                          <div className="video-import-reduce-expanded">
+                            <div className="video-import-reduce-tiers">
+                              {(it.rows || []).length === 0 ? <div className="video-import-reduce-empty">No reduction rows yet — generation in progress.</div> : (it.rows || []).map((row: any, ri: number) => {
+                                const isRef = row.kind === "oneshot";
+                                const rv = row.agree?.verdict || (isRef ? "ref" : "");
+                                const rp = Math.round((row.agree?.score ?? 0) * 100);
+                                const mettaRel = row.mettaPath || `data/recognition_reduce/sym/${String(row.metta || "").split("/").pop()}`;
+                                return (
+                                  <details className="video-import-reduce-row" key={ri} onToggle={(e: any) => { if (e.currentTarget.open) loadReduceMetta(mettaRel); }}>
+                                    <summary>
+                                      <span className="video-import-reduce-tier">{row.shots}-shot</span>
+                                      <span className="video-import-reduce-model">{row.model}</span>
+                                      <span className="video-import-reduce-parts">{row.nparts} parts · {row.nrels} rels</span>
+                                      <span className={`video-import-reduce-badge v-${rv}`}>{isRef ? "reference" : `vs 1-shot: ${rp}% · ${String(rv).toUpperCase()}`}</span>
+                                    </summary>
+                                    <pre className="video-import-reduce-metta">{reduceMetta[mettaRel] || "loading…"}</pre>
+                                  </details>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                    return els;
+                  })}
+                </div>
+              </div>
+            );
+  };
+
+  const renderImageSetSelector = (scope: "recognition" | "objects") => {
+    const opts = scope === "objects"
+      ? [{ id: OBJECTS_LIVE_SET, label: "Objects · live pipeline", imageCount: memberInventories.length, reducedCount: memberInventories.length }, ...imageSetList]
+      : imageSetList;
+    if (!opts.length) return null;
+    const value = scope === "objects" ? (objectsShowLive ? OBJECTS_LIVE_SET : selectedImageSet) : selectedImageSet;
+    return (
+      <label className="video-import-imageset-selector" title="Choose which image set to view — read straight from disk, so switching never redoes reduction work">
+        <span>image set</span>
+        <select value={value} onChange={(e) => {
+          const v = e.target.value;
+          if (scope === "objects" && v === OBJECTS_LIVE_SET) { setObjectsShowLive(true); return; }
+          if (scope === "objects") setObjectsShowLive(false);
+          setSelectedImageSet(v);
+        }}>
+          {opts.map((s: any) => (
+            <option key={s.id} value={s.id}>{s.label}{typeof s.imageCount === "number" && s.id !== OBJECTS_LIVE_SET ? ` · ${s.reducedCount ?? 0}/${s.imageCount} reduced` : (s.id === OBJECTS_LIVE_SET ? ` · ${s.imageCount} live` : "")}</option>
+          ))}
+        </select>
+      </label>
+    );
+  };
+
   const renderOutlineObjectSections = (info: OutlineObjectInfo) => {
     const rel = info.relationships;
     const relationCount = rel.touching.length + rel.occludedBy.length + rel.occludes.length + rel.containedBy.length + rel.contains.length;
@@ -7050,6 +7289,11 @@ export function VideoImportPage({
 
       {(activeSubview === "objects" || activeSubview === "finish") && (
       <div className="video-import-scene-object-workspace">
+      <div className="video-import-reduce-tabs" role="tablist" aria-label="Objects views">
+        <button type="button" role="tab" aria-selected={objectsTab === "pipeline"} className={objectsTab === "pipeline" ? "is-active" : ""} onClick={() => setObjectsTab("pipeline")}>Pipeline</button>
+        <button type="button" role="tab" aria-selected={objectsTab === "extractions"} className={objectsTab === "extractions" ? "is-active" : ""} onClick={() => setObjectsTab("extractions")}>Extractions · {memberInventories.length}</button>
+      </div>
+      {objectsTab === "pipeline" && (<>
       <div className="video-import-recursive-automation" role="toolbar" aria-label="Recursive extraction automation">
         <div className="video-import-llm-global-row">
           <b>ALL LLM CALLS <small key={llmSchedulerVersion}>{llmSchedulerRef.current.active}/{totalLlmConcurrency} active · {llmSchedulerRef.current.waiters.length} queued</small><small>Each stage may use {llmPerStageCeiling}; {llmStageReserve} slots stay available for other stages in either direction.</small>{restartPendingSignal && <em>RESTART PENDING · DRAINING</em>}</b>
@@ -7586,6 +7830,78 @@ export function VideoImportPage({
           </div>
         </Section>
       )}
+      </>)}
+      {objectsTab === "extractions" && <div className="video-import-imageset-bar">{renderImageSetSelector("objects")}{!objectsShowLive && <span className="video-import-imageset-hint">disk-backed · switching keeps reduced work</span>}</div>}
+      {objectsTab === "extractions" && !objectsShowLive && renderReduceExtractions()}
+      {objectsTab === "extractions" && objectsShowLive && (() => {
+        const invs = orderedMemberInventories.length ? orderedMemberInventories : memberInventories;
+        const normId = (s: string) => (s || "obj").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "obj";
+        const toGraph = (inv: any) => {
+          const things = inv.things || [];
+          const subj = inv.subjectName || `frame_${inv.frameIndex ?? 0}`;
+          const lines = [`; symbolic object-graph for ${subj}  (${things.length} objects)`, `(scene "${subj}")`];
+          for (const t of things) {
+            const box = t.outlineBox || t.box;
+            const bbox = Array.isArray(box) && box.length === 4 ? ` (bbox ${box.map((n: number) => Math.round(n)).join(" ")})` : "";
+            lines.push(`(object ${normId(t.name)} (label "${t.name}") (status ${t.status || "listed"})${bbox})`);
+          }
+          for (const r of (inv.plannerTouching || [])) if (r.objects) lines.push(`(touching ${normId(r.objects[0])} ${normId(r.objects[1])})`);
+          for (const r of (inv.plannerOcclusions || [])) lines.push(`(occludes ${normId(r.occluder)} ${normId(r.occluded)})`);
+          for (const r of (inv.plannerContainments || [])) lines.push(`(contains ${normId(r.container)} ${normId(r.contained)})`);
+          return lines.join("\n") + "\n";
+        };
+        return (
+          <div className="video-import-reduce">
+            <h3 className="video-import-recognition-subhead">Extractions · {invs.length} image(s)</h3>
+            <div className="video-import-reduce-explain">Each input image reduced to symbols: the <b>regular</b> submitted image, then the objects found (numbered / outlined), the extracted cutouts, any turtle render, and the <b>symbolic object-graph</b> (objects + touching / occlusion / containment relations). Same reduction format as the Recognition page.</div>
+            <div className="video-import-reduce-listbox" role="listbox" aria-label="Extractions">
+              {invs.length === 0 ? <div className="video-import-reduce-empty">No extractions yet — run the pipeline (Describe → Outline → Extract) on the Pipeline tab.</div> : invs.map((inv: any) => {
+                const srcRel = inv.sourceImage;
+                const objectsImg = inv.plannerVisualizationImage || null;
+                const cutouts = members.filter((m: any) => m.inventoryId === inv.id && m.cutout);
+                const outlined = (inv.things || []).filter((t: any) => t.outlineImage);
+                const turtles = Object.values(turtleArtifacts).filter((a: any) => a.sourceImage === inv.sourceImage && a.renderedImage);
+                const graph = toGraph(inv);
+                return (
+                  <div className="video-import-reduce-listrow is-open" key={inv.id} role="option">
+                    <div className="video-import-reduce-listmain">
+                      <div className="video-import-reduce-listcell is-desc">
+                        <b>{inv.subjectName || `frame #${inv.frameIndex ?? 0}`}</b>
+                        <span className="video-import-reduce-desccond">depth {inv.depth || 0} · {(inv.things || []).length} objects</span>
+                        <code className="video-import-reduce-descid">{inv.status}</code>
+                      </div>
+                      <figure className="video-import-reduce-stage is-submitted">
+                        {srcRel ? <img className="video-import-reduce-stageimg" src={asset(srcRel)} alt="regular" loading="lazy" /> : <div className="video-import-reduce-stagemissing">no input</div>}
+                        <figcaption>regular image</figcaption>
+                      </figure>
+                      <figure className="video-import-reduce-stage">
+                        {objectsImg ? <img className="video-import-reduce-stageimg" src={asset(objectsImg)} alt="objects found" loading="lazy" />
+                          : outlined.length ? <img className="video-import-reduce-stageimg" src={asset(outlined[0].outlineImage)} alt="outline" loading="lazy" />
+                          : <div className="video-import-reduce-stagemissing">objects<br/>pending</div>}
+                        <figcaption>objects found · {(inv.things || []).length}</figcaption>
+                      </figure>
+                      <figure className="video-import-reduce-stage">
+                        {cutouts.length ? <div className="video-import-reduce-cutstrip">{cutouts.slice(0, 12).map((m: any, i: number) => <img key={i} src={asset(m.cutout)} alt={m.name} title={m.name} loading="lazy" />)}</div>
+                          : <div className="video-import-reduce-stagemissing">cutouts<br/>pending</div>}
+                        <figcaption>cutouts · {cutouts.length}</figcaption>
+                      </figure>
+                      <figure className="video-import-reduce-stage">
+                        {turtles.length ? <img className="video-import-reduce-stageimg" src={asset(String(turtles[0].renderedImage))} alt="turtle" loading="lazy" />
+                          : <div className="video-import-reduce-stagemissing">turtle<br/>pending</div>}
+                        <figcaption>turtle parts</figcaption>
+                      </figure>
+                      <figure className="video-import-reduce-stage is-graph">
+                        <pre className="video-import-reduce-graphmini">{graph}</pre>
+                        <figcaption>symbolic graph</figcaption>
+                      </figure>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
       </div>
       )}
       {activeSubview === "recognition" && (
@@ -7719,172 +8035,8 @@ export function VideoImportPage({
             </div>
           )}
 
-          {recognitionReduce && Array.isArray(recognitionReduce.items) && recognitionReduce.items.length > 0 && reduceTab === "extractions" && (() => {
-            const SLUG_ORDER = ["bart_simpson","lisa_simpson","homer_simpson","marge_simpson","maggie_simpson","grandpa_simpson","spongebob","patrick_star","squidward","scooby_doo","shaggy","mickey_mouse","minnie_mouse","donald_duck","goofy","bugs_bunny","pikachu","mario","sonic","moana"];
-            const COND_ORDER = ["c1_bw","c2_flip","c3_rot45","c4_busy","c5_new","c6_verybusy","c7_withchars","c8_typical","c9_colorful","c10_modality"];
-            const COND_LABELS: Record<string, string> = { c1_bw: "greyscale", c2_flip: "flip H", c3_rot45: "rotate 45°", c4_busy: "busy scene", c5_new: "new style", c6_verybusy: "crowd", c7_withchars: "with others", c8_typical: "episode still", c9_colorful: "colorful", c10_modality: "other medium" };
-            const nameBySlug = new Map(recognitionGallery.map((g: any) => [g.slug, g.name]));
-            const isWeb = (it: any) => (it.source ? it.source === "web" : !["c1_bw", "c2_flip", "c3_rot45"].includes(it.cond));
-            const slugRank = (s: string) => { const i = SLUG_ORDER.indexOf(s); return i < 0 ? 99 : i; };
-            const condRank = (c: string) => { const i = COND_ORDER.indexOf(c); return i < 0 ? 99 : i; };
-            const q = reduceListQuery.trim().toLowerCase();
-            let list = recognitionReduce.items.slice();
-            list = list.filter((it: any) => !reduceOnlyGood || (it.rows || []).some((r: any) => r.kind !== "oneshot" && (r.agree?.score ?? 0) >= 0.7));
-            if (q) list = list.filter((it: any) => String(it.id || "").toLowerCase().includes(q) || String(nameBySlug.get(it.slug) || it.slug || "").toLowerCase().includes(q) || String(COND_LABELS[it.cond] || it.cond || "").toLowerCase().includes(q));
-            list.sort((a: any, b: any) => (slugRank(a.slug) - slugRank(b.slug)) || (condRank(a.cond) - condRank(b.cond)));
-            const countBySlug = new Map<string, number>();
-            const reducedBySlug = new Map<string, number>();
-            for (const it of list) {
-              countBySlug.set(it.slug, (countBySlug.get(it.slug) || 0) + 1);
-              if ((it.rows || []).length > 0) reducedBySlug.set(it.slug, (reducedBySlug.get(it.slug) || 0) + 1);
-            }
-            const orderedSlugsInList: string[] = Array.from(new Set<string>(list.map((it: any) => String(it.slug))));
-            const toggleChar = (slug: string) => setCollapsedReduceChars((prev) => { const next = new Set(prev); if (next.has(slug)) next.delete(slug); else next.add(slug); return next; });
-            const collapseAll = () => setCollapsedReduceChars(new Set(orderedSlugsInList));
-            const expandAll = () => setCollapsedReduceChars(new Set());
-            const reducedCount = list.filter((it: any) => (it.rows || []).length > 0).length;
-            const reduceRunning = pipelineRunStatus === "running" && pipelineCounts.stage === "reduce";
-            return (
-              <div className="video-import-reduce">
-                <h3 className="video-import-recognition-subhead">All images · {reducedCount} of {recognitionReduce.items.length} reduced</h3>
-                <div className="video-import-reduce-explain">One row per image. Each row is a reduction pipeline that <b>grows rightward</b> as the image gets reduced: the input, then one cell per shot-tier (1-shot reference, then cheaper N-shot passes) with its part/relation counts and <b>agreement</b> vs the 1-shot. Click a row for the full symbolic strip + per-tier MeTTa. Web scenes are <b>real fetched images</b> (source link) — not generated.</div>
-                <div className="video-import-reduce-listctrls">
-                  {reduceRunning
-                    ? <><button type="button" className="video-import-reduce-runbtn is-running" disabled>Reducing {pipelineCounts.done ?? 0}/{pipelineCounts.total ?? list.length}… · {pipelineCounts.active ?? 0} active</button><button type="button" className="video-import-reduce-foldbtn" onClick={() => void stopServerPipeline()}>■ stop</button></>
-                    : <button type="button" className="video-import-reduce-runbtn" disabled={pipelineRunStatus === "running"} title="Run the 1-shot + 2-shot reduction for ALL pool images on the server, pooled at the configured max processes" onClick={() => startServerStage("reduce")}>▶ Reduce all {recognitionReduce.items.length} on server</button>}
-                  <input className="video-import-reduce-search" type="search" placeholder="Filter by character or condition…" value={reduceListQuery} onChange={(e) => setReduceListQuery(e.target.value)} />
-                  <button type="button" className="video-import-reduce-foldbtn" onClick={collapseAll}>Collapse all</button>
-                  <button type="button" className="video-import-reduce-foldbtn" onClick={expandAll}>Expand all</button>
-                  <label className="video-import-toggle"><input type="checkbox" checked={reduceOnlyGood} onChange={(e) => setReduceOnlyGood(e.target.checked)} /> Only where a cheaper N-shot AGREES (≥70%) with 1-shot</label>
-                </div>
-                <div className="video-import-reduce-listbox" role="listbox" aria-label="All reduced images">
-                  {list.flatMap((it: any, idx: number) => {
-                    const prev = idx > 0 ? list[idx - 1] : null;
-                    const newGroup = !prev || prev.slug !== it.slug;
-                    const inputRel = it.inputPath || `data/recognition_reduce/pool/${String(it.input || "").split("/").pop()}`;
-                    const web = isWeb(it);
-                    const open = it.id === expandedReduceId;
-                    const tiers = (it.rows || []);
-                    const charCollapsed = collapsedReduceChars.has(it.slug);
-                    const els: any[] = [];
-                    if (newGroup) els.push(
-                      <div className={`video-import-reduce-listsep${charCollapsed ? " is-collapsed" : ""}`} key={`sep-${it.slug}`} role="button" tabIndex={0}
-                        onClick={() => toggleChar(it.slug)}
-                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleChar(it.slug); } }}>
-                        <span className="video-import-reduce-sepchevron">{charCollapsed ? "▸" : "▾"}</span>
-                        <span className="video-import-reduce-sepname">{nameBySlug.get(it.slug) || it.slug}</span>
-                        <span className="video-import-reduce-sepcount">{reducedBySlug.get(it.slug) || 0}/{countBySlug.get(it.slug) || 0} reduced</span>
-                      </div>
-                    );
-                    if (charCollapsed) return els;
-                    els.push(
-                      <div className={`video-import-reduce-listrow${open ? " is-open" : ""}`} key={it.id} role="option" aria-selected={open}>
-                        <div className="video-import-reduce-listmain" role="button" tabIndex={0}
-                          onClick={() => setExpandedReduceId(open ? null : it.id)}
-                          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpandedReduceId(open ? null : it.id); } }}>
-                          <div className="video-import-reduce-listcell is-input">
-                            <img className="video-import-reduce-listthumb" src={asset(inputRel)} alt={it.cond} loading="lazy" />
-                            <div className="video-import-reduce-listlabel">
-                              <b>{nameBySlug.get(it.slug) || it.slug}</b>
-                              <span>{COND_LABELS[it.cond] || it.cond}</span>
-                              {web ? (
-                                <span className="video-import-reduce-listsrc">
-                                  <span className="video-import-reduce-tag web">web</span>
-                                  {it.source_url ? <a href={it.source_url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>source ↗</a> : null}
-                                </span>
-                              ) : <span className="video-import-reduce-tag derived">derived</span>}
-                            </div>
-                          </div>
-                          {tiers.length === 0
-                            ? <div className="video-import-reduce-listcell is-pending">reducing…</div>
-                            : (() => {
-                                const graphParts: any[] = [];
-                                const stageEls = tiers.map((row: any, ri: number) => {
-                                  const isRef = row.kind === "oneshot";
-                                  const rv = row.agree?.verdict || (isRef ? "ref" : "");
-                                  const rp = Math.round((row.agree?.score ?? 0) * 100);
-                                  const mettaRel = row.mettaPath || `data/recognition_reduce/sym/${String(row.metta || "").split("/").pop()}`;
-                                  const mettaText = reduceMetta[mettaRel];
-                                  const { parts } = parseMettaParts(mettaText || "");
-                                  const sp = row.stagePaths || {};
-                                  graphParts.push(`; ${row.shots}-shot · ${row.model} · ${row.nparts}p ${row.nrels}r${isRef ? " · REF" : ` · vs 1: ${rp}% ${String(rv).toUpperCase()}`}\n${mettaText === undefined ? "loading…" : (mettaText || "(no graph)")}`);
-                                  return (
-                                    <div className={`video-import-reduce-tiergroup${isRef ? " is-ref" : ""}`} key={ri}>
-                                      <div className="video-import-reduce-tierhead">
-                                        <b>{row.shots}-shot</b> <span>{row.model}</span>
-                                        <span className="video-import-reduce-tiernums">{row.nparts}p · {row.nrels}r</span>
-                                        <span className={`video-import-reduce-badge v-${rv}`}>{isRef ? "REF" : `vs 1: ${rp}% ${String(rv).toUpperCase()}`}</span>
-                                      </div>
-                                      <div className="video-import-reduce-stages">
-                                        <figure className="video-import-reduce-stage">
-                                          {sp.parts
-                                            ? <img className="video-import-reduce-stageimg" src={asset(sp.parts)} alt="parts found" loading="lazy" />
-                                            : <svg viewBox="0 0 1000 1000" className="video-import-reduce-svg">
-                                                <image href={asset(inputRel)} x="0" y="0" width="1000" height="1000" preserveAspectRatio="xMidYMid meet" />
-                                                {parts.map((p, pi) => { const [x0,y0,x1,y1] = p.bbox; return <rect key={pi} x={x0} y={y0} width={Math.max(0,x1-x0)} height={Math.max(0,y1-y0)} fill="none" stroke={isRef ? "#d62728" : "#1f6feb"} strokeWidth="4" />; })}
-                                              </svg>}
-                                          <figcaption>parts found · {row.nparts}</figcaption>
-                                        </figure>
-                                        <figure className="video-import-reduce-stage">
-                                          {sp.turtle
-                                            ? <img className="video-import-reduce-stageimg" src={asset(sp.turtle)} alt="turtle parts" loading="lazy" />
-                                            : <div className="video-import-reduce-stagemissing">turtle png<br/>pending</div>}
-                                          <figcaption>turtle parts</figcaption>
-                                        </figure>
-                                        <figure className="video-import-reduce-stage">
-                                          {sp.partmap
-                                            ? <img className="video-import-reduce-stageimg" src={asset(sp.partmap)} alt="part map" loading="lazy" />
-                                            : <svg viewBox="0 0 1000 1000" className="video-import-reduce-svg is-map">
-                                                {parts.map((p, pi) => { const [x0,y0,x1,y1] = p.bbox; return <rect key={pi} x={x0} y={y0} width={Math.max(0,x1-x0)} height={Math.max(0,y1-y0)} fill={mettaColor(p.color)} stroke="#333" strokeWidth="2" opacity="0.9"><title>{p.label} · {p.color}</title></rect>; })}
-                                              </svg>}
-                                          <figcaption>part map</figcaption>
-                                        </figure>
-                                      </div>
-                                    </div>
-                                  );
-                                });
-                                return (
-                                  <>
-                                    {stageEls}
-                                    <figure className="video-import-reduce-stage is-graph">
-                                      <pre className="video-import-reduce-graphmini">{graphParts.join("\n\n")}</pre>
-                                      <figcaption>symbolic graph</figcaption>
-                                    </figure>
-                                  </>
-                                );
-                              })()}
-                        </div>
-                        {open && (
-                          <div className="video-import-reduce-expanded">
-                            <div className="video-import-reduce-tiers">
-                              {(it.rows || []).length === 0 ? <div className="video-import-reduce-empty">No reduction rows yet — generation in progress.</div> : (it.rows || []).map((row: any, ri: number) => {
-                                const isRef = row.kind === "oneshot";
-                                const rv = row.agree?.verdict || (isRef ? "ref" : "");
-                                const rp = Math.round((row.agree?.score ?? 0) * 100);
-                                const mettaRel = row.mettaPath || `data/recognition_reduce/sym/${String(row.metta || "").split("/").pop()}`;
-                                return (
-                                  <details className="video-import-reduce-row" key={ri} onToggle={(e: any) => { if (e.currentTarget.open) loadReduceMetta(mettaRel); }}>
-                                    <summary>
-                                      <span className="video-import-reduce-tier">{row.shots}-shot</span>
-                                      <span className="video-import-reduce-model">{row.model}</span>
-                                      <span className="video-import-reduce-parts">{row.nparts} parts · {row.nrels} rels</span>
-                                      <span className={`video-import-reduce-badge v-${rv}`}>{isRef ? "reference" : `vs 1-shot: ${rp}% · ${String(rv).toUpperCase()}`}</span>
-                                    </summary>
-                                    <pre className="video-import-reduce-metta">{reduceMetta[mettaRel] || "loading…"}</pre>
-                                  </details>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                    return els;
-                  })}
-                </div>
-              </div>
-            );
-          })()}
+          {reduceTab === "extractions" && <div className="video-import-imageset-bar">{renderImageSetSelector("recognition")}<span className="video-import-imageset-hint">disk-backed · switching keeps reduced work</span></div>}
+          {recognitionReduce && Array.isArray(recognitionReduce.items) && recognitionReduce.items.length > 0 && reduceTab === "extractions" && renderReduceExtractions()}
 
           {recognitionGallery.length > 0 && (
             <div className="video-import-reco-enrolled">
