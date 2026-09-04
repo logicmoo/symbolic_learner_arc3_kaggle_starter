@@ -3863,11 +3863,11 @@ export function VideoImportPage({
   const startServerStage = (stage: string) => {
     pipelineLogSeenRef.current = 0;
     const socket = pipelineSocketRef.current;
-    const payload = { cmd: "start", workspaceId, stage, onlySelected: true };
+    const payload = { cmd: "start", workspaceId, stage, onlySelected: true, set: selectedImageSet };
     if (socket && socket.readyState === WebSocket.OPEN) {
       try { socket.send(JSON.stringify(payload)); say(`▶ server ${stage}`); return; } catch { /* fall through */ }
     }
-    void api("pipeline/start", { workspaceId, stage, onlySelected: true })
+    void api("pipeline/start", { workspaceId, stage, onlySelected: true, set: selectedImageSet })
       .then(() => say(`▶ server ${stage}`))
       .catch((reason) => say(`✗ could not start server ${stage}: ${reason instanceof Error ? reason.message : String(reason)}`));
   };
@@ -7954,9 +7954,13 @@ export function VideoImportPage({
             </div>
           )}
 
+          {imageSetList.length > 0 && (
+            <div className="video-import-imageset-bar">{renderImageSetSelector("recognition")}<span className="video-import-imageset-hint">disk-backed · switching keeps reduced work · drives Inputs + Extractions</span></div>
+          )}
+
           {recognitionReduce && Array.isArray(recognitionReduce.items) && recognitionReduce.items.length > 0 && (
             <div className="video-import-reduce-tabs" role="tablist" aria-label="Reduction views">
-              <button type="button" role="tab" aria-selected={reduceTab === "inputs"} className={reduceTab === "inputs" ? "is-active" : ""} onClick={() => setReduceTab("inputs")}>Inputs · 20 × 10</button>
+              <button type="button" role="tab" aria-selected={reduceTab === "inputs"} className={reduceTab === "inputs" ? "is-active" : ""} onClick={() => setReduceTab("inputs")}>Inputs · {selectedImageSet === "recognition_reduce" ? "20 × 10" : recognitionReduce.items.length}</button>
               <button type="button" role="tab" aria-selected={reduceTab === "extractions"} className={reduceTab === "extractions" ? "is-active" : ""} onClick={() => setReduceTab("extractions")}>Extractions · {recognitionReduce.items.filter((it: any) => (it.rows || []).length > 0).length}/{recognitionReduce.items.length}</button>
             </div>
           )}
@@ -7971,6 +7975,44 @@ export function VideoImportPage({
             const isWeb = (it: any) => (it.source ? it.source === "web" : !["c1_bw", "c2_flip", "c3_rot45"].includes(it.cond));
             const bestNshot = (it: any) => (it.rows || []).filter((r: any) => r.kind !== "oneshot").reduce((a: any, b: any) => ((b.agree?.score ?? 0) > (a?.agree?.score ?? -1) ? b : a), null);
             const items = recognitionReduce.items.filter((it: any) => !reduceOnlyGood || (it.rows || []).some((r: any) => r.kind !== "oneshot" && (r.agree?.score ?? 0) >= 0.7));
+            // Non-canonical image sets (ARC recordings, curated, videos) have no
+            // character×condition structure — lay every name-sorted frame out
+            // 10 per row (always N × 10).
+            const isCanonicalSet = selectedImageSet === "recognition_reduce";
+            if (!isCanonicalSet) {
+              const setMeta = imageSetList.find((s: any) => s.id === selectedImageSet);
+              const sorted = recognitionReduce.items.slice().sort((a: any, b: any) => String(a.id).localeCompare(String(b.id), undefined, { numeric: true }));
+              const chunks: any[][] = [];
+              for (let i = 0; i < sorted.length; i += 10) chunks.push(sorted.slice(i, i + 10));
+              const gridReducedN = sorted.filter((it: any) => (it.rows || []).length > 0).length;
+              return (
+                <div className="video-import-reduce">
+                  <h3 className="video-import-recognition-subhead">{setMeta?.label || selectedImageSet} · {gridReducedN}/{sorted.length} reduced · {chunks.length} × up to 10</h3>
+                  <div className="video-import-reduce-explain">Every input frame in this set, name-sorted and laid out 10 per row. Click a frame to open it in Extractions; run <b>Reduce all</b> to fill in symbolic part-graphs.</div>
+                  <div className="video-import-reduce-grid">
+                    {chunks.map((chunk, ri) => (
+                      <div className="video-import-reduce-charrow" key={ri}>
+                        <div className="video-import-reduce-charname">{ri * 10 + 1}–{ri * 10 + chunk.length}</div>
+                        <div className="video-import-reduce-condstrip">
+                          {chunk.map((it: any) => {
+                            const inputRel = it.inputPath || "";
+                            const nparts = (it.rows || [])[0]?.nparts;
+                            return (
+                              <div className={`video-import-reduce-condcard${it.id === expandedReduceId ? " is-open" : ""}`} key={it.id} role="button" tabIndex={0}
+                                onClick={() => { setExpandedReduceId(it.id); setReduceTab("extractions"); }}>
+                                {inputRel ? <img className="video-import-reduce-condthumb" src={asset(inputRel)} alt={it.cond || it.id} loading="lazy" /> : <div className="video-import-reduce-stagemissing">no input</div>}
+                                <div className="video-import-reduce-condlabel">{it.cond || it.id}</div>
+                                {(it.rows || []).length > 0 ? <span className="video-import-reduce-badge v-ref">{nparts ?? 0} parts</span> : <span className="video-import-reduce-badge v-worse">not reduced</span>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            }
             const bySlug = new Map<string, any[]>();
             for (const it of items) { const arr = bySlug.get(it.slug) || []; arr.push(it); bySlug.set(it.slug, arr); }
             const orderedSlugs = [...SLUG_ORDER.filter((s) => bySlug.has(s)), ...[...bySlug.keys()].filter((s) => !SLUG_ORDER.includes(s))];
@@ -8049,7 +8091,6 @@ export function VideoImportPage({
             </div>
           )}
 
-          {reduceTab === "extractions" && <div className="video-import-imageset-bar">{renderImageSetSelector("recognition")}<span className="video-import-imageset-hint">disk-backed · switching keeps reduced work</span></div>}
           {recognitionReduce && Array.isArray(recognitionReduce.items) && recognitionReduce.items.length > 0 && reduceTab === "extractions" && renderReduceExtractions()}
 
           {recognitionGallery.length > 0 && (

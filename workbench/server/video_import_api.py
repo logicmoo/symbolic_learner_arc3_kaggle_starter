@@ -811,6 +811,7 @@ async def pipeline_start(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
         goal_override=(str(payload["goal"]).strip() if payload.get("goal") else None),
         only_selected=bool(payload.get("onlySelected", True)),
         concurrency_override=int(concurrency) if concurrency else None,
+        set_id=(str(payload["set"]).strip() if payload.get("set") else None),
     )
 
 
@@ -977,6 +978,7 @@ async def pipeline_ws(websocket: WebSocket) -> None:
                         goal_override=(str(message["goal"]).strip() if message.get("goal") else None),
                         only_selected=bool(message.get("onlySelected", True)),
                         concurrency_override=int(concurrency) if concurrency else None,
+                        set_id=(str(message["set"]).strip() if message.get("set") else None),
                     )
                     state["last_key"] = None
                 elif command == "stop":

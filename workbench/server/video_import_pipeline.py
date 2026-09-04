@@ -2730,6 +2730,23 @@ def _reduce_lab_dir() -> Path:
     return default
 
 
+def _reduce_set_images(d: Path) -> list["Path"]:
+    """Layout-aware input images for a reduce target dir (mirrors the API's
+    _resolve_set_images): reduction pool/, flat frame_*.png dumps, or the nested
+    ARC recording layout (<attempt>/<step>/image.png)."""
+    pool = d / "pool"
+    if pool.is_dir():
+        return sorted(p for p in pool.iterdir() if p.suffix.lower() in {".jpg", ".jpeg", ".png"})
+    flat = sorted(list(d.glob("frame_*.png")) + list(d.glob("frame_*.jpg")))
+    if flat:
+        return flat
+    for pattern in ("*/*/image.png", "*/image.png", "**/image.png"):
+        nested = sorted(d.glob(pattern))
+        if nested:
+            return nested
+    return sorted(list(d.glob("*.png")) + list(d.glob("*.jpg")))
+
+
 def run_reduce(
     workspace_id: str,
     *,
@@ -2737,6 +2754,7 @@ def run_reduce(
     goal_override: str | None = None,
     only_selected: bool = True,
     concurrency_override: int | None = None,
+    set_id: str | None = None,
     stop_event: threading.Event | None = None,
     log: Callable[[str], None] | None = None,
     counts: dict[str, int] | None = None,
@@ -2760,8 +2778,16 @@ def run_reduce(
     import reduce_pool as rp  # noqa: PLC0415  (parent's proven reduction module)
     from PIL import Image  # noqa: PLC0415
 
-    bases = ["data/recognition_reduce", "data/arc3_games/curated/recognition_reduce"]
-    base_rel = next((b for b in bases if (root / b / "pool").is_dir()), bases[0])
+    canonical = (set_id or "recognition_reduce") == "recognition_reduce"
+    if canonical:
+        bases = ["data/recognition_reduce", "data/arc3_games/curated/recognition_reduce"]
+        base_rel = next((b for b in bases if (root / b / "pool").is_dir()), bases[0])
+    else:
+        parts = [p for p in str(set_id).replace("\\", "/").split("/") if p not in ("", ".")]
+        if any(p == ".." for p in parts):
+            raise RuntimeError(f"invalid image set: {set_id}")
+        base_rel = "data/" + "/".join(parts)
+        bases = [base_rel]
     ws_dir = root / base_rel
     stages_dir = ws_dir / "stages"
     sym_dir = ws_dir / "sym"
@@ -2788,9 +2814,20 @@ def run_reduce(
         return (s, c)
 
     pool_dir = ws_dir / "pool"
-    canon = {f"{s}__{c}" for s in _REDUCE_SLUG_ORDER for c in _REDUCE_COND_ORDER}
-    entries = [e for e in rp.build_pool() if (pool_dir / f"{e['id']}.jpg").is_file() and e["id"] in canon]
-    entries.sort(key=lambda e: order_key(e["id"]))
+    if canonical:
+        canon = {f"{s}__{c}" for s in _REDUCE_SLUG_ORDER for c in _REDUCE_COND_ORDER}
+        entries = [e for e in rp.build_pool() if (pool_dir / f"{e['id']}.jpg").is_file() and e["id"] in canon]
+        entries.sort(key=lambda e: order_key(e["id"]))
+    else:
+        # Frame-based image set: one entry per resolved frame, treated as a scene.
+        set_leaf = base_rel.rsplit("/", 1)[-1].replace("data-arc3_games-recordings-", "")
+        entries = []
+        for img in _reduce_set_images(ws_dir):
+            rel_to_d = img.relative_to(ws_dir).as_posix()
+            stem = rel_to_d.rsplit(".", 1)[0]
+            idv = re.sub(r"[^A-Za-z0-9]+", "_", stem).strip("_") or img.stem
+            entries.append({"id": idv, "slug": set_leaf, "cond": stem, "src": img, "scene": True})
+    order_pos = {e["id"]: i for i, e in enumerate(entries)}
 
     # Tiers to run. The parent's 2-shot (nshot) extraction is currently broken
     # (returns empty), so we run the reliable 1-shot tier only unless
@@ -2826,7 +2863,7 @@ def run_reduce(
          f"{', '.join(f'{t['shots']}-shot/{t['model']}' for t in tiers_meta)} · concurrency {concurrency}")
 
     def _write_manifest() -> None:
-        ordered = [manifest_rows[i] for i in sorted(manifest_rows, key=order_key)]
+        ordered = [manifest_rows[i] for i in sorted(manifest_rows, key=lambda i: order_pos.get(i, 10**9))]
         payload = {"tiers": tiers_meta, "count": len(ordered), "items": ordered}
         with _reduce_manifest_lock:
             manifest_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
@@ -2840,7 +2877,7 @@ def run_reduce(
         if stop_event is not None and stop_event.is_set():
             return
         idv, slug, cond = entry["id"], entry["slug"], entry["cond"]
-        src_path = pool_dir / f"{idv}.jpg"
+        src_path = entry.get("src") or (pool_dir / f"{idv}.jpg")
         expected_sym = [sym_dir / f"{idv}__{t['shots']}shot.metta" for t in tiers_meta]
         expected_png = [stages_dir / f"{idv}__t{t['shots']}__{k}.png" for t in tiers_meta for k in _REDUCE_STAGE_KEYS]
         if (not nocache and idv in manifest_rows
@@ -2853,7 +2890,7 @@ def run_reduce(
             t0 = time.monotonic()
             with active:
                 src = Image.open(src_path).convert("RGB")
-                scene = cond in rp.SCENE_CONDS
+                scene = entry.get("scene", cond in rp.SCENE_CONDS)
                 tiers = _tier_specs()
                 for tier in tiers:
                     tier["data"] = rp._extract_tier(src_path, tier, idv, scene)
@@ -2937,6 +2974,7 @@ def start_run(
     goal_override: str | None = None,
     only_selected: bool = True,
     concurrency_override: int | None = None,
+    set_id: str | None = None,
 ) -> dict[str, Any]:
     """Start a background pipeline run for a workspace (one at a time)."""
     stage = stage or "describe"
@@ -2950,6 +2988,8 @@ def start_run(
         _runs[workspace_id] = run
 
     runner = _STAGE_RUNNERS[stage]
+    # Only the reduce runner is image-set aware; other stages keep their signature.
+    extra: dict[str, Any] = {"set_id": set_id} if stage == "reduce" else {}
 
     def worker() -> None:
         try:
@@ -2962,6 +3002,7 @@ def start_run(
                 stop_event=run.stop_event,
                 log=run.log.append,
                 counts=run.counts,
+                **extra,
             )
             run.summary = summary
             run.status = "stopped" if run.stop_event.is_set() else "done"
