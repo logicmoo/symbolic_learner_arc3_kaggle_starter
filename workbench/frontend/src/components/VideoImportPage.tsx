@@ -6598,7 +6598,6 @@ export function VideoImportPage({
                                                   );
                                                 })}
                                           </div>
-                                          <figcaption>{hi ? `tree · ${hi.size} selected` : "tree · click isolates, shift-click adds"}</figcaption>
                                         </figure>
                                         <figure className="video-import-reduce-stage">
                                           <svg viewBox="0 0 1000 1000" className="video-import-reduce-svg">
