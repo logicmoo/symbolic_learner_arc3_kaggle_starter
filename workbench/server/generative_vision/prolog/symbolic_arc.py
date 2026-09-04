@@ -279,6 +279,31 @@ def enclosures(region_info, pairs) -> list[tuple[int, int]]:
     return out
 
 
+_NAMED_COLORS = {
+    "black": (0, 0, 0), "white": (255, 255, 255), "gray": (136, 136, 136),
+    "darkgray": (90, 90, 90), "silver": (200, 200, 200), "red": (230, 20, 20),
+    "maroon": (135, 12, 37), "green": (46, 204, 64), "lime": (1, 255, 112),
+    "olive": (61, 153, 112), "teal": (57, 204, 204), "blue": (0, 116, 217),
+    "navy": (0, 31, 63), "aqua": (127, 219, 255), "yellow": (255, 220, 0),
+    "orange": (255, 133, 27), "brown": (139, 69, 19), "tan": (210, 180, 140),
+    "purple": (177, 13, 201), "pink": (255, 122, 182),
+}
+
+
+def _color_name(hexs: str) -> str:
+    """Nearest human color name for a #rrggbb hex."""
+    try:
+        r, g, b = int(hexs[1:3], 16), int(hexs[3:5], 16), int(hexs[5:7], 16)
+    except (ValueError, IndexError):
+        return "color"
+    best, bd = "color", 1 << 30
+    for name, (nr, ng, nb) in _NAMED_COLORS.items():
+        d = (r - nr) ** 2 + (g - ng) ** 2 + (b - nb) ** 2
+        if d < bd:
+            bd, best = d, name
+    return best
+
+
 def extract_frame(png_path: str, char: str) -> dict:
     idx, hexpal, cols, rows = decode_grid(png_path)
     labels, info = label_regions(idx)
@@ -298,9 +323,12 @@ def extract_frame(png_path: str, char: str) -> dict:
               f"(character {char})"]
     geom = []
     partof_all: dict[str, str] = {}
+    color_n: dict[str, int] = {}
     for gid, i in order:
         rid = f"r{gid}"
-        lbl = i["hex"]
+        cname = _color_name(i["hex"])
+        color_n[cname] = color_n.get(cname, 0) + 1
+        lbl = f"{cname}_{color_n[cname]}"
         g = group_of(rid)
         partof_all[rid] = g
         mlines.append(f'(part {char} {rid} (label "{lbl}") (color {i["hex"]}))')
