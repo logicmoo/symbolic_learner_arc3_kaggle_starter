@@ -2730,6 +2730,34 @@ def _reduce_lab_dir() -> Path:
     return default
 
 
+def _extract_tier_with_retry(rp: Any, src_path: "Path", tier: dict[str, Any], idv: str,
+                             scene: bool, stop_event: "threading.Event | None",
+                             emit: Callable[[str], None]) -> dict[str, Any]:
+    """Call the parent extractor, retrying transient relay failures.
+
+    EmuLLM answers 503 (Service Unavailable) instantly when no worker is free
+    for the requested model rather than queuing, so a wide fan-out momentarily
+    exceeds the pool. Retry those (and timeouts) with jittered backoff so the run
+    makes progress instead of failing whole frames."""
+    import random  # noqa: PLC0415
+    last: Exception | None = None
+    for attempt in range(8):
+        if stop_event is not None and stop_event.is_set():
+            raise RuntimeError("stopped")
+        try:
+            return rp._extract_tier(src_path, tier, idv, scene)
+        except Exception as error:  # noqa: BLE001
+            msg = str(error).lower()
+            transient = ("503" in msg or "service unavailable" in msg
+                         or "timed out" in msg or "timeout" in msg
+                         or "connection" in msg or "502" in msg or "504" in msg)
+            if not transient:
+                raise
+            last = error
+            time.sleep(min(2 ** attempt, 30) + random.random() * 2)
+    raise last if last is not None else RuntimeError("extraction failed")
+
+
 def _reduce_set_images(d: Path) -> list["Path"]:
     """Layout-aware input images for a reduce target dir (mirrors the API's
     _resolve_set_images): reduction pool/, flat frame_*.png dumps, or the nested
@@ -2893,7 +2921,7 @@ def run_reduce(
                 scene = entry.get("scene", cond in rp.SCENE_CONDS)
                 tiers = _tier_specs()
                 for tier in tiers:
-                    tier["data"] = rp._extract_tier(src_path, tier, idv, scene)
+                    tier["data"] = _extract_tier_with_retry(rp, src_path, tier, idv, scene, stop_event, emit)
                     tier["facts"] = rp._tier_facts(slug, tier)
                 ref = tiers[0]["facts"]
                 for tier in tiers[1:]:
