@@ -1,0 +1,167 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000045_outlines/verify_center_mini_panel_white__21448f03877e.png",
+  "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000045_outlines/verify_center_mini_panel_white__21448f03877e.provenance.json",
+  "createdAt": "2026-09-02T02:53:52.564430Z",
+  "operation": "verify_outliner_trace",
+  "dimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "originalDimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "root": {
+    "firstSeenImage": "data/arc3_games/recordings/ls20/saved_005/44/image.png",
+    "dimensions": {
+      "width": 640,
+      "height": 640
+    }
+  },
+  "parent": {
+    "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000045.png",
+    "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000045.provenance.json"
+  },
+  "source": {
+    "objectName": "center_mini_panel_white_pixel"
+  },
+  "transform": {
+    "polygons": [
+      [
+        [
+          350,
+          310
+        ],
+        [
+          369,
+          310
+        ],
+        [
+          369,
+          319
+        ],
+        [
+          350,
+          319
+        ]
+      ]
+    ],
+    "holes": [],
+    "traceTurtle": [
+      {
+        "op": "move",
+        "x": 548,
+        "y": 485
+      },
+      {
+        "op": "line",
+        "x": 577,
+        "y": 485
+      },
+      {
+        "op": "line",
+        "x": 577,
+        "y": 499
+      },
+      {
+        "op": "line",
+        "x": 548,
+        "y": 499
+      },
+      {
+        "op": "line",
+        "x": 548,
+        "y": 485
+      }
+    ],
+    "geometryHash": "21448f03877e5c34d2837b87ef633df48bb2e8f4fc6deb5b2fcb95102f8ccad9",
+    "traceAgreement": 1.0,
+    "boundaryCoverage": 1.0
+  },
+  "lineage": [
+    {
+      "image": "data/arc3_games/recordings/ls20/saved_005/44/image.png",
+      "operation": "legacy_source",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:20.318105Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000045.png",
+      "operation": "import_arc_playback_frame",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:20.328266Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000045_outlines/verify_center_mini_panel_white__21448f03877e.png",
+      "operation": "verify_outliner_trace",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {
+        "polygons": [
+          [
+            [
+              350,
+              310
+            ],
+            [
+              369,
+              310
+            ],
+            [
+              369,
+              319
+            ],
+            [
+              350,
+              319
+            ]
+          ]
+        ],
+        "holes": [],
+        "traceTurtle": [
+          {
+            "op": "move",
+            "x": 548,
+            "y": 485
+          },
+          {
+            "op": "line",
+            "x": 577,
+            "y": 485
+          },
+          {
+            "op": "line",
+            "x": 577,
+            "y": 499
+          },
+          {
+            "op": "line",
+            "x": 548,
+            "y": 499
+          },
+          {
+            "op": "line",
+            "x": 548,
+            "y": 485
+          }
+        ],
+        "geometryHash": "21448f03877e5c34d2837b87ef633df48bb2e8f4fc6deb5b2fcb95102f8ccad9",
+        "traceAgreement": 1.0,
+        "boundaryCoverage": 1.0
+      },
+      "createdAt": "2026-09-02T02:53:52.564430Z"
+    }
+  ]
+}

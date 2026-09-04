@@ -1,0 +1,192 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_members/scene_after_01_members/scene_after_02.png",
+  "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_members/scene_after_01_members/scene_after_02.provenance.json",
+  "createdAt": "2026-09-02T04:35:30.410291Z",
+  "operation": "remove_object_from_scene",
+  "dimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "originalDimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "root": {
+    "firstSeenImage": "data/arc3_games/recordings/ls20/saved_005/34/image.png",
+    "dimensions": {
+      "width": 640,
+      "height": 640
+    }
+  },
+  "parent": {
+    "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_members/scene_after_01.png",
+    "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_members/scene_after_01.provenance.json"
+  },
+  "source": {
+    "objectName": "upper_left_green_center_dot",
+    "cutout": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_members/scene_after_01_members/cut_02_upper_left_green_center_.png",
+    "fillInstructions": {
+      "description": "Fill the removed center-dot area with the same solid dark-gray interior of the surrounding upper-left square detail so the inset reads as a uniform gray tile.",
+      "colors": [
+        "#606060"
+      ],
+      "continueEdges": [
+        "Continue the dark-gray interior horizontally from the left and right sides of the hole.",
+        "Continue the dark-gray interior vertically from the top and bottom sides of the hole.",
+        "Preserve the outer border and silhouette of the surrounding gray square detail unchanged."
+      ],
+      "texture": "Flat, uniform pixel-art fill (no gradient, no noise)."
+    }
+  },
+  "transform": {
+    "fill": "median",
+    "outlineAlignment": {
+      "cutImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_members/scene_after_01.png",
+      "outlineSourceImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035.png",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "verified": true,
+      "verificationImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_outlines/verify_upper_left_green_center__f0b06f427aaf.png",
+      "geometryHash": "f0b06f427aafaeef947e14108f41afdae7aaa7235f7f027b610f3fef1968f898",
+      "traceVerified": true
+    },
+    "removedBox": [
+      199,
+      161,
+      213,
+      175
+    ],
+    "maskScale": 4,
+    "fillInstructions": {
+      "description": "Fill the removed center-dot area with the same solid dark-gray interior of the surrounding upper-left square detail so the inset reads as a uniform gray tile.",
+      "colors": [
+        "#606060"
+      ],
+      "continueEdges": [
+        "Continue the dark-gray interior horizontally from the left and right sides of the hole.",
+        "Continue the dark-gray interior vertically from the top and bottom sides of the hole.",
+        "Preserve the outer border and silhouette of the surrounding gray square detail unchanged."
+      ],
+      "texture": "Flat, uniform pixel-art fill (no gradient, no noise)."
+    },
+    "imageGeneration": {
+      "renderer": "median"
+    }
+  },
+  "lineage": [
+    {
+      "image": "data/arc3_games/recordings/ls20/saved_005/34/image.png",
+      "operation": "legacy_source",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:19.794636Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035.png",
+      "operation": "import_arc_playback_frame",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:19.808137Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_members/scene_after_01.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035.png",
+          "outlineSourceImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035.png",
+          "dimensions": {
+            "width": 640,
+            "height": 640
+          },
+          "verified": true,
+          "verificationImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_outlines/verify_top_left_red_sign_glyph_8ff21b09f2c4.png",
+          "geometryHash": "8ff21b09f2c4a6f7ea74d9451eee18bd4c2607a4192eccce09113da3053994c7",
+          "traceVerified": true
+        },
+        "removedBox": [
+          89,
+          59,
+          123,
+          93
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "The removed glyph reveals the sign tile’s flat interior: a uniform light-gray fill matching the surrounding pixels inside the top-left gray tile.",
+          "colors": [
+            "#B0B0B0"
+          ],
+          "continueEdges": [
+            "Continue the light-gray tile interior seamlessly across the entire removed glyph polygon with no breaks or outlines."
+          ],
+          "texture": "None (solid flat pixel fill, no gradient or pattern)."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-02T04:33:28.420801Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_members/scene_after_01_members/scene_after_02.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_members/scene_after_01.png",
+          "outlineSourceImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035.png",
+          "dimensions": {
+            "width": 640,
+            "height": 640
+          },
+          "verified": true,
+          "verificationImage": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_outlines/verify_upper_left_green_center__f0b06f427aaf.png",
+          "geometryHash": "f0b06f427aafaeef947e14108f41afdae7aaa7235f7f027b610f3fef1968f898",
+          "traceVerified": true
+        },
+        "removedBox": [
+          199,
+          161,
+          213,
+          175
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Fill the removed center-dot area with the same solid dark-gray interior of the surrounding upper-left square detail so the inset reads as a uniform gray tile.",
+          "colors": [
+            "#606060"
+          ],
+          "continueEdges": [
+            "Continue the dark-gray interior horizontally from the left and right sides of the hole.",
+            "Continue the dark-gray interior vertically from the top and bottom sides of the hole.",
+            "Preserve the outer border and silhouette of the surrounding gray square detail unchanged."
+          ],
+          "texture": "Flat, uniform pixel-art fill (no gradient, no noise)."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-02T04:35:30.410291Z"
+    }
+  ]
+}

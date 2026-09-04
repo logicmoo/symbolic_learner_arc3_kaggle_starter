@@ -1,0 +1,55 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000012.png",
+  "provenance": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000012.provenance.json",
+  "createdAt": "2026-09-02T00:18:43.893402Z",
+  "operation": "import_curated_data_frame",
+  "dimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "originalDimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "root": {
+    "firstSeenImage": "data/arc3_games/curated/level_1/LEFT/LEFT/DOWN/LEFT/UP/UP/UP/UP/RIGHT/RIGHT/RIGHT/UP/image.png",
+    "dimensions": {
+      "width": 640,
+      "height": 640
+    }
+  },
+  "parent": {
+    "image": "data/arc3_games/curated/level_1/LEFT/LEFT/DOWN/LEFT/UP/UP/UP/UP/RIGHT/RIGHT/RIGHT/UP/image.png",
+    "provenance": "data/arc3_games/curated/level_1/LEFT/LEFT/DOWN/LEFT/UP/UP/UP/UP/RIGHT/RIGHT/RIGHT/UP/image.provenance.json"
+  },
+  "source": {
+    "curatedSource": "data/arc3_games/curated/level_1",
+    "sourceImage": "data/arc3_games/curated/level_1/LEFT/LEFT/DOWN/LEFT/UP/UP/UP/UP/RIGHT/RIGHT/RIGHT/UP/image.png",
+    "frameIndex": 12
+  },
+  "transform": {},
+  "lineage": [
+    {
+      "image": "data/arc3_games/curated/level_1/LEFT/LEFT/DOWN/LEFT/UP/UP/UP/UP/RIGHT/RIGHT/RIGHT/UP/image.png",
+      "operation": "legacy_source",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T00:03:06.615348Z"
+    },
+    {
+      "image": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000012.png",
+      "operation": "import_curated_data_frame",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T00:18:43.893402Z"
+    }
+  ]
+}

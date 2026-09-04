@@ -1,0 +1,293 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_001/frame_move_000011_planner/order_035181e3f295.png",
+  "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_001/frame_move_000011_planner/order_035181e3f295.provenance.json",
+  "createdAt": "2026-09-02T00:37:01.892501Z",
+  "operation": "visualize_planner_order",
+  "dimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "originalDimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "root": {
+    "firstSeenImage": "data/arc3_games/recordings/ls20/saved_001/10/image.png",
+    "dimensions": {
+      "width": 640,
+      "height": 640
+    }
+  },
+  "parent": {
+    "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_001/frame_move_000011.png",
+    "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_001/frame_move_000011.provenance.json"
+  },
+  "source": {},
+  "transform": {
+    "labels": [
+      {
+        "object": "head_glyph",
+        "number": 1,
+        "point": [
+          356,
+          116
+        ]
+      },
+      {
+        "object": "head_face_panel",
+        "number": 2,
+        "point": [
+          338,
+          98
+        ]
+      },
+      {
+        "object": "neck_gray_band",
+        "number": 3,
+        "point": [
+          350,
+          178
+        ]
+      },
+      {
+        "object": "neck_red_band",
+        "number": 4,
+        "point": [
+          350,
+          198
+        ]
+      },
+      {
+        "object": "black_body_mark",
+        "number": 5,
+        "point": [
+          218,
+          320
+        ]
+      },
+      {
+        "object": "blue_body_mark",
+        "number": 6,
+        "point": [
+          211,
+          330
+        ]
+      },
+      {
+        "object": "bottom_left_tile_glyph",
+        "number": 7,
+        "point": [
+          44,
+          580
+        ]
+      },
+      {
+        "object": "hud_green_fill",
+        "number": 8,
+        "point": [
+          150,
+          620
+        ]
+      },
+      {
+        "object": "hud_cyan_blocks",
+        "number": 9,
+        "point": [
+          566,
+          620
+        ]
+      },
+      {
+        "object": "bottom_left_gray_tile",
+        "number": 10,
+        "point": [
+          20,
+          570
+        ]
+      },
+      {
+        "object": "hud_dark_bar",
+        "number": 11,
+        "point": [
+          300,
+          620
+        ]
+      },
+      {
+        "object": "green_creature",
+        "number": 12,
+        "point": [
+          430,
+          360
+        ]
+      },
+      {
+        "object": "left_gray_strip",
+        "number": 13,
+        "point": [
+          20,
+          260
+        ]
+      },
+      {
+        "object": "yellow_background",
+        "number": 14,
+        "point": [
+          500,
+          40
+        ]
+      }
+    ],
+    "plannerHash": "035181e3f295b0401540e3725804c597471ef23d6dc3dc18aa8be2f47f60b484"
+  },
+  "lineage": [
+    {
+      "image": "data/arc3_games/recordings/ls20/saved_001/10/image.png",
+      "operation": "legacy_source",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T00:25:11.934994Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_001/frame_move_000011.png",
+      "operation": "import_arc_playback_frame",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T00:25:11.944036Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_001/frame_move_000011_planner/order_035181e3f295.png",
+      "operation": "visualize_planner_order",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {
+        "labels": [
+          {
+            "object": "head_glyph",
+            "number": 1,
+            "point": [
+              356,
+              116
+            ]
+          },
+          {
+            "object": "head_face_panel",
+            "number": 2,
+            "point": [
+              338,
+              98
+            ]
+          },
+          {
+            "object": "neck_gray_band",
+            "number": 3,
+            "point": [
+              350,
+              178
+            ]
+          },
+          {
+            "object": "neck_red_band",
+            "number": 4,
+            "point": [
+              350,
+              198
+            ]
+          },
+          {
+            "object": "black_body_mark",
+            "number": 5,
+            "point": [
+              218,
+              320
+            ]
+          },
+          {
+            "object": "blue_body_mark",
+            "number": 6,
+            "point": [
+              211,
+              330
+            ]
+          },
+          {
+            "object": "bottom_left_tile_glyph",
+            "number": 7,
+            "point": [
+              44,
+              580
+            ]
+          },
+          {
+            "object": "hud_green_fill",
+            "number": 8,
+            "point": [
+              150,
+              620
+            ]
+          },
+          {
+            "object": "hud_cyan_blocks",
+            "number": 9,
+            "point": [
+              566,
+              620
+            ]
+          },
+          {
+            "object": "bottom_left_gray_tile",
+            "number": 10,
+            "point": [
+              20,
+              570
+            ]
+          },
+          {
+            "object": "hud_dark_bar",
+            "number": 11,
+            "point": [
+              300,
+              620
+            ]
+          },
+          {
+            "object": "green_creature",
+            "number": 12,
+            "point": [
+              430,
+              360
+            ]
+          },
+          {
+            "object": "left_gray_strip",
+            "number": 13,
+            "point": [
+              20,
+              260
+            ]
+          },
+          {
+            "object": "yellow_background",
+            "number": 14,
+            "point": [
+              500,
+              40
+            ]
+          }
+        ],
+        "plannerHash": "035181e3f295b0401540e3725804c597471ef23d6dc3dc18aa8be2f47f60b484"
+      },
+      "createdAt": "2026-09-02T00:37:01.892501Z"
+    }
+  ]
+}

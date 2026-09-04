@@ -1,0 +1,167 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000032_outlines/verify_bottom_ui_green_segment_01cd6518f6d0.png",
+  "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000032_outlines/verify_bottom_ui_green_segment_01cd6518f6d0.provenance.json",
+  "createdAt": "2026-09-02T02:21:37.755078Z",
+  "operation": "verify_outliner_trace",
+  "dimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "originalDimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "root": {
+    "firstSeenImage": "data/arc3_games/recordings/ls20/saved_005/31/image.png",
+    "dimensions": {
+      "width": 640,
+      "height": 640
+    }
+  },
+  "parent": {
+    "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000032.png",
+    "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000032.provenance.json"
+  },
+  "source": {
+    "objectName": "bottom_ui_green_segment"
+  },
+  "transform": {
+    "polygons": [
+      [
+        [
+          120,
+          610
+        ],
+        [
+          360,
+          610
+        ],
+        [
+          360,
+          630
+        ],
+        [
+          120,
+          630
+        ]
+      ]
+    ],
+    "holes": [],
+    "traceTurtle": [
+      {
+        "op": "move",
+        "x": 188,
+        "y": 953
+      },
+      {
+        "op": "line",
+        "x": 563,
+        "y": 953
+      },
+      {
+        "op": "line",
+        "x": 563,
+        "y": 984
+      },
+      {
+        "op": "line",
+        "x": 188,
+        "y": 984
+      },
+      {
+        "op": "line",
+        "x": 188,
+        "y": 953
+      }
+    ],
+    "geometryHash": "01cd6518f6d03e4d95fcf8c398e518874eea6b5c977a91789a50fada45c9dff0",
+    "traceAgreement": 1.0,
+    "boundaryCoverage": 1.0
+  },
+  "lineage": [
+    {
+      "image": "data/arc3_games/recordings/ls20/saved_005/31/image.png",
+      "operation": "legacy_source",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:19.552251Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000032.png",
+      "operation": "import_arc_playback_frame",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:19.561881Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000032_outlines/verify_bottom_ui_green_segment_01cd6518f6d0.png",
+      "operation": "verify_outliner_trace",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {
+        "polygons": [
+          [
+            [
+              120,
+              610
+            ],
+            [
+              360,
+              610
+            ],
+            [
+              360,
+              630
+            ],
+            [
+              120,
+              630
+            ]
+          ]
+        ],
+        "holes": [],
+        "traceTurtle": [
+          {
+            "op": "move",
+            "x": 188,
+            "y": 953
+          },
+          {
+            "op": "line",
+            "x": 563,
+            "y": 953
+          },
+          {
+            "op": "line",
+            "x": 563,
+            "y": 984
+          },
+          {
+            "op": "line",
+            "x": 188,
+            "y": 984
+          },
+          {
+            "op": "line",
+            "x": 188,
+            "y": 953
+          }
+        ],
+        "geometryHash": "01cd6518f6d03e4d95fcf8c398e518874eea6b5c977a91789a50fada45c9dff0",
+        "traceAgreement": 1.0,
+        "boundaryCoverage": 1.0
+      },
+      "createdAt": "2026-09-02T02:21:37.755078Z"
+    }
+  ]
+}

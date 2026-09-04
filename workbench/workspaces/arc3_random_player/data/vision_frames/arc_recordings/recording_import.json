@@ -1,20 +1,342 @@
 {
-  "sourceRecording": "data/arc3_games/recordings/ab01-v1/saved_001",
+  "sourceRecording": "data/arc3_games/recordings/ls20/saved_004",
   "frames": [
     {
-      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ab01-v1-saved_001/frame_000000.png",
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000000.png",
       "index": 0,
+      "moveNumber": 0,
       "atSeconds": 0.0,
       "scene": 1,
-      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ab01-v1-saved_001/frame_000000.provenance.json"
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000000.provenance.json"
     },
     {
-      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ab01-v1-saved_001/frame_000001.png",
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000001.png",
       "index": 1,
+      "moveNumber": 1,
       "atSeconds": 1.0,
       "scene": 2,
-      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ab01-v1-saved_001/frame_000001.provenance.json"
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000001.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000002.png",
+      "index": 2,
+      "moveNumber": 2,
+      "atSeconds": 2.0,
+      "scene": 3,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000002.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000003.png",
+      "index": 3,
+      "moveNumber": 3,
+      "atSeconds": 3.0,
+      "scene": 4,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000003.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000004.png",
+      "index": 4,
+      "moveNumber": 4,
+      "atSeconds": 4.0,
+      "scene": 5,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000004.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000005.png",
+      "index": 5,
+      "moveNumber": 5,
+      "atSeconds": 5.0,
+      "scene": 6,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000005.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000006.png",
+      "index": 6,
+      "moveNumber": 6,
+      "atSeconds": 6.0,
+      "scene": 7,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000006.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000007.png",
+      "index": 7,
+      "moveNumber": 7,
+      "atSeconds": 7.0,
+      "scene": 8,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000007.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000008.png",
+      "index": 8,
+      "moveNumber": 8,
+      "atSeconds": 8.0,
+      "scene": 9,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000008.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000009.png",
+      "index": 9,
+      "moveNumber": 9,
+      "atSeconds": 9.0,
+      "scene": 10,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000009.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000010.png",
+      "index": 10,
+      "moveNumber": 10,
+      "atSeconds": 10.0,
+      "scene": 11,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000010.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000011.png",
+      "index": 11,
+      "moveNumber": 11,
+      "atSeconds": 11.0,
+      "scene": 12,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000011.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000012.png",
+      "index": 12,
+      "moveNumber": 12,
+      "atSeconds": 12.0,
+      "scene": 13,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000012.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000013.png",
+      "index": 13,
+      "moveNumber": 13,
+      "atSeconds": 13.0,
+      "scene": 14,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000013.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000014.png",
+      "index": 14,
+      "moveNumber": 14,
+      "atSeconds": 14.0,
+      "scene": 15,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000014.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000015.png",
+      "index": 15,
+      "moveNumber": 15,
+      "atSeconds": 15.0,
+      "scene": 16,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000015.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000016.png",
+      "index": 16,
+      "moveNumber": 16,
+      "atSeconds": 16.0,
+      "scene": 17,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000016.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000017.png",
+      "index": 17,
+      "moveNumber": 17,
+      "atSeconds": 17.0,
+      "scene": 18,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000017.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000018.png",
+      "index": 18,
+      "moveNumber": 18,
+      "atSeconds": 18.0,
+      "scene": 19,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000018.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000019.png",
+      "index": 19,
+      "moveNumber": 19,
+      "atSeconds": 19.0,
+      "scene": 20,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000019.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000020.png",
+      "index": 20,
+      "moveNumber": 20,
+      "atSeconds": 20.0,
+      "scene": 21,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000020.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000021.png",
+      "index": 21,
+      "moveNumber": 21,
+      "atSeconds": 21.0,
+      "scene": 22,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000021.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000022.png",
+      "index": 22,
+      "moveNumber": 22,
+      "atSeconds": 22.0,
+      "scene": 23,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000022.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000023.png",
+      "index": 23,
+      "moveNumber": 23,
+      "atSeconds": 23.0,
+      "scene": 24,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000023.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000024.png",
+      "index": 24,
+      "moveNumber": 24,
+      "atSeconds": 24.0,
+      "scene": 25,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000024.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000025.png",
+      "index": 25,
+      "moveNumber": 25,
+      "atSeconds": 25.0,
+      "scene": 26,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000025.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000026.png",
+      "index": 26,
+      "moveNumber": 26,
+      "atSeconds": 26.0,
+      "scene": 27,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000026.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000027.png",
+      "index": 27,
+      "moveNumber": 27,
+      "atSeconds": 27.0,
+      "scene": 28,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000027.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000028.png",
+      "index": 28,
+      "moveNumber": 28,
+      "atSeconds": 28.0,
+      "scene": 29,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000028.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000029.png",
+      "index": 29,
+      "moveNumber": 29,
+      "atSeconds": 29.0,
+      "scene": 30,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000029.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000030.png",
+      "index": 30,
+      "moveNumber": 30,
+      "atSeconds": 30.0,
+      "scene": 31,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000030.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000031.png",
+      "index": 31,
+      "moveNumber": 31,
+      "atSeconds": 31.0,
+      "scene": 32,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000031.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000032.png",
+      "index": 32,
+      "moveNumber": 32,
+      "atSeconds": 32.0,
+      "scene": 33,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000032.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000033.png",
+      "index": 33,
+      "moveNumber": 33,
+      "atSeconds": 33.0,
+      "scene": 34,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000033.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000034.png",
+      "index": 34,
+      "moveNumber": 34,
+      "atSeconds": 34.0,
+      "scene": 35,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000034.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000035.png",
+      "index": 35,
+      "moveNumber": 35,
+      "atSeconds": 35.0,
+      "scene": 36,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000035.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000036.png",
+      "index": 36,
+      "moveNumber": 36,
+      "atSeconds": 36.0,
+      "scene": 37,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000036.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000037.png",
+      "index": 37,
+      "moveNumber": 37,
+      "atSeconds": 37.0,
+      "scene": 38,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000037.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000038.png",
+      "index": 38,
+      "moveNumber": 38,
+      "atSeconds": 38.0,
+      "scene": 39,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000038.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000039.png",
+      "index": 39,
+      "moveNumber": 39,
+      "atSeconds": 39.0,
+      "scene": 40,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000039.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000040.png",
+      "index": 40,
+      "moveNumber": 40,
+      "atSeconds": 40.0,
+      "scene": 41,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000040.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000041.png",
+      "index": 41,
+      "moveNumber": 41,
+      "atSeconds": 41.0,
+      "scene": 42,
+      "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000041.provenance.json"
     }
   ],
-  "importedAt": "2026-09-01T20:51:17.442304Z"
+  "importedAt": "2026-09-02T06:25:05.208654Z"
 }

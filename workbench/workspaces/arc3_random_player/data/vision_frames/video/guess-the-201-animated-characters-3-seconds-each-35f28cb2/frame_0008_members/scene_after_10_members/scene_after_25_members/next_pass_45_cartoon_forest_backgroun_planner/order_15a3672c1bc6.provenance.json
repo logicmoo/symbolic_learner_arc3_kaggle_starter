@@ -1,0 +1,592 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/scene_after_10_members/scene_after_25_members/next_pass_45_cartoon_forest_backgroun_planner/order_15a3672c1bc6.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/scene_after_10_members/scene_after_25_members/next_pass_45_cartoon_forest_backgroun_planner/order_15a3672c1bc6.provenance.json",
+  "createdAt": "2026-09-01T22:56:23.306583Z",
+  "operation": "visualize_planner_order",
+  "dimensions": {
+    "width": 1014,
+    "height": 778
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 64.833,
+    "sceneIndex": 26,
+    "videoFrameIndex": 1945
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/scene_after_10_members/scene_after_25_members/next_pass_45_cartoon_forest_backgroun.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/scene_after_10_members/scene_after_25_members/next_pass_45_cartoon_forest_backgroun.provenance.json"
+  },
+  "source": {},
+  "transform": {
+    "labels": [
+      {
+        "object": "central_black_occlusion",
+        "number": 1,
+        "point": [
+          430,
+          360
+        ]
+      },
+      {
+        "object": "white_glove_hand",
+        "number": 2,
+        "point": [
+          616,
+          492
+        ]
+      },
+      {
+        "object": "orange_carrot",
+        "number": 3,
+        "point": [
+          710,
+          438
+        ]
+      },
+      {
+        "object": "cartoon_character_partial",
+        "number": 4,
+        "point": [
+          600,
+          250
+        ]
+      },
+      {
+        "object": "brown_lower_shrub",
+        "number": 5,
+        "point": [
+          220,
+          560
+        ]
+      },
+      {
+        "object": "left_orange_shrubs",
+        "number": 6,
+        "point": [
+          140,
+          270
+        ]
+      },
+      {
+        "object": "right_green_bushes",
+        "number": 7,
+        "point": [
+          760,
+          300
+        ]
+      },
+      {
+        "object": "green_hills_background",
+        "number": 8,
+        "point": [
+          240,
+          130
+        ]
+      },
+      {
+        "object": "inset_sky_strip",
+        "number": 9,
+        "point": [
+          500,
+          86
+        ]
+      },
+      {
+        "object": "white_inner_frame_outline",
+        "number": 10,
+        "point": [
+          100,
+          84
+        ]
+      },
+      {
+        "object": "blue_rounded_frame_border",
+        "number": 11,
+        "point": [
+          70,
+          740
+        ]
+      },
+      {
+        "object": "outer_black_background",
+        "number": 12,
+        "point": [
+          20,
+          20
+        ]
+      }
+    ],
+    "plannerHash": "15a3672c1bc6107a40393ff36d02efce4a2f0758d2be41520ebe61b4f530d338"
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:32.704688Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/scene_after_10.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          497,
+          242,
+          565,
+          351
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the carrot body and leafy tip is the central panel’s green shrub background with soft cartoon shading; the leaf area overlaps darker/medium green bush tones, while the carrot body overlaps lighter olive-green foliage and subtle branch-like contour lines.",
+          "colors": [
+            "#6E8B5E",
+            "#7C9666",
+            "#5E7D52",
+            "#4E6A47"
+          ],
+          "continueEdges": [
+            "Continue the bush outline curves from left and right through the removed carrot region.",
+            "Reconnect soft foliage contour lines and shadow transitions interrupted by the carrot body.",
+            "Blend the darker green cluster behind the leaf contour into surrounding mid-green shrub textures.",
+            "Do not extend Bugs Bunny hand/finger edges into the hole; keep character edges intact at occlusion boundaries."
+          ],
+          "texture": "Flat 2D cartoon foliage texture with soft airbrushed gradients and thin darker line-art contours."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:23:03.133676Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/scene_after_10_members/scene_after_25.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/scene_after_10.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          332,
+          100,
+          543,
+          395
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind Bugs Bunny, the central panel continues as a cartoon forest scene: layered bushes (green and reddish-brown), a distant green hill with a blue sky strip at the top, and a vertical dark tree-trunk band near the character’s center-right side. The area behind the torso/legs is mostly muted olive ground and shrub tones; behind ears/head it transitions to hill and sky.",
+          "colors": [
+            "#6E8B5E",
+            "#8FA36F",
+            "#A65A3E",
+            "#7A3F33",
+            "#4E6F4A",
+            "#2E3A2F",
+            "#6F8452",
+            "#7FA2C8"
+          ],
+          "continueEdges": [
+            "Continue the top horizon/hill contour smoothly behind both ears and head.",
+            "Reconnect bush boundaries from left orange-brown shrub into right green shrub across the removed silhouette.",
+            "Extend the vertical dark tree-trunk stripe through the center-right body region with consistent width.",
+            "Carry the lower ground line behind legs/feet with gentle left-to-right slope and matching shading."
+          ],
+          "texture": "Flat 2D cartoon paint with soft brush-like foliage shapes, low-frequency shading gradients, and crisp inked edge transitions between shrubs, hill, trunk, and sky."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:28:01.899848Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/scene_after_10_members/scene_after_25_members/cut_45_cartoon_forest_backgroun.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 437,
+        "height": 319
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/scene_after_10_members/scene_after_25.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          212,
+          101,
+          649,
+          420
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              225,
+              103
+            ],
+            [
+              635,
+              103
+            ],
+            [
+              646,
+              114
+            ],
+            [
+              646,
+              406
+            ],
+            [
+              635,
+              417
+            ],
+            [
+              225,
+              417
+            ],
+            [
+              214,
+              406
+            ],
+            [
+              214,
+              114
+            ]
+          ]
+        ],
+        "holes": [
+          [
+            [
+              334,
+              140
+            ],
+            [
+              371,
+              120
+            ],
+            [
+              428,
+              113
+            ],
+            [
+              486,
+              121
+            ],
+            [
+              529,
+              149
+            ],
+            [
+              548,
+              189
+            ],
+            [
+              553,
+              236
+            ],
+            [
+              547,
+              272
+            ],
+            [
+              531,
+              290
+            ],
+            [
+              553,
+              248
+            ],
+            [
+              560,
+              246
+            ],
+            [
+              557,
+              254
+            ],
+            [
+              548,
+              266
+            ],
+            [
+              537,
+              277
+            ],
+            [
+              526,
+              287
+            ],
+            [
+              515,
+              296
+            ],
+            [
+              505,
+              299
+            ],
+            [
+              498,
+              295
+            ],
+            [
+              501,
+              286
+            ],
+            [
+              511,
+              276
+            ],
+            [
+              520,
+              266
+            ],
+            [
+              481,
+              313
+            ],
+            [
+              456,
+              328
+            ],
+            [
+              430,
+              342
+            ],
+            [
+              404,
+              361
+            ],
+            [
+              386,
+              389
+            ],
+            [
+              375,
+              417
+            ],
+            [
+              334,
+              417
+            ],
+            [
+              325,
+              386
+            ],
+            [
+              314,
+              351
+            ],
+            [
+              304,
+              316
+            ],
+            [
+              294,
+              283
+            ],
+            [
+              289,
+              252
+            ],
+            [
+              295,
+              222
+            ],
+            [
+              308,
+              194
+            ]
+          ]
+        ]
+      },
+      "createdAt": "2026-09-01T17:33:34.501486Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/scene_after_10_members/scene_after_25_members/next_pass_45_cartoon_forest_backgroun.png",
+      "operation": "enlarge_object_for_analysis",
+      "dimensions": {
+        "width": 1014,
+        "height": 778
+      },
+      "transform": {
+        "sourceDimensions": {
+          "width": 437,
+          "height": 319
+        },
+        "scale": 2,
+        "resizedDimensions": {
+          "width": 874,
+          "height": 638
+        },
+        "padding": {
+          "left": 70,
+          "top": 70,
+          "right": 70,
+          "bottom": 70
+        }
+      },
+      "createdAt": "2026-09-01T17:33:34.627730Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0008_members/scene_after_10_members/scene_after_25_members/next_pass_45_cartoon_forest_backgroun_planner/order_15a3672c1bc6.png",
+      "operation": "visualize_planner_order",
+      "dimensions": {
+        "width": 1014,
+        "height": 778
+      },
+      "transform": {
+        "labels": [
+          {
+            "object": "central_black_occlusion",
+            "number": 1,
+            "point": [
+              430,
+              360
+            ]
+          },
+          {
+            "object": "white_glove_hand",
+            "number": 2,
+            "point": [
+              616,
+              492
+            ]
+          },
+          {
+            "object": "orange_carrot",
+            "number": 3,
+            "point": [
+              710,
+              438
+            ]
+          },
+          {
+            "object": "cartoon_character_partial",
+            "number": 4,
+            "point": [
+              600,
+              250
+            ]
+          },
+          {
+            "object": "brown_lower_shrub",
+            "number": 5,
+            "point": [
+              220,
+              560
+            ]
+          },
+          {
+            "object": "left_orange_shrubs",
+            "number": 6,
+            "point": [
+              140,
+              270
+            ]
+          },
+          {
+            "object": "right_green_bushes",
+            "number": 7,
+            "point": [
+              760,
+              300
+            ]
+          },
+          {
+            "object": "green_hills_background",
+            "number": 8,
+            "point": [
+              240,
+              130
+            ]
+          },
+          {
+            "object": "inset_sky_strip",
+            "number": 9,
+            "point": [
+              500,
+              86
+            ]
+          },
+          {
+            "object": "white_inner_frame_outline",
+            "number": 10,
+            "point": [
+              100,
+              84
+            ]
+          },
+          {
+            "object": "blue_rounded_frame_border",
+            "number": 11,
+            "point": [
+              70,
+              740
+            ]
+          },
+          {
+            "object": "outer_black_background",
+            "number": 12,
+            "point": [
+              20,
+              20
+            ]
+          }
+        ],
+        "plannerHash": "15a3672c1bc6107a40393ff36d02efce4a2f0758d2be41520ebe61b4f530d338"
+      },
+      "createdAt": "2026-09-01T22:56:23.306583Z"
+    }
+  ]
+}

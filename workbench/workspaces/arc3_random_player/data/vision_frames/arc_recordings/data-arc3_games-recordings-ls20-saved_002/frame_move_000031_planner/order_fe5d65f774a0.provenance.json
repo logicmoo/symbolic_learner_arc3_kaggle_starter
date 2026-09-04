@@ -1,0 +1,325 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_002/frame_move_000031_planner/order_fe5d65f774a0.png",
+  "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_002/frame_move_000031_planner/order_fe5d65f774a0.provenance.json",
+  "createdAt": "2026-09-02T01:00:00.626924Z",
+  "operation": "visualize_planner_order",
+  "dimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "originalDimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "root": {
+    "firstSeenImage": "data/arc3_games/recordings/ls20/saved_002/30/image.png",
+    "dimensions": {
+      "width": 640,
+      "height": 640
+    }
+  },
+  "parent": {
+    "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_002/frame_move_000031.png",
+    "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_002/frame_move_000031.provenance.json"
+  },
+  "source": {},
+  "transform": {
+    "labels": [
+      {
+        "object": "lower_left_red_symbol",
+        "number": 1,
+        "point": [
+          156,
+          430
+        ]
+      },
+      {
+        "object": "lower_left_gray_face_panel",
+        "number": 2,
+        "point": [
+          150,
+          420
+        ]
+      },
+      {
+        "object": "lower_right_blue_marker_pixels",
+        "number": 3,
+        "point": [
+          510,
+          472
+        ]
+      },
+      {
+        "object": "lower_right_black_marker",
+        "number": 4,
+        "point": [
+          515,
+          468
+        ]
+      },
+      {
+        "object": "lower_right_gray_cap",
+        "number": 5,
+        "point": [
+          450,
+          510
+        ]
+      },
+      {
+        "object": "lower_right_red_block",
+        "number": 6,
+        "point": [
+          450,
+          535
+        ]
+      },
+      {
+        "object": "bottom_left_red_sign_symbol",
+        "number": 7,
+        "point": [
+          40,
+          600
+        ]
+      },
+      {
+        "object": "bottom_left_gray_sign_tile",
+        "number": 8,
+        "point": [
+          40,
+          590
+        ]
+      },
+      {
+        "object": "bottom_ui_green_fill",
+        "number": 9,
+        "point": [
+          125,
+          615
+        ]
+      },
+      {
+        "object": "bottom_ui_cyan_square_1",
+        "number": 10,
+        "point": [
+          565,
+          615
+        ]
+      },
+      {
+        "object": "bottom_ui_cyan_square_2",
+        "number": 11,
+        "point": [
+          595,
+          615
+        ]
+      },
+      {
+        "object": "bottom_ui_cyan_square_3",
+        "number": 12,
+        "point": [
+          625,
+          615
+        ]
+      },
+      {
+        "object": "bottom_ui_dark_track",
+        "number": 13,
+        "point": [
+          300,
+          615
+        ]
+      },
+      {
+        "object": "green_creature_body",
+        "number": 14,
+        "point": [
+          300,
+          120
+        ]
+      },
+      {
+        "object": "left_gray_vertical_panel",
+        "number": 15,
+        "point": [
+          20,
+          200
+        ]
+      },
+      {
+        "object": "yellow_background",
+        "number": 16,
+        "point": [
+          100,
+          20
+        ]
+      }
+    ],
+    "plannerHash": "fe5d65f774a03aa009deaa029e560df0aad0e77e7b9d2a3240fa6b5b0405727e"
+  },
+  "lineage": [
+    {
+      "image": "data/arc3_games/recordings/ls20/saved_002/30/image.png",
+      "operation": "legacy_source",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T00:51:01.074773Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_002/frame_move_000031.png",
+      "operation": "import_arc_playback_frame",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T00:51:01.083200Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_002/frame_move_000031_planner/order_fe5d65f774a0.png",
+      "operation": "visualize_planner_order",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {
+        "labels": [
+          {
+            "object": "lower_left_red_symbol",
+            "number": 1,
+            "point": [
+              156,
+              430
+            ]
+          },
+          {
+            "object": "lower_left_gray_face_panel",
+            "number": 2,
+            "point": [
+              150,
+              420
+            ]
+          },
+          {
+            "object": "lower_right_blue_marker_pixels",
+            "number": 3,
+            "point": [
+              510,
+              472
+            ]
+          },
+          {
+            "object": "lower_right_black_marker",
+            "number": 4,
+            "point": [
+              515,
+              468
+            ]
+          },
+          {
+            "object": "lower_right_gray_cap",
+            "number": 5,
+            "point": [
+              450,
+              510
+            ]
+          },
+          {
+            "object": "lower_right_red_block",
+            "number": 6,
+            "point": [
+              450,
+              535
+            ]
+          },
+          {
+            "object": "bottom_left_red_sign_symbol",
+            "number": 7,
+            "point": [
+              40,
+              600
+            ]
+          },
+          {
+            "object": "bottom_left_gray_sign_tile",
+            "number": 8,
+            "point": [
+              40,
+              590
+            ]
+          },
+          {
+            "object": "bottom_ui_green_fill",
+            "number": 9,
+            "point": [
+              125,
+              615
+            ]
+          },
+          {
+            "object": "bottom_ui_cyan_square_1",
+            "number": 10,
+            "point": [
+              565,
+              615
+            ]
+          },
+          {
+            "object": "bottom_ui_cyan_square_2",
+            "number": 11,
+            "point": [
+              595,
+              615
+            ]
+          },
+          {
+            "object": "bottom_ui_cyan_square_3",
+            "number": 12,
+            "point": [
+              625,
+              615
+            ]
+          },
+          {
+            "object": "bottom_ui_dark_track",
+            "number": 13,
+            "point": [
+              300,
+              615
+            ]
+          },
+          {
+            "object": "green_creature_body",
+            "number": 14,
+            "point": [
+              300,
+              120
+            ]
+          },
+          {
+            "object": "left_gray_vertical_panel",
+            "number": 15,
+            "point": [
+              20,
+              200
+            ]
+          },
+          {
+            "object": "yellow_background",
+            "number": 16,
+            "point": [
+              100,
+              20
+            ]
+          }
+        ],
+        "plannerHash": "fe5d65f774a03aa009deaa029e560df0aad0e77e7b9d2a3240fa6b5b0405727e"
+      },
+      "createdAt": "2026-09-02T01:00:00.626924Z"
+    }
+  ]
+}

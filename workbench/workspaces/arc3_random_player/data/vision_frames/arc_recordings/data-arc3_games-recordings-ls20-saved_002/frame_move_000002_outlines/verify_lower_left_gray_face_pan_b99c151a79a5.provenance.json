@@ -1,0 +1,341 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_002/frame_move_000002_outlines/verify_lower_left_gray_face_pan_b99c151a79a5.png",
+  "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_002/frame_move_000002_outlines/verify_lower_left_gray_face_pan_b99c151a79a5.provenance.json",
+  "createdAt": "2026-09-02T01:03:25.461804Z",
+  "operation": "verify_outliner_trace",
+  "dimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "originalDimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "root": {
+    "firstSeenImage": "data/arc3_games/recordings/ls20/saved_002/1/image.png",
+    "dimensions": {
+      "width": 640,
+      "height": 640
+    }
+  },
+  "parent": {
+    "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_002/frame_move_000002.png",
+    "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_002/frame_move_000002.provenance.json"
+  },
+  "source": {
+    "objectName": "lower_left_gray_face_panel"
+  },
+  "transform": {
+    "polygons": [
+      [
+        [
+          130,
+          390
+        ],
+        [
+          199,
+          390
+        ],
+        [
+          199,
+          459
+        ],
+        [
+          130,
+          459
+        ]
+      ]
+    ],
+    "holes": [
+      [
+        [
+          150,
+          410
+        ],
+        [
+          179,
+          410
+        ],
+        [
+          179,
+          419
+        ],
+        [
+          150,
+          419
+        ]
+      ],
+      [
+        [
+          170,
+          430
+        ],
+        [
+          179,
+          430
+        ],
+        [
+          179,
+          439
+        ],
+        [
+          170,
+          439
+        ]
+      ]
+    ],
+    "traceTurtle": [
+      {
+        "op": "move",
+        "x": 203,
+        "y": 610
+      },
+      {
+        "op": "line",
+        "x": 311,
+        "y": 610
+      },
+      {
+        "op": "line",
+        "x": 311,
+        "y": 718
+      },
+      {
+        "op": "line",
+        "x": 203,
+        "y": 718
+      },
+      {
+        "op": "line",
+        "x": 203,
+        "y": 610
+      },
+      {
+        "op": "move",
+        "x": 235,
+        "y": 641
+      },
+      {
+        "op": "line",
+        "x": 280,
+        "y": 641
+      },
+      {
+        "op": "line",
+        "x": 280,
+        "y": 656
+      },
+      {
+        "op": "line",
+        "x": 235,
+        "y": 656
+      },
+      {
+        "op": "line",
+        "x": 235,
+        "y": 641
+      },
+      {
+        "op": "move",
+        "x": 266,
+        "y": 672
+      },
+      {
+        "op": "line",
+        "x": 280,
+        "y": 672
+      },
+      {
+        "op": "line",
+        "x": 280,
+        "y": 687
+      },
+      {
+        "op": "line",
+        "x": 266,
+        "y": 687
+      },
+      {
+        "op": "line",
+        "x": 266,
+        "y": 672
+      }
+    ],
+    "geometryHash": "b99c151a79a5d6ae57715d19d7545f7c3521c0d69e0b0b083e086ad199d95550",
+    "traceAgreement": 1.0,
+    "boundaryCoverage": 1.0
+  },
+  "lineage": [
+    {
+      "image": "data/arc3_games/recordings/ls20/saved_002/1/image.png",
+      "operation": "legacy_source",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T00:51:00.059410Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_002/frame_move_000002.png",
+      "operation": "import_arc_playback_frame",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T00:51:00.068061Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_002/frame_move_000002_outlines/verify_lower_left_gray_face_pan_b99c151a79a5.png",
+      "operation": "verify_outliner_trace",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {
+        "polygons": [
+          [
+            [
+              130,
+              390
+            ],
+            [
+              199,
+              390
+            ],
+            [
+              199,
+              459
+            ],
+            [
+              130,
+              459
+            ]
+          ]
+        ],
+        "holes": [
+          [
+            [
+              150,
+              410
+            ],
+            [
+              179,
+              410
+            ],
+            [
+              179,
+              419
+            ],
+            [
+              150,
+              419
+            ]
+          ],
+          [
+            [
+              170,
+              430
+            ],
+            [
+              179,
+              430
+            ],
+            [
+              179,
+              439
+            ],
+            [
+              170,
+              439
+            ]
+          ]
+        ],
+        "traceTurtle": [
+          {
+            "op": "move",
+            "x": 203,
+            "y": 610
+          },
+          {
+            "op": "line",
+            "x": 311,
+            "y": 610
+          },
+          {
+            "op": "line",
+            "x": 311,
+            "y": 718
+          },
+          {
+            "op": "line",
+            "x": 203,
+            "y": 718
+          },
+          {
+            "op": "line",
+            "x": 203,
+            "y": 610
+          },
+          {
+            "op": "move",
+            "x": 235,
+            "y": 641
+          },
+          {
+            "op": "line",
+            "x": 280,
+            "y": 641
+          },
+          {
+            "op": "line",
+            "x": 280,
+            "y": 656
+          },
+          {
+            "op": "line",
+            "x": 235,
+            "y": 656
+          },
+          {
+            "op": "line",
+            "x": 235,
+            "y": 641
+          },
+          {
+            "op": "move",
+            "x": 266,
+            "y": 672
+          },
+          {
+            "op": "line",
+            "x": 280,
+            "y": 672
+          },
+          {
+            "op": "line",
+            "x": 280,
+            "y": 687
+          },
+          {
+            "op": "line",
+            "x": 266,
+            "y": 687
+          },
+          {
+            "op": "line",
+            "x": 266,
+            "y": 672
+          }
+        ],
+        "geometryHash": "b99c151a79a5d6ae57715d19d7545f7c3521c0d69e0b0b083e086ad199d95550",
+        "traceAgreement": 1.0,
+        "boundaryCoverage": 1.0
+      },
+      "createdAt": "2026-09-02T01:03:25.461804Z"
+    }
+  ]
+}

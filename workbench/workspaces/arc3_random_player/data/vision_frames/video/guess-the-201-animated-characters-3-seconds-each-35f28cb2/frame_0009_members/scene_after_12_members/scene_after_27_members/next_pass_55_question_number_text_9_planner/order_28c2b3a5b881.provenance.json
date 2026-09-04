@@ -1,0 +1,474 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009_members/scene_after_12_members/scene_after_27_members/next_pass_55_question_number_text_9_planner/order_28c2b3a5b881.png",
+  "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009_members/scene_after_12_members/scene_after_27_members/next_pass_55_question_number_text_9_planner/order_28c2b3a5b881.provenance.json",
+  "createdAt": "2026-09-01T22:45:22.546093Z",
+  "operation": "visualize_planner_order",
+  "dimensions": {
+    "width": 504,
+    "height": 780
+  },
+  "originalDimensions": {
+    "width": 854,
+    "height": 480
+  },
+  "root": {
+    "firstSeenImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009.png",
+    "dimensions": {
+      "width": 854,
+      "height": 480
+    },
+    "sourceVideo": "data/video_import/guess-the-201-animated-characters-3-seconds-each/video.mp4",
+    "atSeconds": 72.6,
+    "sceneIndex": 29,
+    "videoFrameIndex": 2178
+  },
+  "parent": {
+    "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009_members/scene_after_12_members/scene_after_27_members/next_pass_55_question_number_text_9.png",
+    "provenance": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009_members/scene_after_12_members/scene_after_27_members/next_pass_55_question_number_text_9.provenance.json"
+  },
+  "source": {},
+  "transform": {
+    "labels": [
+      {
+        "object": "number_nine_inner_hole",
+        "number": 1,
+        "point": [
+          251,
+          237
+        ]
+      },
+      {
+        "object": "number_nine_white_fill",
+        "number": 2,
+        "point": [
+          224,
+          323
+        ]
+      },
+      {
+        "object": "number_nine_orange_outline",
+        "number": 3,
+        "point": [
+          184,
+          122
+        ]
+      },
+      {
+        "object": "black_background",
+        "number": 4,
+        "point": [
+          20,
+          20
+        ]
+      }
+    ],
+    "plannerHash": "28c2b3a5b8817b5d049345290e76eda203355228d6b4b0139291a9dae2ab9deb"
+  },
+  "lineage": [
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009.png",
+      "operation": "extract_video_frame",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "mode": "scenes"
+      },
+      "createdAt": "2026-09-01T17:19:33.407677Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009_members/scene_after_12.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          316,
+          126,
+          610,
+          348
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed fish, the central card continues as clear turquoise water with a gentle top-to-bottom cyan gradient and faint soft wave/bokeh patches. No hard objects sit directly behind the fish; the area is open water.",
+          "colors": [
+            "#22B8CF",
+            "#1FAFC8",
+            "#27C2D8",
+            "#3CCEE0",
+            "#8FE7EE"
+          ],
+          "continueEdges": [
+            "Continue the subtle horizontal/curved water streaks through the fish silhouette without breaks.",
+            "Blend the upper lighter cyan band smoothly across the former dorsal and tail regions.",
+            "Extend the soft circular light patches in the lower-right card area through the belly/tail hole with feathered edges.",
+            "Keep gradient continuity from surrounding water so no outline seam remains where the fish was removed."
+          ],
+          "texture": "Smooth cartoon-water texture with soft gradients, mild haze, and low-contrast diffuse highlights (no sharp lines or grain)."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:23:03.571090Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009_members/scene_after_12_members/scene_after_27.png",
+      "operation": "remove_object_from_scene",
+      "dimensions": {
+        "width": 854,
+        "height": 480
+      },
+      "transform": {
+        "fill": "median",
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009_members/scene_after_12.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "removedBox": [
+          221,
+          95,
+          642,
+          390
+        ],
+        "maskScale": 4,
+        "fillInstructions": {
+          "description": "Behind the removed rounded-rectangle card, the scene continues as the same full-frame blue gradient background: medium azure overall with a brighter cyan-blue central glow and slightly deeper royal-blue toward edges. No card border, underwater texture, or internal imagery should remain.",
+          "colors": [
+            "#2082EA",
+            "#2389F0",
+            "#2A97F8",
+            "#3AA8FF",
+            "#1E74DC",
+            "#1666CF"
+          ],
+          "continueEdges": [
+            "Extend the surrounding blue gradient smoothly across the entire removed card area.",
+            "Continue the soft circular/radial glow centered in the lower-middle region through the hole.",
+            "Preserve left-to-right gradient continuity and edge darkening from the outer frame into the former card region."
+          ],
+          "texture": "Clean, smooth digital gradient with very subtle soft glow/vignette; no hard lines, no grain, and no foreground detail."
+        },
+        "imageGeneration": {
+          "renderer": "median"
+        }
+      },
+      "createdAt": "2026-09-01T17:28:02.434303Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009_members/scene_after_12_members/scene_after_27_members/cut_55_question_number_text_9.png",
+      "operation": "extract_object_cutout",
+      "dimensions": {
+        "width": 33,
+        "height": 56
+      },
+      "transform": {
+        "inputDimensions": {
+          "width": 854,
+          "height": 480
+        },
+        "outlineAlignment": {
+          "cutImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009_members/scene_after_12_members/scene_after_27.png",
+          "outlineSourceImage": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009.png",
+          "dimensions": {
+            "width": 854,
+            "height": 480
+          },
+          "verified": true
+        },
+        "cropBox": [
+          32,
+          18,
+          65,
+          74
+        ],
+        "maskScale": 4,
+        "polygons": [
+          [
+            [
+              38,
+              23
+            ],
+            [
+              45,
+              20
+            ],
+            [
+              53,
+              20
+            ],
+            [
+              59,
+              23
+            ],
+            [
+              62,
+              29
+            ],
+            [
+              62,
+              37
+            ],
+            [
+              58,
+              43
+            ],
+            [
+              52,
+              45
+            ],
+            [
+              46,
+              45
+            ],
+            [
+              42,
+              43
+            ],
+            [
+              40,
+              40
+            ],
+            [
+              39,
+              46
+            ],
+            [
+              42,
+              50
+            ],
+            [
+              48,
+              52
+            ],
+            [
+              54,
+              55
+            ],
+            [
+              57,
+              60
+            ],
+            [
+              57,
+              66
+            ],
+            [
+              53,
+              71
+            ],
+            [
+              46,
+              72
+            ],
+            [
+              40,
+              70
+            ],
+            [
+              36,
+              65
+            ],
+            [
+              36,
+              60
+            ],
+            [
+              39,
+              57
+            ],
+            [
+              44,
+              57
+            ],
+            [
+              47,
+              59
+            ],
+            [
+              47,
+              62
+            ],
+            [
+              45,
+              64
+            ],
+            [
+              41,
+              63
+            ],
+            [
+              39,
+              60
+            ],
+            [
+              38,
+              55
+            ],
+            [
+              35,
+              51
+            ],
+            [
+              34,
+              44
+            ],
+            [
+              35,
+              35
+            ],
+            [
+              36,
+              28
+            ],
+            [
+              38,
+              23
+            ]
+          ]
+        ],
+        "holes": [
+          [
+            [
+              46,
+              28
+            ],
+            [
+              50,
+              27
+            ],
+            [
+              53,
+              29
+            ],
+            [
+              54,
+              33
+            ],
+            [
+              54,
+              37
+            ],
+            [
+              52,
+              40
+            ],
+            [
+              48,
+              41
+            ],
+            [
+              45,
+              39
+            ],
+            [
+              44,
+              35
+            ],
+            [
+              44,
+              31
+            ],
+            [
+              46,
+              28
+            ]
+          ]
+        ]
+      },
+      "createdAt": "2026-09-01T17:36:03.450969Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009_members/scene_after_12_members/scene_after_27_members/next_pass_55_question_number_text_9.png",
+      "operation": "enlarge_object_for_analysis",
+      "dimensions": {
+        "width": 504,
+        "height": 780
+      },
+      "transform": {
+        "sourceDimensions": {
+          "width": 33,
+          "height": 56
+        },
+        "scale": 12,
+        "resizedDimensions": {
+          "width": 396,
+          "height": 672
+        },
+        "padding": {
+          "left": 54,
+          "top": 54,
+          "right": 54,
+          "bottom": 54
+        }
+      },
+      "createdAt": "2026-09-01T17:36:03.617896Z"
+    },
+    {
+      "image": "data/vision_frames/video/guess-the-201-animated-characters-3-seconds-each-35f28cb2/frame_0009_members/scene_after_12_members/scene_after_27_members/next_pass_55_question_number_text_9_planner/order_28c2b3a5b881.png",
+      "operation": "visualize_planner_order",
+      "dimensions": {
+        "width": 504,
+        "height": 780
+      },
+      "transform": {
+        "labels": [
+          {
+            "object": "number_nine_inner_hole",
+            "number": 1,
+            "point": [
+              251,
+              237
+            ]
+          },
+          {
+            "object": "number_nine_white_fill",
+            "number": 2,
+            "point": [
+              224,
+              323
+            ]
+          },
+          {
+            "object": "number_nine_orange_outline",
+            "number": 3,
+            "point": [
+              184,
+              122
+            ]
+          },
+          {
+            "object": "black_background",
+            "number": 4,
+            "point": [
+              20,
+              20
+            ]
+          }
+        ],
+        "plannerHash": "28c2b3a5b8817b5d049345290e76eda203355228d6b4b0139291a9dae2ab9deb"
+      },
+      "createdAt": "2026-09-01T22:45:22.546093Z"
+    }
+  ]
+}

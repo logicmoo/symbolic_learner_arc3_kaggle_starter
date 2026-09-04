@@ -1,0 +1,357 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_002/frame_move_000020_planner/order_5d5e2404a8d0.png",
+  "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_002/frame_move_000020_planner/order_5d5e2404a8d0.provenance.json",
+  "createdAt": "2026-09-02T00:56:23.757847Z",
+  "operation": "visualize_planner_order",
+  "dimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "originalDimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "root": {
+    "firstSeenImage": "data/arc3_games/recordings/ls20/saved_002/19/image.png",
+    "dimensions": {
+      "width": 640,
+      "height": 640
+    }
+  },
+  "parent": {
+    "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_002/frame_move_000020.png",
+    "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_002/frame_move_000020.provenance.json"
+  },
+  "source": {},
+  "transform": {
+    "labels": [
+      {
+        "object": "lower_left_maroon_symbol",
+        "number": 1,
+        "point": [
+          156,
+          420
+        ]
+      },
+      {
+        "object": "lower_right_green_center_dot",
+        "number": 2,
+        "point": [
+          404,
+          514
+        ]
+      },
+      {
+        "object": "bottom_left_maroon_glyph",
+        "number": 3,
+        "point": [
+          44,
+          558
+        ]
+      },
+      {
+        "object": "blue_marker",
+        "number": 4,
+        "point": [
+          510,
+          476
+        ]
+      },
+      {
+        "object": "black_marker",
+        "number": 5,
+        "point": [
+          515,
+          465
+        ]
+      },
+      {
+        "object": "upper_right_gray_cap",
+        "number": 6,
+        "point": [
+          530,
+          108
+        ]
+      },
+      {
+        "object": "upper_right_maroon_block",
+        "number": 7,
+        "point": [
+          530,
+          128
+        ]
+      },
+      {
+        "object": "lower_left_gray_panel",
+        "number": 8,
+        "point": [
+          140,
+          400
+        ]
+      },
+      {
+        "object": "lower_right_gray_square",
+        "number": 9,
+        "point": [
+          398,
+          508
+        ]
+      },
+      {
+        "object": "bottom_green_fill_segment",
+        "number": 10,
+        "point": [
+          140,
+          620
+        ]
+      },
+      {
+        "object": "bottom_right_cyan_square_1",
+        "number": 11,
+        "point": [
+          568,
+          620
+        ]
+      },
+      {
+        "object": "bottom_right_cyan_square_2",
+        "number": 12,
+        "point": [
+          598,
+          620
+        ]
+      },
+      {
+        "object": "bottom_right_cyan_square_3",
+        "number": 13,
+        "point": [
+          628,
+          620
+        ]
+      },
+      {
+        "object": "bottom_left_gray_tile",
+        "number": 14,
+        "point": [
+          20,
+          540
+        ]
+      },
+      {
+        "object": "bottom_dark_ui_bar",
+        "number": 15,
+        "point": [
+          300,
+          620
+        ]
+      },
+      {
+        "object": "green_creature_body",
+        "number": 16,
+        "point": [
+          300,
+          120
+        ]
+      },
+      {
+        "object": "left_gray_wall",
+        "number": 17,
+        "point": [
+          20,
+          260
+        ]
+      },
+      {
+        "object": "yellow_background",
+        "number": 18,
+        "point": [
+          500,
+          40
+        ]
+      }
+    ],
+    "plannerHash": "5d5e2404a8d0d71529cf33c5e348315f176f7b38db7947407d260bf7b8ae1c94"
+  },
+  "lineage": [
+    {
+      "image": "data/arc3_games/recordings/ls20/saved_002/19/image.png",
+      "operation": "legacy_source",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T00:51:00.695107Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_002/frame_move_000020.png",
+      "operation": "import_arc_playback_frame",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T00:51:00.703833Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_002/frame_move_000020_planner/order_5d5e2404a8d0.png",
+      "operation": "visualize_planner_order",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {
+        "labels": [
+          {
+            "object": "lower_left_maroon_symbol",
+            "number": 1,
+            "point": [
+              156,
+              420
+            ]
+          },
+          {
+            "object": "lower_right_green_center_dot",
+            "number": 2,
+            "point": [
+              404,
+              514
+            ]
+          },
+          {
+            "object": "bottom_left_maroon_glyph",
+            "number": 3,
+            "point": [
+              44,
+              558
+            ]
+          },
+          {
+            "object": "blue_marker",
+            "number": 4,
+            "point": [
+              510,
+              476
+            ]
+          },
+          {
+            "object": "black_marker",
+            "number": 5,
+            "point": [
+              515,
+              465
+            ]
+          },
+          {
+            "object": "upper_right_gray_cap",
+            "number": 6,
+            "point": [
+              530,
+              108
+            ]
+          },
+          {
+            "object": "upper_right_maroon_block",
+            "number": 7,
+            "point": [
+              530,
+              128
+            ]
+          },
+          {
+            "object": "lower_left_gray_panel",
+            "number": 8,
+            "point": [
+              140,
+              400
+            ]
+          },
+          {
+            "object": "lower_right_gray_square",
+            "number": 9,
+            "point": [
+              398,
+              508
+            ]
+          },
+          {
+            "object": "bottom_green_fill_segment",
+            "number": 10,
+            "point": [
+              140,
+              620
+            ]
+          },
+          {
+            "object": "bottom_right_cyan_square_1",
+            "number": 11,
+            "point": [
+              568,
+              620
+            ]
+          },
+          {
+            "object": "bottom_right_cyan_square_2",
+            "number": 12,
+            "point": [
+              598,
+              620
+            ]
+          },
+          {
+            "object": "bottom_right_cyan_square_3",
+            "number": 13,
+            "point": [
+              628,
+              620
+            ]
+          },
+          {
+            "object": "bottom_left_gray_tile",
+            "number": 14,
+            "point": [
+              20,
+              540
+            ]
+          },
+          {
+            "object": "bottom_dark_ui_bar",
+            "number": 15,
+            "point": [
+              300,
+              620
+            ]
+          },
+          {
+            "object": "green_creature_body",
+            "number": 16,
+            "point": [
+              300,
+              120
+            ]
+          },
+          {
+            "object": "left_gray_wall",
+            "number": 17,
+            "point": [
+              20,
+              260
+            ]
+          },
+          {
+            "object": "yellow_background",
+            "number": 18,
+            "point": [
+              500,
+              40
+            ]
+          }
+        ],
+        "plannerHash": "5d5e2404a8d0d71529cf33c5e348315f176f7b38db7947407d260bf7b8ae1c94"
+      },
+      "createdAt": "2026-09-02T00:56:23.757847Z"
+    }
+  ]
+}

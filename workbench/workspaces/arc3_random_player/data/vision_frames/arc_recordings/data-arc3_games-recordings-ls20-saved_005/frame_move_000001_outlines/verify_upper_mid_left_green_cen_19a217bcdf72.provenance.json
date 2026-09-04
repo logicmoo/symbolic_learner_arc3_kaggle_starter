@@ -1,0 +1,167 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000001_outlines/verify_upper_mid_left_green_cen_19a217bcdf72.png",
+  "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000001_outlines/verify_upper_mid_left_green_cen_19a217bcdf72.provenance.json",
+  "createdAt": "2026-09-02T01:35:47.613648Z",
+  "operation": "verify_outliner_trace",
+  "dimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "originalDimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "root": {
+    "firstSeenImage": "data/arc3_games/recordings/ls20/saved_005/0/image.png",
+    "dimensions": {
+      "width": 640,
+      "height": 640
+    }
+  },
+  "parent": {
+    "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000001.png",
+    "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000001.provenance.json"
+  },
+  "source": {
+    "objectName": "upper_mid_left_green_center_dot"
+  },
+  "transform": {
+    "polygons": [
+      [
+        [
+          201,
+          173
+        ],
+        [
+          211,
+          173
+        ],
+        [
+          211,
+          183
+        ],
+        [
+          201,
+          183
+        ]
+      ]
+    ],
+    "holes": [],
+    "traceTurtle": [
+      {
+        "op": "move",
+        "x": 314,
+        "y": 270
+      },
+      {
+        "op": "line",
+        "x": 330,
+        "y": 270
+      },
+      {
+        "op": "line",
+        "x": 330,
+        "y": 286
+      },
+      {
+        "op": "line",
+        "x": 314,
+        "y": 286
+      },
+      {
+        "op": "line",
+        "x": 314,
+        "y": 270
+      }
+    ],
+    "geometryHash": "19a217bcdf7271f5f8e80a1dcbf4f3ab0056730fb83159e2cc97a8fc850e206e",
+    "traceAgreement": 1.0,
+    "boundaryCoverage": 1.0
+  },
+  "lineage": [
+    {
+      "image": "data/arc3_games/recordings/ls20/saved_005/0/image.png",
+      "operation": "legacy_source",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:18.231148Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000001.png",
+      "operation": "import_arc_playback_frame",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:18.242299Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000001_outlines/verify_upper_mid_left_green_cen_19a217bcdf72.png",
+      "operation": "verify_outliner_trace",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {
+        "polygons": [
+          [
+            [
+              201,
+              173
+            ],
+            [
+              211,
+              173
+            ],
+            [
+              211,
+              183
+            ],
+            [
+              201,
+              183
+            ]
+          ]
+        ],
+        "holes": [],
+        "traceTurtle": [
+          {
+            "op": "move",
+            "x": 314,
+            "y": 270
+          },
+          {
+            "op": "line",
+            "x": 330,
+            "y": 270
+          },
+          {
+            "op": "line",
+            "x": 330,
+            "y": 286
+          },
+          {
+            "op": "line",
+            "x": 314,
+            "y": 286
+          },
+          {
+            "op": "line",
+            "x": 314,
+            "y": 270
+          }
+        ],
+        "geometryHash": "19a217bcdf7271f5f8e80a1dcbf4f3ab0056730fb83159e2cc97a8fc850e206e",
+        "traceAgreement": 1.0,
+        "boundaryCoverage": 1.0
+      },
+      "createdAt": "2026-09-02T01:35:47.613648Z"
+    }
+  ]
+}

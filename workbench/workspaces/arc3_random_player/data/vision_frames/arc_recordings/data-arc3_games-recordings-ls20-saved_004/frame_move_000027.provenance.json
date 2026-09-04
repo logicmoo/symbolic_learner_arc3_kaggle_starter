@@ -1,0 +1,353 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000027.png",
+  "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000027.provenance.json",
+  "createdAt": "2026-09-02T06:25:04.483706Z",
+  "operation": "import_arc_playback_frame",
+  "dimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "originalDimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "root": {
+    "firstSeenImage": "data/arc3_games/recordings/ls20/saved_004/26/image.png",
+    "dimensions": {
+      "width": 640,
+      "height": 640
+    }
+  },
+  "parent": {
+    "image": "data/arc3_games/recordings/ls20/saved_004/26/image.png",
+    "provenance": "data/arc3_games/recordings/ls20/saved_004/26/image.provenance.json"
+  },
+  "source": {
+    "arcRecording": "data/arc3_games/recordings/ls20/saved_004",
+    "arcFrame": "26/image.png",
+    "frameIndex": 27,
+    "moveCount": 27,
+    "moveList": [
+      {
+        "index": 0,
+        "action": "ACTION1",
+        "data": {},
+        "directory": "data/arc3_games/recordings/ls20/saved_004/0",
+        "state": "NOT_FINISHED",
+        "level": "3",
+        "recorded_at": "2026-08-28T02:37:28.929087Z"
+      },
+      {
+        "index": 1,
+        "action": "ACTION1",
+        "data": {},
+        "directory": "data/arc3_games/recordings/ls20/saved_004/1",
+        "state": "NOT_FINISHED",
+        "level": "3",
+        "recorded_at": "2026-08-28T02:37:28.969040Z"
+      },
+      {
+        "index": 2,
+        "action": "ACTION1",
+        "data": {},
+        "directory": "data/arc3_games/recordings/ls20/saved_004/2",
+        "state": "NOT_FINISHED",
+        "level": "3",
+        "recorded_at": "2026-08-28T02:37:29.021901Z"
+      },
+      {
+        "index": 3,
+        "action": "ACTION1",
+        "data": {},
+        "directory": "data/arc3_games/recordings/ls20/saved_004/3",
+        "state": "NOT_FINISHED",
+        "level": "3",
+        "recorded_at": "2026-08-28T02:37:29.054081Z"
+      },
+      {
+        "index": 4,
+        "action": "ACTION1",
+        "data": {},
+        "directory": "data/arc3_games/recordings/ls20/saved_004/4",
+        "state": "NOT_FINISHED",
+        "level": "3",
+        "recorded_at": "2026-08-28T02:37:29.091913Z"
+      },
+      {
+        "index": 5,
+        "action": "ACTION1",
+        "data": {},
+        "directory": "data/arc3_games/recordings/ls20/saved_004/5",
+        "state": "NOT_FINISHED",
+        "level": "3",
+        "recorded_at": "2026-08-28T02:37:29.135310Z"
+      },
+      {
+        "index": 6,
+        "action": "ACTION1",
+        "data": {},
+        "directory": "data/arc3_games/recordings/ls20/saved_004/6",
+        "state": "NOT_FINISHED",
+        "level": "3",
+        "recorded_at": "2026-08-28T02:37:29.175078Z"
+      },
+      {
+        "index": 7,
+        "action": "ACTION1",
+        "data": {},
+        "directory": "data/arc3_games/recordings/ls20/saved_004/7",
+        "state": "NOT_FINISHED",
+        "level": "3",
+        "recorded_at": "2026-08-28T02:37:29.223737Z"
+      },
+      {
+        "index": 8,
+        "action": "ACTION3",
+        "data": {},
+        "directory": "data/arc3_games/recordings/ls20/saved_004/8",
+        "state": "NOT_FINISHED",
+        "level": "3",
+        "recorded_at": "2026-08-28T02:37:29.258962Z"
+      },
+      {
+        "index": 9,
+        "action": "ACTION2",
+        "data": {},
+        "directory": "data/arc3_games/recordings/ls20/saved_004/9",
+        "state": "NOT_FINISHED",
+        "level": "3",
+        "recorded_at": "2026-08-28T02:37:29.297108Z"
+      },
+      {
+        "index": 10,
+        "action": "ACTION2",
+        "data": {},
+        "directory": "data/arc3_games/recordings/ls20/saved_004/10",
+        "state": "NOT_FINISHED",
+        "level": "3",
+        "recorded_at": "2026-08-28T02:37:29.340943Z"
+      },
+      {
+        "index": 11,
+        "action": "ACTION4",
+        "data": {},
+        "directory": "data/arc3_games/recordings/ls20/saved_004/11",
+        "state": "NOT_FINISHED",
+        "level": "3",
+        "recorded_at": "2026-08-28T02:37:29.388348Z"
+      },
+      {
+        "index": 12,
+        "action": "ACTION2",
+        "data": {},
+        "directory": "data/arc3_games/recordings/ls20/saved_004/12",
+        "state": "NOT_FINISHED",
+        "level": "3",
+        "recorded_at": "2026-08-28T02:37:29.426181Z"
+      },
+      {
+        "index": 13,
+        "action": "ACTION2",
+        "data": {},
+        "directory": "data/arc3_games/recordings/ls20/saved_004/13",
+        "state": "NOT_FINISHED",
+        "level": "3",
+        "recorded_at": "2026-08-28T02:37:29.480779Z"
+      },
+      {
+        "index": 14,
+        "action": "ACTION2",
+        "data": {},
+        "directory": "data/arc3_games/recordings/ls20/saved_004/14",
+        "state": "NOT_FINISHED",
+        "level": "3",
+        "recorded_at": "2026-08-28T02:37:29.532680Z"
+      },
+      {
+        "index": 15,
+        "action": "ACTION3",
+        "data": {},
+        "directory": "data/arc3_games/recordings/ls20/saved_004/15",
+        "state": "NOT_FINISHED",
+        "level": "3",
+        "recorded_at": "2026-08-28T02:37:29.569414Z"
+      },
+      {
+        "index": 16,
+        "action": "ACTION2",
+        "data": {},
+        "directory": "data/arc3_games/recordings/ls20/saved_004/16",
+        "state": "NOT_FINISHED",
+        "level": "3",
+        "recorded_at": "2026-08-28T02:37:29.604232Z"
+      },
+      {
+        "index": 17,
+        "action": "ACTION2",
+        "data": {},
+        "directory": "data/arc3_games/recordings/ls20/saved_004/17",
+        "state": "NOT_FINISHED",
+        "level": "3",
+        "recorded_at": "2026-08-28T02:37:29.649598Z"
+      },
+      {
+        "index": 18,
+        "action": "ACTION2",
+        "data": {},
+        "directory": "data/arc3_games/recordings/ls20/saved_004/18",
+        "state": "NOT_FINISHED",
+        "level": "3",
+        "recorded_at": "2026-08-28T02:37:29.686983Z"
+      },
+      {
+        "index": 19,
+        "action": "ACTION1",
+        "data": {},
+        "directory": "data/arc3_games/recordings/ls20/saved_004/19",
+        "state": "NOT_FINISHED",
+        "level": "3",
+        "recorded_at": "2026-08-28T02:37:29.729023Z"
+      },
+      {
+        "index": 20,
+        "action": "ACTION1",
+        "data": {},
+        "directory": "data/arc3_games/recordings/ls20/saved_004/20",
+        "state": "NOT_FINISHED",
+        "level": "3",
+        "recorded_at": "2026-08-28T02:37:29.767370Z"
+      },
+      {
+        "index": 21,
+        "action": "ACTION1",
+        "data": {},
+        "directory": "data/arc3_games/recordings/ls20/saved_004/21",
+        "state": "NOT_FINISHED",
+        "level": "3",
+        "recorded_at": "2026-08-28T02:37:29.805919Z"
+      },
+      {
+        "index": 22,
+        "action": "ACTION3",
+        "data": {},
+        "directory": "data/arc3_games/recordings/ls20/saved_004/22",
+        "state": "NOT_FINISHED",
+        "level": "3",
+        "recorded_at": "2026-08-28T02:37:29.853176Z"
+      },
+      {
+        "index": 23,
+        "action": "ACTION3",
+        "data": {},
+        "directory": "data/arc3_games/recordings/ls20/saved_004/23",
+        "state": "NOT_FINISHED",
+        "level": "3",
+        "recorded_at": "2026-08-28T02:37:29.896036Z"
+      },
+      {
+        "index": 24,
+        "action": "ACTION1",
+        "data": {},
+        "directory": "data/arc3_games/recordings/ls20/saved_004/24",
+        "state": "NOT_FINISHED",
+        "level": "3",
+        "recorded_at": "2026-08-28T02:37:29.931623Z"
+      },
+      {
+        "index": 25,
+        "action": "ACTION4",
+        "data": {},
+        "directory": "data/arc3_games/recordings/ls20/saved_004/25",
+        "state": "NOT_FINISHED",
+        "level": "3",
+        "recorded_at": "2026-08-28T02:37:29.965363Z"
+      },
+      {
+        "index": 26,
+        "action": "ACTION4",
+        "data": {},
+        "directory": "data/arc3_games/recordings/ls20/saved_004/26",
+        "state": "NOT_FINISHED",
+        "level": "3",
+        "recorded_at": "2026-08-28T02:37:29.999292Z"
+      }
+    ],
+    "incomingAction": "ACTION4",
+    "actionData": {},
+    "actionPath": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9",
+      "10",
+      "11",
+      "12",
+      "13",
+      "14",
+      "15",
+      "16",
+      "17",
+      "18",
+      "19",
+      "20",
+      "21",
+      "22",
+      "23",
+      "24",
+      "25",
+      "26"
+    ],
+    "gameState": "NOT_FINISHED",
+    "level": "3",
+    "observation": {
+      "game_id": "ls20-9607627b",
+      "state": "NOT_FINISHED",
+      "levels_completed": 2,
+      "win_levels": 7,
+      "action_input": {
+        "id": "ACTION4",
+        "data": {},
+        "reasoning": null
+      },
+      "guid": "d33cad83-3736-490a-9749-3deb0537c1cc",
+      "full_reset": false,
+      "available_actions": [
+        1,
+        2,
+        3,
+        4
+      ]
+    }
+  },
+  "transform": {},
+  "lineage": [
+    {
+      "image": "data/arc3_games/recordings/ls20/saved_004/26/image.png",
+      "operation": "legacy_source",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T06:25:04.476395Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_004/frame_move_000027.png",
+      "operation": "import_arc_playback_frame",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T06:25:04.483706Z"
+    }
+  ]
+}

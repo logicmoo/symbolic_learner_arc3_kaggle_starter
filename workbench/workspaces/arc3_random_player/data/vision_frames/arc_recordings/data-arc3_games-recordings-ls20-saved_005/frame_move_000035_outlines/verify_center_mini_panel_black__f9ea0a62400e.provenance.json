@@ -1,0 +1,167 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_outlines/verify_center_mini_panel_black__f9ea0a62400e.png",
+  "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_outlines/verify_center_mini_panel_black__f9ea0a62400e.provenance.json",
+  "createdAt": "2026-09-02T03:10:34.653468Z",
+  "operation": "verify_outliner_trace",
+  "dimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "originalDimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "root": {
+    "firstSeenImage": "data/arc3_games/recordings/ls20/saved_005/34/image.png",
+    "dimensions": {
+      "width": 640,
+      "height": 640
+    }
+  },
+  "parent": {
+    "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035.png",
+    "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035.provenance.json"
+  },
+  "source": {
+    "objectName": "center_mini_panel_black_mark"
+  },
+  "transform": {
+    "polygons": [
+      [
+        [
+          360,
+          312
+        ],
+        [
+          370,
+          312
+        ],
+        [
+          370,
+          332
+        ],
+        [
+          360,
+          332
+        ]
+      ]
+    ],
+    "holes": [],
+    "traceTurtle": [
+      {
+        "op": "move",
+        "x": 563,
+        "y": 488
+      },
+      {
+        "op": "line",
+        "x": 578,
+        "y": 488
+      },
+      {
+        "op": "line",
+        "x": 578,
+        "y": 519
+      },
+      {
+        "op": "line",
+        "x": 563,
+        "y": 519
+      },
+      {
+        "op": "line",
+        "x": 563,
+        "y": 488
+      }
+    ],
+    "geometryHash": "f9ea0a62400ee623f4ac697ff3edd2ea25e3f1d0e9e3553c27ffe0bafb5bd112",
+    "traceAgreement": 1.0,
+    "boundaryCoverage": 1.0
+  },
+  "lineage": [
+    {
+      "image": "data/arc3_games/recordings/ls20/saved_005/34/image.png",
+      "operation": "legacy_source",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:19.794636Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035.png",
+      "operation": "import_arc_playback_frame",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T01:09:19.808137Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_005/frame_move_000035_outlines/verify_center_mini_panel_black__f9ea0a62400e.png",
+      "operation": "verify_outliner_trace",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {
+        "polygons": [
+          [
+            [
+              360,
+              312
+            ],
+            [
+              370,
+              312
+            ],
+            [
+              370,
+              332
+            ],
+            [
+              360,
+              332
+            ]
+          ]
+        ],
+        "holes": [],
+        "traceTurtle": [
+          {
+            "op": "move",
+            "x": 563,
+            "y": 488
+          },
+          {
+            "op": "line",
+            "x": 578,
+            "y": 488
+          },
+          {
+            "op": "line",
+            "x": 578,
+            "y": 519
+          },
+          {
+            "op": "line",
+            "x": 563,
+            "y": 519
+          },
+          {
+            "op": "line",
+            "x": 563,
+            "y": 488
+          }
+        ],
+        "geometryHash": "f9ea0a62400ee623f4ac697ff3edd2ea25e3f1d0e9e3553c27ffe0bafb5bd112",
+        "traceAgreement": 1.0,
+        "boundaryCoverage": 1.0
+      },
+      "createdAt": "2026-09-02T03:10:34.653468Z"
+    }
+  ]
+}

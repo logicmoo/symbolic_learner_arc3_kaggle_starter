@@ -1,0 +1,111 @@
+{
+  "source": "data/arc3_games/curated/level_1",
+  "frames": [
+    {
+      "path": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000000.png",
+      "index": 0,
+      "atSeconds": 0.0,
+      "scene": 1,
+      "provenance": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000000.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000001.png",
+      "index": 1,
+      "atSeconds": 1.0,
+      "scene": 2,
+      "provenance": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000001.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000002.png",
+      "index": 2,
+      "atSeconds": 2.0,
+      "scene": 3,
+      "provenance": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000002.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000003.png",
+      "index": 3,
+      "atSeconds": 3.0,
+      "scene": 4,
+      "provenance": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000003.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000004.png",
+      "index": 4,
+      "atSeconds": 4.0,
+      "scene": 5,
+      "provenance": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000004.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000005.png",
+      "index": 5,
+      "atSeconds": 5.0,
+      "scene": 6,
+      "provenance": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000005.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000006.png",
+      "index": 6,
+      "atSeconds": 6.0,
+      "scene": 7,
+      "provenance": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000006.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000007.png",
+      "index": 7,
+      "atSeconds": 7.0,
+      "scene": 8,
+      "provenance": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000007.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000008.png",
+      "index": 8,
+      "atSeconds": 8.0,
+      "scene": 9,
+      "provenance": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000008.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000009.png",
+      "index": 9,
+      "atSeconds": 9.0,
+      "scene": 10,
+      "provenance": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000009.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000010.png",
+      "index": 10,
+      "atSeconds": 10.0,
+      "scene": 11,
+      "provenance": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000010.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000011.png",
+      "index": 11,
+      "atSeconds": 11.0,
+      "scene": 12,
+      "provenance": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000011.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000012.png",
+      "index": 12,
+      "atSeconds": 12.0,
+      "scene": 13,
+      "provenance": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000012.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000013.png",
+      "index": 13,
+      "atSeconds": 13.0,
+      "scene": 14,
+      "provenance": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000013.provenance.json"
+    },
+    {
+      "path": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000014.png",
+      "index": 14,
+      "atSeconds": 14.0,
+      "scene": 15,
+      "provenance": "data/vision_frames/curated_data/data-arc3_games-curated-level_1/frame_000014.provenance.json"
+    }
+  ],
+  "importedAt": "2026-09-02T00:18:43.951722Z"
+}

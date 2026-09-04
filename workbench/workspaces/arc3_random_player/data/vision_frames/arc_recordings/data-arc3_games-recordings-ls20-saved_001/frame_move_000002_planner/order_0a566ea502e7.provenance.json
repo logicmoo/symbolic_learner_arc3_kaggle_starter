@@ -1,0 +1,293 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_001/frame_move_000002_planner/order_0a566ea502e7.png",
+  "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_001/frame_move_000002_planner/order_0a566ea502e7.provenance.json",
+  "createdAt": "2026-09-02T00:36:59.430701Z",
+  "operation": "visualize_planner_order",
+  "dimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "originalDimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "root": {
+    "firstSeenImage": "data/arc3_games/recordings/ls20/saved_001/1/image.png",
+    "dimensions": {
+      "width": 640,
+      "height": 640
+    }
+  },
+  "parent": {
+    "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_001/frame_move_000002.png",
+    "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_001/frame_move_000002.provenance.json"
+  },
+  "source": {},
+  "transform": {
+    "labels": [
+      {
+        "object": "head facial glyph",
+        "number": 1,
+        "point": [
+          356,
+          116
+        ]
+      },
+      {
+        "object": "creature head interior",
+        "number": 2,
+        "point": [
+          360,
+          120
+        ]
+      },
+      {
+        "object": "black body mark",
+        "number": 3,
+        "point": [
+          214,
+          314
+        ]
+      },
+      {
+        "object": "blue body mark",
+        "number": 4,
+        "point": [
+          210,
+          325
+        ]
+      },
+      {
+        "object": "gray ankle block",
+        "number": 5,
+        "point": [
+          250,
+          485
+        ]
+      },
+      {
+        "object": "red foot block",
+        "number": 6,
+        "point": [
+          250,
+          510
+        ]
+      },
+      {
+        "object": "detached tile glyph",
+        "number": 7,
+        "point": [
+          40,
+          580
+        ]
+      },
+      {
+        "object": "detached gray tile",
+        "number": 8,
+        "point": [
+          20,
+          570
+        ]
+      },
+      {
+        "object": "bottom HUD green segment",
+        "number": 9,
+        "point": [
+          145,
+          620
+        ]
+      },
+      {
+        "object": "bottom HUD cyan blocks",
+        "number": 10,
+        "point": [
+          565,
+          620
+        ]
+      },
+      {
+        "object": "green creature body",
+        "number": 11,
+        "point": [
+          380,
+          340
+        ]
+      },
+      {
+        "object": "bottom HUD dark bar",
+        "number": 12,
+        "point": [
+          300,
+          620
+        ]
+      },
+      {
+        "object": "left gray wall strip",
+        "number": 13,
+        "point": [
+          20,
+          200
+        ]
+      },
+      {
+        "object": "yellow background",
+        "number": 14,
+        "point": [
+          500,
+          40
+        ]
+      }
+    ],
+    "plannerHash": "0a566ea502e7871f03bd4aeaa49fa145391399828df9c70d1a2aaeec36e4d034"
+  },
+  "lineage": [
+    {
+      "image": "data/arc3_games/recordings/ls20/saved_001/1/image.png",
+      "operation": "legacy_source",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T00:25:11.604903Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_001/frame_move_000002.png",
+      "operation": "import_arc_playback_frame",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T00:25:11.615119Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_001/frame_move_000002_planner/order_0a566ea502e7.png",
+      "operation": "visualize_planner_order",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {
+        "labels": [
+          {
+            "object": "head facial glyph",
+            "number": 1,
+            "point": [
+              356,
+              116
+            ]
+          },
+          {
+            "object": "creature head interior",
+            "number": 2,
+            "point": [
+              360,
+              120
+            ]
+          },
+          {
+            "object": "black body mark",
+            "number": 3,
+            "point": [
+              214,
+              314
+            ]
+          },
+          {
+            "object": "blue body mark",
+            "number": 4,
+            "point": [
+              210,
+              325
+            ]
+          },
+          {
+            "object": "gray ankle block",
+            "number": 5,
+            "point": [
+              250,
+              485
+            ]
+          },
+          {
+            "object": "red foot block",
+            "number": 6,
+            "point": [
+              250,
+              510
+            ]
+          },
+          {
+            "object": "detached tile glyph",
+            "number": 7,
+            "point": [
+              40,
+              580
+            ]
+          },
+          {
+            "object": "detached gray tile",
+            "number": 8,
+            "point": [
+              20,
+              570
+            ]
+          },
+          {
+            "object": "bottom HUD green segment",
+            "number": 9,
+            "point": [
+              145,
+              620
+            ]
+          },
+          {
+            "object": "bottom HUD cyan blocks",
+            "number": 10,
+            "point": [
+              565,
+              620
+            ]
+          },
+          {
+            "object": "green creature body",
+            "number": 11,
+            "point": [
+              380,
+              340
+            ]
+          },
+          {
+            "object": "bottom HUD dark bar",
+            "number": 12,
+            "point": [
+              300,
+              620
+            ]
+          },
+          {
+            "object": "left gray wall strip",
+            "number": 13,
+            "point": [
+              20,
+              200
+            ]
+          },
+          {
+            "object": "yellow background",
+            "number": 14,
+            "point": [
+              500,
+              40
+            ]
+          }
+        ],
+        "plannerHash": "0a566ea502e7871f03bd4aeaa49fa145391399828df9c70d1a2aaeec36e4d034"
+      },
+      "createdAt": "2026-09-02T00:36:59.430701Z"
+    }
+  ]
+}

@@ -1,0 +1,261 @@
+{
+  "kind": "video_import_image_provenance",
+  "version": 1,
+  "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_001/frame_move_000000_planner/order_dc5114c99fcc.png",
+  "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_001/frame_move_000000_planner/order_dc5114c99fcc.provenance.json",
+  "createdAt": "2026-09-02T00:36:58.855390Z",
+  "operation": "visualize_planner_order",
+  "dimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "originalDimensions": {
+    "width": 640,
+    "height": 640
+  },
+  "root": {
+    "firstSeenImage": "data/arc3_games/recordings/ls20/saved_001/image.png",
+    "dimensions": {
+      "width": 640,
+      "height": 640
+    }
+  },
+  "parent": {
+    "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_001/frame_move_000000.png",
+    "provenance": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_001/frame_move_000000.provenance.json"
+  },
+  "source": {},
+  "transform": {
+    "labels": [
+      {
+        "object": "head-red-symbol",
+        "number": 1,
+        "point": [
+          360,
+          120
+        ]
+      },
+      {
+        "object": "gray-head-face",
+        "number": 2,
+        "point": [
+          336,
+          96
+        ]
+      },
+      {
+        "object": "black-blue-body-marker",
+        "number": 3,
+        "point": [
+          214,
+          320
+        ]
+      },
+      {
+        "object": "bottom-red-block-gray-cap",
+        "number": 4,
+        "point": [
+          350,
+          460
+        ]
+      },
+      {
+        "object": "bottom-red-block",
+        "number": 5,
+        "point": [
+          350,
+          486
+        ]
+      },
+      {
+        "object": "green-creature-body",
+        "number": 6,
+        "point": [
+          430,
+          330
+        ]
+      },
+      {
+        "object": "bottom-left-red-symbol",
+        "number": 7,
+        "point": [
+          40,
+          560
+        ]
+      },
+      {
+        "object": "bottom-left-gray-sign-tile",
+        "number": 8,
+        "point": [
+          16,
+          536
+        ]
+      },
+      {
+        "object": "bottom-ui-blue-buttons",
+        "number": 9,
+        "point": [
+          570,
+          620
+        ]
+      },
+      {
+        "object": "bottom-ui-dark-bar",
+        "number": 10,
+        "point": [
+          300,
+          620
+        ]
+      },
+      {
+        "object": "left-gray-vertical-panel",
+        "number": 11,
+        "point": [
+          20,
+          260
+        ]
+      },
+      {
+        "object": "yellow-background",
+        "number": 12,
+        "point": [
+          500,
+          40
+        ]
+      }
+    ],
+    "plannerHash": "dc5114c99fcc3cb91284decbf34f3e2dfc1b712729dd876792f11847ca34496b"
+  },
+  "lineage": [
+    {
+      "image": "data/arc3_games/recordings/ls20/saved_001/image.png",
+      "operation": "legacy_source",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T00:25:11.534368Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_001/frame_move_000000.png",
+      "operation": "import_arc_playback_frame",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {},
+      "createdAt": "2026-09-02T00:25:11.543588Z"
+    },
+    {
+      "image": "data/vision_frames/arc_recordings/data-arc3_games-recordings-ls20-saved_001/frame_move_000000_planner/order_dc5114c99fcc.png",
+      "operation": "visualize_planner_order",
+      "dimensions": {
+        "width": 640,
+        "height": 640
+      },
+      "transform": {
+        "labels": [
+          {
+            "object": "head-red-symbol",
+            "number": 1,
+            "point": [
+              360,
+              120
+            ]
+          },
+          {
+            "object": "gray-head-face",
+            "number": 2,
+            "point": [
+              336,
+              96
+            ]
+          },
+          {
+            "object": "black-blue-body-marker",
+            "number": 3,
+            "point": [
+              214,
+              320
+            ]
+          },
+          {
+            "object": "bottom-red-block-gray-cap",
+            "number": 4,
+            "point": [
+              350,
+              460
+            ]
+          },
+          {
+            "object": "bottom-red-block",
+            "number": 5,
+            "point": [
+              350,
+              486
+            ]
+          },
+          {
+            "object": "green-creature-body",
+            "number": 6,
+            "point": [
+              430,
+              330
+            ]
+          },
+          {
+            "object": "bottom-left-red-symbol",
+            "number": 7,
+            "point": [
+              40,
+              560
+            ]
+          },
+          {
+            "object": "bottom-left-gray-sign-tile",
+            "number": 8,
+            "point": [
+              16,
+              536
+            ]
+          },
+          {
+            "object": "bottom-ui-blue-buttons",
+            "number": 9,
+            "point": [
+              570,
+              620
+            ]
+          },
+          {
+            "object": "bottom-ui-dark-bar",
+            "number": 10,
+            "point": [
+              300,
+              620
+            ]
+          },
+          {
+            "object": "left-gray-vertical-panel",
+            "number": 11,
+            "point": [
+              20,
+              260
+            ]
+          },
+          {
+            "object": "yellow-background",
+            "number": 12,
+            "point": [
+              500,
+              40
+            ]
+          }
+        ],
+        "plannerHash": "dc5114c99fcc3cb91284decbf34f3e2dfc1b712729dd876792f11847ca34496b"
+      },
+      "createdAt": "2026-09-02T00:36:58.855390Z"
+    }
+  ]
+}
