@@ -345,35 +345,34 @@ def _shape_sig(cells: np.ndarray, hexs: str) -> tuple:
     return (hexs, _canon_key(_offsets(cells)))
 
 
-def _motion(info_a: dict, info_b: dict) -> dict:
-    """Match A-regions to B-regions by (color, D4-canonical shape) and describe
-    each match as a RIGID motion. For a rigid body the same transform R and the
-    same translation t = b - R(a) apply to every part, so parts of one object
-    share (tf, key) even under rotation/flip. Returns
-    {gidA: {"d": (dx, dy), "tf": name, "key": (kx, ky)}}."""
+def _motion(info_a: dict, info_b: dict):
+    """Match A-regions to B-regions by (color, D4-canonical shape) as a rigid
+    motion. Returns (out, used_b): out[gidA] = {"d": (dx,dy), "tf": name,
+    "key": (kx,ky)}, and used_b = the set of matched B gids (so the caller can
+    tell what appeared/disappeared)."""
     from collections import defaultdict
     fmap = dict(_D4)
     bysig: dict = defaultdict(list)
-    for _g, b in info_b.items():
-        bysig[b["sig"]].append(b)
+    for gb, b in info_b.items():
+        bysig[b["sig"]].append((gb, b))
     used: set = set()
     out: dict = {}
     for g, i in info_a.items():
-        cands = [b for b in bysig.get(i["sig"], []) if id(b) not in used]
+        cands = [(gb, b) for (gb, b) in bysig.get(i["sig"], []) if gb not in used]
         if not cands:
             continue
-        best = min(cands, key=lambda b: (b["cx"] - i["cx"]) ** 2 + (b["cy"] - i["cy"]) ** 2)
-        used.add(id(best))
+        gb, best = min(cands, key=lambda t: (t[1]["cx"] - i["cx"]) ** 2 + (t[1]["cy"] - i["cy"]) ** 2)
+        used.add(gb)
         tf = _transform_between(i["off"], best["off"])
         dx, dy = best["cx"] - i["cx"], best["cy"] - i["cy"]
         f = fmap.get(tf)
         if f:
             fx, fy = f(i["cx"], i["cy"])
-            key = (best["cx"] - fx, best["cy"] - fy)   # rigid translation, shared by the object
+            key = (best["cx"] - fx, best["cy"] - fy)
         else:
             key = (dx, dy)
         out[g] = {"d": (dx, dy), "tf": tf, "key": key}
-    return out
+    return out, used
 
 
 def extract_frame(png_path: str, char: str, partner_path: str | None = None) -> dict:
@@ -387,10 +386,13 @@ def extract_frame(png_path: str, char: str, partner_path: str | None = None) -> 
     enclos = enclosures(info, pairs)
     pof, obj = _run_prolog(info, pairs, enclos, cols, rows)
 
-    # common-fate grouping across the two frames: parts sharing the same motion
-    # (displacement + flip/rotation) are one object. motion[rid] = (dx, dy, tf).
+    # common-fate grouping across the two frames: parts sharing the same rigid
+    # motion (displacement + flip/rotation) are one object; unmatched parts are
+    # appear/disappear events (e.g. a switch toggling).
     move_group: dict = {}
     motion: dict = {}
+    disappeared: list = []   # A gids gone in B
+    appeared: list = []      # (hex, cx, cy) new in B
     if partner_path:
         try:
             idx_b, pal_b, _cb, _rb = decode_grid(partner_path)
@@ -399,7 +401,8 @@ def extract_frame(png_path: str, char: str, partner_path: str | None = None) -> 
                 b["hex"] = pal_b[b["color_id"]]
                 b["off"] = _offsets(b["cells"])
                 b["sig"] = _shape_sig(b["cells"], b["hex"])
-            for gid, mo in _motion(info, info_b).items():
+            mres, used_b = _motion(info, info_b)
+            for gid, mo in mres.items():
                 dx, dy = mo["d"]
                 tf = mo["tf"]
                 kx, ky = mo["key"]
@@ -408,8 +411,11 @@ def extract_frame(png_path: str, char: str, partner_path: str | None = None) -> 
                     # group by the RIGID transform (shared across an object's
                     # parts even when they rotate/flip), not raw displacement.
                     move_group[f"r{gid}"] = f"move_{kx}_{ky}_{tf}"
+            disappeared = [g for g in info if g not in mres]
+            appeared = [(info_b[gb]["hex"], info_b[gb]["cx"], info_b[gb]["cy"])
+                        for gb in info_b if gb not in used_b]
         except Exception:  # noqa: BLE001
-            move_group, motion = {}, {}
+            move_group, motion, disappeared, appeared = {}, {}, [], []
 
     # every part gets a partOf group: its adjacency-cluster object, else (a
     # background/large blob) its own group -> full coverage like the LLM line.
@@ -459,6 +465,12 @@ def extract_frame(png_path: str, char: str, partner_path: str | None = None) -> 
         pid = pid_of.get(rid)
         if pid and ((dx, dy) != (0, 0) or tf != "identity"):
             mlines.append(f"(moved {char} {pid} {dx} {dy} {tf})")
+    for g in disappeared:
+        pid = pid_of.get(f"r{g}")
+        if pid:
+            mlines.append(f"(disappeared {char} {pid})")
+    for hexc, cx, cy in appeared:
+        mlines.append(f"(appeared {char} {hexc} {cx} {cy})")
     metta = "\n".join(mlines) + "\n"
     return {"metta": metta, "geom": geom, "nparts": len(info),
             "nrels": len(pof) + len(obj), "cols": cols, "rows": rows,
