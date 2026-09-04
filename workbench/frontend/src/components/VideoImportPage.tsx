@@ -6511,18 +6511,18 @@ export function VideoImportPage({
                                                 {bigGroups.map((g) => {
                                                   const col = groupColor.get(g.id) || "#8a8f98";
                                                   return g.parts.map((p, pi) => {
+                                                    if (hi && !hi.has(p.id)) return null;
                                                     const [x0, y0, x1, y1] = p.bbox;
-                                                    const on = !hi || hi.has(p.id);
                                                     return <rect key={g.id + "_" + pi} x={x0} y={y0} width={Math.max(0, x1 - x0)} height={Math.max(0, y1 - y0)}
-                                                      fill={col} fillOpacity={on ? 0.3 : 0.04} stroke={col} strokeWidth={on ? 6 : 2} opacity={on ? 1 : 0.35}><title>{p.label} · {g.id}</title></rect>;
+                                                      fill={col} fillOpacity={0.32} stroke={col} strokeWidth={6}><title>{p.label} · {g.id}</title></rect>;
                                                   });
                                                 })}
                                                 {bigGroups.map((g, gi) => {
                                                   const col = groupColor.get(g.id) || "#8a8f98";
+                                                  if (hi && !g.parts.some((p) => hi.has(p.id))) return null;
                                                   const [x0, y0, x1, y1] = g.bbox;
-                                                  const on = !hi || g.parts.some((p) => hi.has(p.id));
                                                   return (
-                                                    <g key={"u" + gi} opacity={on ? 1 : 0.25}>
+                                                    <g key={"u" + gi}>
                                                       <rect x={x0} y={y0} width={Math.max(0, x1 - x0)} height={Math.max(0, y1 - y0)} fill="none" stroke={col} strokeWidth="3" strokeDasharray="14 8" rx="8" />
                                                       <text x={x0 + 8} y={y0 + 30} fill={col} fontSize="30" fontWeight="700" stroke="#0b0e12" strokeWidth="0.6">{g.id}</text>
                                                     </g>
