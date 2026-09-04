@@ -3145,7 +3145,7 @@ def run_reduce(
                         sys.path.insert(0, _gvp)
                     _sa = importlib.import_module("symbolic_arc")
                     _pms = time.monotonic()
-                    pr = _sa.extract_frame(str(src_path), slug)
+                    pr = _sa.extract_frame(str(src_path), slug, str(partner) if partner else None)
                     _pms = int((time.monotonic() - _pms) * 1000)
                     if pr["nparts"] > 0 and pr["cols"] <= 160 and pr["rows"] <= 160:
                         (sym_dir / f"{idv}__prolog.metta").write_text(pr["metta"], encoding="utf-8")

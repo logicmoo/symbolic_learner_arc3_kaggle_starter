@@ -282,14 +282,61 @@ def enclosures(region_info, pairs) -> list[tuple[int, int]]:
 from color_names import nearest_name as _color_name
 
 
-def extract_frame(png_path: str, char: str) -> dict:
+def _shape_sig(cells: np.ndarray, hexs: str) -> tuple:
+    """Translation-invariant signature of a blob: its color + the set of cell
+    offsets from its top-left. Same shape+color that merely translated between
+    frames shares this signature."""
+    ys, xs = np.where(cells)
+    if xs.size == 0:
+        return (hexs, ())
+    minx, miny = int(xs.min()), int(ys.min())
+    return (hexs, tuple(sorted(zip((xs - minx).tolist(), (ys - miny).tolist()))))
+
+
+def _motion(info_a: dict, info_b: dict) -> dict:
+    """Match A-regions to B-regions by (color, exact shape); return
+    {gidA: (dx, dy)} centroid displacement (common fate)."""
+    from collections import defaultdict
+    bysig: dict = defaultdict(list)
+    for _g, b in info_b.items():
+        bysig[b["sig"]].append(b)
+    used: set = set()
+    disp: dict = {}
+    for g, i in info_a.items():
+        cands = [b for b in bysig.get(i["sig"], []) if id(b) not in used]
+        if not cands:
+            continue
+        best = min(cands, key=lambda b: (b["cx"] - i["cx"]) ** 2 + (b["cy"] - i["cy"]) ** 2)
+        used.add(id(best))
+        disp[g] = (best["cx"] - i["cx"], best["cy"] - i["cy"])
+    return disp
+
+
+def extract_frame(png_path: str, char: str, partner_path: str | None = None) -> dict:
     idx, hexpal, cols, rows = decode_grid(png_path)
     labels, info = label_regions(idx)
     for gid, i in info.items():
         i["hex"] = hexpal[i["color_id"]]
+        i["sig"] = _shape_sig(i["cells"], i["hex"])
     pairs = adjacency(labels)
     enclos = enclosures(info, pairs)
     pof, obj = _run_prolog(info, pairs, enclos, cols, rows)
+
+    # common-fate grouping: parts that translate by the same vector between the
+    # two frames are one moving object.
+    move_group: dict = {}
+    if partner_path:
+        try:
+            idx_b, pal_b, _cb, _rb = decode_grid(partner_path)
+            _lb, info_b = label_regions(idx_b)
+            for _g, b in info_b.items():
+                b["hex"] = pal_b[b["color_id"]]
+                b["sig"] = _shape_sig(b["cells"], b["hex"])
+            for gid, d in _motion(info, info_b).items():
+                if d != (0, 0):
+                    move_group[f"r{gid}"] = f"move_{d[0]}_{d[1]}"
+        except Exception:  # noqa: BLE001
+            move_group = {}
 
     # every part gets a partOf group: its adjacency-cluster object, else (a
     # background/large blob) its own group -> full coverage like the LLM line.
@@ -311,7 +358,9 @@ def extract_frame(png_path: str, char: str) -> dict:
         lbl = f"{cname}_{color_n[cname]}"
         pid = f"part_{lbl}"
         pid_of[rid] = pid
-        raw_of[pid] = obj.get(rid) or f"g{gid}"
+        # common fate first: parts that moved by the same vector are one object;
+        # else the adjacency cluster; else a singleton.
+        raw_of[pid] = move_group.get(rid) or obj.get(rid) or f"g{gid}"
         mlines.append(f'(part {char} {pid} (label "{lbl}") (color {i["hex"]}))')
         geom.append({"id": pid, "label": lbl, "color": i["hex"],
                      "partOf": "",
