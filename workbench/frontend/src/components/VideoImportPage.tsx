@@ -407,7 +407,7 @@ const API = "/workbench/video-import";
 // relation count, so the Recognition reduce rows can render each stage panel
 // NATIVELY (parts overlay + part-map) instead of a pre-baked composite image.
 type MettaPart = { id: string; label: string; color: string; bbox: [number, number, number, number] };
-type MettaGroup = { id: string; bbox: [number, number, number, number]; count: number };
+type MettaGroup = { id: string; bbox: [number, number, number, number]; parts: MettaPart[] };
 // Distinct outline colors for partOf group boxes (cycled by group index).
 const GROUP_COLORS = ["#27dcc2","#ff7ab6","#f2c14e","#7c9cff","#8bd450","#ff8b5e","#c78bff","#4ecdc4","#ffd166","#ef476f"];
 const CSS_COLOR_WORDS = new Set(["yellow","white","black","red","blue","orange","green","pink","brown","gray","grey","purple","tan","cyan","magenta","gold","silver","beige","maroon","navy","teal","olive","lime","aqua","violet","indigo","peach","cream"]);
@@ -433,20 +433,22 @@ function parseMettaParts(text: string): { parts: MettaPart[]; nrels: number; gro
     if (/^\((?:above|left-of|right-of|below)\s/.test(line)) nrels += 1;
   }
   const byId = new Map(parts.map((p) => [p.id, p]));
-  const gb = new Map<string, [number, number, number, number]>();
-  const gc = new Map<string, number>();
+  const gp = new Map<string, MettaPart[]>();
   for (const [pid, g] of partOf) {
     const p = byId.get(pid);
     if (!p) continue;
-    gc.set(g, (gc.get(g) || 0) + 1);
-    const cur = gb.get(g);
-    if (!cur) gb.set(g, [p.bbox[0], p.bbox[1], p.bbox[2], p.bbox[3]]);
-    else {
-      cur[0] = Math.min(cur[0], p.bbox[0]); cur[1] = Math.min(cur[1], p.bbox[1]);
-      cur[2] = Math.max(cur[2], p.bbox[2]); cur[3] = Math.max(cur[3], p.bbox[3]);
-    }
+    const arr = gp.get(g) || [];
+    arr.push(p);
+    gp.set(g, arr);
   }
-  const groups: MettaGroup[] = [...gb.entries()].map(([id, bbox]) => ({ id, bbox, count: gc.get(id) || 0 }));
+  const groups: MettaGroup[] = [...gp.entries()].map(([id, ps]) => {
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (const p of ps) {
+      x0 = Math.min(x0, p.bbox[0]); y0 = Math.min(y0, p.bbox[1]);
+      x1 = Math.max(x1, p.bbox[2]); y1 = Math.max(y1, p.bbox[3]);
+    }
+    return { id, bbox: [x0, y0, x1, y1] as [number, number, number, number], parts: ps };
+  });
   return { parts, nrels, groups };
 }
 const streamSlug = (value: string) =>
@@ -2882,6 +2884,9 @@ export function VideoImportPage({
   const [reduceOnlyGood, setReduceOnlyGood] = useState(false);
   const [reduceMetta, setReduceMetta] = useState<Record<string, string>>({});
   const [expandedReduceId, setExpandedReduceId] = useState<string | null>(null);
+  // partOf tree ↔ groups-box highlight: which part ids to light up, scoped to one
+  // reduce row/tier (keyed by that tier's metta path).
+  const [groupHilite, setGroupHilite] = useState<{ key: string; ids: string[] } | null>(null);
   // Reduce section shows a collapsible char-grouped grid above a flat
   // one-row-per-image list (all 200); "reduceListQuery" filters the list.
   const [reduceListQuery, setReduceListQuery] = useState("");
@@ -6428,7 +6433,19 @@ export function VideoImportPage({
                                   const mettaRel = row.mettaPath || `data/recognition_reduce/sym/${String(row.metta || "").split("/").pop()}`;
                                   const mettaText = reduceMetta[mettaRel];
                                   const { parts, groups } = parseMettaParts(mettaText || "");
-                                  const bigGroups = groups.filter((g) => g.count >= 2);
+                                  const bigGroups = groups.filter((g) => g.parts.length >= 2);
+                                  const groupColor = new Map<string, string>();
+                                  bigGroups.forEach((g, gi) => groupColor.set(g.id, GROUP_COLORS[gi % GROUP_COLORS.length]));
+                                  const hi = (groupHilite && groupHilite.key === mettaRel) ? new Set(groupHilite.ids) : null;
+                                  const selectGroup = (g: MettaGroup) => setGroupHilite((prev) => {
+                                    const ids = g.parts.map((p) => p.id);
+                                    const same = prev && prev.key === mettaRel && prev.ids.length === ids.length && ids.every((i) => prev.ids.includes(i));
+                                    return same ? null : { key: mettaRel, ids };
+                                  });
+                                  const selectPart = (pid: string) => setGroupHilite((prev) => {
+                                    const same = prev && prev.key === mettaRel && prev.ids.length === 1 && prev.ids[0] === pid;
+                                    return same ? null : { key: mettaRel, ids: [pid] };
+                                  });
                                   const sp = row.stagePaths || {};
                                   graphParts.push(`; ${row.shots}-shot · ${row.model} · ${row.nparts}p ${row.nrels}r${isRef ? " · REF" : ` · vs 1: ${rp}% ${String(rv).toUpperCase()}`}\n${mettaText === undefined ? "loading…" : (mettaText || "(no graph)")}`);
                                   return (
@@ -6463,21 +6480,57 @@ export function VideoImportPage({
                                           <figcaption>part map</figcaption>
                                         </figure>
                                         {bigGroups.length > 0 && (
-                                          <figure className="video-import-reduce-stage">
-                                            <svg viewBox="0 0 1000 1000" className="video-import-reduce-svg is-groups">
-                                              <image href={asset(inputRel)} x="0" y="0" width="1000" height="1000" preserveAspectRatio="xMidYMid meet" opacity="0.55" />
-                                              {bigGroups.map((g, gi) => {
-                                                const [x0, y0, x1, y1] = g.bbox;
-                                                const col = GROUP_COLORS[gi % GROUP_COLORS.length];
-                                                return (
-                                                  <g key={gi}>
-                                                    <rect x={x0} y={y0} width={Math.max(0, x1 - x0)} height={Math.max(0, y1 - y0)} fill={col} fillOpacity="0.08" stroke={col} strokeWidth="6" strokeDasharray="14 8" rx="8" />
-                                                    <text x={x0 + 8} y={y0 + 30} fill={col} fontSize="30" fontWeight="700" stroke="#0b0e12" strokeWidth="0.6">{g.id} · {g.count}</text>
-                                                  </g>
-                                                );
-                                              })}
-                                            </svg>
-                                            <figcaption>partOf groups · {bigGroups.length}</figcaption>
+                                          <figure className="video-import-reduce-stage is-groupwrap">
+                                            <div className="video-import-reduce-grouprow">
+                                              <div className="video-import-reduce-grouptree">
+                                                {bigGroups.map((g, gi) => {
+                                                  const col = groupColor.get(g.id) || "#8a8f98";
+                                                  const groupSel = !!hi && hi.size === g.parts.length && g.parts.every((p) => hi.has(p.id));
+                                                  return (
+                                                    <details key={gi} className="video-import-reduce-groupnode" open>
+                                                      <summary className={groupSel ? "is-sel" : ""} style={{ color: col }}
+                                                        onClick={(e) => { e.preventDefault(); selectGroup(g); }}>
+                                                        <span className="video-import-reduce-groupdot" style={{ background: col }} />{g.id} · {g.parts.length}
+                                                      </summary>
+                                                      <ul>
+                                                        {g.parts.map((p, pi) => {
+                                                          const partSel = !!hi && hi.size === 1 && hi.has(p.id);
+                                                          return (
+                                                            <li key={pi}>
+                                                              <button type="button" className={partSel ? "is-sel" : ""} onClick={() => selectPart(p.id)} title={`${p.label} · ${p.color}`}>{p.label}</button>
+                                                            </li>
+                                                          );
+                                                        })}
+                                                      </ul>
+                                                    </details>
+                                                  );
+                                                })}
+                                              </div>
+                                              <svg viewBox="0 0 1000 1000" className="video-import-reduce-svg is-groups">
+                                                <image href={asset(inputRel)} x="0" y="0" width="1000" height="1000" preserveAspectRatio="xMidYMid meet" opacity="0.5" />
+                                                {bigGroups.map((g) => {
+                                                  const col = groupColor.get(g.id) || "#8a8f98";
+                                                  return g.parts.map((p, pi) => {
+                                                    const [x0, y0, x1, y1] = p.bbox;
+                                                    const on = !hi || hi.has(p.id);
+                                                    return <rect key={g.id + "_" + pi} x={x0} y={y0} width={Math.max(0, x1 - x0)} height={Math.max(0, y1 - y0)}
+                                                      fill={col} fillOpacity={on ? 0.3 : 0.04} stroke={col} strokeWidth={on ? 6 : 2} opacity={on ? 1 : 0.35}><title>{p.label} · {g.id}</title></rect>;
+                                                  });
+                                                })}
+                                                {bigGroups.map((g, gi) => {
+                                                  const col = groupColor.get(g.id) || "#8a8f98";
+                                                  const [x0, y0, x1, y1] = g.bbox;
+                                                  const on = !hi || g.parts.some((p) => hi.has(p.id));
+                                                  return (
+                                                    <g key={"u" + gi} opacity={on ? 1 : 0.25}>
+                                                      <rect x={x0} y={y0} width={Math.max(0, x1 - x0)} height={Math.max(0, y1 - y0)} fill="none" stroke={col} strokeWidth="3" strokeDasharray="14 8" rx="8" />
+                                                      <text x={x0 + 8} y={y0 + 30} fill={col} fontSize="30" fontWeight="700" stroke="#0b0e12" strokeWidth="0.6">{g.id}</text>
+                                                    </g>
+                                                  );
+                                                })}
+                                              </svg>
+                                            </div>
+                                            <figcaption>partOf groups · {bigGroups.length} — click tree to highlight</figcaption>
                                           </figure>
                                         )}
                                       </div>

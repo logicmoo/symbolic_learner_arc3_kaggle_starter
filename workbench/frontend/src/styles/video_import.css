@@ -1343,6 +1343,19 @@
 .video-import-reduce-svg { width: 130px; height: 130px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); background: #fff; }
 .video-import-reduce-svg.is-map { background: #ffffff; }
 .video-import-reduce-svg.is-groups { background: #0b0e12; }
+/* partOf group tree beside the groups box */
+.video-import-reduce-stage.is-groupwrap { min-width: 320px; }
+.video-import-reduce-grouprow { display: flex; gap: 8px; align-items: flex-start; }
+.video-import-reduce-grouptree { width: 150px; max-height: 200px; overflow: auto; font-size: 11px; line-height: 1.4; padding-right: 4px; }
+.video-import-reduce-groupnode > summary { cursor: pointer; font-weight: 700; list-style: none; display: flex; align-items: center; gap: 5px; padding: 2px 4px; border-radius: 4px; white-space: nowrap; }
+.video-import-reduce-groupnode > summary::-webkit-details-marker { display: none; }
+.video-import-reduce-groupnode > summary:hover { background: rgba(255,255,255,0.06); }
+.video-import-reduce-groupnode > summary.is-sel { background: rgba(255,255,255,0.14); }
+.video-import-reduce-groupdot { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+.video-import-reduce-grouptree ul { list-style: none; margin: 0 0 4px 0; padding: 0 0 0 16px; }
+.video-import-reduce-grouptree li button { background: none; border: none; color: rgba(255,255,255,0.68); font-size: 11px; text-align: left; padding: 1px 5px; border-radius: 4px; cursor: pointer; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.video-import-reduce-grouptree li button:hover { background: rgba(255,255,255,0.06); color: #fff; }
+.video-import-reduce-grouptree li button.is-sel { background: rgba(39,220,194,0.22); color: #fff; }
 .video-import-reduce-stageimg { width: 130px; height: 130px; object-fit: contain; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); background: #fff; }
 .video-import-reduce-stagemissing { width: 130px; height: 130px; display: flex; align-items: center; justify-content: center; text-align: center; border-radius: 6px; border: 1px dashed rgba(255,255,255,0.15); font-size: 10px; font-style: italic; opacity: 0.5; }
 .video-import-reduce-cutstrip { width: 150px; height: 130px; overflow: auto; display: flex; flex-wrap: wrap; gap: 3px; align-content: flex-start; padding: 3px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); background: #fff; }
