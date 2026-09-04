@@ -471,10 +471,61 @@ def extract_frame(png_path: str, char: str, partner_path: str | None = None) -> 
             mlines.append(f"(disappeared {char} {pid})")
     for hexc, cx, cy in appeared:
         mlines.append(f"(appeared {char} {hexc} {cx} {cy})")
+    # spatial event links: a mover whose DESTINATION lands on a vanished cell
+    # likely caused it (interacted); on a newborn cell -> revealed it. This
+    # grounds induction so temporally-coincident but far-apart events (e.g. a
+    # rotation across the map) are not spuriously linked.
+    def _near(ax: int, ay: int, bx: int, by: int, tol: int = 2) -> bool:
+        return abs(ax - bx) <= tol and abs(ay - by) <= tol
+    for rid, (dx, dy, tf) in motion.items():
+        mp = pid_of.get(rid)
+        gid = int(rid[1:]) if rid[1:].isdigit() else None
+        if not mp or gid not in info or ((dx, dy) == (0, 0) and tf == "identity"):
+            continue
+        destx, desty = info[gid]["cx"] + dx, info[gid]["cy"] + dy
+        for g in disappeared:
+            if _near(destx, desty, info[g]["cx"], info[g]["cy"]):
+                dp = pid_of.get(f"r{g}")
+                if dp:
+                    mlines.append(f"(interacted {char} {mp} {dp})")
+        for hexc, ax, ay in appeared:
+            if _near(destx, desty, ax, ay):
+                mlines.append(f"(revealed {char} {mp} {hexc} {ax} {ay})")
     metta = "\n".join(mlines) + "\n"
     return {"metta": metta, "geom": geom, "nparts": len(info),
             "nrels": len(pof) + len(obj), "cols": cols, "rows": rows,
             "ngroups": len(groups)}
+
+
+def _pid_color(pid: str) -> str:
+    """Color name embedded in a part id: part_darkred_2 -> darkred."""
+    import re as _re
+    s = pid[5:] if pid.startswith("part_") else pid
+    return _re.sub(r"_\d+$", "", s)
+
+
+def induce_sequence_rules(metta_texts: list[str]) -> str:
+    """Aggregate grounded interacted/revealed links across a whole frame
+    sequence into candidate rules, ranked by how often they recur (support).
+    Spurious one-off co-occurrences stay low-support; real mechanics rise."""
+    from collections import Counter
+    inter: Counter = Counter()
+    reveal: Counter = Counter()
+    for txt in metta_texts:
+        for ln in txt.splitlines():
+            p = ln.strip().rstrip(")").split()
+            if len(p) >= 4 and p[0] == "(interacted":
+                inter[(_pid_color(p[2]), _pid_color(p[3]))] += 1
+            elif len(p) >= 4 and p[0] == "(revealed":
+                tc = _color_name(p[3]) if p[3].startswith("#") else p[3]
+                reveal[(_pid_color(p[2]), tc)] += 1
+    lines = ["; induced sequence rules - grounded co-occurrences across the sequence",
+             f"; {sum(inter.values())} interactions, {sum(reveal.values())} reveals"]
+    for (mc, tc), n in inter.most_common():
+        lines.append(f"(rule-candidate moved-onto {mc} {tc} disappears (support {n}))")
+    for (mc, tc), n in reveal.most_common():
+        lines.append(f"(rule-candidate moved-onto {mc} reveals {tc} (support {n}))")
+    return "\n".join(lines) + "\n"
 
 
 if __name__ == "__main__":
