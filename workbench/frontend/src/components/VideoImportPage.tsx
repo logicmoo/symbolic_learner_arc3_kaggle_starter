@@ -6484,10 +6484,6 @@ export function VideoImportPage({
                     const open = it.id === expandedReduceId;
                     const tiers = (it.rows || []);
                     const charCollapsed = collapsedReduceChars.has(it.slug);
-                    const firstTier = tiers[0];
-                    const firstMettaRel = firstTier ? (firstTier.mettaPath || (firstTier.metta ? `data/recognition_reduce/sym/${String(firstTier.metta).split("/").pop()}` : "")) : "";
-                    const descParsed = parseMettaParts(firstMettaRel ? (reduceMetta[firstMettaRel] || "") : "");
-                    const descBigGroups = descParsed.groups.filter((g) => g.parts.length >= 2);
                     const els: any[] = [];
                     if (newGroup) els.push(
                       <div className={`video-import-reduce-listsep${charCollapsed ? " is-collapsed" : ""}`} key={`sep-${it.slug}`} role="button" tabIndex={0}
@@ -6508,7 +6504,6 @@ export function VideoImportPage({
                             <b>{nameBySlug.get(it.slug) || it.slug}</b>
                             <span className="video-import-reduce-desccond">{COND_LABELS[it.cond] || it.cond}</span>
                             <code className="video-import-reduce-descid">{it.id}</code>
-                            {descParsed.parts.length ? <span className="video-import-reduce-descstat">{descParsed.parts.length} parts · {descBigGroups.length} groups</span> : null}
                             {it.startedAt ? <span className="video-import-reduce-desctime">⏱ started {it.startedAt}{typeof it.elapsedMs === "number" ? ` · took ${(it.elapsedMs / 1000).toFixed(1)}s` : ""}</span> : null}
                             {web ? (
                               <span className="video-import-reduce-listsrc">
@@ -6603,7 +6598,7 @@ export function VideoImportPage({
                                             <image href={asset(inputRel)} x="0" y="0" width="1000" height="1000" preserveAspectRatio="xMidYMid meet" opacity={hi ? 0.06 : 0.4} />
                                             {Array.isArray(partsData) ? partsData.flatMap((gp: any, pi: number) => ((hi && !hi.has(gp.id)) || !gp.turtle) ? [] : turtleToSvg(gp.turtle, "tp" + pi, groupColor.get(gp.partOf) || mettaColor(gp.color))) : null}
                                           </svg>
-                                          <figcaption>turtle parts{hi ? " · selected" : ""}</figcaption>
+                                          <figcaption>turtle parts · {parts.length}p · {bigGroups.length}g{hi ? " · sel" : ""}</figcaption>
                                         </figure>
                                         <figure className="video-import-reduce-stage">
                                           <svg viewBox="0 0 1000 1000" className="video-import-reduce-svg is-map">
