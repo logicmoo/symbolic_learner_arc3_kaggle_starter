@@ -407,16 +407,20 @@ const API = "/workbench/video-import";
 // relation count, so the Recognition reduce rows can render each stage panel
 // NATIVELY (parts overlay + part-map) instead of a pre-baked composite image.
 type MettaPart = { id: string; label: string; color: string; bbox: [number, number, number, number] };
+type MettaGroup = { id: string; bbox: [number, number, number, number]; count: number };
+// Distinct outline colors for partOf group boxes (cycled by group index).
+const GROUP_COLORS = ["#27dcc2","#ff7ab6","#f2c14e","#7c9cff","#8bd450","#ff8b5e","#c78bff","#4ecdc4","#ffd166","#ef476f"];
 const CSS_COLOR_WORDS = new Set(["yellow","white","black","red","blue","orange","green","pink","brown","gray","grey","purple","tan","cyan","magenta","gold","silver","beige","maroon","navy","teal","olive","lime","aqua","violet","indigo","peach","cream"]);
 const mettaColor = (c: string): string => {
   const k = (c || "").toLowerCase();
   if (CSS_COLOR_WORDS.has(k)) return k === "cream" ? "#fff5cc" : k === "peach" ? "#ffdab9" : k;
   return "#8a8f98";
 };
-function parseMettaParts(text: string): { parts: MettaPart[]; nrels: number } {
+function parseMettaParts(text: string): { parts: MettaPart[]; nrels: number; groups: MettaGroup[] } {
   const parts: MettaPart[] = [];
+  const partOf: Array<[string, string]> = [];
   let nrels = 0;
-  if (!text) return { parts, nrels };
+  if (!text) return { parts, nrels, groups: [] };
   for (const raw of text.split("\n")) {
     const line = raw.trim();
     const m = line.match(/^\(part\s+\S+\s+(\S+)\s+\(label\s+"([^"]*)"\)\s+\(color\s+([^)\s]+)\).*?\(bbox\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\)/);
@@ -424,9 +428,26 @@ function parseMettaParts(text: string): { parts: MettaPart[]; nrels: number } {
       parts.push({ id: m[1], label: m[2], color: m[3], bbox: [Number(m[4]), Number(m[5]), Number(m[6]), Number(m[7])] });
       continue;
     }
+    const pm = line.match(/^\(partOf\s+\S+\s+(\S+)\s+(\S+)\)/);
+    if (pm) { partOf.push([pm[1], pm[2]]); continue; }
     if (/^\((?:above|left-of|right-of|below)\s/.test(line)) nrels += 1;
   }
-  return { parts, nrels };
+  const byId = new Map(parts.map((p) => [p.id, p]));
+  const gb = new Map<string, [number, number, number, number]>();
+  const gc = new Map<string, number>();
+  for (const [pid, g] of partOf) {
+    const p = byId.get(pid);
+    if (!p) continue;
+    gc.set(g, (gc.get(g) || 0) + 1);
+    const cur = gb.get(g);
+    if (!cur) gb.set(g, [p.bbox[0], p.bbox[1], p.bbox[2], p.bbox[3]]);
+    else {
+      cur[0] = Math.min(cur[0], p.bbox[0]); cur[1] = Math.min(cur[1], p.bbox[1]);
+      cur[2] = Math.max(cur[2], p.bbox[2]); cur[3] = Math.max(cur[3], p.bbox[3]);
+    }
+  }
+  const groups: MettaGroup[] = [...gb.entries()].map(([id, bbox]) => ({ id, bbox, count: gc.get(id) || 0 }));
+  return { parts, nrels, groups };
 }
 const streamSlug = (value: string) =>
   value.toLowerCase().replace(/[^a-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "workbench";
@@ -6406,7 +6427,8 @@ export function VideoImportPage({
                                   const rp = Math.round((row.agree?.score ?? 0) * 100);
                                   const mettaRel = row.mettaPath || `data/recognition_reduce/sym/${String(row.metta || "").split("/").pop()}`;
                                   const mettaText = reduceMetta[mettaRel];
-                                  const { parts } = parseMettaParts(mettaText || "");
+                                  const { parts, groups } = parseMettaParts(mettaText || "");
+                                  const bigGroups = groups.filter((g) => g.count >= 2);
                                   const sp = row.stagePaths || {};
                                   graphParts.push(`; ${row.shots}-shot · ${row.model} · ${row.nparts}p ${row.nrels}r${isRef ? " · REF" : ` · vs 1: ${rp}% ${String(rv).toUpperCase()}`}\n${mettaText === undefined ? "loading…" : (mettaText || "(no graph)")}`);
                                   return (
@@ -6440,6 +6462,24 @@ export function VideoImportPage({
                                               </svg>}
                                           <figcaption>part map</figcaption>
                                         </figure>
+                                        {bigGroups.length > 0 && (
+                                          <figure className="video-import-reduce-stage">
+                                            <svg viewBox="0 0 1000 1000" className="video-import-reduce-svg is-groups">
+                                              <image href={asset(inputRel)} x="0" y="0" width="1000" height="1000" preserveAspectRatio="xMidYMid meet" opacity="0.55" />
+                                              {bigGroups.map((g, gi) => {
+                                                const [x0, y0, x1, y1] = g.bbox;
+                                                const col = GROUP_COLORS[gi % GROUP_COLORS.length];
+                                                return (
+                                                  <g key={gi}>
+                                                    <rect x={x0} y={y0} width={Math.max(0, x1 - x0)} height={Math.max(0, y1 - y0)} fill={col} fillOpacity="0.08" stroke={col} strokeWidth="6" strokeDasharray="14 8" rx="8" />
+                                                    <text x={x0 + 8} y={y0 + 30} fill={col} fontSize="30" fontWeight="700" stroke="#0b0e12" strokeWidth="0.6">{g.id} · {g.count}</text>
+                                                  </g>
+                                                );
+                                              })}
+                                            </svg>
+                                            <figcaption>partOf groups · {bigGroups.length}</figcaption>
+                                          </figure>
+                                        )}
                                       </div>
                                     </div>
                                   );

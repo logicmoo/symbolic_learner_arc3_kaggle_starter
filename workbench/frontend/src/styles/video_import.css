@@ -1342,6 +1342,7 @@
 .video-import-reduce-stage figcaption { font-size: 9.5px; letter-spacing: 0.03em; text-transform: uppercase; opacity: 0.6; text-align: center; }
 .video-import-reduce-svg { width: 130px; height: 130px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); background: #fff; }
 .video-import-reduce-svg.is-map { background: #ffffff; }
+.video-import-reduce-svg.is-groups { background: #0b0e12; }
 .video-import-reduce-stageimg { width: 130px; height: 130px; object-fit: contain; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); background: #fff; }
 .video-import-reduce-stagemissing { width: 130px; height: 130px; display: flex; align-items: center; justify-content: center; text-align: center; border-radius: 6px; border: 1px dashed rgba(255,255,255,0.15); font-size: 10px; font-style: italic; opacity: 0.5; }
 .video-import-reduce-cutstrip { width: 150px; height: 130px; overflow: auto; display: flex; flex-wrap: wrap; gap: 3px; align-content: flex-start; padding: 3px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); background: #fff; }
