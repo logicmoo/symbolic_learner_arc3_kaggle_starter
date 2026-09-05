@@ -406,6 +406,7 @@ def _demo_live_ls20_sequence():
             role, col = ("regen", _GREEN) if ind_known else ("visible", _BLUE)
             for (dx, dy) in off:
                 roled.append((bx + dx, by + dy, role, col))
+        before_obj, before_geo = len(ind_seen), len(geo_seen)   # known BEFORE learning this frame
         for g, variants in frame_geo.items():   # learn AFTER scoring: accrue evidence + provenance
             if g not in geo_exemplar:            # first raw form founds the shape (direct)
                 geo_exemplar[g] = next(iter(variants.values()))
@@ -413,6 +414,7 @@ def _demo_live_ls20_sequence():
             for vk, ((w, h), cname) in variants.items():
                 dst[vk] = _variant_prov(geo_exemplar[g], (w, h), cname)
         ind_seen |= frame_ind
+        after_obj, after_geo = len(ind_seen), len(geo_seen)     # known AFTER learning this frame
         if first_ind_recog is None:
             first_ind_recog, first_geo_recog = ind_recog, geo_recog
         total_ind_recog += ind_recog
@@ -420,8 +422,9 @@ def _demo_live_ls20_sequence():
         made = sum(1 for v in geo_seen.values() for pr in v.values() if pr != "direct")
         base = [(x, y, "object", hexpal[int(idx[y, x])]) for y in range(idx.shape[0]) for x in range(idx.shape[1])]
         frames.append(_panel(
-            f"{idv} · objects {ind_recog} rec / {ind_new} new · shapes {geo_recog} rec / {geo_new} new "
-            f"· learned {len(ind_seen)} obj, {len(geo_seen)} shapes · learners {direct} direct / {made} via filter",
+            f"{idv} · this frame: {ind_recog} recognized, {ind_new} new "
+            f"· objects known {before_obj}→{after_obj}, shapes {before_geo}→{after_geo} "
+            f"· learners {direct} direct / {made} via filter",
             base + roled))
 
     # --- one frame of LEVEL 2 (same game): cross-level transfer. The geometry
@@ -528,26 +531,102 @@ _DEMOS = [
 # Kept in sync with the id/group/title each builder returns.
 _DEMO_CATALOG = [
     {"id": "live-ls20", "group": "Live sequence (real data)",
-     "title": "Live ls20 recording — recognition builds up, transfers to level 2"},
-    {"id": "occlusion-t", "group": "Occlusion completion", "title": "T tetromino — stem occluded"},
-    {"id": "occlusion-plus", "group": "Occlusion completion", "title": "Plus pentomino — centre + arm occluded"},
-    {"id": "occlusion-scaled", "group": "Occlusion completion", "title": "2x-scaled T — scaled stem occluded"},
-    {"id": "occlusion-reject", "group": "Occlusion completion", "title": "Inconsistent fragment is rejected"},
-    {"id": "recolor", "group": "Identity (recolor / resize)", "title": "Recolour is the same object"},
-    {"id": "resize", "group": "Identity (recolor / resize)", "title": "Resize is the same object"},
-    {"id": "store-then-recognize", "group": "Recognition", "title": "Store, then recognize the same object later"},
-    {"id": "new-distinguished", "group": "Recognition", "title": "A genuinely new structure is distinguished"},
-    {"id": "regeneration", "group": "Regeneration", "title": "Regenerate a stored shape from its turtle form"},
-    {"id": "replay", "group": "Replay / determinism", "title": "Same input -> same identity + canonical form"},
-    {"id": "input-gradient", "group": "Input breadth", "title": "Raster gradient -> small flat grid"},
-    {"id": "input-video", "group": "Input breadth", "title": "Simple video: a block tracked as one object"},
+     "title": "Live ls20 recording — recognition builds up, transfers to level 2",
+     "resultKeys": ["frames", "frame0_objects_recognized", "frame0_shapes_recognized",
+                    "objects_learned", "shapes_learned", "max_learners_per_shape",
+                    "most_learned_shape", "learners_direct", "learners_via_filter",
+                    "level2_objects_recognized", "level2_shapes_recognized"]},
+    {"id": "occlusion-t", "group": "Occlusion completion", "title": "T tetromino — stem occluded",
+     "resultKeys": ["recognized", "scale", "orientation", "residual", "confidence", "faithful"]},
+    {"id": "occlusion-plus", "group": "Occlusion completion", "title": "Plus pentomino — centre + arm occluded",
+     "resultKeys": ["recognized", "scale", "orientation", "residual", "confidence", "faithful"]},
+    {"id": "occlusion-scaled", "group": "Occlusion completion", "title": "2x-scaled T — scaled stem occluded",
+     "resultKeys": ["recognized", "scale", "orientation", "residual", "confidence", "faithful"]},
+    {"id": "occlusion-reject", "group": "Occlusion completion", "title": "Inconsistent fragment is rejected",
+     "resultKeys": ["recognized", "note"]},
+    {"id": "recolor", "group": "Identity (recolor / resize)", "title": "Recolour is the same object",
+     "resultKeys": ["object", "seen", "colours", "recognized_not_new", "identities"]},
+    {"id": "resize", "group": "Identity (recolor / resize)", "title": "Resize is the same object",
+     "resultKeys": ["object", "seen", "sizes", "identities"]},
+    {"id": "store-then-recognize", "group": "Recognition", "title": "Store, then recognize the same object later",
+     "resultKeys": ["recognized_not_new", "seen", "identities"]},
+    {"id": "new-distinguished", "group": "Recognition", "title": "A genuinely new structure is distinguished",
+     "resultKeys": ["is_new", "identities"]},
+    {"id": "regeneration", "group": "Regeneration", "title": "Regenerate a stored shape from its turtle form",
+     "resultKeys": ["shape", "faithful"]},
+    {"id": "replay", "group": "Replay / determinism", "title": "Same input -> same identity + canonical form",
+     "resultKeys": ["same_identity", "same_form", "handle"]},
+    {"id": "input-gradient", "group": "Input breadth", "title": "Raster gradient -> small flat grid",
+     "resultKeys": ["cols", "rows", "colours"]},
+    {"id": "input-video", "group": "Input breadth", "title": "Simple video: a block tracked as one object",
+     "resultKeys": ["frames", "block_object", "block_identities"]},
 ]
 
 
+def _preview_live_ls20():
+    """The raw first ls20 frame as an INPUT MAP: the decoded scene with no
+    recognition overlay at all (nothing recognized yet). Cheap -- one png decode,
+    no part-graph, no scoring -- so it is a safe 'unstarted' preview."""
+    import json as _json
+    import symbolic_arc as sa
+    setdir = _LS20_DIR
+    if not setdir.is_dir():
+        return None
+    order = []
+    mf_path = setdir / "manifest.json"
+    if mf_path.is_file():
+        try:
+            order = [it["id"] for it in _json.loads(mf_path.read_text(encoding="utf-8")).get("items", [])]
+        except (OSError, _json.JSONDecodeError):
+            order = []
+    if not order:
+        order = sorted(p.stem for p in setdir.glob("*.png"))
+    if not order:
+        return None
+    idv = order[0]
+    png = next(iter(setdir.glob(f"{idv}.png")), None)
+    if not png:
+        return None
+    idx, hexpal, _c, _r = sa.decode_grid(str(png))
+    base = [(x, y, "object", hexpal[int(idx[y, x])])
+            for y in range(idx.shape[0]) for x in range(idx.shape[1])]
+    return _panel(f"{idv} · input map — nothing recognized yet (press ▶ Run)", base)
+
+
+_live_preview = None
+_live_preview_done = False
+_live_preview_lock = threading.Lock()
+
+
+def _live_preview_cached():
+    """Compute the live-ls20 input-map preview once and cache it (one png decode)."""
+    global _live_preview, _live_preview_done
+    with _live_preview_lock:
+        if _live_preview_done:
+            return _live_preview
+    try:
+        pv = _preview_live_ls20()
+    except Exception:  # noqa: BLE001
+        pv = None
+    with _live_preview_lock:
+        _live_preview = pv
+        _live_preview_done = True
+    return pv
+
+
 def demo_catalog() -> list:
-    """The list of available sanity tests (id/group/title) WITHOUT running them,
-    so the page can show them as 'not run yet' cards that are individually runnable."""
-    return [dict(c) for c in _DEMO_CATALOG]
+    """The list of available sanity tests (id/group/title) WITHOUT running them, so
+    the page can show them as 'not run yet' cards that are individually runnable.
+    live-ls20 carries a cheap raw input-map `preview` for its unstarted card; other
+    tests fall back to a blank map on the page until run."""
+    live_pv = _live_preview_cached()
+    out = []
+    for c in _DEMO_CATALOG:
+        entry = dict(c)
+        if c["id"] == "live-ls20":
+            entry["preview"] = live_pv
+        out.append(entry)
+    return out
 
 
 def run_demos(only: str | None = None) -> dict:

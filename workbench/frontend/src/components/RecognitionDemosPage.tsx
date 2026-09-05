@@ -13,9 +13,9 @@ type Panel = { label: string; w: number; h: number; cells: Cell[] };
 type Demo = {
   id: string; group: string; title: string; description: string;
   panels: Panel[]; frames?: Panel[]; result: Record<string, unknown>; passed: boolean;
-  notRun?: boolean;
+  notRun?: boolean; preview?: Panel | null; resultKeys?: string[];
 };
-type CatalogEntry = { id: string; group: string; title: string };
+type CatalogEntry = { id: string; group: string; title: string; preview?: Panel | null; resultKeys?: string[] };
 type DemosResponse = {
   demos: Demo[]; total: number; passed: number; running?: boolean; catalog?: CatalogEntry[];
 };
@@ -64,6 +64,37 @@ function GridPanel({ panel }: { panel: Panel }) {
   );
 }
 
+function BlankMap({ n = 12 }: { n?: number }) {
+  const px = 14;
+  const W = n * px;
+  return (
+    <figure style={{ margin: 0, display: "flex", flexDirection: "column", gap: 4, alignItems: "center" }}>
+      <svg width={W} height={W} viewBox={`0 0 ${W} ${W}`}
+        style={{ background: "#0b0f1a", borderRadius: 4, border: "1px solid #1c2333" }}>
+        {Array.from({ length: n }).map((_, r) =>
+          Array.from({ length: n }).map((__, c) => (
+            <rect key={`${r}-${c}`} x={c * px + 0.5} y={r * px + 0.5} width={px - 1} height={px - 1}
+              fill="none" stroke="#141a27" strokeWidth={1} />
+          )),
+        )}
+      </svg>
+      <figcaption style={{ fontSize: 10.5, opacity: 0.5, textAlign: "center" }}>blank map — nothing recognized yet</figcaption>
+    </figure>
+  );
+}
+
+function InertControls() {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, opacity: 0.4 }}>
+      <button type="button" disabled style={{ fontSize: 11, padding: "1px 8px", borderRadius: 4, cursor: "not-allowed" }}>◀</button>
+      <button type="button" disabled style={{ fontSize: 11, padding: "1px 8px", borderRadius: 4, cursor: "not-allowed" }}>▶</button>
+      <button type="button" disabled style={{ fontSize: 11, padding: "1px 8px", borderRadius: 4, cursor: "not-allowed" }}>▶❙</button>
+      <input type="range" min={0} max={0} value={0} disabled readOnly style={{ width: 110 }} />
+      <span style={{ minWidth: 42, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>0/0</span>
+    </div>
+  );
+}
+
 function ResultChips({ result }: { result: Record<string, unknown> }) {
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
@@ -96,11 +127,18 @@ function AnimatedGrid({ frames }: { frames: Panel[] }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "center" }}>
       <GridPanel panel={cur} />
       {multi ? (
-        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
-          <button type="button" onClick={() => setPlaying((p) => !p)}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
+          <button type="button" title="Previous step"
+            onClick={() => { setPlaying(false); setI((v) => (v - 1 + frames.length) % frames.length); }}
+            style={{ fontSize: 11, padding: "1px 8px", borderRadius: 4, cursor: "pointer" }}>◀</button>
+          <button type="button" title={playing ? "Pause" : "Play"}
+            onClick={() => setPlaying((p) => !p)}
             style={{ fontSize: 11, padding: "1px 8px", borderRadius: 4, cursor: "pointer" }}>{playing ? "⏸" : "▶"}</button>
+          <button type="button" title="Next step"
+            onClick={() => { setPlaying(false); setI((v) => (v + 1) % frames.length); }}
+            style={{ fontSize: 11, padding: "1px 8px", borderRadius: 4, cursor: "pointer" }}>▶❙</button>
           <input type="range" min={0} max={frames.length - 1} value={Math.min(i, frames.length - 1)}
-            onChange={(e) => { setPlaying(false); setI(Number(e.target.value)); }} style={{ width: 120 }} />
+            onChange={(e) => { setPlaying(false); setI(Number(e.target.value)); }} style={{ width: 110 }} />
           <span style={{ opacity: 0.6, minWidth: 42, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
             {Math.min(i, frames.length - 1) + 1}/{frames.length}
           </span>
@@ -135,18 +173,18 @@ function DemoCard({ demo, onRun, running }: { demo: Demo; onRun: (id: string) =>
       {notRun ? (
         <>
           <div style={{ display: "flex", justifyContent: "center", padding: "4px 0" }}>
-            <div style={{
-              width: 200, height: 200, display: "flex", alignItems: "center", justifyContent: "center",
-              textAlign: "center", fontSize: 11.5, opacity: 0.5, color: "#94a3b8",
-              background: "repeating-linear-gradient(45deg,#0b0f1a,#0b0f1a 8px,#0d1320 8px,#0d1320 16px)",
-              border: "1px dashed #1c2333", borderRadius: 4,
-            }}>Not run yet —<br />press ▶ Run</div>
+            {demo.preview ? <GridPanel panel={demo.preview} /> : <BlankMap />}
           </div>
+          <div style={{ display: "flex", justifyContent: "center" }}><InertControls /></div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6, minHeight: 22 }}>
-            <span style={{
-              fontSize: 11, padding: "2px 7px", borderRadius: 5, background: "rgba(148,163,184,0.08)",
-              border: "1px dashed rgba(148,163,184,0.25)", color: "#94a3b8",
-            }}>results appear after this test runs</span>
+            {(demo.resultKeys && demo.resultKeys.length ? demo.resultKeys : ["result"]).map((k) => (
+              <span key={k} style={{
+                fontSize: 11, padding: "2px 7px", borderRadius: 5, background: "rgba(148,163,184,0.06)",
+                border: "1px dashed rgba(148,163,184,0.25)", color: "#94a3b8",
+              }}>
+                <span style={{ opacity: 0.7 }}>{k}:</span> <b>—</b>
+              </span>
+            ))}
           </div>
         </>
       ) : (
