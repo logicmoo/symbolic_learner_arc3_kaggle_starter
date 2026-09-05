@@ -29,13 +29,18 @@ type DemosResponse = {
 const CELL = 16;
 const MAX_PX = 360;
 
-function GridPanel({ panel }: { panel: Panel }) {
+function GridPanel({ panel, reserveW, reserveH }: { panel: Panel; reserveW?: number; reserveH?: number }) {
   const px = Math.max(3, Math.min(CELL, Math.floor(MAX_PX / Math.max(panel.w, panel.h, 1))));
   const W = panel.w * px;
   const H = panel.h * px;
+  const boxW = Math.max(reserveW || 0, W);
+  const boxH = Math.max(reserveH || 0, H);
   const dense = Math.max(panel.w, panel.h) >= 24;  // big real scenes: draw as a clean bitmap
   return (
     <figure style={{ margin: 0, display: "flex", flexDirection: "column", gap: 4, alignItems: "center" }}>
+      {/* Reserve a fixed box (max over all frames) so switching frames of different
+          sizes does not resize the card and shove the whole grid around. */}
+      <div style={{ width: boxW, height: boxH, display: "flex", alignItems: "center", justifyContent: "center" }}>
       <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} shapeRendering="crispEdges"
         style={{ background: "#0b0f1a", borderRadius: 4, border: "1px solid #1c2333" }}>
         {panel.cells.map((c, i) => {
@@ -71,7 +76,12 @@ function GridPanel({ panel }: { panel: Panel }) {
           );
         })}
       </svg>
-      <figcaption style={{ fontSize: 10.5, opacity: 0.7, textAlign: "center", maxWidth: W + 40 }}>{panel.label}</figcaption>
+      </div>
+      <figcaption style={{
+        fontSize: 10.5, opacity: 0.7, textAlign: "center", maxWidth: boxW + 40,
+        height: 28, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2,
+        WebkitBoxOrient: "vertical", lineHeight: "14px",
+      }}>{panel.label}</figcaption>
     </figure>
   );
 }
@@ -140,11 +150,21 @@ function AnimatedGrid({ frames, autoplay = true, resetToken = 0 }: { frames: Pan
   }, [multi, playing, frames.length]);
   if (!frames.length) return <div style={{ opacity: 0.5, fontSize: 12 }}>no frames</div>;
   const cur = frames[Math.min(i, frames.length - 1)];
+  // Reserve the largest rendered box across ALL frames so frames of different sizes
+  // don't resize the card mid-animation (which shoves the rest of the grid around).
+  const pxOf = (p: Panel) => Math.max(3, Math.min(CELL, Math.floor(MAX_PX / Math.max(p.w, p.h, 1))));
+  const dimW = (p: Panel) => p.w * pxOf(p);
+  const dimH = (p: Panel) => p.h * pxOf(p);
+  const maxMainW = Math.max(...frames.map(dimW));
+  const maxMainH = Math.max(...frames.map(dimH));
+  const auxFrames = frames.filter((f) => f.aux) as (Panel & { aux: Panel })[];
+  const maxAuxW = auxFrames.length ? Math.max(...auxFrames.map((f) => dimW(f.aux))) : 0;
+  const maxAuxH = auxFrames.length ? Math.max(...auxFrames.map((f) => dimH(f.aux))) : 0;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "center" }}>
       <div style={{ display: "flex", gap: 10, alignItems: "flex-start", flexWrap: "wrap", justifyContent: "center" }}>
-        <GridPanel panel={cur} />
-        {cur.aux ? <GridPanel panel={cur.aux} /> : null}
+        <GridPanel panel={cur} reserveW={maxMainW} reserveH={maxMainH} />
+        {cur.aux ? <GridPanel panel={cur.aux} reserveW={maxAuxW} reserveH={maxAuxH} /> : null}
       </div>
       {multi ? (
         <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
