@@ -523,10 +523,39 @@ _DEMOS = [
 ]
 
 
+# Static metadata for every sanity test, in _DEMOS order, so the page can list
+# the tests as "not run yet" (each individually runnable) BEFORE anything runs.
+# Kept in sync with the id/group/title each builder returns.
+_DEMO_CATALOG = [
+    {"id": "live-ls20", "group": "Live sequence (real data)",
+     "title": "Live ls20 recording — recognition builds up, transfers to level 2"},
+    {"id": "occlusion-t", "group": "Occlusion completion", "title": "T tetromino — stem occluded"},
+    {"id": "occlusion-plus", "group": "Occlusion completion", "title": "Plus pentomino — centre + arm occluded"},
+    {"id": "occlusion-scaled", "group": "Occlusion completion", "title": "2x-scaled T — scaled stem occluded"},
+    {"id": "occlusion-reject", "group": "Occlusion completion", "title": "Inconsistent fragment is rejected"},
+    {"id": "recolor", "group": "Identity (recolor / resize)", "title": "Recolour is the same object"},
+    {"id": "resize", "group": "Identity (recolor / resize)", "title": "Resize is the same object"},
+    {"id": "store-then-recognize", "group": "Recognition", "title": "Store, then recognize the same object later"},
+    {"id": "new-distinguished", "group": "Recognition", "title": "A genuinely new structure is distinguished"},
+    {"id": "regeneration", "group": "Regeneration", "title": "Regenerate a stored shape from its turtle form"},
+    {"id": "replay", "group": "Replay / determinism", "title": "Same input -> same identity + canonical form"},
+    {"id": "input-gradient", "group": "Input breadth", "title": "Raster gradient -> small flat grid"},
+    {"id": "input-video", "group": "Input breadth", "title": "Simple video: a block tracked as one object"},
+]
+
+
+def demo_catalog() -> list:
+    """The list of available sanity tests (id/group/title) WITHOUT running them,
+    so the page can show them as 'not run yet' cards that are individually runnable."""
+    return [dict(c) for c in _DEMO_CATALOG]
+
+
 def run_demos(only: str | None = None) -> dict:
     """Run all demos (or one by id) and return their visual results + pass/fail."""
     out = []
-    for make in _DEMOS:
+    for meta, make in zip(_DEMO_CATALOG, _DEMOS):
+        if only and meta["id"] != only:      # skip building non-matching demos on a single-test run
+            continue
         try:
             demo = make()
             demo.setdefault("frames", demo.get("panels") or [])  # animate: default to panels
@@ -534,7 +563,7 @@ def run_demos(only: str | None = None) -> dict:
             out.append({"id": "error", "group": "Error", "title": str(err),
                         "panels": [], "frames": [], "result": {"error": str(err)}, "passed": False})
             continue
-        if only and demo.get("id") != only:
+        if only and demo.get("id") != only:  # safety if the catalog drifts from the builders
             continue
         out.append(demo)
     return {"demos": out, "total": len(out), "passed": sum(1 for d in out if d.get("passed"))}
@@ -558,8 +587,8 @@ def get_demo_state() -> dict:
     with _demo_lock:
         st = dict(_demo_state)
     res = st.get("results") or {"demos": [], "total": 0, "passed": 0}
-    return {**res, "running": st["running"], "startedAt": st["startedAt"],
-            "finishedAt": st["finishedAt"], "only": st["only"]}
+    return {**res, "catalog": demo_catalog(), "running": st["running"],
+            "startedAt": st["startedAt"], "finishedAt": st["finishedAt"], "only": st["only"]}
 
 
 def _run_job(only: str | None, gen: int) -> None:

@@ -13,8 +13,12 @@ type Panel = { label: string; w: number; h: number; cells: Cell[] };
 type Demo = {
   id: string; group: string; title: string; description: string;
   panels: Panel[]; frames?: Panel[]; result: Record<string, unknown>; passed: boolean;
+  notRun?: boolean;
 };
-type DemosResponse = { demos: Demo[]; total: number; passed: number; running?: boolean };
+type CatalogEntry = { id: string; group: string; title: string };
+type DemosResponse = {
+  demos: Demo[]; total: number; passed: number; running?: boolean; catalog?: CatalogEntry[];
+};
 
 const CELL = 16;
 const MAX_PX = 240;
@@ -108,28 +112,39 @@ function AnimatedGrid({ frames }: { frames: Panel[] }) {
 
 function DemoCard({ demo, onRun, running }: { demo: Demo; onRun: (id: string) => void; running: boolean }) {
   const frames = (demo.frames && demo.frames.length ? demo.frames : demo.panels) || [];
+  const notRun = !!demo.notRun;
   return (
     <div style={{
-      border: "1px solid #1c2333", borderRadius: 8, padding: 12, background: "#0d1320",
-      display: "flex", flexDirection: "column", gap: 8,
+      border: "1px solid #1c2333", borderRadius: 8, padding: 12,
+      background: notRun ? "#0b0f18" : "#0d1320",
+      display: "flex", flexDirection: "column", gap: 8, opacity: notRun ? 0.82 : 1,
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{
           fontSize: 10.5, fontWeight: 800, letterSpacing: "0.04em", padding: "2px 8px", borderRadius: 5,
-          background: demo.passed ? "rgba(139,212,80,0.18)" : "rgba(224,72,63,0.2)",
-          color: demo.passed ? "#8bd450" : "#ff8b81",
-        }}>{demo.passed ? "PASS" : "FAIL"}</span>
+          background: notRun ? "rgba(148,163,184,0.16)" : demo.passed ? "rgba(139,212,80,0.18)" : "rgba(224,72,63,0.2)",
+          color: notRun ? "#94a3b8" : demo.passed ? "#8bd450" : "#ff8b81",
+        }}>{notRun ? "NOT RUN" : demo.passed ? "PASS" : "FAIL"}</span>
         <b style={{ flex: 1 }}>{demo.title}</b>
         <button type="button" disabled={running} onClick={() => onRun(demo.id)}
           style={{ fontSize: 11, padding: "3px 10px", borderRadius: 5, cursor: "pointer" }}>
           {running ? "…" : "▶ Run"}
         </button>
       </div>
-      <div style={{ fontSize: 11.5, opacity: 0.72, lineHeight: 1.4 }}>{demo.description}</div>
-      <div style={{ display: "flex", justifyContent: "center", padding: "4px 0" }}>
-        <AnimatedGrid frames={frames} />
-      </div>
-      <ResultChips result={demo.result} />
+      {demo.description ? <div style={{ fontSize: 11.5, opacity: 0.72, lineHeight: 1.4 }}>{demo.description}</div> : null}
+      {notRun ? (
+        <div style={{
+          fontSize: 11.5, opacity: 0.55, padding: "18px 0", textAlign: "center",
+          border: "1px dashed #1c2333", borderRadius: 6,
+        }}>Not run yet — press ▶ Run to start this test on the server.</div>
+      ) : (
+        <>
+          <div style={{ display: "flex", justifyContent: "center", padding: "4px 0" }}>
+            <AnimatedGrid frames={frames} />
+          </div>
+          <ResultChips result={demo.result} />
+        </>
+      )}
     </div>
   );
 }
@@ -189,10 +204,20 @@ export function RecognitionDemosPage() {
     return () => { if (pollRef.current) clearTimeout(pollRef.current); };
   }, [observe]);
 
-  const groups = (data?.demos || []).reduce<Record<string, Demo[]>>((acc, d) => {
+  // Merge the catalog (all available tests) with any results: tests that haven't
+  // run yet appear as "not run" stub cards so the user can start them individually.
+  const byId = new Map((data?.demos || []).map((d) => [d.id, d]));
+  const catalog = data?.catalog || [];
+  const merged: Demo[] = catalog.map(
+    (c) => byId.get(c.id) || { ...c, description: "", panels: [], frames: [], result: {}, passed: false, notRun: true },
+  );
+  (data?.demos || []).forEach((d) => { if (!catalog.some((c) => c.id === d.id)) merged.push(d); });
+
+  const groups = merged.reduce<Record<string, Demo[]>>((acc, d) => {
     (acc[d.group] = acc[d.group] || []).push(d);
     return acc;
   }, {});
+  const hasResults = !!data?.demos?.length;
 
   return (
     <div style={{ padding: 16, overflow: "auto", height: "100%" }}>
@@ -227,11 +252,11 @@ export function RecognitionDemosPage() {
         <span style={{ color: "#8bd450" }}>green outline / +</span> = generatively filled or regenerated, dashed <b>?</b> = behind the occluder.
       </p>
       {err ? <div style={{ color: "#ff8b81", fontSize: 12, marginBottom: 8 }}>Error: {err}</div> : null}
-      {running && !data?.demos?.length ? <div style={{ opacity: 0.6 }}>Server is running the sanity tests…</div> : null}
-      {!running && !data?.demos?.length ? (
-        <div style={{ opacity: 0.6, padding: "24px 0", fontSize: 13 }}>
-          No sanity tests have run yet. Press <b>▶ Run all on server</b> (or a single test's Run button)
-          to start them — nothing runs on its own.
+      {running && !hasResults ? <div style={{ opacity: 0.6 }}>Server is running the sanity tests…</div> : null}
+      {!running && !hasResults ? (
+        <div style={{ opacity: 0.6, padding: "8px 0 14px", fontSize: 12.5 }}>
+          Nothing has run yet — press <b>▶ Run all on server</b>, or a single test's <b>▶ Run</b> below.
+          Nothing runs on its own.
         </div>
       ) : null}
       {Object.entries(groups).map(([group, demos]) => (
