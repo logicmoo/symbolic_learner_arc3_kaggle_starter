@@ -1050,6 +1050,7 @@ def set_ls20_source(key: str | None) -> None:
     global _ls20_selected
     with _demo_lock:
         _ls20_selected = key or None
+        _touch_play_locked()          # push fresh state so the UI reflects the choice at once
 
 
 def set_ls20_write(value: bool) -> None:
@@ -1063,6 +1064,7 @@ def set_ls20_store(mode: str) -> None:
     global _ls20_store_mode
     with _demo_lock:
         _ls20_store_mode = mode if mode in _LS20_STORE_MODES else "recording"
+        _touch_play_locked()          # push fresh state so the UI reflects the choice at once
 
 
 def _variant_prov(exemplar, wh, cname) -> str:

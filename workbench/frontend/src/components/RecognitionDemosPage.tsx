@@ -350,6 +350,10 @@ export function RecognitionDemosPage() {
   const [showTop, setShowTop] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const pendingRef = useRef<string[]>([]);
+  // Optimistic local mirrors of the two selects so the user's pick sticks instantly
+  // (the controlled value otherwise snaps back until the server confirms via state).
+  const [sourceSel, setSourceSel] = useState<string>("");
+  const [storeSel, setStoreSel] = useState<string>("");
 
   // Server-OWNED animation over a WebSocket: the server decides each demo's current
   // frame (its playhead is advanced on the server) and PUSHES it; the page renders
@@ -416,8 +420,10 @@ export function RecognitionDemosPage() {
   const clearAll = useCallback(() => send({ cmd: "clear" }), [send]);
   const togglePlay = useCallback((id: string, playing: boolean) => send({ cmd: "play", id, playing }), [send]);
   const seek = useCallback((id: string, index: number) => send({ cmd: "seek", id, index }), [send]);
-  const selectSource = useCallback((sourceKey: string) => send({ cmd: "select_source", source: sourceKey }), [send]);
-  const setStoreMode = useCallback((value: string) => send({ cmd: "set_store_mode", value }), [send]);
+  const selectSource = useCallback((sourceKey: string) => { setSourceSel(sourceKey); send({ cmd: "select_source", source: sourceKey }); }, [send]);
+  const setStoreMode = useCallback((value: string) => { setStoreSel(value); send({ cmd: "set_store_mode", value }); }, [send]);
+  useEffect(() => { if (data?.ls20Source) setSourceSel(data.ls20Source); }, [data?.ls20Source]);
+  useEffect(() => { if (data?.ls20StoreMode) setStoreSel(data.ls20StoreMode); }, [data?.ls20StoreMode]);
 
   // Coverage-table ▶ buttons live far above the demo cards, so besides starting the
   // run we scroll the matching card into view and briefly highlight it — otherwise
@@ -508,9 +514,9 @@ export function RecognitionDemosPage() {
                 <DemoCard key={d.id} demo={d} onRun={runOne} onStep={stepOne}
                   onClear={clearOne} onToggle={togglePlay} onSeek={seek}
                   running={cardRunning} flash={flashId === d.id}
-                  recordings={data?.ls20Recordings} source={data?.ls20Source}
+                  recordings={data?.ls20Recordings} source={sourceSel || data?.ls20Source}
                   onSelectSource={selectSource}
-                  storeMode={data?.ls20StoreMode} onSetStoreMode={setStoreMode} />
+                  storeMode={storeSel || data?.ls20StoreMode} onSetStoreMode={setStoreMode} />
               );
             })}
           </div>
