@@ -102,6 +102,32 @@ objects, their identities over time, and the events and rules that explain chang
 — produced by two independent, directly comparable perception lines so their
 agreement is itself a measurable signal.
 
+### Worked Example: the Vision Skill as Optimized Hops
+
+Rather than ask one premium multimodal call to go from raw frames all the way to
+"here are the objects, what happened, and the rules" (the A-to-Z leap), the
+vision skill is decomposed into hops, and each hop is implemented with the
+cheapest reliable option. The inductive and statistical hops are coded directly
+in Prolog/Python (deterministic), while the LLM version of the upstream
+perception remains available so any hop can be run side-by-side for comparison:
+
+| Hop | Sub-task | Chosen implementation | LLM version (for comparison) |
+| --- | --- | --- | --- |
+| import | frame + provenance (how/where imported) | Python, deterministic | n/a |
+| perceive | PNG -> color grid -> connected-component regions -> topology | Python, deterministic | LLM multimodal extractor |
+| group | regions -> objects (containment, common fate) | SWI-Prolog, deterministic | implicit in the LLM part list |
+| represent | MeTTa part-graph + turtle geometry | deterministic | LLM emits the same schema |
+| track | identity over time (carry-forward + gap re-identification, D4 rigid match) | Python/Prolog, deterministic | LLM's own stable labels |
+| induce | events: moved / transformed / interacted / occluded / no-longer-occluded / consumed_or_taken / gone / new | **Prolog/Python, deterministic** | same inducer run over LLM-perceived parts, shown next to it |
+| report | per-event confidence + occlusion horizon + support-ranked rules | **Python/Prolog, deterministic** | — |
+
+The key point for this deliverable: the **inductive parts and the statistical
+parts are directly coded** (Prolog/Python), so they are fast, reproducible, and
+free of silent LLM failure — yet the **LLM line stays available** end to end, and
+the same deterministic inducer can be pointed at either the deterministic parts
+or the LLM parts, so every claim can be checked LLM-vs-deterministic on the same
+frames.
+
 ### Scope of Work
 
 1. **Dual perception, one schema.**
