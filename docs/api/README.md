@@ -2,10 +2,13 @@
 
 > [← Project README](../../README.md)
 
-Auto-generated from package docstrings by [`scripts/build_api_docs.py`](../../scripts/build_api_docs.py). Regenerate with `python scripts/build_api_docs.py`.
+Auto-generated from source docstrings with [`pydoc-markdown`](https://niklasrosenstein.github.io/pydoc-markdown/) by [`scripts/build_api_docs.py`](../../scripts/build_api_docs.py) (or `scripts/build_api_docs.bat`). Regenerate after code changes.
 
-## Modules
+## Packages & modules
 
+- [`omega_vision`](omega_vision.md)
+- [`webui`](webui.md)
+- [`worldworkbench`](worldworkbench.md)
 - [`action_tree`](action_tree.md)
 - [`arc3_runner`](arc3_runner.md)
 - [`gpt_bridge`](gpt_bridge.md)
@@ -25,35 +28,8 @@ Auto-generated from package docstrings by [`scripts/build_api_docs.py`](../../sc
 - [`llm_workflow_editor`](llm_workflow_editor.md)
 - [`llm_workflows`](llm_workflows.md)
 - [`multillm_runner`](multillm_runner.md)
-- [`omega_vision`](omega_vision.md)
-- [`omega_vision.acceptance`](omega_vision_acceptance.md)
-- [`omega_vision.adapters`](omega_vision_adapters.md)
-- [`omega_vision.benchmark`](omega_vision_benchmark.md)
-- [`omega_vision.calibration`](omega_vision_calibration.md)
-- [`omega_vision.capture`](omega_vision_capture.md)
-- [`omega_vision.catalog`](omega_vision_catalog.md)
-- [`omega_vision.environment_fixtures`](omega_vision_environment_fixtures.md)
-- [`omega_vision.forms`](omega_vision_forms.md)
-- [`omega_vision.integration`](omega_vision_integration.md)
-- [`omega_vision.learning`](omega_vision_learning.md)
-- [`omega_vision.memory`](omega_vision_memory.md)
-- [`omega_vision.models`](omega_vision_models.md)
-- [`omega_vision.prediction`](omega_vision_prediction.md)
-- [`omega_vision.providers`](omega_vision_providers.md)
-- [`omega_vision.recognition`](omega_vision_recognition.md)
-- [`omega_vision.recognition_benchmark`](omega_vision_recognition_benchmark.md)
-- [`omega_vision.replay`](omega_vision_replay.md)
-- [`omega_vision.sprite`](omega_vision_sprite.md)
-- [`omega_vision.store`](omega_vision_store.md)
-- [`omega_vision.transcript`](omega_vision_transcript.md)
 - [`project_paths`](project_paths.md)
 - [`swipl_bridge`](swipl_bridge.md)
 - [`unsloth_studio`](unsloth_studio.md)
-- [`webui`](webui.md)
-- [`webui.server`](webui_server.md)
 - [`workflow_operation_editor`](workflow_operation_editor.md)
 - [`workflow_operations`](workflow_operations.md)
-- [`worldworkbench`](worldworkbench.md)
-- [`worldworkbench.adapters`](worldworkbench_adapters.md)
-- [`worldworkbench.adapters.arc3`](worldworkbench_adapters_arc3.md)
-- [`worldworkbench.core`](worldworkbench_core.md)

@@ -1,7 +1,9 @@
-# `llm_catalog_sampling`
-
 > [← Project README](../../README.md)
 
-## Functions
+# Table of Contents
 
-### `install_profile_sampling() -> 'None'`
+* [llm\_catalog\_sampling](#llm_catalog_sampling)
+
+<a id="llm_catalog_sampling"></a>
+
+# llm\_catalog\_sampling

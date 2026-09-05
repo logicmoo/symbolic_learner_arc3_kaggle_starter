@@ -1,13 +1,9 @@
-# `llm_workflow_editor`
-
 > [← Project README](../../README.md)
 
-## Functions
+# Table of Contents
 
-### `ensure_example_workflow(raw: 'dict[str, Any]') -> 'bool'`
+* [llm\_workflow\_editor](#llm_workflow_editor)
 
-### `install_workflow_editor_ui(ui_module: 'Any') -> 'None'`
+<a id="llm_workflow_editor"></a>
 
-### `load_example_workflow(path: 'Path' = WindowsPath('C:/snet/PeTTa/repos/symbolic_learner_workbench/config/example_multistep_workflow.json')) -> 'dict[str, Any]'`
-
-### `open_workflow_editor(runner: 'Any') -> 'None'`
+# llm\_workflow\_editor

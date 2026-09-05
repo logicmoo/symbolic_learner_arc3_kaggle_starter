@@ -1,13 +1,9 @@
-# `image_codec`
-
 > [← Project README](../../README.md)
 
-## Functions
+# Table of Contents
 
-### `extract_latest_frame(*sources: 'Any') -> 'np.ndarray'`
+* [image\_codec](#image_codec)
 
-### `frame_to_image(frame: 'np.ndarray', scale: 'int' = 10) -> 'Image.Image'`
+<a id="image_codec"></a>
 
-### `frame_to_png_bytes(frame: 'np.ndarray', scale: 'int' = 10) -> 'bytes'`
-
-### `save_frame(frame: 'np.ndarray', path: 'str | Path', scale: 'int' = 10) -> 'Path'`
+# image\_codec

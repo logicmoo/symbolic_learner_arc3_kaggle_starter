@@ -1,33 +1,64 @@
-# `project_paths`
-
 > [← Project README](../../README.md)
 
-## Functions
+# Table of Contents
 
-### `action_trees_root() -> 'Path'`
+* [project\_paths](#project_paths)
+  * [config\_root](#project_paths.config_root)
+  * [prompts\_root](#project_paths.prompts_root)
+  * [environment\_files\_root](#project_paths.environment_files_root)
+  * [analysis\_runs\_root](#project_paths.analysis_runs_root)
+  * [prompts\_path](#project_paths.prompts_path)
 
-### `analysis_runs_root() -> 'Path'`
+<a id="project_paths"></a>
 
-Domain-neutral name for the persisted observation/action evidence tree.
+# project\_paths
 
-### `config_root() -> 'Path'`
+<a id="project_paths.config_root"></a>
+
+#### config\_root
+
+```python
+def config_root() -> Path
+```
 
 Return the selected config directory without creating a fake source.
 
-### `environment_files_root() -> 'Path'`
+<a id="project_paths.prompts_root"></a>
+
+#### prompts\_root
+
+```python
+def prompts_root() -> Path
+```
 
 Compatibility alias for the unified configuration directory.
 
-### `exports_root(level_root: 'str | Path') -> 'Path'`
+<a id="project_paths.environment_files_root"></a>
 
-### `histories_root(level_root: 'str | Path') -> 'Path'`
+#### environment\_files\_root
 
-### `llm_config_path() -> 'Path'`
+```python
+def environment_files_root() -> Path
+```
 
-### `prompts_path() -> 'Path'`
+Compatibility alias for the unified configuration directory.
+
+<a id="project_paths.analysis_runs_root"></a>
+
+#### analysis\_runs\_root
+
+```python
+def analysis_runs_root() -> Path
+```
+
+Domain-neutral name for the persisted observation/action evidence tree.
+
+<a id="project_paths.prompts_path"></a>
+
+#### prompts\_path
+
+```python
+def prompts_path() -> Path
+```
 
 Compatibility alias for the unified provider and prompt config.
-
-### `prompts_root() -> 'Path'`
-
-Compatibility alias for the unified configuration directory.

@@ -1,18 +1,9 @@
-# `llm_profile_editor`
-
 > [← Project README](../../README.md)
 
-## Classes
+# Table of Contents
 
-### `class EditorResult`
+* [llm\_profile\_editor](#llm_profile_editor)
 
-Fields:
-- `run_batch: bool`
-- `saved: bool`
+<a id="llm_profile_editor"></a>
 
-
-## Functions
-
-### `install_profile_editor_ui(ui_module: 'Any') -> 'None'`
-
-### `open_profile_editor(runner: 'Any') -> 'None'`
+# llm\_profile\_editor

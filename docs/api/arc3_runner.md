@@ -1,71 +1,75 @@
-# `arc3_runner`
-
 > [← Project README](../../README.md)
 
-## Classes
+# Table of Contents
 
-### `class Arc3Runner`
+* [arc3\_runner](#arc3_runner)
+  * [Arc3Runner](#arc3_runner.Arc3Runner)
+    * [current\_grid](#arc3_runner.Arc3Runner.current_grid)
+    * [semantic\_authorization\_options](#arc3_runner.Arc3Runner.semantic_authorization_options)
+    * [gpt\_command\_2](#arc3_runner.Arc3Runner.gpt_command_2)
+    * [gpt\_command\_3](#arc3_runner.Arc3Runner.gpt_command_3)
+    * [gpt\_command\_4](#arc3_runner.Arc3Runner.gpt_command_4)
+
+<a id="arc3_runner"></a>
+
+# arc3\_runner
+
+<a id="arc3_runner.Arc3Runner"></a>
+
+## Arc3Runner Objects
+
+```python
+class Arc3Runner()
+```
 
 Debuggable ARC3 environment with a persistent deterministic action tree.
 
-- `__init__(self, game_id: 'str' = 'ls20', render_mode: 'str | None' = 'terminal', arc_api_key: 'str | None' = None, capture_terminal: 'bool' = False, tree_root: 'str | Path | None' = None, capture_observers: 'Iterable[Any]' = ()) -> 'None'`
-- `action_table(self) -> 'list[dict[str, Any]]'`
-- `authorize_semantic_candidate(self, *, candidate_id: 'str', selected_identity_id: 'str', decision_id: 'str', decision_source: 'str' = 'explicit_registry_selection') -> 'Any'`
-- `available_games(self) -> 'list[Any]'`
-- `change_level(self, delta: 'int') -> 'Any'`
-- `current_grid(self) -> 'Any'` — Return the newest logical grid used by capture observers.
-- `current_level_label(self) -> 'str'`
-- `current_selection_summary(self) -> 'str'`
-- `execute_queued_step(self) -> 'Any'`
-- `export_state(self, path: 'str | Path') -> 'Path'`
-- `game_info(game: 'Any') -> 'dict[str, Any]'`
-- `gpt_command_1(self) -> 'None'`
-- `gpt_command_2(self) -> 'None'` — Fast demo analysis: low image detail, low reasoning, moderate tokens.
-- `gpt_command_3(self) -> 'None'` — Deep analysis: high current image detail and larger token budget.
-- `gpt_command_4(self) -> 'None'` — Extreme analysis: high detail for both images and maximum budget.
-- `gpt_command_5(self) -> 'None'`
-- `gpt_command_6(self) -> 'None'`
-- `history(self) -> 'list[dict[str, Any]]'`
-- `is_game_over(self) -> 'bool'`
-- `is_win(self) -> 'bool'`
-- `open(self) -> 'Any'`
-- `prolog_command_1(self) -> 'None'`
-- `prolog_command_2(self) -> 'None'`
-- `prolog_command_3(self) -> 'None'`
-- `prolog_command_4(self) -> 'None'`
-- `prolog_command_5(self) -> 'None'`
-- `prolog_command_6(self) -> 'None'`
-- `redraw(self) -> 'Any'`
-- `reject_semantic_candidate(self, *, candidate_id: 'str', selected_identity_id: 'str', decision_id: 'str', decision_source: 'str' = 'explicit_registry_rejection') -> 'Any'`
-- `replay(self, records: 'Sequence[StepRecord | Mapping[str, Any]] | None' = None) -> 'Any'`
-- `reset(self, *, clear_history: 'bool' = True) -> 'Any'`
-- `resolve_action(self, action: 'Any') -> 'Any'`
-- `restart_game(self) -> 'Any'`
-- `save_history(self, path: 'str | Path') -> 'Path'`
-- `scorecard(self) -> 'Any'`
-- `semantic_authorization_options(self) -> 'dict[str, tuple[str, ...]]'` — Collect explicit friendly-identity choices from semantic observers.
-- `show_record(self, index: 'int') -> 'None'`
-- `state_name(self) -> 'str | None'`
-- `step(self, action: 'Any', *, x: 'int | None' = None, y: 'int | None' = None, data: 'Mapping[str, Any] | None' = None, reasoning: 'Mapping[str, Any] | None' = None) -> 'Any'`
-- `summary_for_prolog(self) -> 'dict[str, Any]'`
-- `switch_game(self, game_id: 'str') -> 'Any'`
+<a id="arc3_runner.Arc3Runner.current_grid"></a>
 
-### `class StepRecord`
+#### current\_grid
 
-Fields:
-- `step: int`
-- `action: str`
-- `data: dict[str, Any]`
-- `state: str | None`
-- `observation: Any`
-- `terminal_output: str`
-- `frame_path: str | None`
-- `tree_node: str | None`
+```python
+def current_grid() -> Any
+```
 
-- `as_dict(self) -> 'dict[str, Any]'`
+Return the newest logical grid used by capture observers.
 
-## Functions
+<a id="arc3_runner.Arc3Runner.semantic_authorization_options"></a>
 
-### `action_name(action: 'Any') -> 'str'`
+#### semantic\_authorization\_options
 
-### `is_complex_action(action: 'Any') -> 'bool'`
+```python
+def semantic_authorization_options() -> dict[str, tuple[str, ...]]
+```
+
+Collect explicit friendly-identity choices from semantic observers.
+
+<a id="arc3_runner.Arc3Runner.gpt_command_2"></a>
+
+#### gpt\_command\_2
+
+```python
+def gpt_command_2() -> None
+```
+
+Fast demo analysis: low image detail, low reasoning, moderate tokens.
+
+<a id="arc3_runner.Arc3Runner.gpt_command_3"></a>
+
+#### gpt\_command\_3
+
+```python
+def gpt_command_3() -> None
+```
+
+Deep analysis: high current image detail and larger token budget.
+
+<a id="arc3_runner.Arc3Runner.gpt_command_4"></a>
+
+#### gpt\_command\_4
+
+```python
+def gpt_command_4() -> None
+```
+
+Extreme analysis: high detail for both images and maximum budget.

@@ -1,7 +1,9 @@
-# `llm_catalog_environment`
-
 > [← Project README](../../README.md)
 
-## Functions
+# Table of Contents
 
-### `install_profile_environment() -> 'None'`
+* [llm\_catalog\_environment](#llm_catalog_environment)
+
+<a id="llm_catalog_environment"></a>
+
+# llm\_catalog\_environment

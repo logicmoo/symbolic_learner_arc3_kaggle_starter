@@ -1,11 +1,20 @@
-# `llm_readme_patch`
-
 > [← Project README](../../README.md)
 
-## Functions
+# Table of Contents
 
-### `install_llm_readme_patch() -> 'None'`
+* [llm\_readme\_patch](#llm_readme_patch)
+  * [install\_llm\_readme\_patch](#llm_readme_patch.install_llm_readme_patch)
+
+<a id="llm_readme_patch"></a>
+
+# llm\_readme\_patch
+
+<a id="llm_readme_patch.install_llm_readme_patch"></a>
+
+#### install\_llm\_readme\_patch
+
+```python
+def install_llm_readme_patch() -> None
+```
 
 Keep transcript snapshots linked but not recursively embedded.
-
-### `transcript_is_restorable(path: 'str | Path') -> 'bool'`

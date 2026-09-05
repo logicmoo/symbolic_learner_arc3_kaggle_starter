@@ -1,5 +1,7 @@
 # Chat page
 
+[Back to repository README](../README.md)
+
 Talk over the shared append-only mailbox (`messages.jsonl`). Every record has
 `from`, `to`, optional `channel_id`, a `type` and `text`; any message can be
 inspected as raw JSON with the `{ }` button.

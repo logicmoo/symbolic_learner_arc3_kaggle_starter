@@ -1,21 +1,9 @@
-# `workflow_operation_editor`
-
 > [← Project README](../../README.md)
 
-## Functions
+# Table of Contents
 
-### `ensure_example(raw)`
+* [workflow\_operation\_editor](#workflow_operation_editor)
 
-### `gui(runner, path, raw)`
+<a id="workflow_operation_editor"></a>
 
-### `install_workflow_operation_editor_ui(ui)`
-
-### `load_example()`
-
-### `open_operation_editor(runner)`
-
-### `open_path(p)`
-
-### `read_obj(p)`
-
-### `validate_write(runner, path, raw)`
+# workflow\_operation\_editor
