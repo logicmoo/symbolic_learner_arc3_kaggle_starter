@@ -48,17 +48,44 @@ def _repo_root() -> Path:
 def memory_dir() -> Path:
     """Canonical on-disk object-memory DATA DIRECTORY. Global across games and
     sessions by default (so an object seen in one game/level can be recognized in
-    another); override with $OBJECT_MEMORY_DIR. Created on demand. The persistent
-    Prolog store lives here and is db_attach-ed (read) before every operation."""
+    another); override with $OBJECT_MEMORY_DIR. Created on demand. Holds two
+    sub-stores, both read by Prolog before every operation:
+      shape_dir/    -- the colorless shape vocabulary (regenerated, consulted)
+      identity_dir/ -- persistent object identities (prov + position + shape + color)"""
     env = os.environ.get("OBJECT_MEMORY_DIR")
     d = Path(env) if env else (_repo_root() / "data" / "object_memory")
     d.mkdir(parents=True, exist_ok=True)
     return d
 
 
+def shape_dir() -> Path:
+    """Sub-store for the colorless shape vocabulary (shapes only, no identity)."""
+    d = memory_dir() / "shape_dir"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def identity_dir() -> Path:
+    """Sub-store for persistent object identities (prov + position + shape + color)."""
+    d = memory_dir() / "identity_dir"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def shape_lib_path() -> str:
+    """Generated Prolog file holding the shape vocabulary (shape/3 + variant/4);
+    consulted (read) by Prolog before recognition."""
+    return str(shape_dir() / "shapes.pl")
+
+
+def identity_db_path() -> str:
+    """Persistent identity DB file (library(persistency) journal)."""
+    return str(identity_dir() / "identities.db.pl")
+
+
 def memory_db_path() -> str:
-    """Path to the persistent object-memory DB file inside the data directory."""
-    return str(memory_dir() / "object_memory.db.pl")
+    """Back-compat: the identity DB path (identities are the persisted store)."""
+    return identity_db_path()
 
 
 def _shape_key(sig) -> str:
@@ -369,6 +396,32 @@ def _canon_key(offs) -> tuple:
     return best or ()
 
 
+def _canon_br(offs) -> tuple:
+    """Rotational normalization: flip/rotate the shape so it sits most toward the
+    bottom-right. Scoring, highest priority first:
+      1. the bottom-right CORNER cell (w-1, h-1) is filled (touching the corner
+         beats any mere pixel count),
+      2. most pixels in the bottom-right QUADRANT,
+      3. most pixels in the BOTTOM HALF,
+      4. mass toward bottom-right (sum x+y), then lexicographic.
+    If no orientation beats the current one it is already normalized. Same D4
+    equivalence class as _canon_key, just a bottom-right representative."""
+    best = None
+    for _n, f in _D4:
+        t = tuple(sorted(_norm([f(x, y) for x, y in offs])))
+        cells = set(t)
+        w = max(x for x, _ in t) + 1
+        h = max(y for _, y in t) + 1
+        corner = 1 if (w - 1, h - 1) in cells else 0
+        quad = sum(1 for (x, y) in t if 2 * x >= w and 2 * y >= h)
+        bottom = sum(1 for (_x, y) in t if 2 * y >= h)
+        mass = sum(x + y for x, y in t)
+        key = (corner, quad, bottom, mass, t)
+        if best is None or key > best[0]:
+            best = (key, t)
+    return best[1] if best else ()
+
+
 def _transform_between(off_a, off_b) -> str:
     """The D4 transform that maps shape A onto shape B (else 'deformed')."""
     nb = _norm(off_b)
@@ -379,8 +432,10 @@ def _transform_between(off_a, off_b) -> str:
 
 
 def _shape_sig(cells: np.ndarray, hexs: str) -> tuple:
-    """Color + D4-canonical shape: same up to flip / rotation / translation."""
-    return (hexs, _canon_key(_offsets(cells)))
+    """Color + rotation-normalized shape (mass toward bottom-right): same up to
+    flip / rotation / translation. The colorless part is the identity's ShapeFull
+    key; color is carried alongside for identity, not for the shape vocabulary."""
+    return (hexs, _canon_br(_offsets(cells)))
 
 
 def _motion(info_a: dict, info_b: dict):
@@ -712,12 +767,13 @@ _CONF_FLOOR = 0.1
 
 def extract_sequence(frame_paths: list[str], char: str,
                      horizon: int = DEFAULT_OCCLUSION_HORIZON,
-                     mem_db: str | None = None) -> list[dict]:
+                     mem_dir: str | None = None) -> list[dict]:
     """Run extract_frame over an ordered list of frames, threading part/object
     identity forward (stable ids, gap re-identified across occlusions), resolve
-    object permanence across the whole sequence, and (when mem_db is given)
-    recognize each distinct object against the persistent GLOBAL Prolog memory so
-    objects recur across encounters keep one identity."""
+    object permanence across the whole sequence, and (when mem_dir is given)
+    recognize each distinct object against the persistent GLOBAL object memory
+    (shape_dir vocabulary + identity_dir identities) so objects recurring across
+    encounters keep one identity."""
     carry: dict = {"prev_info": None, "prev_pid": {}, "name_state": {},
                    "prev_group": {}, "group_state": 0, "recent": {}}
     out: list[dict] = []
@@ -725,8 +781,8 @@ def extract_sequence(frame_paths: list[str], char: str,
         partner = frame_paths[k + 1] if k + 1 < len(frame_paths) else None
         out.append(extract_frame(fp, char, partner, carry=carry))
     _classify_permanence(out, char, horizon)
-    if mem_db:
-        remember_objects(out, char, mem_db)
+    if mem_dir:
+        remember_objects(out, char, mem_dir)
     return out
 
 
@@ -878,6 +934,30 @@ def _dir_name(a, b) -> str:
     """Compass heading (E/W/S/N) from cell a to adjacent cell b, else 'none'."""
     d = (b[0] - a[0], b[1] - a[1])
     return {(1, 0): "E", (-1, 0): "W", (0, 1): "S", (0, -1): "N"}.get(d, "none")
+
+
+_FORM_KINDS = ("full", "squared", "aspect")
+
+
+def _shape_forms(offs) -> dict:
+    """The 6 storage forms of a ShapeFull: the 3 scale reps (full / squared /
+    aspect) each in two orientations -- `unrot` (as observed, translation-normalized
+    only) and `rn` (rotation-normalized so mass sits bottom-right). Returns
+    {form_name: (key, cells)} where form_name is e.g. 'full', 'full_rn',
+    'squared', 'squared_rn', 'aspect', 'aspect_rn'."""
+    full = [tuple(c) for c in offs]
+    if not full:
+        return {}
+    reps = {"full": full, "squared": _collapse_runs(full), "aspect": _aspect_cells(full)}
+    out: dict = {}
+    for rep, cells in reps.items():
+        if not cells:
+            continue
+        un = tuple(sorted(_norm(cells)))
+        rn = _canon_br(cells)
+        out[rep] = (_shape_key((None, un)), un)
+        out[f"{rep}_rn"] = (_shape_key((None, rn)), rn)
+    return out
 
 
 def _rot45(offs) -> list:
@@ -1048,12 +1128,14 @@ def _distinct_orientations(ck):
 
 
 def _seed_shape_facts() -> list[str]:
-    """Prolog shape/3 facts seeding the global memory with the free polyominoes
-    (monomino..octomino) as named turtle programs (canonical key + name + turtle).
-    Orders 1-5 keep their letter names; larger shapes get a unique, canonical
-    `box_HxW[_cut_N_at_...]` descriptor as their name, plus a *composition* into
-    smaller NAMED pieces (e.g. tetromino_O+tetromino_S) recorded as a relationship
-    in _SHAPE_DESCRIPTORS. Memoized: the enumeration is computed once per process."""
+    """The colorless shape vocabulary as Prolog facts. Each free polyomino
+    (monomino..octomino) is keyed by its ROTATION-NORMALIZED full form (mass toward
+    bottom-right) as `shape(Key, Name, Turtle)`; its other forms -- the unrotated
+    full, and the squared / aspect shrinks and 45-degree diagonal in both the
+    unrotated and rotation-normalized orientations -- are `variant(VKey, Name, Kind,
+    Base)` rows mapping back to the same -imino. Names: letter names for orders 1-5,
+    else a box-cut descriptor; the decomposition into named pieces is recorded in
+    _SHAPE_DESCRIPTORS. Memoized: computed once per process."""
     global _SEED_FACTS_CACHE, _SHAPE_DESCRIPTORS
     if _SEED_FACTS_CACHE is not None:
         return _SEED_FACTS_CACHE
@@ -1068,46 +1150,63 @@ def _seed_shape_facts() -> list[str]:
     memo: dict = {}
     for n, shapes in _gen_free_polyominoes(_MAX_POLY_ORDER).items():
         for ck in sorted(shapes):
-            key = _shape_key((None, ck))
-            if key in seen:
+            forms = _shape_forms(ck)
+            if "full_rn" not in forms:
                 continue
-            seen.add(key)
-            composed = None
-            box = _box_cut_name(ck)
-            if ck in named:
-                name = named[ck]
-            else:
-                # unique canonical name = the box-cut descriptor; the decomposition
-                # into named pieces is recorded as a relationship, not the name.
-                composed = _decompose_named(ck, named, name_size, memo)
-                name = box
-            descriptors[key] = (composed, box, ck)
-            turtle = json.dumps(_poly_turtle(list(ck)), separators=(",", ":"))
+            base_key, rn_cells = forms["full_rn"]  # rotation-normalized full = canonical
+            if base_key in seen:
+                continue
+            seen.add(base_key)
+            composed = None if ck in named else _decompose_named(ck, named, name_size, memo)
+            box = _box_cut_name(_canon_key(rn_cells))
+            name = named.get(ck) or box
+            descriptors[base_key] = (composed, box, rn_cells)
+            turtle = json.dumps(_poly_turtle(list(rn_cells)), separators=(",", ":"))
             turtle = turtle.replace("\\", "\\\\").replace("'", "\\'")
-            facts.append(f"shape('{key}', '{name}', '{turtle}').")
-            # shape-vocabulary variants (just shapes, no identity): the two shrinks
-            # and the 45-degree diagonal form map back to this -imino name, so a
-            # rescaled / diagonally-placed object is recognized as the same shape.
-            for kind, vcells in (("squared", _collapse_runs(ck)),
-                                 ("aspect", _aspect_cells(ck)),
-                                 ("diag45", _rot45(ck))):
-                if not vcells:
+            facts.append(f"shape('{base_key}', '{name}', '{turtle}').")
+            # the remaining 5 forms + the 45-degree diagonal -> variant keys.
+            done_v = {base_key}
+            variants = [("full_unrot", forms["full"][0]),
+                        ("squared", forms["squared"][0]),
+                        ("squared_rn", forms["squared_rn"][0]),
+                        ("aspect", forms["aspect"][0]),
+                        ("aspect_rn", forms["aspect_rn"][0])]
+            dcells = _rot45(ck)
+            if dcells:
+                variants.append(("diag45", _shape_key((None, _canon_br(dcells)))))
+            for kind, vkey in variants:
+                if vkey in done_v:
                     continue
-                vkey = _shape_key((None, _canon_key(vcells)))
-                if vkey == key:
-                    continue  # variant coincides with the full shape; nothing to add
-                facts.append(f"variant('{vkey}', '{name}', '{kind}', '{key}').")
+                done_v.add(vkey)
+                facts.append(f"variant('{vkey}', '{name}', '{kind}', '{base_key}').")
     _SEED_FACTS_CACHE = facts
     _SHAPE_DESCRIPTORS = descriptors
     return facts
 
 
-def remember_objects(results: list[dict], char: str, mem_db: str) -> None:
-    """Recognize every distinct object (shape signature + color) of this
-    sequence against the persistent global Prolog memory (object_memory.pl),
-    minting an identity the first time and bumping the encounter count on
-    recognition. Annotates each part with globalId / memSeen / memNew and emits a
-    `(memory ...)` fact per part into each frame's metta."""
+def write_shape_library(path: str | None = None) -> str:
+    """Write the colorless shape vocabulary (shape/3 + variant/4) to a Prolog file
+    in the shape_dir sub-store. Regenerated deterministically; Prolog consults
+    (reads) this before recognition. Returns the file path."""
+    p = Path(path) if path else Path(shape_lib_path())
+    p.parent.mkdir(parents=True, exist_ok=True)
+    body = "\n".join(_seed_shape_facts())
+    header = ("% GENERATED colorless shape vocabulary (monomino..octomino) as\n"
+              "% shape/3 + variant/4 facts. Regenerated from symbolic_arc.py; do not\n"
+              "% edit by hand. Consulted by object_memory.pl before recognition.\n"
+              ":- dynamic shape/3.\n:- dynamic variant/4.\n\n")
+    p.write_text(header + body + "\n", encoding="utf-8")
+    return str(p)
+
+
+def remember_objects(results: list[dict], char: str, mem_dir: str) -> None:
+    """Recognize every distinct object of this sequence against the persistent
+    GLOBAL object memory rooted at `mem_dir`, which holds two sub-stores:
+      <mem_dir>/shape_dir/shapes.pl        -- colorless shape vocabulary (consulted)
+      <mem_dir>/identity_dir/identities.db.pl -- persistent identities (shape+color)
+    Mints an identity the first time a (shape, color) is seen and bumps its
+    encounter count on recognition. Annotates each part with globalId / memSeen /
+    memNew / shapeName and emits `(memory ...)` / `(shape ...)` facts per part."""
     # distinct (sig, color) across the whole sequence = the objects of this
     # encounter; plus each tracked instance's move-to-move (x, y, shape) trajectory
     # (glyph-scale objects only), so placement is remembered and a later similar
@@ -1130,14 +1229,17 @@ def remember_objects(results: list[dict], char: str, mem_db: str) -> None:
                 traj_last[iid] = fi
     if not distinct:
         return
-    facts = [f"db('{Path(mem_db).as_posix()}').", f"when_stamp('{char}')."]
-    facts.extend(_seed_shape_facts())
+    base = Path(mem_dir)
+    shape_lib = base / "shape_dir" / "shapes.pl"
+    identity_db = base / "identity_dir" / "identities.db.pl"
+    identity_db.parent.mkdir(parents=True, exist_ok=True)
+    write_shape_library(str(shape_lib))
+    facts = [f"db('{identity_db.as_posix()}').", f"when_stamp('{char}')."]
     for (sg, col) in distinct:
         facts.append(f"sig('{sg}', '{col}').")
     for iid, pts in traj.items():
         points = ";".join(f"{x},{y},{s}" for (x, y, s) in pts)
         facts.append(f"place('{char}', '{iid}', '{traj_gid[iid]}', '{points}', {len(pts)}).")
-    Path(mem_db).parent.mkdir(parents=True, exist_ok=True)
     info: dict[tuple[str, str], tuple[str, int, bool, str]] = {}
     with tempfile.NamedTemporaryFile("w", suffix=".pl", delete=False, encoding="utf-8") as f:
         f.write("\n".join(facts) + "\n")
@@ -1145,7 +1247,8 @@ def remember_objects(results: list[dict], char: str, mem_db: str) -> None:
     try:
         out = subprocess.run(
             ["swipl", "-q", "-g",
-             f"consult('{MEM_PL.as_posix()}'), consult('{Path(fpath).as_posix()}'), run_memory",
+             f"consult('{MEM_PL.as_posix()}'), consult('{shape_lib.as_posix()}'), "
+             f"consult('{Path(fpath).as_posix()}'), run_memory",
              "-t", "halt"],
             capture_output=True, text=True, timeout=60).stdout
     except Exception:  # noqa: BLE001

@@ -1,4 +1,5 @@
 # Generated persistent memory (shapes are re-seeded deterministically; identities
-# are runtime state). Keep the directory + README, ignore the DB journal.
+# are runtime state). Keep the directory + README, ignore the generated stores.
 *.db.pl
 *.db.pl.new
+shape_dir/shapes.pl

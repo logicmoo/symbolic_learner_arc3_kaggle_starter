@@ -37,11 +37,7 @@
 :- persistent
      known_object(key:atom, color:atom, first:atom, last:atom, seen:integer).
 :- persistent
-     known_shape(key:atom, name:atom, turtle:atom).
-:- persistent
      known_placement(game:atom, iid:atom, gid:atom, points:atom, moves:integer).
-:- persistent
-     known_variant(vkey:atom, name:atom, kind:atom, base:atom).
 
 % recognize-or-add: reuse an existing identity and bump its encounter count, or
 % mint a new persistent identity the first time this (shape,color) is seen.
@@ -57,15 +53,12 @@ remember(Key, Color, When, Id, Seen, New) :-
     ),
     format(atom(Id), 'gobj_~w_~w', [Color, Key]).
 
-% idempotent seeding of the shape library (e.g. the tetrominoes) as named
-% turtle programs. Asserts a shape the first time its key is seen, and reconciles
-% the (derived) name/turtle if the seeding code changed how the shape is named.
-seed_shape(Key, Name, Turtle) :-
-    ( known_shape(Key, Name0, Turtle0)
-    -> ( ( Name0 == Name, Turtle0 == Turtle ) -> true
-       ;  retract_known_shape(Key, Name0, Turtle0),
-          assert_known_shape(Key, Name, Turtle) )
-    ;  assert_known_shape(Key, Name, Turtle) ).
+% name of an observed shape key: the full shape, else any variant (a shrunk /
+% rotated / diagonal form) it matches, else '-'. shape/3 + variant/4 are the
+% colorless vocabulary consulted from shape_dir/shapes.pl (no identity).
+shape_name(Key, Name) :- shape(Key, Name, _), !.
+shape_name(Key, Name) :- variant(Key, Name, _, _), !.
+shape_name(_, '-').
 
 % record (or refresh) a tracked instance's move-to-move (x,y,shape) trajectory for
 % a game. Keyed by (game, instance-id); replaces the prior trajectory for that pair.
@@ -74,33 +67,20 @@ remember_placement(Game, Iid, Gid, Points, Moves) :-
            retract_known_placement(Game, Iid, G0, P0, M0)),
     assert_known_placement(Game, Iid, Gid, Points, Moves).
 
-% idempotent seeding of the SHAPE VOCABULARY variants: a shape's shrink (squared /
-% aspect) and 45-degree (diag) forms map back to the same -imino name. These are
-% just shapes (no identity); they let a rescaled or diagonally-placed object be
-% recognized as the same known shape. Reconciled by (vkey, kind, base).
-seed_variant(VKey, Name, Kind, Base) :-
-    ( known_variant(VKey, Name0, Kind, Base)
-    -> ( Name0 == Name -> true
-       ;  retract_known_variant(VKey, Name0, Kind, Base),
-          assert_known_variant(VKey, Name, Kind, Base) )
-    ;  assert_known_variant(VKey, Name, Kind, Base) ).
-
+% report the size of the consulted shape vocabulary (no identity is touched).
 run_seed :-
-    ( db(DB) -> db_attach(DB, []) ; true ),
-    forall(shape(K, N, T), seed_shape(K, N, T)),
-    forall(variant(V, N, Kd, B), seed_variant(V, N, Kd, B)),
-    forall(known_shape(K, N, _), format("shape ~w ~w~n", [K, N])),
+    aggregate_all(count, shape(_, _, _), NS),
+    aggregate_all(count, variant(_, _, _, _), NV),
+    format("shapes ~w variants ~w~n", [NS, NV]),
     halt.
 run_seed :- halt(1).
 
 run_memory :-
     ( db(DB) -> db_attach(DB, []) ; true ),
-    forall(shape(K, N, T), seed_shape(K, N, T)),
-    forall(variant(V, N, Kd, B), seed_variant(V, N, Kd, B)),
     ( when_stamp(When) -> true ; When = unknown ),
     forall(sig(Key, Color),
            ( remember(Key, Color, When, Id, Seen, New),
-             ( known_shape(Key, SName, _) -> true ; SName = '-' ),
+             shape_name(Key, SName),
              format("mem ~w ~w ~w ~w ~w ~w~n", [Id, Key, Color, Seen, New, SName]) )),
     forall(place(Game, Iid, Gid, Points, Moves),
            ( remember_placement(Game, Iid, Gid, Points, Moves),

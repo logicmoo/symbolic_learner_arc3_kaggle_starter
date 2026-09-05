@@ -2,34 +2,36 @@
 
 Canonical, on-disk, **global** persistent store for the symbolic vision
 recognizer (`workbench/server/generative_vision/prolog/symbolic_arc.py` +
-`object_memory.pl`). It is shared across games/levels/sessions so an object seen
-in one encounter can be recognized in another. Override the location with the
-`OBJECT_MEMORY_DIR` environment variable.
+`object_memory.pl`). Shared across games/levels/sessions so an object seen in one
+encounter can be recognized in another. Override the location with the
+`OBJECT_MEMORY_DIR` environment variable. Prolog reads both sub-stores before
+recognition.
 
-Prolog `db_attach`es the store here **before every operation** (it reads the data
-first, then journals updates via `library(persistency)`).
+## Two sub-stores
 
-## Contents (`object_memory.db.pl`)
+### `shape_dir/shapes.pl` - the colorless SHAPE VOCABULARY (just shapes, no identity)
+Regenerated deterministically from the code and **consulted** (read) by Prolog.
 
-Two kinds of records live here, kept strictly separate:
+- `shape(Key, Name, Turtle)` - each free polyomino (monomino..octomino) keyed by
+  its **rotation-normalized full** form (flipped/rotated so the bottom-right
+  corner/quadrant holds the most pixels). `Name` is a letter name (orders 1-5) or
+  a `box_HxW[_cut_...]` descriptor.
+- `variant(VKey, Name, Kind, Base)` - the shape's other forms mapping back to it:
+  the unrotated full, and the **squared** / **aspect** shrinks and **45-degree**
+  diagonal in both unrotated and rotation-normalized orientations. This lets a
+  rescaled / rotated / diagonally-placed object be recognized as the same shape.
 
-**Shape vocabulary — just shapes, no identity:**
-- `known_shape(Key, Name, Turtle)` — the free polyominoes (monomino..octomino) as
-  full-sized named turtle programs. The D4-canonical key already collapses all 8
-  flips/rotations onto one entry.
-- `known_variant(VKey, Name, Kind, Base)` — each -imino's shrink and diagonal
-  forms mapping back to its name: `Kind` is `squared` (rectangle→1x1),
-  `aspect` (longer=shorter+1), or `diag45` (45-degree lattice form). These let a
-  rescaled or diagonally-placed object be recognized as the same shape.
+### `identity_dir/identities.db.pl` - persistent OBJECT IDENTITIES
+Journaled via `library(persistency)`. Identities carry color; shapes do not.
 
-**Object identities — minted only from real encounters:**
-- `known_object(Key, Color, First, Last, Seen)` — a recognized object (shape+color,
-  position-invariant); `Seen` accumulates across encounters.
-- `known_placement(Game, Iid, Gid, Points, Moves)` — a tracked instance's
+- `known_object(Key, Color, First, Last, Seen)` - a recognized object
+  (rotation-normalized colorless shape key + color), position-invariant; `Seen`
+  accumulates across encounters.
+- `known_placement(Game, Iid, Gid, Points, Moves)` - a tracked instance's
   move-to-move `(x,y,shape)` trajectory within a game.
 
 ## Regeneration
 
-The shape vocabulary is generated deterministically by the code and re-seeded on
-every run (idempotent). The DB itself is runtime state (it also accumulates
-game-specific identities), so it is **git-ignored**; delete it to reset memory.
+The shape vocabulary is regenerated deterministically (`shapes.pl`), and the
+identity DB is runtime state, so both are **git-ignored**; delete
+`identity_dir/identities.db.pl` to reset identity memory.
