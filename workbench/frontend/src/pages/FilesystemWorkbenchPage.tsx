@@ -169,6 +169,11 @@ const GoogleMeetBridgePage = lazy(() =>
     default: module.GoogleMeetBridgePage,
   })),
 );
+const SpriteViewerPage = lazy(() =>
+  import("../components/SpriteViewerPage").then((module) => ({
+    default: module.SpriteViewerPage,
+  })),
+);
 const Arc3GamesGalleryPage = lazy(() =>
   import("../components/Arc3GamesGalleryPage").then((module) => ({
     default: module.Arc3GamesGalleryPage,
@@ -431,6 +436,7 @@ type View =
   | "arc3B1B2Pipeline"
   | "arc3Play"
   | "videoImport"
+  | "spriteViewer"
   | "arc3GamesGallery"
   | "chat"
   | "workflowPageBuilder"
@@ -732,6 +738,7 @@ export const NAVIGATION_V2: Array<{
     items: [
       { label: "Data", view: "knowledgeData", glyph: "◫" },
       { label: "Video Import", view: "videoImport", glyph: "▷" },
+      { label: "Sprite Viewer", view: "spriteViewer", glyph: "◳" },
       { label: "AtomSpaces", view: "contexts", glyph: "⚛" },
       { label: "Resource AtomSpace", view: "resourceAtomspace", glyph: "⌬" },
       { label: "Artifacts", view: "knowledgeArtifacts", glyph: "▣" },
@@ -4806,6 +4813,7 @@ export function FilesystemWorkbenchPage() {
               />
             )}{" "}
             {view === "googleMeet" && <GoogleMeetBridgePage />}{" "}
+            {view === "spriteViewer" && <SpriteViewerPage />}{" "}
             {view === "pluginPage" && <PluginHostedPage entry={pluginPage} />}{" "}
             {view === "setup" && (
               <WorkspaceSettingsPanel
