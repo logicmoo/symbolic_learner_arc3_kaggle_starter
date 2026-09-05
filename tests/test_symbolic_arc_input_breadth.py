@@ -47,3 +47,38 @@ def test_raster_frame_recognizes_a_region(tmp_path):
     img[60:140, 60:140] = np.array([230, 40, 40]) + rng.integers(0, 20, (80, 80, 3))
     res = sa.extract_frame(_save(img, tmp_path / "frame.png"), "test")
     assert res["nparts"] >= 1         # the red block survives quantization as a part
+
+
+def _frame_png(tmp_path, name, block_x):
+    """A simple 'video' frame: a red block on a flat background at column block_x."""
+    g = np.full((48, 96, 3), 12, np.uint8)
+    g[16:32, block_x:block_x + 16] = (220, 30, 30)
+    return _save(g, tmp_path / name)
+
+
+def test_simple_video_extracts_and_tracks_object_across_frames(tmp_path):
+    """A simple multi-frame video (a block moving right) is extracted per frame and
+    the moving block keeps ONE stable object identity across the sequence rather
+    than being re-minted each frame (Phase-2: extract from simple video inputs)."""
+    frames = [_frame_png(tmp_path, f"v{i}.png", 8 + i * 16) for i in range(4)]
+    mem = str(tmp_path / "mem")
+    seq = sa.extract_sequence(frames, "clip", mem_dir=mem, write=True)
+    assert len(seq) == 4
+    assert all(fr["nparts"] >= 1 for fr in seq)          # object found in every frame
+    # the moving block is one committed identity, not four
+    block_color = sa._cname("#dc1e1e")                    # (220,30,30) -> its colour name
+    ids = sa.registry_snapshot(mem)["scopes"].get("clip", {}).get("identities", [])
+    block_ids = [o for o in ids if any(v["color"] == block_color for v in o.get("variations", []))]
+    assert len(block_ids) == 1                            # tracked as ONE object
+    assert block_ids[0]["seen"] == 1                      # one encounter (one clip)
+
+
+def test_scene_split_segments_a_cut(tmp_path):
+    """A simple video with a hard cut splits into two scenes (video breadth)."""
+    a = [_frame_png(tmp_path, f"a{i}.png", 8 + i * 4) for i in range(3)]
+    g = np.full((48, 96, 3), 200, np.uint8)              # very different frame = a cut
+    b = [_save(g, tmp_path / f"b{i}.png") for i in range(3)]
+    ss = __import__("scene_split")
+    cuts = set(ss.scene_cuts(a + b))
+    assert 3 in cuts                                       # boundary at the a->b cut
+
