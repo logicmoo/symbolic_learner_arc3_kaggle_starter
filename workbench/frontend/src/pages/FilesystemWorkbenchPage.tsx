@@ -745,7 +745,7 @@ export const NAVIGATION_V2: Array<{
       { label: "Data", view: "knowledgeData", glyph: "◫" },
       { label: "Video Import", view: "videoImport", glyph: "▷" },
       { label: "Sprite Viewer", view: "spriteViewer", glyph: "◳" },
-      { label: "Recognition Demos", view: "recognitionDemos", glyph: "✦" },
+      { label: "Demos", view: "recognitionDemos", glyph: "✦" },
       { label: "AtomSpaces", view: "contexts", glyph: "⚛" },
       { label: "Resource AtomSpace", view: "resourceAtomspace", glyph: "⌬" },
       { label: "Artifacts", view: "knowledgeArtifacts", glyph: "▣" },

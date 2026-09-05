@@ -418,6 +418,25 @@ const mettaColor = (c: string): string => {
   if (CSS_COLOR_WORDS.has(k)) return k === "cream" ? "#fff5cc" : k === "peach" ? "#ffdab9" : k;
   return "#8a8f98";
 };
+// A reduce/induce control bound to one server LANE, so distinct lanes run
+// simultaneously. Shows this lane's own running progress + a stop, or its start.
+function LaneReduceButton({ label, title, primary, laneRun, onStart, onStop }: {
+  label: string; title: string; primary?: boolean;
+  laneRun: any; onStart: () => void; onStop: () => void;
+}) {
+  const cls = primary ? "video-import-reduce-runbtn" : "video-import-reduce-foldbtn";
+  const busy = laneRun && laneRun.status === "running";
+  if (busy) {
+    const c = laneRun.counts || {};
+    const prog = c.total ? ` ${c.done ?? 0}/${c.total}${c.active ? ` · ${c.active}` : ""}` : "…";
+    return (
+      <button type="button" className={`${cls} is-running`} title="click to stop this lane" onClick={onStop}>
+        ⏹ {label}{prog}
+      </button>
+    );
+  }
+  return <button type="button" className={cls} title={title} onClick={onStart}>{label}</button>;
+}
 function parseMettaParts(text: string): { parts: MettaPart[]; nrels: number; groups: MettaGroup[]; recognized: number; newCount: number } {
   const parts: MettaPart[] = [];
   const partOf: Array<[string, string]> = [];
@@ -3889,11 +3908,19 @@ export function VideoImportPage({
   const pipelineSocketRef = useRef<WebSocket | null>(null);
   const [pipelineRunStatus, setPipelineRunStatus] = useState<string>("idle");
   const [pipelineCounts, setPipelineCounts] = useState<Record<string, any>>({});
+  // Per-lane run snapshots so independent lanes (prolog / llm / induction) show
+  // their own running state and can run simultaneously. Keyed by lane.
+  const [laneRuns, setLaneRuns] = useState<Record<string, any>>({});
   const applyPipelineStatus = useCallback((snap: Record<string, any>) => {
     const status = String(snap.status || "idle");
     const running = status === "running";
     setPipelineRunStatus(status);
     setPipelineCounts(snap.counts && typeof snap.counts === "object" ? snap.counts : {});
+    if (Array.isArray(snap.runs)) {
+      const byLane: Record<string, any> = {};
+      for (const r of snap.runs) if (r && r.lane) byLane[String(r.lane)] = r;
+      setLaneRuns(byLane);
+    }
     const lines: string[] = Array.isArray(snap.log) ? snap.log.map((line: unknown) => String(line)) : [];
     if (lines.length < pipelineLogSeenRef.current) pipelineLogSeenRef.current = 0;
     for (let i = pipelineLogSeenRef.current; i < lines.length; i += 1) {
@@ -4097,14 +4124,16 @@ export function VideoImportPage({
       say(`✗ could not start server pipeline: ${message}`);
     }
   };
-  const stopServerPipeline = async () => {
+  const stopServerPipeline = async (lane?: string) => {
     const socket = pipelineSocketRef.current;
+    const body: Record<string, unknown> = { workspaceId };
+    if (lane) body.lane = lane;
     if (socket && socket.readyState === WebSocket.OPEN) {
-      try { socket.send(JSON.stringify({ cmd: "stop", workspaceId })); say("■ requested server pipeline stop"); return; } catch { /* fall through */ }
+      try { socket.send(JSON.stringify({ cmd: "stop", ...body })); say(`■ requested server pipeline stop${lane ? ` (${lane})` : ""}`); return; } catch { /* fall through */ }
     }
     try {
-      await api("pipeline/stop", { workspaceId });
-      say("■ requested server pipeline stop");
+      await api("pipeline/stop", body);
+      say(`■ requested server pipeline stop${lane ? ` (${lane})` : ""}`);
     } catch { /* best effort */ }
   };
   const cancelServerJob = (jobId: string) => {
@@ -4120,13 +4149,20 @@ export function VideoImportPage({
     const prologOnly = !!opts?.prologOnly;
     const llmOnly = !!opts?.llmOnly;
     const induceOnly = !!opts?.induceOnly;
-    const payload = { cmd: "start", workspaceId, stage, onlySelected: true, set: selectedImageSet, recognizeOnly, prologOnly, llmOnly, induceOnly };
+    // Lane so distinct reduce/induce operations run SIMULTANEOUSLY server-side.
+    const lane = stage !== "reduce" ? "default"
+      : induceOnly && llmOnly ? "induce-llm"
+      : induceOnly ? "induce-prolog"
+      : llmOnly ? "llm"
+      : prologOnly ? "prolog"
+      : "reduce";
+    const payload = { cmd: "start", workspaceId, stage, onlySelected: true, set: selectedImageSet, recognizeOnly, prologOnly, llmOnly, induceOnly, lane };
     const impl = induceOnly ? " · induce" : prologOnly ? " · prolog" : llmOnly ? " · llm" : "";
     const note = stage === "reduce" ? `${impl}${!induceOnly ? (recognizeOnly ? " · recognize-only" : " · commit") : ""}` : "";
     if (socket && socket.readyState === WebSocket.OPEN) {
       try { socket.send(JSON.stringify(payload)); say(`▶ server ${stage}${note}`); return; } catch { /* fall through */ }
     }
-    void api("pipeline/start", { workspaceId, stage, onlySelected: true, set: selectedImageSet, recognizeOnly, prologOnly, llmOnly, induceOnly })
+    void api("pipeline/start", { workspaceId, stage, onlySelected: true, set: selectedImageSet, recognizeOnly, prologOnly, llmOnly, induceOnly, lane })
       .then(() => say(`▶ server ${stage}${note}`))
       .catch((reason) => say(`✗ could not start server ${stage}: ${reason instanceof Error ? reason.message : String(reason)}`));
   };
@@ -6624,7 +6660,6 @@ export function VideoImportPage({
             const collapseAll = () => setCollapsedReduceChars(new Set(orderedSlugsInList));
             const expandAll = () => setCollapsedReduceChars(new Set());
             const reducedCount = list.filter((it: any) => (it.rows || []).length > 0).length;
-            const reduceRunning = pipelineRunStatus === "running" && pipelineCounts.stage === "reduce";
             // Ordered per-frame identity->cell maps for BOTH lines, so the
             // induction rows can resolve object permanence across the whole
             // sequence at the chosen horizon (identity = LLM label / Prolog id).
@@ -6678,14 +6713,21 @@ export function VideoImportPage({
                   );
                 })()}
                 <div className="video-import-reduce-listctrls">
-                  {reduceRunning
-                    ? <><button type="button" className="video-import-reduce-runbtn is-running" disabled>Reducing {pipelineCounts.done ?? 0}/{pipelineCounts.total ?? list.length}… · {pipelineCounts.active ?? 0} active</button><button type="button" className="video-import-reduce-foldbtn" onClick={() => void stopServerPipeline()}>■ stop</button></>
-                    : <>
-                        <button type="button" className="video-import-reduce-runbtn" disabled={pipelineRunStatus === "running"} title="Run ALL implementations (LLM 1-shot + 2-shot tiers AND the SWI-Prolog symbolic line + registry) for every pool image, server-side." onClick={() => startServerStage("reduce")}>▶ Reduce all {recognitionReduce.items.length} · all impls</button>
-                        <button type="button" className="video-import-reduce-foldbtn" disabled={pipelineRunStatus === "running"} title="Re-run ONLY the SWI-Prolog symbolic line + canonical registry pass for every frame — no LLM / no models required. Honors the registry mode (commit / recognize-only)." onClick={() => startServerStage("reduce", { prologOnly: true })}>⟳ (prolog){recognizeOnly ? " recog" : ""}</button>
-                        <button type="button" className="video-import-reduce-foldbtn" disabled={pipelineRunStatus === "running"} title="Run ONLY the LLM tiers (1-shot + 2-shot); skip the Prolog symbolic line and registry pass. Requires a runnable vision model." onClick={() => startServerStage("reduce", { llmOnly: true })}>⟳ (LLM)</button>
-                        <button type="button" className="video-import-reduce-foldbtn" disabled={pipelineRunStatus === "running"} title="Run ONLY Prolog Induction: re-induce sequence_rules.metta from the existing prolog part-graphs, without re-extracting frames, calling the LLM, or touching the registry." onClick={() => startServerStage("reduce", { induceOnly: true })}>∴ Induce (prolog)</button>
-                      </>}
+                  <LaneReduceButton primary label={`▶ Reduce all ${recognitionReduce.items.length} · all impls`}
+                    title="Run ALL implementations (LLM 1-shot + 2-shot tiers AND the SWI-Prolog symbolic line + registry) for every pool image, server-side."
+                    laneRun={laneRuns["reduce"]} onStart={() => startServerStage("reduce")} onStop={() => void stopServerPipeline("reduce")} />
+                  <LaneReduceButton label={`⟳ (prolog)${recognizeOnly ? " recog" : ""}`}
+                    title="Run ONLY the SWI-Prolog symbolic line + canonical registry pass for every frame — no LLM / no models. Runs simultaneously with the LLM lane."
+                    laneRun={laneRuns["prolog"]} onStart={() => startServerStage("reduce", { prologOnly: true })} onStop={() => void stopServerPipeline("prolog")} />
+                  <LaneReduceButton label="⟳ (LLM)"
+                    title="Run ONLY the LLM tiers (1-shot + 2-shot); skip the Prolog line and registry. Runs simultaneously with the prolog lane."
+                    laneRun={laneRuns["llm"]} onStart={() => startServerStage("reduce", { llmOnly: true })} onStop={() => void stopServerPipeline("llm")} />
+                  <LaneReduceButton label="∴ Induce (prolog)"
+                    title="Run ONLY Prolog Induction: re-induce sequence_rules.metta from the existing prolog part-graphs — no re-extraction, no LLM, no registry writes."
+                    laneRun={laneRuns["induce-prolog"]} onStart={() => startServerStage("reduce", { induceOnly: true })} onStop={() => void stopServerPipeline("induce-prolog")} />
+                  <LaneReduceButton label="∴ Induce (LLM)"
+                    title="Run ONLY LLM Induction: re-induce sequence_rules_llm.metta from the existing LLM part-graphs — no re-extraction, no models."
+                    laneRun={laneRuns["induce-llm"]} onStart={() => startServerStage("reduce", { induceOnly: true, llmOnly: true })} onStop={() => void stopServerPipeline("induce-llm")} />
                   <label className="video-import-imageset-selector" title="Registry commit mode. Committed (default): every reduced sequence is stored in the canonical object registry — new objects are added, recognized ones accumulate evidence (seen count). Recognize-only: match each object against the registry and show new-vs-seen, but leave the registry unchanged.">
                     <span>registry</span>
                     <select value={recognizeOnly ? "recognize" : "commit"}

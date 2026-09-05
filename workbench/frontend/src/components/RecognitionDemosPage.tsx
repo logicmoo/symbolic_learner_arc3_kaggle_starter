@@ -141,7 +141,7 @@ export function RecognitionDemosPage() {
   return (
     <div style={{ padding: 16, overflow: "auto", height: "100%" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-        <h2 style={{ margin: 0 }}>Recognition Demos</h2>
+        <h2 style={{ margin: 0 }}>Sanity Tests</h2>
         {data ? (
           <span style={{
             fontSize: 12, padding: "3px 9px", borderRadius: 6,
@@ -155,7 +155,7 @@ export function RecognitionDemosPage() {
         </button>
       </div>
       <p style={{ fontSize: 12, opacity: 0.7, marginTop: 0 }}>
-        Each card runs a real symbolic_arc Phase-2 acceptance behaviour against live code (SOW Exhibit A Phase 2).
+        Each sanity test runs a real symbolic_arc Phase-2 acceptance behaviour against live code (SOW Exhibit A Phase 2).
         Legend: solid = visible/object, <span style={{ color: "#8bd450" }}>green outline / +</span> = generatively
         filled or regenerated, dashed <b>?</b> = behind the occluder.
       </p>

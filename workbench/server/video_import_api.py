@@ -816,18 +816,21 @@ async def pipeline_start(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
         prolog_only=bool(payload.get("prologOnly", False)),
         llm_only=bool(payload.get("llmOnly", False)),
         induce_only=bool(payload.get("induceOnly", False)),
+        lane=(str(payload["lane"]).strip() if payload.get("lane") else None),
     )
 
 
 @router.get("/pipeline/status")
 def pipeline_status(workspaceId: str) -> dict[str, Any]:
-    """Current headless pipeline run status for a workspace."""
-    from video_import_pipeline import get_run
+    """Current headless pipeline status for a workspace. Includes a `runs` array
+    (one per active/finished lane) so simultaneous lanes are all visible; the
+    top-level fields mirror a representative run for legacy consumers."""
+    from video_import_pipeline import get_run, get_runs
 
-    run = get_run(workspaceId)
-    if not run:
-        return {"workspaceId": workspaceId, "status": "idle"}
-    return run.snapshot()
+    primary = get_run(workspaceId)
+    base = primary.snapshot() if primary else {"workspaceId": workspaceId, "status": "idle"}
+    base["runs"] = [r.snapshot() for r in get_runs(workspaceId)]
+    return base
 
 
 @router.get("/jobs")
@@ -850,13 +853,15 @@ def cancel_workspace_job(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
 
 @router.post("/pipeline/stop")
 def pipeline_stop(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
-    """Request the headless pipeline run for a workspace to stop."""
+    """Request the headless pipeline to stop: one lane if `lane` is given,
+    otherwise every running lane for the workspace."""
     workspace_id = str(payload.get("workspaceId") or "")
     if not workspace_id:
         raise HTTPException(status_code=400, detail="workspaceId is required")
+    lane = str(payload["lane"]).strip() if payload.get("lane") else None
     from video_import_pipeline import stop_run
 
-    return {"workspaceId": workspace_id, "stopping": stop_run(workspace_id)}
+    return {"workspaceId": workspace_id, "stopping": stop_run(workspace_id, lane)}
 
 
 @router.websocket("/pipeline/ws")
@@ -868,7 +873,7 @@ async def pipeline_ws(websocket: WebSocket) -> None:
     accepts commands (start/stop/clear) so buttons are just messages.
     """
     await websocket.accept()
-    from video_import_pipeline import get_run, start_run, stop_run
+    from video_import_pipeline import get_run, get_runs, start_run, stop_run
 
     state = {"workspaceId": "", "last_key": None, "last_state_mtime": 0.0, "last_jobs": None}
     stop_flag = asyncio.Event()
@@ -876,10 +881,10 @@ async def pipeline_ws(websocket: WebSocket) -> None:
     def _snapshot() -> dict[str, Any]:
         workspace_id = state["workspaceId"]
         if not workspace_id:
-            return {"type": "status", "status": "idle"}
+            return {"type": "status", "status": "idle", "runs": []}
         run = get_run(workspace_id)
         snap = run.snapshot() if run else {"workspaceId": workspace_id, "status": "idle", "log": []}
-        return {"type": "status", **snap}
+        return {"type": "status", **snap, "runs": [r.snapshot() for r in get_runs(workspace_id)]}
 
     def _jobs_frame(workspace_id: str) -> dict[str, Any]:
         return {"type": "jobs", "workspaceId": workspace_id, "jobs": _list_workspace_jobs(workspace_id)}
@@ -916,7 +921,10 @@ async def pipeline_ws(websocket: WebSocket) -> None:
             workspace_id = state["workspaceId"]
             if workspace_id:
                 snap = await asyncio.to_thread(_snapshot)
-                key = (snap.get("status"), len(snap.get("log") or []))
+                key = (snap.get("status"), len(snap.get("log") or []),
+                       tuple((r.get("lane"), r.get("status"), len(r.get("log") or []),
+                              r.get("counts", {}).get("done"), r.get("counts", {}).get("active"))
+                             for r in snap.get("runs") or []))
                 if key != state["last_key"]:
                     state["last_key"] = key
                     try:
@@ -987,10 +995,12 @@ async def pipeline_ws(websocket: WebSocket) -> None:
                         prolog_only=bool(message.get("prologOnly", False)),
                         llm_only=bool(message.get("llmOnly", False)),
                         induce_only=bool(message.get("induceOnly", False)),
+                        lane=(str(message["lane"]).strip() if message.get("lane") else None),
                     )
                     state["last_key"] = None
                 elif command == "stop":
-                    await asyncio.to_thread(stop_run, workspace_id)
+                    await asyncio.to_thread(stop_run, workspace_id,
+                                            (str(message["lane"]).strip() if message.get("lane") else None))
                     state["last_key"] = None
                 elif command == "clear":
                     from video_import_pipeline import clear_llm_work

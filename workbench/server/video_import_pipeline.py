@@ -844,6 +844,7 @@ def persist_turtle_artifact(workspace_id: str, source_image: str, artifact: dict
 class PipelineRun:
     workspace_id: str
     stage: str
+    lane: str = "default"
     status: str = "running"  # running | done | failed | stopped
     started_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     finished_at: str | None = None
@@ -858,6 +859,7 @@ class PipelineRun:
         return {
             "workspaceId": self.workspace_id,
             "stage": self.stage,
+            "lane": self.lane,
             "status": self.status,
             "startedAt": self.started_at,
             "finishedAt": self.finished_at,
@@ -868,8 +870,15 @@ class PipelineRun:
         }
 
 
-_runs: dict[str, PipelineRun] = {}
+# Runs are keyed by (workspace_id, lane) so independent lanes -- e.g. the prolog
+# reduce, the LLM reduce, and each induction -- can run SIMULTANEOUSLY for one
+# workspace. The "default" lane carries the classic single-run stages.
+_runs: dict[tuple[str, str], PipelineRun] = {}
 _runs_guard = threading.Lock()
+
+# Preference order when picking a representative run for the legacy single-run
+# status view (highest first).
+_LANE_PRIORITY = ["reduce", "default", "llm", "prolog", "induce-prolog", "induce-llm"]
 
 
 class _Active:
@@ -890,19 +899,46 @@ class _Active:
             self._counts["active"] = max(0, self._counts.get("active", 0) - 1)
 
 
-def get_run(workspace_id: str) -> PipelineRun | None:
+def get_run(workspace_id: str, lane: str | None = None) -> PipelineRun | None:
+    """A run for a workspace. With `lane`, that exact lane; otherwise a
+    representative run for the legacy single-run view: a running lane (highest
+    _LANE_PRIORITY first), else the most recently started run."""
     with _runs_guard:
-        return _runs.get(workspace_id)
+        if lane is not None:
+            return _runs.get((workspace_id, lane))
+        runs = [r for (ws, _ln), r in _runs.items() if ws == workspace_id]
+    if not runs:
+        return None
+    running = [r for r in runs if r.status == "running"]
+
+    def _rank(r: PipelineRun) -> tuple:
+        pri = _LANE_PRIORITY.index(r.lane) if r.lane in _LANE_PRIORITY else len(_LANE_PRIORITY)
+        return (pri, r.started_at)
+    if running:
+        return sorted(running, key=_rank)[0]
+    return max(runs, key=lambda r: r.started_at)
 
 
-def stop_run(workspace_id: str) -> bool:
+def get_runs(workspace_id: str) -> list[PipelineRun]:
+    """All lane runs for a workspace (running or finished)."""
     with _runs_guard:
-        run = _runs.get(workspace_id)
-    if not run or run.status != "running":
-        return False
-    run.stop_event.set()
-    run.log.append(f"{_ts()} stop requested")
-    return True
+        return [r for (ws, _ln), r in _runs.items() if ws == workspace_id]
+
+
+def stop_run(workspace_id: str, lane: str | None = None) -> bool:
+    """Stop one lane (if `lane` given) or ALL running lanes for the workspace."""
+    with _runs_guard:
+        if lane is not None:
+            targets = [_runs.get((workspace_id, lane))]
+        else:
+            targets = [r for (ws, _ln), r in _runs.items() if ws == workspace_id]
+    stopped = False
+    for run in targets:
+        if run and run.status == "running":
+            run.stop_event.set()
+            run.log.append(f"{_ts()} stop requested")
+            stopped = True
+    return stopped
 
 
 def _ts() -> str:
@@ -2872,11 +2908,13 @@ def run_reduce(
         except Exception as err:  # noqa: BLE001
             emit(f"{_ts()} induction skipped: {err}")
 
-    # Prolog Induction on its own: re-induce sequence rules from the existing
-    # prolog part-graphs, independent of the per-frame prolog extraction / LLM.
+    # Prolog / LLM Induction on its own: re-induce sequence rules from the
+    # existing part-graphs, independent of per-frame extraction. The line is
+    # selected by prolog_only / llm_only (default both).
     if induce_only:
-        _do_induction("prolog")
-        summary = "prolog induction complete"
+        which = "llm" if llm_only else "prolog" if prolog_only else "both"
+        _do_induction(which)
+        summary = f"{which} induction complete"
         emit(f"{_ts()} {summary}")
         return summary
 
@@ -3352,17 +3390,30 @@ def start_run(
     prolog_only: bool = False,
     llm_only: bool = False,
     induce_only: bool = False,
+    lane: str | None = None,
 ) -> dict[str, Any]:
-    """Start a background pipeline run for a workspace (one at a time)."""
+    """Start a background pipeline run. Runs are keyed by (workspace, lane), so
+    distinct lanes run simultaneously; a lane already running is returned as-is.
+    When `lane` is not given it is derived so the prolog reduce, the LLM reduce,
+    and each induction get their own lane and can run at the same time."""
     stage = stage or "describe"
     if stage not in _STAGE_RUNNERS:
         raise ValueError(f"unknown stage: {stage} (available: {', '.join(_STAGE_RUNNERS)})")
+    if lane is None:
+        if stage == "reduce":
+            lane = ("induce-llm" if (induce_only and llm_only)
+                    else "induce-prolog" if induce_only
+                    else "llm" if llm_only
+                    else "prolog" if prolog_only
+                    else "reduce")
+        else:
+            lane = "default"
     with _runs_guard:
-        current = _runs.get(workspace_id)
+        current = _runs.get((workspace_id, lane))
         if current and current.status == "running":
             return current.snapshot()
-        run = PipelineRun(workspace_id=workspace_id, stage=stage)
-        _runs[workspace_id] = run
+        run = PipelineRun(workspace_id=workspace_id, stage=stage, lane=lane)
+        _runs[(workspace_id, lane)] = run
 
     runner = _STAGE_RUNNERS[stage]
     # Only the reduce runner is image-set aware; other stages keep their signature.
@@ -3394,7 +3445,7 @@ def start_run(
         finally:
             run.finished_at = datetime.now(timezone.utc).isoformat()
 
-    thread = threading.Thread(target=worker, name=f"vi-pipeline-{workspace_id}", daemon=True)
+    thread = threading.Thread(target=worker, name=f"vi-pipeline-{workspace_id}-{lane}", daemon=True)
     run.thread = thread
     thread.start()
     return run.snapshot()
