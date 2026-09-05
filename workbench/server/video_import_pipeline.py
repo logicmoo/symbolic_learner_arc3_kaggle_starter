@@ -2869,6 +2869,17 @@ def run_reduce(
     sym_dir.mkdir(parents=True, exist_ok=True)
     manifest_path = ws_dir / "manifest.json"
 
+    def _recog_mem(_sa_mod) -> str:
+        """Object-memory store for THIS reduce. By default we NEVER write to the
+        canonical registry: every set recognizes/commits into its OWN isolated store
+        at object_memory_video_import/<set>, so importing a recording can't pollute
+        long-term memory. (The curated recognition_reduce set uses its own subfolder
+        there too.)"""
+        import re as __re  # noqa: PLC0415
+        seg = __re.sub(r"[^A-Za-z0-9_.-]", "_",
+                       (str(set_id or "recognition_reduce").replace("\\", "/").rstrip("/").split("/")[-1] or "set"))
+        return str(Path(_sa_mod.memory_dir()).parent / "object_memory_video_import" / seg)
+
     def _do_induction(which: str = "both") -> None:
         """Induce grounded candidate rules across the whole sequence from the
         already-extracted part-graphs. `which` selects the prolog line
@@ -3247,7 +3258,7 @@ def run_reduce(
                         # any count. The once-per-sequence post-pass below is the
                         # committer; per-frame recognition must never inflate counts.
                         try:
-                            _sa.recognize_objects([pr], slug, str(_sa.memory_dir()))
+                            _sa.recognize_objects([pr], slug, _recog_mem(_sa))
                         except Exception:  # noqa: BLE001
                             pass
                         (sym_dir / f"{idv}__prolog.metta").write_text(pr["metta"], encoding="utf-8")
@@ -3322,7 +3333,7 @@ def run_reduce(
                 sp = e.get("src") or (pool_dir / f"{idv}.jpg")
                 if os.path.isfile(str(sp)):
                     groups.setdefault(e.get("slug", ""), []).append((idv, str(sp)))
-            mem_dir = str(_sa.memory_dir())
+            mem_dir = _recog_mem(_sa)
             for sl, lst in groups.items():
                 paths = [sp for _i, sp in lst]
                 # Segment the group at shot cuts (general-video input breadth): run
