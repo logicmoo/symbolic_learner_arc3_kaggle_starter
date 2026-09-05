@@ -16,9 +16,14 @@ type Demo = {
   notRun?: boolean; preview?: Panel | null; resultKeys?: string[];
 };
 type CatalogEntry = { id: string; group: string; title: string; preview?: Panel | null; resultKeys?: string[] };
+type CoverageRow = {
+  phase: string; id: string; title: string;
+  implemented: "full" | "partial" | "none"; llmFree: "full" | "partial" | "none";
+  demo: string | null; demoStatus: "demo" | "no-demo" | "not-done";
+};
 type DemosResponse = {
   demos: Demo[]; total: number; passed: number; running?: boolean; catalog?: CatalogEntry[];
-  only?: string | null;
+  coverage?: CoverageRow[]; only?: string | null;
 };
 
 const CELL = 16;
@@ -160,6 +165,71 @@ function AnimatedGrid({ frames, autoplay = true, resetToken = 0 }: { frames: Pan
         </div>
       ) : null}
     </div>
+  );
+}
+
+function CovBadge({ level }: { level: "full" | "partial" | "none" }) {
+  const map = {
+    full: { t: "✅", bg: "rgba(139,212,80,0.16)", c: "#8bd450" },
+    partial: { t: "⚠️", bg: "rgba(224,180,80,0.16)", c: "#e0b450" },
+    none: { t: "❌", bg: "rgba(224,72,63,0.18)", c: "#ff8b81" },
+  }[level];
+  return <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 5, background: map.bg, color: map.c }}>{map.t}</span>;
+}
+
+function CoverageSection({ rows, onRun }: { rows: CoverageRow[]; onRun: (id: string) => void }) {
+  const [open, setOpen] = useState(true);
+  if (!rows.length) return null;
+  const cell = { padding: "3px 8px", borderBottom: "1px solid #141a27", fontSize: 11.5 } as const;
+  const done = rows.filter((r) => r.demoStatus === "demo").length;
+  return (
+    <section style={{ marginBottom: 20, border: "1px solid #1c2333", borderRadius: 8, background: "#0b0f18" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", cursor: "pointer" }}
+        onClick={() => setOpen((v) => !v)}>
+        <b style={{ fontSize: 13 }}>{open ? "▾" : "▸"} SoW coverage — Phase 2 &amp; 3 deliverables</b>
+        <span style={{ fontSize: 11, opacity: 0.7 }}>{done}/{rows.length} with a demo</span>
+        <span style={{ marginLeft: "auto", fontSize: 11, opacity: 0.6 }}>
+          <CovBadge level="full" /> done · <CovBadge level="partial" /> partial · <CovBadge level="none" /> not done
+        </span>
+      </div>
+      {open ? (
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ borderCollapse: "collapse", width: "100%", minWidth: 640 }}>
+            <thead>
+              <tr style={{ textAlign: "left", opacity: 0.7 }}>
+                <th style={cell}>#</th><th style={cell}>Deliverable</th>
+                <th style={cell}>Impl</th><th style={cell}>LLM‑free</th><th style={cell}>Demo</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={`${r.phase}-${r.id}`}>
+                  <td style={{ ...cell, whiteSpace: "nowrap", opacity: 0.7 }}>{r.phase} {r.id}</td>
+                  <td style={cell}>{r.title}</td>
+                  <td style={cell}><CovBadge level={r.implemented} /></td>
+                  <td style={cell}><CovBadge level={r.llmFree} /></td>
+                  <td style={cell}>
+                    {r.demoStatus === "demo" && r.demo && r.demo !== "phase3" ? (
+                      <button type="button" onClick={() => onRun(r.demo as string)}
+                        style={{ fontSize: 10.5, padding: "1px 8px", borderRadius: 5, cursor: "pointer",
+                                 background: "rgba(139,212,80,0.16)", color: "#8bd450", border: "1px solid rgba(139,212,80,0.3)" }}>
+                        ▶ {r.demo}
+                      </button>
+                    ) : r.demoStatus === "demo" ? (
+                      <span style={{ fontSize: 10.5, padding: "1px 6px", borderRadius: 5, background: "rgba(139,212,80,0.16)", color: "#8bd450" }}>DEMO · Phase 3 API</span>
+                    ) : r.demoStatus === "no-demo" ? (
+                      <span style={{ fontSize: 10.5, padding: "1px 6px", borderRadius: 5, background: "rgba(148,163,184,0.14)", color: "#94a3b8" }}>NO DEMO</span>
+                    ) : (
+                      <span style={{ fontSize: 10.5, padding: "1px 6px", borderRadius: 5, background: "rgba(224,72,63,0.18)", color: "#ff8b81" }}>NOT DONE</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
+    </section>
   );
 }
 
@@ -343,6 +413,7 @@ export function RecognitionDemosPage() {
         <span style={{ color: "#8bd450" }}>green outline / +</span> = generatively filled or regenerated, dashed <b>?</b> = behind the occluder.
       </p>
       {err ? <div style={{ color: "#ff8b81", fontSize: 12, marginBottom: 8 }}>Error: {err}</div> : null}
+      <CoverageSection rows={data?.coverage || []} onRun={runOne} />
       {running && !hasResults ? <div style={{ opacity: 0.6 }}>Server is running the sanity tests…</div> : null}
       {!running && !hasResults ? (
         <div style={{ opacity: 0.6, padding: "8px 0 14px", fontSize: 12.5 }}>

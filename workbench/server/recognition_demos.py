@@ -643,6 +643,84 @@ def demo_catalog() -> list:
     return out
 
 
+# Full Phase 2 & Phase 3 SoW deliverable coverage, so the Sanity Tests page can
+# show an entry for EVERY deliverable -- done or not -- and mark the gaps.
+# Tuple: (phase, id, title, implemented, llm_free, demo)
+#   implemented / llm_free: "full" | "partial" | "none"
+#   demo: a runnable recognition-demo id, "phase3" (the live Phase 3 run), or None
+_SOW_COVERAGE = [
+    ("P2", "1a", "Extract objects from grid", "full", "full", "live-ls20"),
+    ("P2", "1b", "Extract objects from image (raster)", "full", "full", "input-gradient"),
+    ("P2", "1c", "Extract objects from video", "full", "full", "input-video"),
+    ("P2", "2a", "Represent properties & appearance", "full", "full", None),
+    ("P2", "2b", "Represent structure", "full", "full", None),
+    ("P2", "2c", "Represent relationships (adjacency/containment)", "full", "full", None),
+    ("P2", "2d", "Represent position/orientation/scale", "full", "full", None),
+    ("P2", "3a", "Stable identity across encounters", "full", "full", "store-then-recognize"),
+    ("P2", "3b", "Stable identity across state transitions", "full", "full", None),
+    ("P2", "4a", "Match corresponding objects between states", "full", "full", None),
+    ("P2", "4b", "Match across repeated encounters", "full", "full", None),
+    ("P2", "5a", "Recognize despite position", "full", "full", None),
+    ("P2", "5b", "Recognize despite rotation", "full", "full", None),
+    ("P2", "5c", "Recognize despite scale", "full", "full", "resize"),
+    ("P2", "5d", "Recognize despite reflection", "full", "full", None),
+    ("P2", "5e", "Recognize despite colour", "full", "full", "recolor"),
+    ("P2", "5f", "Recognize despite noise", "none", "none", None),
+    ("P2", "5g", "Recognize despite partial visibility", "full", "full", "occlusion-t"),
+    ("P2", "6a", "Detect movement", "full", "full", "input-video"),
+    ("P2", "6b", "Detect recoloring (as change)", "partial", "partial", None),
+    ("P2", "6c", "Detect resizing (as change)", "partial", "partial", None),
+    ("P2", "6d", "Detect addition", "full", "full", None),
+    ("P2", "6e", "Detect removal", "full", "full", None),
+    ("P2", "6f", "Detect structural change", "full", "full", "new-distinguished"),
+    ("P2", "7", "Normalized store -> regenerate", "full", "full", "regeneration"),
+    ("P2", "8", "Distinguish recognized vs new", "full", "full", "new-distinguished"),
+    ("P2", "9", "Prevent duplicate storage", "full", "full", None),
+    ("P2", "10a", "Accumulate evidence", "full", "full", "live-ls20"),
+    ("P2", "10b", "Accumulate provenance", "full", "full", "live-ls20"),
+    ("P2", "11a", "Preserve encounter history", "full", "full", None),
+    ("P2", "11b", "Deterministic replay", "full", "full", "replay"),
+    ("P2", "12a", "Object (individual) memory", "full", "full", "live-ls20"),
+    ("P2", "12b", "Shape (geometry) memory", "full", "full", "live-ls20"),
+    ("P2", "13", "Demonstrate regeneration", "full", "full", "regeneration"),
+    ("P2", "14a", "Recognition under modest degradation", "none", "none", None),
+    ("P2", "14b", "Recognition under partial occlusion", "full", "full", "occlusion-t"),
+    ("P2", "15a", "Tests", "full", "full", None),
+    ("P2", "15b", "Documentation", "full", "full", None),
+    ("P3", "1", "Interface / data contract to Game Object Learner", "full", "full", None),
+    ("P3", "2", "Provide objects/props/relationships/correspondences/diffs/history", "full", "full", None),
+    ("P3", "3", "Stable interface decoupled from perception internals", "full", "full", None),
+    ("P3", "4", "Validation, structured errors, integration tests, workflows", "full", "full", None),
+    ("P3", "5", "Infer candidate transformations / transition rules", "full", "full", "phase3"),
+    ("P3", "6", "Multiple interpretations + evidence for success & failure", "full", "full", "phase3"),
+    ("P3", "7", "Apply learned transformations to new cases", "full", "full", "phase3"),
+    ("P3", "8", "Predict later states before outcomes", "full", "full", "phase3"),
+    ("P3", "9", "Compare predictions with independent outcomes", "full", "full", "phase3"),
+    ("P3", "10", "Update rule evidence on success/failure", "full", "full", "phase3"),
+    ("P3", "11", "Prevent post-hoc explanations counting as predictions", "full", "full", "phase3"),
+    ("P3", "12", "Recognition + completion of partly occluded objects", "full", "full", "occlusion-t"),
+    ("P3", "13", "Operation across grid + raster environments", "partial", "full", None),
+    ("P3", "14", "Integration docs, example scripts, acceptance, dev notes", "full", "full", None),
+]
+
+
+def sow_coverage() -> list:
+    """Every Phase 2 & 3 SoW deliverable with implemented/LLM-free/demo status, so
+    the page can list an entry for each -- including the ones not done yet."""
+    out = []
+    for phase, did, title, impl, llm, demo in _SOW_COVERAGE:
+        if demo:
+            demo_status = "demo"
+        elif impl == "none":
+            demo_status = "not-done"
+        else:
+            demo_status = "no-demo"
+        out.append({"phase": phase, "id": did, "title": title,
+                    "implemented": impl, "llmFree": llm,
+                    "demo": demo, "demoStatus": demo_status})
+    return out
+
+
 def run_demos(only: str | None = None) -> dict:
     """Run all demos (or one by id) and return their visual results + pass/fail."""
     out = []
@@ -680,7 +758,7 @@ def get_demo_state() -> dict:
     with _demo_lock:
         st = dict(_demo_state)
     res = st.get("results") or {"demos": [], "total": 0, "passed": 0}
-    return {**res, "catalog": demo_catalog(), "running": st["running"],
+    return {**res, "catalog": demo_catalog(), "coverage": sow_coverage(), "running": st["running"],
             "startedAt": st["startedAt"], "finishedAt": st["finishedAt"], "only": st["only"]}
 
 
