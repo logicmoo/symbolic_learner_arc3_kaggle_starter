@@ -133,10 +133,22 @@ function DemoCard({ demo, onRun, running }: { demo: Demo; onRun: (id: string) =>
       </div>
       {demo.description ? <div style={{ fontSize: 11.5, opacity: 0.72, lineHeight: 1.4 }}>{demo.description}</div> : null}
       {notRun ? (
-        <div style={{
-          fontSize: 11.5, opacity: 0.55, padding: "18px 0", textAlign: "center",
-          border: "1px dashed #1c2333", borderRadius: 6,
-        }}>Not run yet — press ▶ Run to start this test on the server.</div>
+        <>
+          <div style={{ display: "flex", justifyContent: "center", padding: "4px 0" }}>
+            <div style={{
+              width: 200, height: 200, display: "flex", alignItems: "center", justifyContent: "center",
+              textAlign: "center", fontSize: 11.5, opacity: 0.5, color: "#94a3b8",
+              background: "repeating-linear-gradient(45deg,#0b0f1a,#0b0f1a 8px,#0d1320 8px,#0d1320 16px)",
+              border: "1px dashed #1c2333", borderRadius: 4,
+            }}>Not run yet —<br />press ▶ Run</div>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6, minHeight: 22 }}>
+            <span style={{
+              fontSize: 11, padding: "2px 7px", borderRadius: 5, background: "rgba(148,163,184,0.08)",
+              border: "1px dashed rgba(148,163,184,0.25)", color: "#94a3b8",
+            }}>results appear after this test runs</span>
+          </div>
+        </>
       ) : (
         <>
           <div style={{ display: "flex", justifyContent: "center", padding: "4px 0" }}>
