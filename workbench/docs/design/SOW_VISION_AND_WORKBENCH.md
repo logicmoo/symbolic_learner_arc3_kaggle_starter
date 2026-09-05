@@ -141,6 +141,20 @@ fallback. The objectification pass is done by two producers; the next hop is als
 available two ways, but its deterministic implementation may deliberately take
 the LLM producer's output as its input.
 
+![Dual-line induction with per-event confidence: the deterministic Prolog
+induction of one ARC transition (frame_000005 + UP = frame_000006), showing
+moved / transformed / interacted / occluded events, each with a confidence, plus
+the per-row report "conf 92% · 1 provisional".](assets/vision_induction_dual_line.png)
+
+*Figure: a live induction row from the workbench. The deterministic (Prolog)
+induction of the transition `frame_000005 + UP = frame_000006` reports `moved`
+(including a `rot270` rotation), a `transformed` event at 67% confidence,
+spatial `interacted` links, and three `occluded` verdicts at 100% (the markers
+that vanish here provably return next frame). The row header states the imported
+provenance action (`UP`, tagged `prov`), the induction time (`28 ms`), and the
+aggregate statistical report (`conf 92% · 1 provisional`). A sibling row runs the
+same deterministic inducer over the LLM's objectification for direct comparison.*
+
 ### Scope of Work
 
 1. **Dual perception, one schema.**
