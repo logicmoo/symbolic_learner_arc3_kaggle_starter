@@ -148,6 +148,9 @@ async def recognition_demos_ws(websocket: WebSocket) -> None:
                     await asyncio.to_thread(rd.set_demo_play, str(did), bool(msg.get("playing", True)))
                 elif cmd == "seek" and did is not None and "index" in msg:
                     await asyncio.to_thread(rd.seek_demo, str(did), int(msg.get("index", 0)))
+                elif cmd == "select_source":
+                    await asyncio.to_thread(rd.set_ls20_source, (str(msg.get("source")) if msg.get("source") else None))
+                    await asyncio.to_thread(rd.start_demo_run, "live-ls20", False)
             except Exception as error:  # noqa: BLE001 - report, keep socket open
                 try:
                     await websocket.send_json({"type": "error", "error": str(error)})

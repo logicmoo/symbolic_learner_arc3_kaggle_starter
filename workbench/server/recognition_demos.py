@@ -914,6 +914,136 @@ def _demo_input_video():
 
 _LS20_DIR = (Path(__file__).resolve().parents[1] / "workspaces" / "arc3_random_player" / "data"
              / "vision_frames" / "arc_recordings" / "data-arc3_games-recordings-ls20-saved_001")
+# Raw per-frame recordings (each frame is a numbered subfolder holding image.png).
+# The long "release run" ls20 playthroughs (hundreds of moves) live here, split
+# across attempt segments; we concatenate a base id's attempts into one sequence.
+_RAW_LS20_DIR = (Path(__file__).resolve().parents[1] / "workspaces" / "arc3_random_player" / "data"
+                 / "arc3_games" / "recordings" / "ls20")
+
+_ls20_selected: str | None = None   # user-chosen recording key (else default = longest)
+_ls20_recs_cache: list | None = None
+# ARC-AGI-3 movement actions -> direction arrows (the "move" made between two frames).
+_ACTION_ARROW = {"ACTION1": "↑", "ACTION2": "↓", "ACTION3": "←", "ACTION4": "→",
+                 "ACTION5": "•", "ACTION6": "*"}
+
+
+def _ls20_base(name: str) -> str:
+    """Strip the '_attempt<N>_size<M>' / '_size<M>' segment suffix to get the run id."""
+    import re
+    return re.sub(r"_size_\d+$", "", re.sub(r"_attempt\d+_size_\d+$", "", name))
+
+
+def _ls20_attempt_key(name: str) -> tuple:
+    import re
+    a = re.search(r"_attempt(\d+)", name)
+    s = re.search(r"_size_(\d+)", name)
+    return (int(a.group(1)) if a else 0, int(s.group(1)) if s else 0)
+
+
+def _raw_base_frames(dirs: list, with_action: bool = False) -> list:
+    """Ordered (displayId, image.png, action) for a raw recording base: attempts in
+    order, then each attempt's numbered frame subfolders in numeric order. `action`
+    is the move (incoming_action) that produced the frame — read only when asked, so
+    listing recordings stays cheap."""
+    import json as _json
+    out: list = []
+    for d in sorted(dirs, key=lambda p: _ls20_attempt_key(p.name)):
+        subs = [c for c in d.iterdir() if c.is_dir() and c.name.isdigit()]
+        for c in sorted(subs, key=lambda p: int(p.name)):
+            img = c / "image.png"
+            if not img.is_file():
+                continue
+            action = None
+            if with_action:
+                sj = c / "state.json"
+                if sj.is_file():
+                    try:
+                        action = _json.loads(sj.read_text(encoding="utf-8")).get("incoming_action")
+                    except (OSError, _json.JSONDecodeError):
+                        action = None
+            out.append((f"{d.name}#{c.name}", str(img), action))
+    return out
+
+
+def _ls20_recordings() -> list:
+    """Every selectable ls20 recording: the reduced vision-frame dirs (fast, may have
+    committed part-graphs) plus the raw release-run playthroughs (concatenated across
+    attempt segments). Cached for the session."""
+    global _ls20_recs_cache
+    if _ls20_recs_cache is not None:
+        return _ls20_recs_cache
+    recs: list = []
+    root = _LS20_DIR.parent
+    if root.is_dir():
+        for sub in sorted(root.glob("*ls20*")):
+            if sub.is_dir():
+                n = len(list(sub.glob("*.png")))
+                if n >= 2:
+                    short = sub.name.replace("data-arc3_games-recordings-ls20-", "")
+                    recs.append({"key": "vf:" + sub.name, "label": f"reduced · {short} · {n} frames", "count": n})
+    if _RAW_LS20_DIR.is_dir():
+        groups: dict = {}
+        for sub in _RAW_LS20_DIR.iterdir():
+            if sub.is_dir():
+                groups.setdefault(_ls20_base(sub.name), []).append(sub)
+        for base, dirs in sorted(groups.items()):
+            frames = _raw_base_frames(dirs)
+            if len(frames) >= 2:
+                recs.append({"key": "raw:" + base, "label": f"raw run · {base} · {len(frames)} frames",
+                             "count": len(frames)})
+    recs.sort(key=lambda r: r["count"], reverse=True)
+    _ls20_recs_cache = recs
+    return recs
+
+
+def _resolve_ls20(key: str | None) -> tuple:
+    """(ordered [(displayId, pngPath)], committedDir | None, label) for a recording key."""
+    if key and key.startswith("vf:"):
+        sub = _LS20_DIR.parent / key[3:]
+        if sub.is_dir():
+            import json as _json
+            order: list = []
+            mf = sub / "manifest.json"
+            if mf.is_file():
+                try:
+                    order = [it["id"] for it in _json.loads(mf.read_text(encoding="utf-8")).get("items", [])]
+                except (OSError, _json.JSONDecodeError):
+                    order = []
+            if not order:
+                order = sorted(p.stem for p in sub.glob("*.png"))
+            entries = []
+            for idv in order:
+                p = next(iter(sub.glob(f"{idv}.png")), None)
+                if p:
+                    entries.append((idv, str(p), None))
+            return entries, sub, sub.name.replace("data-arc3_games-recordings-ls20-", "")
+    if key and key.startswith("raw:") and _RAW_LS20_DIR.is_dir():
+        base = key[4:]
+        dirs = [d for d in _RAW_LS20_DIR.iterdir() if d.is_dir() and _ls20_base(d.name) == base]
+        return _raw_base_frames(dirs, with_action=True), None, base
+    return [], None, ""
+
+
+def _current_ls20_key() -> str | None:
+    """The selected recording key if still valid, else the longest reduced recording
+    (fast default), else the longest overall."""
+    with _demo_lock:
+        sel = _ls20_selected
+    recs = _ls20_recordings()
+    if not recs:
+        return None
+    if sel and any(r["key"] == sel for r in recs):
+        return sel
+    vf = [r for r in recs if r["key"].startswith("vf:")]
+    pool = vf or recs
+    return max(pool, key=lambda r: r["count"])["key"]
+
+
+def set_ls20_source(key: str | None) -> None:
+    """Choose which ls20 recording the live-ls20 demo plays."""
+    global _ls20_selected
+    with _demo_lock:
+        _ls20_selected = key or None
 
 
 def _variant_prov(exemplar, wh, cname) -> str:
@@ -943,85 +1073,46 @@ def _demo_live_ls20_sequence():
     import symbolic_arc as sa
     import numpy as _np
 
-    def _pick_longest_ls20():
-        """Use the longest available ls20 recording so the demo shows a real
-        multi-level playthrough (and auto-upgrades if a longer one is added)."""
-        root = _LS20_DIR.parent
-        best = None
-        best_n = -1
-        if root.is_dir():
-            for sub in sorted(root.glob("*ls20*")):
-                if not sub.is_dir():
-                    continue
-                n = len(list(sub.glob("*.png")))
-                if n > best_n:
-                    best_n, best = n, sub
-        return best
-
-    setdir = _pick_longest_ls20() or _LS20_DIR
-    if not setdir or not setdir.is_dir():
+    key = _current_ls20_key()
+    entries, committed_dir, source_label = _resolve_ls20(key)
+    if not entries:
         return {"id": "live-ls20", "group": "Live sequence (real data)",
                 "title": "Live ls20 recording — recognition over time", "panels": [],
-                "frames": [], "result": {"note": "ls20 recording set not found"}, "passed": False,
+                "frames": [], "result": {"note": "ls20 recording set not found",
+                                         "recordings": _ls20_recordings()}, "passed": False,
                 "description": "Plays a real recorded ls20 playthrough with live recognition; run a reduce first."}
 
-    def _frame_order(sd):
-        mf_path = sd / "manifest.json"
-        order = []
-        if mf_path.is_file():
-            try:
-                order = [it["id"] for it in _json.loads(mf_path.read_text(encoding="utf-8")).get("items", [])]
-            except (OSError, _json.JSONDecodeError):
-                order = []
-        if not order:
-            order = sorted(p.stem for p in sd.glob("*.png"))
-        return order
-
-    def _parts_for(sd, idv, game):
-        """A frame's parts: use the committed Prolog part-graph if present, else
-        extract the frame fresh on the fly (raw recordings have no committed graph)."""
-        png = next(iter(sd.glob(f"{idv}.png")), None)
-        if not png:
-            return None, None, None
-        pj = sd / "sym" / f"{idv}__prolog.parts.json"
-        if pj.is_file():
-            try:
-                parts = _json.loads(pj.read_text(encoding="utf-8"))
-            except (OSError, _json.JSONDecodeError):
-                parts = []
-            idx, hexpal, _c, _r = sa.decode_grid(str(png))
-            return idx, hexpal, parts
+    def _parts_for(disp, png, game):
+        """A frame's parts: use the committed Prolog part-graph if present (reduced
+        recordings), else extract the frame fresh on the fly (raw recordings)."""
+        if committed_dir is not None:
+            pj = committed_dir / "sym" / f"{disp}__prolog.parts.json"
+            if pj.is_file():
+                try:
+                    parts = _json.loads(pj.read_text(encoding="utf-8"))
+                except (OSError, _json.JSONDecodeError):
+                    parts = []
+                idx, hexpal, _c, _r = sa.decode_grid(png)
+                return idx, hexpal, parts
         try:
-            pr = sa.extract_frame(str(png), game)
+            pr = sa.extract_frame(png, game)
         except Exception:  # noqa: BLE001
             pr = None
         if not pr or pr.get("nparts", 0) <= 0 or pr.get("cols", 999) > 160 or pr.get("rows", 999) > 160:
             return None, None, None
-        idx, hexpal, _c, _r = sa.decode_grid(str(png))
+        idx, hexpal, _c, _r = sa.decode_grid(png)
         return idx, hexpal, pr.get("geom", [])
 
-    _MAX_FRAMES = 240          # bound runtime for very long recordings
-    order = _frame_order(setdir)[:_MAX_FRAMES]
+    _MAX_FRAMES = 420          # bound runtime for very long recordings
+    order = entries[:_MAX_FRAMES]
     game = "ls20-live"
 
-    # --- Detect in-game LEVEL boundaries as scene resets: a big frame-to-frame
+    # In-game LEVEL boundaries are detected as scene resets: a big frame-to-frame
     # change in the palette-stable HEX grid marks a new level. (Index grids are not
     # comparable across frames because decode_grid re-orders the palette per frame.)
+    # This is folded into the single play pass below (one decode per frame).
     _RESET = 0.30             # fraction of cells that must change to count as a reset
     _MIN_GAP = 6              # debounce: ignore resets closer than this many frames
-    boundaries: list = []
-    prev_hex = None
-    for i, idv in enumerate(order):
-        png = next(iter(setdir.glob(f"{idv}.png")), None)
-        if not png:
-            continue
-        idx, hexpal, _c, _r = sa.decode_grid(str(png))
-        hexgrid = _np.asarray(hexpal, dtype=object)[idx]
-        if prev_hex is not None and prev_hex.shape == hexgrid.shape:
-            if float((prev_hex != hexgrid).mean()) > _RESET and (not boundaries or i - boundaries[-1] >= _MIN_GAP):
-                boundaries.append(i)
-        prev_hex = hexgrid
-    bset = set(boundaries)
 
     frames: list = []
     geo_seen: dict = {}            # shape -> {variantKey: provenance}  (learners + how each was made)
@@ -1031,16 +1122,30 @@ def _demo_live_ls20_sequence():
     recolored_shapes = recolor_events = 0
     first_ind_recog = first_geo_recog = None
     total_ind_recog = total_geo_recog = total_parts = 0
+    moves_seen = 0                 # frame transitions with a recorded move (direction action)
     level_no = 1
+    boundaries: list = []
+    prev_hex = None
+    last_boundary = -_MIN_GAP
 
-    for i, idv in enumerate(order):
-        if i in bset:                              # a new in-game level starts on this frame
-            recolored_shapes += sum(1 for cs in level_colours.values() if len(cs) > 1)
-            level_colours = {}
-            level_no += 1
-        idx, hexpal, parts = _parts_for(setdir, idv, game)
+    for i, (disp, png, action) in enumerate(order):
+        idx, hexpal, parts = _parts_for(disp, png, game)
         if idx is None:
             continue
+        # Scene-reset boundary detection folded into the play pass (one decode per
+        # frame): a big change in the palette-stable HEX grid marks a new level.
+        hexgrid = _np.asarray(hexpal, dtype=object)[idx]
+        if prev_hex is not None and prev_hex.shape == hexgrid.shape:
+            if float((prev_hex != hexgrid).mean()) > _RESET and (i - last_boundary) >= _MIN_GAP:
+                boundaries.append(i)
+                last_boundary = i
+                recolored_shapes += sum(1 for cs in level_colours.values() if len(cs) > 1)
+                level_colours = {}
+                level_no += 1
+        prev_hex = hexgrid
+        arrow = _ACTION_ARROW.get(action or "", "")
+        if arrow:
+            moves_seen += 1
         geo_new = geo_recog = ind_new = ind_recog = frame_parts = frame_recolor = 0
         roled: list = []
         frame_geo: dict = {}       # shape -> {variantKey: rawform}  raw parts seen this frame
@@ -1096,7 +1201,9 @@ def _demo_live_ls20_sequence():
         rows, cols = idx.shape[0], idx.shape[1]
         base = [(x, y, "object", hexpal[int(idx[y, x])]) for y in range(rows) for x in range(cols)]
         scene = _panel(
-            f"LEVEL {level_no} · {idv} · this frame: {ind_recog} recognized, {ind_new} new"
+            f"LEVEL {level_no} · {disp}"
+            + (f" · move {arrow} {action}" if arrow else "")
+            + f" · this frame: {ind_recog} recognized, {ind_new} new"
             + (f", {frame_recolor} recoloured" if frame_recolor else "")
             + f" · objects known {before_obj}→{after_obj}, shapes {before_geo}→{after_geo} "
             f"· learners {direct} direct / {made} via filter",
@@ -1131,7 +1238,9 @@ def _demo_live_ls20_sequence():
             "panels": frames[:1],
             "frames": frames,
             "result": {"frames": len(frames),
-                       "source": setdir.name,
+                       "source": source_label,
+                       "sourceKey": key,
+                       "recordings": _ls20_recordings(),
                        "levels_detected": levels_detected,
                        "level_boundaries": (", ".join(str(b) for b in boundaries) or "none"),
                        "frame0_objects_recognized": first_ind_recog,
@@ -1143,6 +1252,7 @@ def _demo_live_ls20_sequence():
                        "learners_via_filter": made_all,
                        "geometry_recognized": f"{total_geo_recog}/{total_parts} ({geo_pct:.0f}%)",
                        "individuals_recognized": f"{total_ind_recog}/{total_parts}",
+                       "moves_seen": moves_seen,
                        "recolored_shapes": recolored_shapes,
                        "recolor_events": recolor_events},
             "passed": passed,
@@ -1194,7 +1304,7 @@ _DEMO_CATALOG = [
                     "frame0_objects_recognized", "frame0_shapes_recognized",
                     "objects_learned", "shapes_learned", "max_learners_per_shape",
                     "most_learned_shape", "learners_direct", "learners_via_filter",
-                    "geometry_recognized", "individuals_recognized",
+                    "geometry_recognized", "individuals_recognized", "moves_seen",
                     "recolored_shapes", "recolor_events"]},
     {"id": "occlusion-t", "group": "Occlusion completion", "title": "T tetromino — stem occluded",
      "resultKeys": ["recognized", "scale", "orientation", "residual", "confidence", "faithful"]},
@@ -1543,6 +1653,7 @@ def get_demo_state() -> dict:
     return {"demos": demos, "total": res.get("total", 0), "passed": res.get("passed", 0),
             "catalog": demo_catalog(), "coverage": sow_coverage(), "running": st["running"],
             "anyPlaying": any_playing, "playEpoch": epoch,
+            "ls20Recordings": _ls20_recordings(), "ls20Source": _current_ls20_key(),
             "startedAt": st["startedAt"], "finishedAt": st["finishedAt"], "only": st["only"]}
 
 

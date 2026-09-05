@@ -22,9 +22,11 @@ type CoverageRow = {
   implemented: "full" | "partial" | "none"; llmFree: "full" | "partial" | "none";
   demo: string | null; demoStatus: "demo" | "no-demo" | "not-done";
 };
+type Ls20Recording = { key: string; label: string; count: number };
 type DemosResponse = {
   demos: Demo[]; total: number; passed: number; running?: boolean; catalog?: CatalogEntry[];
   coverage?: CoverageRow[]; only?: string | null; anyPlaying?: boolean; playEpoch?: number;
+  ls20Recordings?: Ls20Recording[]; ls20Source?: string | null;
 };
 
 const CELL = 16;
@@ -248,10 +250,11 @@ function CoverageSection({ rows, onRun }: { rows: CoverageRow[]; onRun: (id: str
   );
 }
 
-function DemoCard({ demo, onRun, onStep, onClear, onToggle, onSeek, running, flash }: {
+function DemoCard({ demo, onRun, onStep, onClear, onToggle, onSeek, running, flash, recordings, source, onSelectSource }: {
   demo: Demo; onRun: (id: string) => void; onStep: (id: string) => void;
   onClear: (id: string) => void; onToggle: (id: string, playing: boolean) => void;
   onSeek: (id: string, index: number) => void; running: boolean; flash?: boolean;
+  recordings?: Ls20Recording[]; source?: string | null; onSelectSource?: (key: string) => void;
 }) {
   const frames = (demo.frames && demo.frames.length ? demo.frames : demo.panels) || [];
   const notRun = !!demo.notRun;
@@ -278,6 +281,19 @@ function DemoCard({ demo, onRun, onStep, onClear, onToggle, onSeek, running, fla
         <button type="button" onClick={() => onClear(demo.id)} disabled={notRun && !running}
           title="Stop and clear back to the beginning" style={btn}>Clear</button>
       </div>
+      {demo.id === "live-ls20" && recordings && recordings.length ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11.5 }}>
+          <span style={{ opacity: 0.7 }}>Recording:</span>
+          <select value={source || ""} onChange={(e) => onSelectSource?.(e.target.value)}
+            style={{ fontSize: 11.5, padding: "3px 6px", borderRadius: 5, maxWidth: 460,
+                     background: "#0b1220", color: "#cfe", border: "1px solid #2a3346" }}>
+            {recordings.map((r) => (
+              <option key={r.key} value={r.key}>{r.label}</option>
+            ))}
+          </select>
+          <span style={{ opacity: 0.5 }}>choose which ls20 playthrough to learn from</span>
+        </div>
+      ) : null}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "center", flex: "0 0 auto" }}>
           {notRun
@@ -387,6 +403,7 @@ export function RecognitionDemosPage() {
   const clearAll = useCallback(() => send({ cmd: "clear" }), [send]);
   const togglePlay = useCallback((id: string, playing: boolean) => send({ cmd: "play", id, playing }), [send]);
   const seek = useCallback((id: string, index: number) => send({ cmd: "seek", id, index }), [send]);
+  const selectSource = useCallback((sourceKey: string) => send({ cmd: "select_source", source: sourceKey }), [send]);
 
   // Coverage-table ▶ buttons live far above the demo cards, so besides starting the
   // run we scroll the matching card into view and briefly highlight it — otherwise
@@ -476,7 +493,9 @@ export function RecognitionDemosPage() {
               return (
                 <DemoCard key={d.id} demo={d} onRun={runOne} onStep={stepOne}
                   onClear={clearOne} onToggle={togglePlay} onSeek={seek}
-                  running={cardRunning} flash={flashId === d.id} />
+                  running={cardRunning} flash={flashId === d.id}
+                  recordings={data?.ls20Recordings} source={data?.ls20Source}
+                  onSelectSource={selectSource} />
               );
             })}
           </div>
