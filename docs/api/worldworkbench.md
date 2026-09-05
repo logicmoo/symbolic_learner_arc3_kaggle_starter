@@ -15,7 +15,7 @@
     * [GENERATED](#worldworkbench.core.SiloStatus.GENERATED)
     * [HYPOTHETICAL](#worldworkbench.core.SiloStatus.HYPOTHETICAL)
     * [VALIDATED](#worldworkbench.core.SiloStatus.VALIDATED)
-    * [REJECTED](#worldworkbe[omega_vision.md](omega_vision.md)nch.core.SiloStatus.REJECTED)
+    * [REJECTED](#worldworkbench.core.SiloStatus.REJECTED)
   * [ProducerRef](#worldworkbench.core.ProducerRef)
     * [operation](#worldworkbench.core.ProducerRef.operation)
     * [implementation](#worldworkbench.core.ProducerRef.implementation)

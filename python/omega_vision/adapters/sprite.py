@@ -5,7 +5,7 @@ from typing import Any
 
 from PIL import Image
 
-from .adapters import ImageAdapter
+from omega_vision.adapters.adapters import ImageAdapter
 
 
 def _components(cells: set[tuple[int, int]]) -> tuple[tuple[tuple[int, int], ...], ...]:

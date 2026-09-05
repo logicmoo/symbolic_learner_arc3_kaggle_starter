@@ -224,7 +224,7 @@ def phase3_learn(payload: dict | None = Body(default=None)) -> dict:
         GameObjectLearnerPayload, PipelineGameObjectLearnerPlugin, GameLearningPipeline,
         RuleStore, PredictionLedger, InMemorySemanticBackend, SymbolicStore,
     )
-    from omega_vision.integration import (
+    from omega_vision.runtime.integration import (
         phase2_transition_analyzer, phase2_transformation_learner,
         phase2_rule_inducer, phase2_rule_ranker,
     )

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from PIL import Image, ImageDraw
 
-from .benchmark import PerceptionFixture, RasterPerturbationGenerator
+from omega_vision.evaluation.benchmark import PerceptionFixture, RasterPerturbationGenerator
 
 
 @dataclass(frozen=True)

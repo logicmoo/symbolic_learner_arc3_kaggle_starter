@@ -119,7 +119,7 @@ def run_live_phase3(n_probe: int = 12) -> dict:
         InMemorySemanticBackend, SymbolicStore, RuleStore, PredictionLedger,
         OutcomeChannel, PredictionEvaluator, PredictionGrade,
     )
-    from omega_vision.integration import (
+    from omega_vision.runtime.integration import (
         phase2_transition_analyzer, phase2_transformation_learner,
         phase2_rule_inducer, phase2_rule_ranker, phase2_rule_executor,
     )

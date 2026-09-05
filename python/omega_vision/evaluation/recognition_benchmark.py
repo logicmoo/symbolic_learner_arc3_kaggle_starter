@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Mapping
 
-from .models import InstanceParameters, RecognitionAccount
-from .recognition import InstanceMatcher
+from omega_vision.core.models import InstanceParameters, RecognitionAccount
+from omega_vision.core.recognition import InstanceMatcher
 
 
 @dataclass(frozen=True)

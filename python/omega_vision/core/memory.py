@@ -5,7 +5,7 @@ from hashlib import sha256
 import json
 from typing import Any, Callable
 
-from .models import (
+from omega_vision.core.models import (
     CommittedAtom,
     ConfidenceHistoryRecord,
     EncounterRecord,

@@ -10,18 +10,18 @@ from typing import Any, Callable, Mapping
 from project_paths import PROJECT_ROOT
 from swipl_bridge import SWIPrologBridge
 
-from .adapters import GridAdapter
-from .forms import GenerativeForm, FitResult
-from .integration import Phase2LearnerPayloadBuilder
-from .learning import (
+from omega_vision.adapters.adapters import GridAdapter
+from omega_vision.forms.forms import GenerativeForm, FitResult
+from omega_vision.runtime.integration import Phase2LearnerPayloadBuilder
+from omega_vision.core.learning import (
     OutcomeChannel,
     PredictionEvaluator,
     PredictionGrade,
     PredictionGradeStatus,
     RuleExecutor,
 )
-from .memory import SingleWriter
-from .models import (
+from omega_vision.core.memory import SingleWriter
+from omega_vision.core.models import (
     ArtifactRef,
     CommittedAtom,
     EncounterRecord,
@@ -31,14 +31,14 @@ from .models import (
     TurtleProgramRef,
     deterministic_identifier,
 )
-from .recognition import (
+from omega_vision.core.recognition import (
     EncounterChangeSession,
     RecognitionSession,
     RegistryCorrespondenceAuthority,
     TurtleReconstructionEvidenceBuilder,
 )
-from .replay import ActionTreeSemanticReplay
-from .store import InMemorySemanticBackend, SymbolicStore
+from omega_vision.runtime.replay import ActionTreeSemanticReplay
+from omega_vision.core.store import InMemorySemanticBackend, SymbolicStore
 
 
 def standard_semantic_grid_observer(
@@ -48,20 +48,20 @@ def standard_semantic_grid_observer(
 
     from workbench.server.runtime import analyze_grid
 
-    from .memory import SymbolicMemory
-    from .providers import PythonProvider
+    from omega_vision.core.memory import SymbolicMemory
+    from omega_vision.adapters.providers import PythonProvider
 
     semantic_store = SymbolicStore(InMemorySemanticBackend())
     if learner_plugin is None:
-        from .integration import (
+        from omega_vision.runtime.integration import (
             PipelineGameObjectLearnerPlugin,
             phase2_rule_inducer,
             phase2_rule_ranker,
             phase2_transformation_learner,
             phase2_transition_analyzer,
         )
-        from .learning import GameLearningPipeline
-        from .prediction import PredictionLedger, RuleStore
+        from omega_vision.core.learning import GameLearningPipeline
+        from omega_vision.core.prediction import PredictionLedger, RuleStore
 
         learner_plugin = PipelineGameObjectLearnerPlugin(
             GameLearningPipeline(

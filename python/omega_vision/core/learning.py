@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
-from .models import (
+from omega_vision.core.models import (
     ActionRecommendation,
     EvidencePolarity,
     EvidenceRecord,
@@ -13,7 +13,7 @@ from .models import (
     ProvenanceRef,
     TransitionRule,
 )
-from .prediction import PredictionLedger, RuleStore
+from omega_vision.core.prediction import PredictionLedger, RuleStore
 
 
 @dataclass(frozen=True)

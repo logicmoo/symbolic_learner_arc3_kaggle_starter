@@ -6,7 +6,7 @@ from typing import Any, Iterable, Mapping
 
 from PIL import Image
 
-from .adapters import ImageAdapter
+from omega_vision.adapters.adapters import ImageAdapter
 
 
 @dataclass(frozen=True)

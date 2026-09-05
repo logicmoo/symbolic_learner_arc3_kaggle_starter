@@ -4,16 +4,16 @@ from dataclasses import asdict, dataclass
 import json
 from typing import Any, Mapping
 
-from .memory import SingleWriter
-from .models import (
+from omega_vision.core.memory import SingleWriter
+from omega_vision.core.models import (
     CommittedAtom,
     EncounterRecord,
     EvidenceRecord,
     InstanceParameters,
     ProvenanceRef,
 )
-from .replay import SemanticRecordCodec
-from .store import SymbolicStore
+from omega_vision.runtime.replay import SemanticRecordCodec
+from omega_vision.core.store import SymbolicStore
 
 
 @dataclass(frozen=True)

@@ -5,7 +5,7 @@ Arc3Runner, ActionTreeStore, GptArcAnalyzer, SWIPrologBridge, or the generated
 Prolog artifact contracts.
 """
 
-from .adapters import (
+from .adapters.adapters import (
     GridAdapter,
     GridPerceptionBatch,
     ImageAdapter,
@@ -16,32 +16,32 @@ from .adapters import (
     normalize_grid_structure,
     normalize_image_structure,
 )
-from .acceptance import AcceptanceReport, build_acceptance_report, write_acceptance_report
-from .capture import SemanticGridCaptureObserver, standard_semantic_grid_observer
-from .catalog import IdentityCatalogEntry, SemanticIdentityCatalog
-from .calibration import (
+from .evaluation.acceptance import AcceptanceReport, build_acceptance_report, write_acceptance_report
+from .runtime.capture import SemanticGridCaptureObserver, standard_semantic_grid_observer
+from .runtime.catalog import IdentityCatalogEntry, SemanticIdentityCatalog
+from .evaluation.calibration import (
     CalibrationPoint,
     RecognitionCalibrationReport,
     RecognitionCalibrationPolicy,
     RecognitionCalibrator,
     ReliabilityBin,
 )
-from .benchmark import (
+from .evaluation.benchmark import (
     PerceptionBenchmarkResult,
     PerceptionBenchmarkRunner,
     PerceptionFixture,
     ProviderAblationRunner,
     RasterPerturbationGenerator,
 )
-from .forms import AbstractGenerativeForm, FitResult, GenerativeForm
-from .environment_fixtures import (
+from .forms.forms import AbstractGenerativeForm, FitResult, GenerativeForm
+from .environments.environment_fixtures import (
     EnvironmentProgressionFixtures,
     environment_progression_fixtures,
     fixed_camera_physics_fixtures,
     rendered_arcade_fixtures,
     top_down_manipulation_fixtures,
 )
-from .integration import (
+from .runtime.integration import (
     GAME_OBJECT_LEARNER_SCHEMA_VERSION,
     GameObjectLearnerPayload,
     GameObjectLearnerPlugin,
@@ -57,7 +57,7 @@ from .integration import (
     phase2_rule_executor,
     phase2_rule_ranker,
 )
-from .learning import (
+from .core.learning import (
     GameLearningPipeline,
     LearningStepResult,
     OutcomeChannel,
@@ -74,7 +74,7 @@ from .learning import (
     TransitionAnalyzer,
     TransitionRecord,
 )
-from .models import (
+from .core.models import (
     ActionRecommendation,
     ArtifactRef,
     CandidateObject,
@@ -104,9 +104,9 @@ from .models import (
     TurtleProgramRef,
     deterministic_identifier,
 )
-from .memory import EncounterLog, ResidualGate, SingleWriter, SymbolicMemory
-from .prediction import PredictionLedger, RuleStore
-from .providers import (
+from .core.memory import EncounterLog, ResidualGate, SingleWriter, SymbolicMemory
+from .core.prediction import PredictionLedger, RuleStore
+from .adapters.providers import (
     ArtifactProvider,
     GptArtifactProvider,
     PrologProvider,
@@ -114,7 +114,7 @@ from .providers import (
     PythonProvider,
     UnsupportedProviderCapability,
 )
-from .recognition import (
+from .core.recognition import (
     ChangeDetector,
     CorrespondenceEvidenceBuilder,
     EncounterChangeSession,
@@ -126,12 +126,12 @@ from .recognition import (
     ResidualAnalyzer,
     TurtleReconstructionEvidenceBuilder,
 )
-from .recognition_benchmark import (
+from .evaluation.recognition_benchmark import (
     RecognitionBenchmarkResult,
     RecognitionBenchmarkRunner,
     RecognitionFixture,
 )
-from .replay import (
+from .runtime.replay import (
     ActionTreeSemanticReplay,
     AtomSpaceSemanticBackend,
     AtomSpaceTransport,
@@ -139,9 +139,9 @@ from .replay import (
     PrologSemanticBackend,
     SemanticRecordCodec,
 )
-from .sprite import AlphaContourProvider, SpriteAdapter
-from .transcript import TranscriptComparison, TranscriptScorer
-from .store import ArtifactIndex, InMemorySemanticBackend, SemanticStoreBackend, SymbolicStore
+from .adapters.sprite import AlphaContourProvider, SpriteAdapter
+from .runtime.transcript import TranscriptComparison, TranscriptScorer
+from .core.store import ArtifactIndex, InMemorySemanticBackend, SemanticStoreBackend, SymbolicStore
 
 __all__ = [
     "ArtifactProvider",

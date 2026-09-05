@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Iterable, Mapping
 
-from .models import RecognitionAccount
+from omega_vision.core.models import RecognitionAccount
 
 
 @dataclass(frozen=True)

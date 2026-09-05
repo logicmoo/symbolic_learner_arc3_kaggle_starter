@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from typing import Mapping
 
-from .forms import FitResult
-from .models import (
+from omega_vision.forms.forms import FitResult
+from omega_vision.core.models import (
     EvidencePolarity,
     EvidenceRecord,
     InstanceParameters,
@@ -15,9 +15,9 @@ from .models import (
     ResidualCandidate,
     ResidualDisposition,
 )
-from .memory import ResidualGate, SingleWriter
-from .store import SymbolicStore
-from .calibration import RecognitionCalibrationPolicy
+from omega_vision.core.memory import ResidualGate, SingleWriter
+from omega_vision.core.store import SymbolicStore
+from omega_vision.evaluation.calibration import RecognitionCalibrationPolicy
 
 
 @dataclass(frozen=True)

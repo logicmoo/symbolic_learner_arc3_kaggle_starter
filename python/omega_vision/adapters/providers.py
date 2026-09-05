@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
-from .models import CandidateObject, ExecutionMode, NormalizedResult
+from omega_vision.core.models import CandidateObject, ExecutionMode, NormalizedResult
 
 
 @dataclass(frozen=True)

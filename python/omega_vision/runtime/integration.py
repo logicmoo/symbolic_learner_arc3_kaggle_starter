@@ -7,7 +7,7 @@ from hashlib import sha256
 import json
 from typing import Any, Mapping
 
-from .learning import (
+from omega_vision.core.learning import (
     GameLearningPipeline,
     LearningStepResult,
     TransformationCandidate,
@@ -18,9 +18,9 @@ from .learning import (
     RuleExecutor,
     RuleRanker,
 )
-from .models import ExecutionMode, NormalizedResult, TransitionRule
-from .prediction import RuleStore
-from .store import SymbolicStore
+from omega_vision.core.models import ExecutionMode, NormalizedResult, TransitionRule
+from omega_vision.core.prediction import RuleStore
+from omega_vision.core.store import SymbolicStore
 
 
 GAME_OBJECT_LEARNER_SCHEMA_VERSION = "1.0.0"

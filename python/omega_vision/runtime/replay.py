@@ -8,7 +8,7 @@ from pathlib import Path
 import re
 from typing import Any, Iterable, Mapping, Protocol
 
-from .models import (
+from omega_vision.core.models import (
     ActionRecommendation,
     ArtifactRef,
     CommittedAtom,
@@ -33,8 +33,8 @@ from .models import (
     TurtleProgramRef,
     TransitionRule,
 )
-from .store import SymbolicStore
-from .calibration import RecognitionCalibrationPolicy
+from omega_vision.core.store import SymbolicStore
+from omega_vision.evaluation.calibration import RecognitionCalibrationPolicy
 
 
 def _jsonable(value: Any) -> Any:

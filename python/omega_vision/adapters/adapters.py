@@ -10,7 +10,7 @@ from typing import Any, Iterable, Mapping
 
 from PIL import Image
 
-from .models import ArtifactRef, CandidateObject, Observation, ProvenanceRef
+from omega_vision.core.models import ArtifactRef, CandidateObject, Observation, ProvenanceRef
 
 
 class LearnedPartRoleProvider:

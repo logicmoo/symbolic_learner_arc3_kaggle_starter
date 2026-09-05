@@ -3,9 +3,9 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Any, Protocol
 
-from .memory import EncounterLog
-from .calibration import RecognitionCalibrationPolicy
-from .models import (
+from omega_vision.core.memory import EncounterLog
+from omega_vision.evaluation.calibration import RecognitionCalibrationPolicy
+from omega_vision.core.models import (
     ActionRecommendation,
     ArtifactRef,
     CommittedAtom,
@@ -159,7 +159,7 @@ class SymbolicStore:
     def restore_identity_memory(self) -> "SymbolicMemory":
         """Restore the newest complete identity state stored by a SingleWriter."""
 
-        from .memory import SymbolicMemory
+        from omega_vision.core.memory import SymbolicMemory
 
         checkpoints = self.values("identity_checkpoints")
         memory = SymbolicMemory()
