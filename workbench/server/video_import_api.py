@@ -815,6 +815,7 @@ async def pipeline_start(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
         recognize_only=bool(payload.get("recognizeOnly", False)),
         prolog_only=bool(payload.get("prologOnly", False)),
         llm_only=bool(payload.get("llmOnly", False)),
+        induce_only=bool(payload.get("induceOnly", False)),
     )
 
 
@@ -985,6 +986,7 @@ async def pipeline_ws(websocket: WebSocket) -> None:
                         recognize_only=bool(message.get("recognizeOnly", False)),
                         prolog_only=bool(message.get("prologOnly", False)),
                         llm_only=bool(message.get("llmOnly", False)),
+                        induce_only=bool(message.get("induceOnly", False)),
                     )
                     state["last_key"] = None
                 elif command == "stop":

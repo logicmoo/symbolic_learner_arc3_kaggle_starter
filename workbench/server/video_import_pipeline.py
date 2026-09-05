@@ -2789,6 +2789,7 @@ def run_reduce(
     recognize_only: bool = False,
     prolog_only: bool = False,
     llm_only: bool = False,
+    induce_only: bool = False,
 ) -> str:
     """Reduction PREPASS as a pooled server stage that uses the PARENT'S proven
     turtle code (turtle_prompt_lab): for every condition image it runs the parent
@@ -2831,6 +2832,53 @@ def run_reduce(
     stages_dir.mkdir(parents=True, exist_ok=True)
     sym_dir.mkdir(parents=True, exist_ok=True)
     manifest_path = ws_dir / "manifest.json"
+
+    def _do_induction(which: str = "both") -> None:
+        """Induce grounded candidate rules across the whole sequence from the
+        already-extracted part-graphs. `which` selects the prolog line
+        (sequence_rules.metta), the LLM line (sequence_rules_llm.metta), or both.
+        Reads only the *.parts.json sidecars, so it re-runs induction WITHOUT
+        re-extracting frames, calling the LLM, or touching the registry."""
+        try:
+            import importlib  # noqa: PLC0415
+            _gvp = os.path.join(os.path.dirname(__file__), "generative_vision", "prolog")
+            if _gvp not in sys.path:
+                sys.path.insert(0, _gvp)
+            _sa = importlib.import_module("symbolic_arc")
+
+            def _load_parts(paths: list) -> list:
+                out = []
+                for p in paths:
+                    try:
+                        out.append(json.loads(p.read_text(encoding="utf-8")))
+                    except (OSError, json.JSONDecodeError):
+                        out.append([])
+                return out
+
+            if which in ("prolog", "both"):
+                prolog_pj = sorted(sym_dir.glob("*__prolog.parts.json"))
+                if prolog_pj:
+                    fr = _sa.frames_from_parts(_load_parts(prolog_pj))
+                    (ws_dir / "sequence_rules.metta").write_text(_sa.induce_from_frames(fr), encoding="utf-8")
+                    emit(f"{_ts()} prolog induction: {len(prolog_pj)} frame(s) -> sequence_rules.metta")
+                elif which == "prolog":
+                    emit(f"{_ts()} prolog induction: no *__prolog.parts.json in {base_rel}/sym "
+                         "(run the prolog reduce first)")
+            if which in ("llm", "both"):
+                llm_pj = sorted(p for p in sym_dir.glob("*shot.parts.json"))
+                if llm_pj:
+                    fr = _sa.frames_from_parts(_load_parts(llm_pj))
+                    (ws_dir / "sequence_rules_llm.metta").write_text(_sa.induce_from_frames(fr), encoding="utf-8")
+        except Exception as err:  # noqa: BLE001
+            emit(f"{_ts()} induction skipped: {err}")
+
+    # Prolog Induction on its own: re-induce sequence rules from the existing
+    # prolog part-graphs, independent of the per-frame prolog extraction / LLM.
+    if induce_only:
+        _do_induction("prolog")
+        summary = "prolog induction complete"
+        emit(f"{_ts()} {summary}")
+        return summary
 
     prov: dict[str, Any] = {}
     for b in bases:
@@ -3266,32 +3314,7 @@ def run_reduce(
     # Induce grounded candidate rules across the whole sequence, from BOTH the
     # prolog line and the LLM line (same source-agnostic inducer, so the two are
     # directly comparable). LLM-free logic; output is Prolog either way.
-    try:
-        import importlib  # noqa: PLC0415
-        _gvp = os.path.join(os.path.dirname(__file__), "generative_vision", "prolog")
-        if _gvp not in sys.path:
-            sys.path.insert(0, _gvp)
-        _sa = importlib.import_module("symbolic_arc")
-
-        def _load_parts(paths: list) -> list:
-            out = []
-            for p in paths:
-                try:
-                    out.append(json.loads(p.read_text(encoding="utf-8")))
-                except (OSError, json.JSONDecodeError):
-                    out.append([])
-            return out
-
-        prolog_pj = sorted(sym_dir.glob("*__prolog.parts.json"))
-        if prolog_pj:
-            fr = _sa.frames_from_parts(_load_parts(prolog_pj))
-            (ws_dir / "sequence_rules.metta").write_text(_sa.induce_from_frames(fr), encoding="utf-8")
-        llm_pj = sorted(p for p in sym_dir.glob("*shot.parts.json"))
-        if llm_pj:
-            fr = _sa.frames_from_parts(_load_parts(llm_pj))
-            (ws_dir / "sequence_rules_llm.metta").write_text(_sa.induce_from_frames(fr), encoding="utf-8")
-    except Exception:  # noqa: BLE001
-        pass
+    _do_induction("both")
     summary = f"reduce complete: {counts.get('done', 0)} image(s), {counts.get('failed', 0)} failed of {counts.get('total', 0)}"
     if carry_mode:
         summary += f" · sequence parts list: {len(inv_order)} parts, {len(inv_groups)} groups"
@@ -3328,6 +3351,7 @@ def start_run(
     recognize_only: bool = False,
     prolog_only: bool = False,
     llm_only: bool = False,
+    induce_only: bool = False,
 ) -> dict[str, Any]:
     """Start a background pipeline run for a workspace (one at a time)."""
     stage = stage or "describe"
@@ -3344,7 +3368,7 @@ def start_run(
     # Only the reduce runner is image-set aware; other stages keep their signature.
     extra: dict[str, Any] = (
         {"set_id": set_id, "recognize_only": recognize_only,
-         "prolog_only": prolog_only, "llm_only": llm_only}
+         "prolog_only": prolog_only, "llm_only": llm_only, "induce_only": induce_only}
         if stage == "reduce" else {})
 
     def worker() -> None:
