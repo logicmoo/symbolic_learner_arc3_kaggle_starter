@@ -33,3 +33,12 @@ def registry_snapshot(
         snap["scopes"] = {game: snap.get("scopes", {}).get(game, {"identities": [], "placements": []})}
         snap["filteredGame"] = game
     return snap
+
+
+@router.get("/recognition/demos")
+def recognition_demos(only: str | None = Query(None, description="run a single demo by id")) -> dict:
+    """Run the symbolic_arc Phase-2 acceptance demonstrations and return their
+    visual grid panels + result + pass/fail for the Recognition Demos page."""
+    import recognition_demos as rd  # lazy: pulls numpy/scipy/PIL/swipl
+
+    return rd.run_demos(only=only)

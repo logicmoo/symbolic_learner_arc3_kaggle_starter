@@ -174,6 +174,11 @@ const SpriteViewerPage = lazy(() =>
     default: module.SpriteViewerPage,
   })),
 );
+const RecognitionDemosPage = lazy(() =>
+  import("../components/RecognitionDemosPage").then((module) => ({
+    default: module.RecognitionDemosPage,
+  })),
+);
 const Arc3GamesGalleryPage = lazy(() =>
   import("../components/Arc3GamesGalleryPage").then((module) => ({
     default: module.Arc3GamesGalleryPage,
@@ -437,6 +442,7 @@ type View =
   | "arc3Play"
   | "videoImport"
   | "spriteViewer"
+  | "recognitionDemos"
   | "arc3GamesGallery"
   | "chat"
   | "workflowPageBuilder"
@@ -739,6 +745,7 @@ export const NAVIGATION_V2: Array<{
       { label: "Data", view: "knowledgeData", glyph: "◫" },
       { label: "Video Import", view: "videoImport", glyph: "▷" },
       { label: "Sprite Viewer", view: "spriteViewer", glyph: "◳" },
+      { label: "Recognition Demos", view: "recognitionDemos", glyph: "✦" },
       { label: "AtomSpaces", view: "contexts", glyph: "⚛" },
       { label: "Resource AtomSpace", view: "resourceAtomspace", glyph: "⌬" },
       { label: "Artifacts", view: "knowledgeArtifacts", glyph: "▣" },
@@ -4814,6 +4821,7 @@ export function FilesystemWorkbenchPage() {
             )}{" "}
             {view === "googleMeet" && <GoogleMeetBridgePage />}{" "}
             {view === "spriteViewer" && <SpriteViewerPage />}{" "}
+        {view === "recognitionDemos" && <RecognitionDemosPage />}{" "}
             {view === "pluginPage" && <PluginHostedPage entry={pluginPage} />}{" "}
             {view === "setup" && (
               <WorkspaceSettingsPanel

@@ -1,0 +1,323 @@
+"""recognition_demos.py -- runnable, visual demonstrations of the symbolic_arc
+Phase-2 acceptance behaviours (SOW Exhibit A Phase 2), for the workbench
+"Recognition Demos" page. Each demo runs the REAL recognizer functions and
+returns grid panels (cells with a role: visible / hidden / filled / object /
+regen) plus a result and a pass/fail, so the page can render and re-run them.
+
+Memory demos use a throwaway temp store so they are isolated and never touch the
+canonical registry.
+"""
+from __future__ import annotations
+
+import sys
+import tempfile
+from pathlib import Path
+
+_PROLOG_DIR = Path(__file__).resolve().parent / "generative_vision" / "prolog"
+if str(_PROLOG_DIR) not in sys.path:
+    sys.path.insert(0, str(_PROLOG_DIR))
+
+_BLUE = "#7c9cff"
+_RED = "#e0483f"
+_GREEN = "#8bd450"
+
+
+def _panel(label, roled, ox=None, oy=None, w=None, h=None):
+    """A grid panel from (x, y, role[, color]) cells, translated to a shared origin.
+    role in {visible, hidden, filled, object, regen, background}."""
+    cells = [(int(c[0]), int(c[1]), c[2], (c[3] if len(c) > 3 else None)) for c in roled]
+    xs = [c[0] for c in cells] or [0]
+    ys = [c[1] for c in cells] or [0]
+    ox = min(xs) if ox is None else ox
+    oy = min(ys) if oy is None else oy
+    w = (max(xs) - ox + 1) if w is None else w
+    h = (max(ys) - oy + 1) if h is None else h
+    return {"label": label, "w": int(w), "h": int(h),
+            "cells": [{"x": x - ox, "y": y - oy, "role": r, "color": col} for (x, y, r, col) in cells]}
+
+
+def _bbox(*cellsets):
+    pts = [p for cs in cellsets for p in cs]
+    xs = [p[0] for p in pts] or [0]
+    ys = [p[1] for p in pts] or [0]
+    return min(xs), min(ys), max(xs) - min(xs) + 1, max(ys) - min(ys) + 1
+
+
+# --- occlusion completion ---------------------------------------------------
+
+def _occlusion_demo(did, title, full, hidden, candidate):
+    import symbolic_arc as sa
+    full_s = {tuple(c) for c in full}
+    hid_s = {tuple(c) for c in hidden}
+    frag = sorted(full_s - hid_s)
+    cand = {tuple(sa._canon_key(candidate)): sa._name_of_cells(candidate)} if candidate else None
+    r = sa.complete_occluded(frag, sorted(hid_s), candidates=cand)
+    ox, oy, w, h = _bbox(full_s, hid_s)
+    before = _panel("occluded view", [(x, y, "visible", _BLUE) for (x, y) in frag]
+                    + [(x, y, "hidden", None) for (x, y) in hid_s], ox, oy, w, h)
+    if r:
+        after = _panel("completed", [(x, y, "visible", _BLUE) for (x, y) in r["visible"]]
+                       + [(x, y, "filled", _GREEN) for (x, y) in r["filled"]], ox, oy, w, h)
+        faithful = {tuple(c) for c in r["cells"]} == {tuple(c) for c in sa._norm(list(full_s))}
+        result = {"recognized": r["name"], "scale": r["scale"], "orientation": r["orientation"],
+                  "residual": r["residual"], "confidence": r["confidence"], "faithful": faithful}
+        passed = bool(faithful and r["residual"] == len(hid_s & full_s))
+        panels = [before, after]
+    else:
+        result = {"recognized": None, "note": "no consistent completion -> re-categorize as new"}
+        passed = candidate is None or not (hid_s & full_s)  # reject-case demo expects None
+        panels = [before]
+    return {"id": did, "group": "Occlusion completion", "title": title, "panels": panels,
+            "result": result, "passed": passed,
+            "description": "Hypothesize the held form from the visible fragment, run it forward to "
+                           "fill the hidden cells, accept only when every filled cell lies under the occluder."}
+
+
+def _demo_occlusion_reject():
+    import symbolic_arc as sa
+    T = [(0, 0), (1, 0), (2, 0), (1, 1)]
+    frag = [(0, 0), (1, 0), (2, 0)]
+    r = sa.complete_occluded(frag, [(9, 9)], candidates={tuple(sa._canon_key(T)): "tetromino_T"})
+    ox, oy, w, h = _bbox(set(map(tuple, frag)), {(9, 9)})
+    before = _panel("occluded view (occluder elsewhere)",
+                    [(x, y, "visible", _BLUE) for (x, y) in frag] + [(9, 9, "hidden", None)], ox, oy, w, h)
+    return {"id": "occlusion-reject", "group": "Occlusion completion",
+            "title": "Inconsistent fragment is rejected", "panels": [before],
+            "result": {"recognized": r["name"] if r else None,
+                       "note": "rejected (no lock) -> re-categorized as new"},
+            "passed": r is None,
+            "description": "The cell the form needs is not under the occluder, so no completion is accepted."}
+
+
+# --- identity (recolor / resize) --------------------------------------------
+
+def _frame_col(color, off, cx=5, cy=5):
+    import symbolic_arc as sa
+    sig = sa._shape_key((None, sa._canon_br([tuple(c) for c in off])))
+    return {"metta": "", "geom": [{"id": "p", "sig": sig, "color": color,
+                                   "off": [list(c) for c in off], "cx": cx, "cy": cy}]}
+
+
+def _demo_recolor():
+    import symbolic_arc as sa
+    mem = tempfile.mkdtemp()
+    L = [(0, 0), (0, 1), (0, 2), (1, 2)]
+    sa.remember_objects([_frame_col(_RED, L)], "demo-1", mem, write=True)
+    b = _frame_col(_BLUE, L)
+    sa.remember_objects([b], "demo-2", mem, write=True)
+    ids = sa.registry_snapshot(mem)["scopes"]["demo"]["identities"]
+    ox, oy, w, h = _bbox(set(map(tuple, L)))
+    panels = [_panel("encounter 1 (red)", [(x, y, "object", _RED) for (x, y) in L], ox, oy, w, h),
+              _panel("encounter 2 (blue)", [(x, y, "object", _BLUE) for (x, y) in L], ox, oy, w, h)]
+    passed = len(ids) == 1 and ids[0]["seen"] == 2 and b["geom"][0]["memNew"] is False
+    return {"id": "recolor", "group": "Identity (recolor / resize)",
+            "title": "Recolour is the same object", "panels": panels,
+            "result": {"object": ids[0]["name"] if ids else None, "seen": ids[0]["seen"] if ids else 0,
+                       "colours": [v["color"] for v in ids[0]["variations"]] if ids else [],
+                       "recognized_not_new": bool(ids) and b["geom"][0]["memNew"] is False,
+                       "identities": len(ids)},
+            "passed": passed,
+            "description": "Colour is an occurrence attribute; a recoloured shape recognizes as the same object."}
+
+
+def _demo_resize():
+    import symbolic_arc as sa
+    mem = tempfile.mkdtemp()
+    base = [(0, 0), (1, 0)]
+    big = [(0, 0), (1, 0), (2, 0), (3, 0), (0, 1), (1, 1), (2, 1), (3, 1)]
+    sa.remember_objects([_frame_col(_RED, base)], "demo-1", mem, write=True)
+    b = _frame_col(_RED, big)
+    sa.remember_objects([b], "demo-2", mem, write=True)
+    ids = sa.registry_snapshot(mem)["scopes"]["demo"]["identities"]
+    panels = [_panel("small (domino)", [(x, y, "object", _RED) for (x, y) in base]),
+              _panel("2x-scaled", [(x, y, "object", _RED) for (x, y) in big])]
+    passed = len(ids) == 1 and ids[0]["seen"] == 2 and {v["size"] for v in ids[0]["variations"]} == {2, 8}
+    return {"id": "resize", "group": "Identity (recolor / resize)",
+            "title": "Resize is the same object", "panels": panels,
+            "result": {"object": ids[0]["name"] if ids else None, "seen": ids[0]["seen"] if ids else 0,
+                       "sizes": sorted({v["size"] for v in ids[0]["variations"]}) if ids else [],
+                       "identities": len(ids)},
+            "passed": passed,
+            "description": "Size is an occurrence attribute; a 2x-scaled shape recognizes as the same object."}
+
+
+# --- recognition (store -> recognize / new distinguished) --------------------
+
+def _demo_store_then_recognize():
+    import symbolic_arc as sa
+    mem = tempfile.mkdtemp()
+    L = [(0, 0), (0, 1), (0, 2), (1, 2)]
+    sa.remember_objects([_frame_col(_RED, L)], "demo-1", mem, write=True)
+    reflected = [(1 - x, y) for (x, y) in L]
+    later = _frame_col(_GREEN, reflected, cx=30)
+    sa.remember_objects([later], "demo-2", mem, write=True)
+    p = later["geom"][0]
+    ids = sa.registry_snapshot(mem)["scopes"]["demo"]["identities"]
+    panels = [_panel("stored (encounter 1)", [(x, y, "object", _RED) for (x, y) in L]),
+              _panel("later: moved+reflected+recoloured", [(x, y, "object", _GREEN) for (x, y) in sa._norm(reflected)])]
+    passed = p["memNew"] is False and p["memSeen"] == 2 and len(ids) == 1
+    return {"id": "store-then-recognize", "group": "Recognition",
+            "title": "Store, then recognize the same object later", "panels": panels,
+            "result": {"recognized_not_new": p["memNew"] is False, "seen": p["memSeen"],
+                       "identities": len(ids)},
+            "passed": passed,
+            "description": "A later encounter (moved, reflected, recoloured) recognizes as the same object; "
+                           "evidence accrues and no duplicate is stored."}
+
+
+def _demo_new_distinguished():
+    import symbolic_arc as sa
+    mem = tempfile.mkdtemp()
+    L = [(0, 0), (0, 1), (0, 2), (1, 2)]
+    T = [(0, 0), (1, 0), (2, 0), (1, 1)]
+    sa.remember_objects([_frame_col(_RED, L)], "demo-1", mem, write=True)
+    fr = _frame_col(_RED, T)
+    sa.remember_objects([fr], "demo-2", mem, write=True)
+    ids = sa.registry_snapshot(mem)["scopes"]["demo"]["identities"]
+    panels = [_panel("held object", [(x, y, "object", _RED) for (x, y) in L]),
+              _panel("new structure", [(x, y, "object", _GREEN) for (x, y) in sa._norm(T)])]
+    passed = fr["geom"][0]["memNew"] is True and len(ids) == 2
+    return {"id": "new-distinguished", "group": "Recognition",
+            "title": "A genuinely new structure is distinguished", "panels": panels,
+            "result": {"is_new": fr["geom"][0]["memNew"], "identities": len(ids)},
+            "passed": passed,
+            "description": "A different shape is committed as a new object, not merged into the held one."}
+
+
+# --- regeneration -----------------------------------------------------------
+
+def _demo_regeneration():
+    import symbolic_arc as sa
+    snap = sa.registry_snapshot(tempfile.mkdtemp(), include_turtles=True)
+    shp = next((s for s in snap["shapes"] if s["name"] == "pentomino_V"), None) or snap["shapes"][0]
+    want = {(int(x), int(y)) for x, y in shp["cells"]}
+    rects = [c for c in shp["turtle"]["commands"] if c.get("op") == "rectangle"]
+    cs = min(b["box"][2] - b["box"][0] for b in rects)
+    got = {(round(b["box"][0] / cs), round(b["box"][1] / cs)) for b in rects}
+
+    def _n(cs_):
+        mx = min(x for x, _ in cs_); my = min(y for _, y in cs_)
+        return {(x - mx, y - my) for x, y in cs_}
+    faithful = _n(got) == _n(want)
+    panels = [_panel("stored shape", [(x, y, "object", _BLUE) for (x, y) in want]),
+              _panel("regenerated from turtle", [(x, y, "regen", _GREEN) for (x, y) in got])]
+    return {"id": "regeneration", "group": "Regeneration",
+            "title": f"Regenerate {shp['name']} from its stored form", "panels": panels,
+            "result": {"shape": shp["name"], "faithful": faithful},
+            "passed": faithful,
+            "description": "The stored turtle program replays to the exact normalized cells (faithful on grids)."}
+
+
+# --- replay / determinism ---------------------------------------------------
+
+def _demo_replay():
+    import symbolic_arc as sa
+    L = [(0, 0), (0, 1), (0, 2), (1, 2)]
+    a = _frame_col(_RED, L)
+    b = _frame_col(_RED, L)
+    sa.remember_objects([a], "demo", tempfile.mkdtemp(), write=True)
+    sa.remember_objects([b], "demo", tempfile.mkdtemp(), write=True)
+    same_id = a["geom"][0]["globalId"] == b["geom"][0]["globalId"]
+    same_form = a["metta"] == b["metta"]
+    panels = [_panel("run A", [(x, y, "object", _RED) for (x, y) in L]),
+              _panel("run B", [(x, y, "object", _RED) for (x, y) in L])]
+    return {"id": "replay", "group": "Replay / determinism",
+            "title": "Same input -> same identity + canonical form", "panels": panels,
+            "result": {"same_identity": same_id, "same_form": same_form,
+                       "handle": a["geom"][0]["globalId"]},
+            "passed": bool(same_id and same_form),
+            "description": "Identity rests on the normalized form, so a replay yields the same handle and metta."}
+
+
+# --- input breadth (grid / raster / video) ----------------------------------
+
+def _grid_to_cells(idx, hexpal):
+    out = []
+    for y in range(idx.shape[0]):
+        for x in range(idx.shape[1]):
+            out.append((x, y, "object", hexpal[int(idx[y, x])]))
+    return out
+
+
+def _demo_input_gradient():
+    import numpy as np
+    import symbolic_arc as sa
+    from PIL import Image
+    y, x = np.mgrid[0:128, 0:128]
+    gr = np.stack([x * 2 % 256, y * 2 % 256, (x + y) % 256], axis=-1).astype(np.uint8)
+    p = Path(tempfile.mkdtemp()) / "g.png"
+    Image.fromarray(gr).save(p)
+    idx, hexpal, cols, rows = sa.decode_grid(str(p))
+    panels = [_panel("decoded grid (quantized + downscaled)", _grid_to_cells(idx, hexpal))]
+    passed = max(cols, rows) <= 64 and 1 < len(hexpal) <= 16
+    return {"id": "input-gradient", "group": "Input breadth",
+            "title": "Raster gradient -> small flat grid", "panels": panels,
+            "result": {"cols": cols, "rows": rows, "colours": len(hexpal)},
+            "passed": passed,
+            "description": "A smooth-gradient raster (thousands of colours) is median-cut quantized and "
+                           "downscaled into the flat grid the recognizer expects."}
+
+
+def _demo_input_video():
+    import numpy as np
+    import symbolic_arc as sa
+    from PIL import Image
+    d = Path(tempfile.mkdtemp())
+    frames = []
+    for i in range(4):
+        g = np.full((48, 96, 3), 12, np.uint8)
+        g[16:32, 8 + i * 16:24 + i * 16] = (220, 30, 30)
+        fp = d / f"v{i}.png"
+        Image.fromarray(g).save(fp)
+        frames.append(str(fp))
+    mem = str(d / "mem")
+    seq = sa.extract_sequence(frames, "clip", mem_dir=mem, write=True)
+    block_color = sa._cname("#dc1e1e")
+    ids = sa.registry_snapshot(mem)["scopes"].get("clip", {}).get("identities", [])
+    block = [o for o in ids if any(v["color"] == block_color for v in o.get("variations", []))]
+    panels = []
+    for i, fr in enumerate(frames):
+        idx, hexpal, _c, _r = sa.decode_grid(fr)
+        panels.append(_panel(f"frame {i+1}", _grid_to_cells(idx, hexpal)))
+    passed = len(seq) == 4 and len(block) == 1 and block[0]["seen"] == 1
+    return {"id": "input-video", "group": "Input breadth",
+            "title": "Simple video: a block tracked as one object", "panels": panels,
+            "result": {"frames": len(seq), "block_object": block[0]["name"] if block else None,
+                       "block_identities": len(block)},
+            "passed": passed,
+            "description": "A block moving across 4 frames is extracted every frame and tracked as ONE "
+                           "committed object, not re-minted per frame."}
+
+
+_DEMOS = [
+    lambda: _occlusion_demo("occlusion-t", "T tetromino — stem occluded",
+                            [(0, 0), (1, 0), (2, 0), (1, 1)], [(1, 1)], [(0, 0), (1, 0), (2, 0), (1, 1)]),
+    lambda: _occlusion_demo("occlusion-plus", "Plus pentomino — centre + arm occluded",
+                            [(1, 0), (0, 1), (1, 1), (2, 1), (1, 2)], [(1, 1), (1, 0)],
+                            [(1, 0), (0, 1), (1, 1), (2, 1), (1, 2)]),
+    lambda: _occlusion_demo("occlusion-scaled", "2x-scaled T — scaled stem occluded",
+                            [(x * 2 + dx, y * 2 + dy) for (x, y) in [(0, 0), (1, 0), (2, 0), (1, 1)]
+                             for dx in range(2) for dy in range(2)],
+                            [(2, 2), (3, 2), (2, 3), (3, 3)], [(0, 0), (1, 0), (2, 0), (1, 1)]),
+    _demo_occlusion_reject,
+    _demo_recolor, _demo_resize,
+    _demo_store_then_recognize, _demo_new_distinguished,
+    _demo_regeneration, _demo_replay,
+    _demo_input_gradient, _demo_input_video,
+]
+
+
+def run_demos(only: str | None = None) -> dict:
+    """Run all demos (or one by id) and return their visual results + pass/fail."""
+    out = []
+    for make in _DEMOS:
+        try:
+            demo = make()
+        except Exception as err:  # noqa: BLE001 - surface a failed demo, don't crash the page
+            out.append({"id": "error", "group": "Error", "title": str(err),
+                        "panels": [], "result": {"error": str(err)}, "passed": False})
+            continue
+        if only and demo.get("id") != only:
+            continue
+        out.append(demo)
+    return {"demos": out, "total": len(out), "passed": sum(1 for d in out if d.get("passed"))}
