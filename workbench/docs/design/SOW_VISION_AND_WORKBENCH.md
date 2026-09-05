@@ -74,7 +74,13 @@ most valuable optimization is often to remove the LLM from that hop entirely.
 When a sub-task is small and well understood, an LLM step can be replaced by a
 deterministic implementation (a Prolog rule, a Python routine, a cached result),
 which is cheaper, faster, reproducible, and free of the occasional silent
-failure. The workbench keeps the LLM only where it still earns its place, and
+failure. Crucially, the LLM is frequently used to *write its own replacement*:
+the system first has the LLM perform the hop (establishing the correct behavior
+on real examples), then has it efficiently generate a deterministic Python (or
+Prolog) implementation of that same hop. This distills an LLM step into
+inspectable code and moves the model off the per-run hot path and into build
+time — the LLM's cost is paid once to author the routine, not on every
+inference. The workbench keeps the LLM only where it still earns its place, and
 can run a deterministic implementation *alongside* the LLM so the two cross-check
 each other. The vision subsystem is exactly this: perception that an LLM first
 performed is now also done by a fully LLM-free symbolic recognizer, roughly two
