@@ -17,7 +17,9 @@ from PIL import Image
 
 _VIDEO_SUFFIXES = {".mp4", ".webm", ".mkv", ".mov", ".avi", ".m4v"}
 _THUMB = 32              # thumbnail edge (px) used for frame comparison
-_DEFAULT_CUT = 18.0      # mean abs grayscale diff (0..255) that marks a shot cut
+_DEFAULT_CUT = 28.0      # mean abs grayscale diff (0..255) that marks a shot cut
+# (grid-game moves are ~0..22; real scene changes are ~40+, so 28 avoids false
+# cuts on continuous grids/animation while still catching genuine shot cuts.)
 
 
 def _thumb(path: str) -> np.ndarray:

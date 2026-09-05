@@ -3210,6 +3210,7 @@ def run_reduce(
             if _gvp not in sys.path:
                 sys.path.insert(0, _gvp)
             _sa = importlib.import_module("symbolic_arc")
+            _ss = importlib.import_module("scene_split")
             groups: dict[str, list] = {}
             for e in entries:
                 idv = e["id"]
@@ -3218,7 +3219,18 @@ def run_reduce(
                     groups.setdefault(e.get("slug", ""), []).append((idv, str(sp)))
             mem_dir = str(_sa.memory_dir())
             for sl, lst in groups.items():
-                seq = _sa.extract_sequence([sp for _i, sp in lst], sl, mem_dir=mem_dir)
+                paths = [sp for _i, sp in lst]
+                # Segment the group at shot cuts (general-video input breadth): run
+                # extract_sequence PER SCENE so object identity / permanence is
+                # threaded within a scene and not bled across a cut. Grid games and
+                # continuous animation have no cuts -> one scene -> unchanged.
+                cuts = set(_ss.scene_cuts(paths))
+                seq: list = []
+                start = 0
+                for i in range(1, len(paths) + 1):
+                    if i == len(paths) or i in cuts:
+                        seq.extend(_sa.extract_sequence(paths[start:i], sl, mem_dir=mem_dir))
+                        start = i
                 for (idv, _sp), pr in zip(lst, seq):
                     if pr["nparts"] > 0 and pr["cols"] <= 160 and pr["rows"] <= 160:
                         (sym_dir / f"{idv}__prolog.metta").write_text(pr["metta"], encoding="utf-8")
