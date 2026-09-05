@@ -18,9 +18,12 @@ Regenerated deterministically from the code and **consulted** (read) by Prolog.
   `workbench/docs/design/BUTTERED_TOAST_NORMALIZATION.md`). `Name` is a letter
   name (orders 1-5) or a `box_HxW[_cut_...]` descriptor.
 - `variant(VKey, Name, Kind, Base)` - the shape's other forms mapping back to it:
-  the unrotated full, and the **squared** / **aspect** shrinks and **45-degree**
-  diagonal in both unrotated and rotation-normalized orientations. This lets a
-  rescaled / rotated / diagonally-placed object be recognized as the same shape.
+  the unrotated full, the **proportional** (un-pixelated by integer block factor),
+  the **squared** / **aspect** shrinks, and the **45-degree** diagonal, in both
+  unrotated and rotation-normalized orientations. This lets a rescaled / rotated /
+  diagonally-placed object be recognized as the same shape. Every "sameness" is
+  `filter(A) == filter(B)`: two shapes match under a form iff their form keys are
+  equal.
 
 ### `identity_dir/identities.db.pl` - persistent OBJECT IDENTITIES
 Journaled via `library(persistency)`. Identities carry color; shapes do not.

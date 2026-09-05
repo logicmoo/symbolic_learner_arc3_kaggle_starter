@@ -921,6 +921,35 @@ def _aspect_cells(offs) -> list:
     return _collapse_runs(offs)
 
 
+def _proportional_cells(offs) -> list:
+    """Proportional (un-pixelated) form: divide the shape by its largest integer
+    BLOCK factor k, where the shape is exactly a k-by-k-block upscale (every k x k
+    block is uniformly filled or empty). Preserves the exact shape and true aspect
+    ratio at the smallest integer scale: a 2x-scaled sprite -> the base shape, a
+    6x3 solid -> 2x1, but a 5x3 (gcd 1) stays 5x3. Distinct from squared (collapse
+    all runs) and aspect (landscape/portrait/square class)."""
+    cells = set(map(tuple, offs))
+    if not cells:
+        return []
+    w = max(x for x, _ in cells) + 1
+    h = max(y for _, y in cells) + 1
+    g = gcd(w, h)
+    for k in sorted((d for d in range(2, g + 1) if g % d == 0), reverse=True):
+        ok = True
+        for by in range(h // k):
+            for bx in range(w // k):
+                filled = [(bx * k + i, by * k + j) in cells
+                          for j in range(k) for i in range(k)]
+                if any(filled) and not all(filled):
+                    ok = False
+                    break
+            if not ok:
+                break
+        if ok:
+            return sorted({(x // k, y // k) for (x, y) in cells})
+    return sorted(cells)
+
+
 _DIRS4 = (("N", 0, -1), ("W", -1, 0), ("E", 1, 0), ("S", 0, 1))
 
 
@@ -954,19 +983,22 @@ def _dir_name(a, b) -> str:
     return {(1, 0): "E", (-1, 0): "W", (0, 1): "S", (0, -1): "N"}.get(d, "none")
 
 
-_FORM_KINDS = ("full", "squared", "aspect")
+_FORM_KINDS = ("full", "prop", "aspect", "squared")
 
 
 def _shape_forms(offs) -> dict:
-    """The 6 storage forms of a ShapeFull: the 3 scale reps (full / squared /
-    aspect) each in two orientations -- `unrot` (as observed, translation-normalized
-    only) and `rn` (rotation-normalized so mass sits bottom-right). Returns
-    {form_name: (key, cells)} where form_name is e.g. 'full', 'full_rn',
-    'squared', 'squared_rn', 'aspect', 'aspect_rn'."""
-    full = [tuple(c) for c in offs]
+    """The scale-rep storage forms of a ShapeFull, each in two orientations --
+    `unrot` (as observed, translation-normalized only) and `rn` (rotation-normalized
+    so mass sits bottom-right, the Buttered Toast rule). The reps, most faithful to
+    most abstract: `full` (original), `prop` (proportional / un-pixelated by integer
+    block factor), `aspect` (landscape/portrait/square class), `squared` (all runs
+    collapsed). Returns {form_name: (key, cells)} e.g. 'full', 'full_rn', 'prop',
+    'prop_rn', ..."""
+    full = sorted(_norm(offs))
     if not full:
         return {}
-    reps = {"full": full, "squared": _collapse_runs(full), "aspect": _aspect_cells(full)}
+    reps = {"full": full, "prop": _proportional_cells(full),
+            "aspect": _aspect_cells(full), "squared": _collapse_runs(full)}
     out: dict = {}
     for rep, cells in reps.items():
         if not cells:
@@ -1192,9 +1224,11 @@ def _seed_shape_facts() -> list[str]:
         turtle = json.dumps(_poly_turtle(list(rn_cells)), separators=(",", ":"))
         turtle = turtle.replace("\\", "\\\\").replace("'", "\\'")
         facts.append(f"shape('{base_key}', '{name}', '{turtle}').")
-        # the remaining 5 forms + the 45-degree diagonal -> variant keys.
+        # the remaining forms + the 45-degree diagonal -> variant keys.
         done_v = {base_key}
         variants = [("full_unrot", forms["full"][0]),
+                    ("prop", forms["prop"][0]),
+                    ("prop_rn", forms["prop_rn"][0]),
                     ("squared", forms["squared"][0]),
                     ("squared_rn", forms["squared_rn"][0]),
                     ("aspect", forms["aspect"][0]),
@@ -1221,23 +1255,23 @@ def _vocab_index() -> dict:
     return _VOCAB_INDEX or {}
 
 
-# The 5 reduced/alternate "ways" an observed object can overlap a known -imino
-# (its identity is the 6th, `full_rn`), most-specific first for shape naming.
-_OVERLAP_WAYS = ("full", "aspect_rn", "aspect", "squared_rn", "squared", "diag45")
+# The reduced/alternate "ways" an observed object can overlap a known -imino (its
+# identity is `full_rn`), most-specific (most faithful) first for shape naming.
+_OVERLAP_WAYS = ("full", "prop_rn", "prop", "aspect_rn", "aspect",
+                 "squared_rn", "squared", "diag45")
 
 
 def _shape_overlaps(offs) -> list:
     """For an observed shape, the known -iminos it overlaps via each of its reduced
-    forms (resize / aspect / 45-degree), as (name, way) pairs, most-specific way
-    first. Enables recognizing a rescaled or diagonally-placed object as the same
-    -imino even when its full form is not itself in the vocabulary."""
+    forms (proportional resize / aspect / squared / 45-degree), as (name, way)
+    pairs, most-specific way first. Enables recognizing a rescaled or
+    diagonally-placed object as the same -imino even when its full form is not
+    itself in the vocabulary."""
     forms = _shape_forms(offs)
     idx = _vocab_index()
-    keys = {"full": forms.get("full", (None,))[0],
-            "aspect_rn": forms.get("aspect_rn", (None,))[0],
-            "aspect": forms.get("aspect", (None,))[0],
-            "squared_rn": forms.get("squared_rn", (None,))[0],
-            "squared": forms.get("squared", (None,))[0]}
+    keys = {way: forms.get(way, (None,))[0]
+            for way in ("full", "prop_rn", "prop", "aspect_rn", "aspect",
+                        "squared_rn", "squared")}
     dcells = _rot45(offs)
     if dcells:
         keys["diag45"] = _shape_key((None, _canon_br(dcells)))
