@@ -177,7 +177,9 @@ function CovBadge({ level }: { level: "full" | "partial" | "none" }) {
   return <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 5, background: map.bg, color: map.c }}>{map.t}</span>;
 }
 
-function CoverageSection({ rows, onRun }: { rows: CoverageRow[]; onRun: (id: string) => void }) {
+function CoverageSection({ rows, onRun, onPhase3, phase3 }: {
+  rows: CoverageRow[]; onRun: (id: string) => void; onPhase3: () => void; phase3: Record<string, unknown> | null;
+}) {
   const [open, setOpen] = useState(true);
   if (!rows.length) return null;
   const cell = { padding: "3px 8px", borderBottom: "1px solid #141a27", fontSize: 11.5 } as const;
@@ -216,7 +218,11 @@ function CoverageSection({ rows, onRun }: { rows: CoverageRow[]; onRun: (id: str
                         ▶ {r.demo}
                       </button>
                     ) : r.demoStatus === "demo" ? (
-                      <span style={{ fontSize: 10.5, padding: "1px 6px", borderRadius: 5, background: "rgba(139,212,80,0.16)", color: "#8bd450" }}>DEMO · Phase 3 API</span>
+                      <button type="button" onClick={onPhase3}
+                        style={{ fontSize: 10.5, padding: "1px 8px", borderRadius: 5, cursor: "pointer",
+                                 background: "rgba(139,212,80,0.16)", color: "#8bd450", border: "1px solid rgba(139,212,80,0.3)" }}>
+                        ▶ Phase 3 (live)
+                      </button>
                     ) : r.demoStatus === "no-demo" ? (
                       <span style={{ fontSize: 10.5, padding: "1px 6px", borderRadius: 5, background: "rgba(148,163,184,0.14)", color: "#94a3b8" }}>NO DEMO</span>
                     ) : (
@@ -227,6 +233,22 @@ function CoverageSection({ rows, onRun }: { rows: CoverageRow[]; onRun: (id: str
               ))}
             </tbody>
           </table>
+        </div>
+      ) : null}
+      {open && phase3 ? (
+        <div style={{ padding: "8px 12px", borderTop: "1px solid #141a27", fontSize: 11.5 }}>
+          {phase3.ok ? (
+            <span>
+              <b style={{ color: (phase3.passed ? "#8bd450" : "#ff8b81") }}>Phase 3 live run: {phase3.passed ? "PASS" : "check"}</b>
+              {" — "}mover <b>{String((phase3.mover as Record<string, unknown> | undefined)?.color)} {String((phase3.mover as Record<string, unknown> | undefined)?.shape)}</b>
+              {"; predicted "}<b>{JSON.stringify((phase3.prediction as Record<string, unknown> | undefined)?.predicted)}</b>
+              {" vs actual "}<b>{JSON.stringify(phase3.actual_C)}</b>
+              {"; grade "}<b>{String(phase3.grade)}</b>
+              {", calibrated "}<b>{Number(phase3.calibrated_probability).toFixed(2)}</b>
+            </span>
+          ) : (
+            <span style={{ opacity: 0.7 }}>Phase 3: {String(phase3.note || "running…")}</span>
+          )}
         </div>
       ) : null}
     </section>
@@ -299,6 +321,26 @@ export function RecognitionDemosPage() {
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [runNonce, setRunNonce] = useState<Record<string, number>>({});
   const bump = useCallback((id: string) => setRunNonce((m) => ({ ...m, [id]: (m[id] || 0) + 1 })), []);
+  const [phase3, setPhase3] = useState<Record<string, unknown> | null>(null);
+
+  // Trigger the live Phase 3 pipeline (real recogniser encounters -> learn ->
+  // predict -> grade) and poll its server-owned result.
+  const runPhase3 = useCallback(() => {
+    setPhase3({ note: "running…" });
+    const pollP3 = () => {
+      fetch("/workbench/recognition/phase3")
+        .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+        .then((d: { running?: boolean; result?: Record<string, unknown> }) => {
+          if (d.running) { setTimeout(pollP3, 1000); return; }
+          setPhase3(d.result || { ok: false, note: "no result" });
+        })
+        .catch((e) => setPhase3({ ok: false, note: String(e) }));
+    };
+    fetch("/workbench/recognition/phase3/run", { method: "POST" })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then(() => setTimeout(pollP3, 800))
+      .catch((e) => setPhase3({ ok: false, note: String(e) }));
+  }, []);
 
   // The UI only OBSERVES: it polls the server's cached run. While a run is in
   // progress it polls fast to animate; when idle it keeps polling slowly so a run
@@ -413,7 +455,7 @@ export function RecognitionDemosPage() {
         <span style={{ color: "#8bd450" }}>green outline / +</span> = generatively filled or regenerated, dashed <b>?</b> = behind the occluder.
       </p>
       {err ? <div style={{ color: "#ff8b81", fontSize: 12, marginBottom: 8 }}>Error: {err}</div> : null}
-      <CoverageSection rows={data?.coverage || []} onRun={runOne} />
+      <CoverageSection rows={data?.coverage || []} onRun={runOne} onPhase3={runPhase3} phase3={phase3} />
       {running && !hasResults ? <div style={{ opacity: 0.6 }}>Server is running the sanity tests…</div> : null}
       {!running && !hasResults ? (
         <div style={{ opacity: 0.6, padding: "8px 0 14px", fontSize: 12.5 }}>

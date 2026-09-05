@@ -200,6 +200,142 @@ def _demo_new_distinguished():
             "description": "A different shape is committed as a new object, not merged into the held one."}
 
 
+# --- invariance (rotation / reflection) + change (add / remove / match) -----
+
+def _frame_objs(specs):
+    """A frame with several objects: specs = [(color, offsets, cx, cy), ...]."""
+    import symbolic_arc as sa
+    geom = []
+    for i, (color, off, cx, cy) in enumerate(specs):
+        sig = sa._shape_key((None, sa._canon_br([tuple(c) for c in off])))
+        geom.append({"id": f"p{i}", "sig": sig, "color": color,
+                     "off": [list(c) for c in off], "cx": cx, "cy": cy})
+    return {"metta": "", "geom": geom}
+
+
+def _placed(specs):
+    """Lay several objects on one display grid: specs = [(color, offsets, ox, oy)]."""
+    cells = []
+    for (color, off, ox, oy) in specs:
+        for (x, y) in off:
+            cells.append((ox + x, oy + y, "object", color))
+    return cells
+
+
+def _demo_rotation():
+    import symbolic_arc as sa
+    mem = tempfile.mkdtemp()
+    L = [(0, 0), (0, 1), (0, 2), (1, 2)]
+    rot = list(sa._norm([(y, -x) for (x, y) in L]))          # 90° rotation
+    sa.remember_objects([_frame_col(_RED, L)], "demo-1", mem, write=True)
+    b = _frame_col(_RED, rot)
+    sa.remember_objects([b], "demo-2", mem, write=True)
+    ids = sa.registry_snapshot(mem)["scopes"]["demo"]["identities"]
+    panels = [_panel("stored", [(x, y, "object", _RED) for (x, y) in L]),
+              _panel("rotated 90°", [(x, y, "regen", _GREEN) for (x, y) in rot])]
+    passed = len(ids) == 1 and ids[0]["seen"] == 2 and b["geom"][0]["memNew"] is False
+    return {"id": "rotation", "group": "Identity (invariance)",
+            "title": "Rotation is the same object", "panels": panels,
+            "result": {"object": ids[0]["name"] if ids else None,
+                       "recognized_not_new": bool(ids) and b["geom"][0]["memNew"] is False,
+                       "seen": ids[0]["seen"] if ids else 0, "identities": len(ids)},
+            "passed": passed,
+            "description": "Orientation is an occurrence attribute; a 90°-rotated shape recognizes as the "
+                           "same object (D4 rotation-normalized identity)."}
+
+
+def _demo_reflection():
+    import symbolic_arc as sa
+    mem = tempfile.mkdtemp()
+    L = [(0, 0), (0, 1), (0, 2), (1, 2)]
+    refl = list(sa._norm([(-x, y) for (x, y) in L]))         # mirror left-right
+    sa.remember_objects([_frame_col(_RED, L)], "demo-1", mem, write=True)
+    b = _frame_col(_RED, refl)
+    sa.remember_objects([b], "demo-2", mem, write=True)
+    ids = sa.registry_snapshot(mem)["scopes"]["demo"]["identities"]
+    panels = [_panel("stored", [(x, y, "object", _RED) for (x, y) in L]),
+              _panel("mirrored", [(x, y, "regen", _GREEN) for (x, y) in refl])]
+    passed = len(ids) == 1 and ids[0]["seen"] == 2 and b["geom"][0]["memNew"] is False
+    return {"id": "reflection", "group": "Identity (invariance)",
+            "title": "Reflection is the same object", "panels": panels,
+            "result": {"object": ids[0]["name"] if ids else None,
+                       "recognized_not_new": bool(ids) and b["geom"][0]["memNew"] is False,
+                       "seen": ids[0]["seen"] if ids else 0, "identities": len(ids)},
+            "passed": passed,
+            "description": "A mirrored shape recognizes as the same object (identity is reflection-normalized)."}
+
+
+def _demo_addition():
+    import symbolic_arc as sa
+    A = [(0, 0), (0, 1)]                       # domino
+    B = [(0, 0), (1, 0), (2, 0)]              # I-tromino
+    C = [(0, 0), (1, 0), (1, 1)]             # V-tromino (the ADDED object)
+    mem = tempfile.mkdtemp()
+    sa.remember_objects([_frame_objs([(_RED, A, 5, 5), (_BLUE, B, 20, 5)])], "demo-1", mem, write=True)
+    fr2 = _frame_objs([(_RED, A, 5, 5), (_BLUE, B, 20, 5), (_GREEN, C, 12, 20)])
+    sa.remember_objects([fr2], "demo-2", mem, write=True)
+    added = [g for g in fr2["geom"] if g.get("memNew")]
+    panels = [_panel("state 1 — 2 objects", _placed([(_RED, A, 0, 0), (_BLUE, B, 4, 0)])),
+              _panel("state 2 — one added (green)",
+                     _placed([(_RED, A, 0, 0), (_BLUE, B, 4, 0)]) + [(x, y + 4, "regen", _GREEN) for (x, y) in C])]
+    passed = len(added) == 1
+    return {"id": "addition", "group": "Change detection",
+            "title": "Object addition is detected", "panels": panels,
+            "result": {"added": len(added),
+                       "added_shape": sa._identity_name(C)},
+            "passed": passed,
+            "description": "An object present in the later state but not the earlier one is committed as new "
+                           "(memNew), i.e. an addition is detected."}
+
+
+def _demo_removal():
+    import symbolic_arc as sa
+    A = [(0, 0), (0, 1)]
+    B = [(0, 0), (1, 0), (2, 0)]
+    C = [(0, 0), (1, 0), (1, 1)]
+    before = {sa._identity_name(o) for o in (A, B, C)}
+    after = {sa._identity_name(o) for o in (A, B)}
+    removed = sorted(before - after)
+    panels = [_panel("state 1 — 3 objects",
+                     _placed([(_RED, A, 0, 0), (_BLUE, B, 4, 0), (_GREEN, C, 0, 4)])),
+              _panel("state 2 — one removed",
+                     _placed([(_RED, A, 0, 0), (_BLUE, B, 4, 0)])
+                     + [(x, y + 4, "hidden", None) for (x, y) in C])]
+    passed = removed == [sa._identity_name(C)]
+    return {"id": "removal", "group": "Change detection",
+            "title": "Object removal is detected", "panels": panels,
+            "result": {"removed": removed, "removed_count": len(removed)},
+            "passed": passed,
+            "description": "Comparing the two states by object identity, the object gone from the later state "
+                           "is reported as removed (dashed)."}
+
+
+def _demo_correspondence():
+    import symbolic_arc as sa
+    A = [(0, 0), (0, 1), (0, 2), (1, 2)]     # L
+    B = [(0, 0), (1, 0), (2, 0), (1, 1)]     # T
+    # same two objects, moved to new positions in state 2
+    before = [(sa._identity_name(A), (2, 2)), (sa._identity_name(B), (12, 3))]
+    after = [(sa._identity_name(A), (6, 8)), (sa._identity_name(B), (18, 9))]
+    matches = []
+    for (bid, bpos) in before:
+        for (aid, apos) in after:
+            if aid == bid:
+                matches.append({"object": bid, "from": list(bpos), "to": list(apos)})
+                break
+    panels = [_panel("state 1", _placed([(_RED, A, 2, 2), (_BLUE, B, 12, 3)])),
+              _panel("state 2 — same objects, moved",
+                     _placed([(_RED, A, 6, 8), (_BLUE, B, 18, 9)]))]
+    passed = len(matches) == 2
+    return {"id": "correspondence", "group": "Change detection",
+            "title": "Match corresponding objects between states", "panels": panels,
+            "result": {"matched": len(matches),
+                       "moves": [f'{m["object"]}: {m["from"]}→{m["to"]}' for m in matches]},
+            "passed": passed,
+            "description": "Objects in two states are put in correspondence by their identity, so the same "
+                           "object is tracked between before/after states even after moving."}
+
+
 # --- regeneration -----------------------------------------------------------
 
 def _demo_regeneration():
@@ -534,7 +670,9 @@ _DEMOS = [
                             [(2, 2), (3, 2), (2, 3), (3, 3)], [(0, 0), (1, 0), (2, 0), (1, 1)]),
     _demo_occlusion_reject,
     _demo_recolor, _demo_resize,
+    _demo_rotation, _demo_reflection,
     _demo_store_then_recognize, _demo_new_distinguished,
+    _demo_addition, _demo_removal, _demo_correspondence,
     _demo_regeneration, _demo_replay,
     _demo_input_gradient, _demo_input_video,
 ]
@@ -562,10 +700,20 @@ _DEMO_CATALOG = [
      "resultKeys": ["object", "seen", "colours", "recognized_not_new", "identities"]},
     {"id": "resize", "group": "Identity (recolor / resize)", "title": "Resize is the same object",
      "resultKeys": ["object", "seen", "sizes", "identities"]},
+    {"id": "rotation", "group": "Identity (invariance)", "title": "Rotation is the same object",
+     "resultKeys": ["object", "recognized_not_new", "seen", "identities"]},
+    {"id": "reflection", "group": "Identity (invariance)", "title": "Reflection is the same object",
+     "resultKeys": ["object", "recognized_not_new", "seen", "identities"]},
     {"id": "store-then-recognize", "group": "Recognition", "title": "Store, then recognize the same object later",
      "resultKeys": ["recognized_not_new", "seen", "identities"]},
     {"id": "new-distinguished", "group": "Recognition", "title": "A genuinely new structure is distinguished",
      "resultKeys": ["is_new", "identities"]},
+    {"id": "addition", "group": "Change detection", "title": "Object addition is detected",
+     "resultKeys": ["added", "added_shape"]},
+    {"id": "removal", "group": "Change detection", "title": "Object removal is detected",
+     "resultKeys": ["removed", "removed_count"]},
+    {"id": "correspondence", "group": "Change detection", "title": "Match corresponding objects between states",
+     "resultKeys": ["matched", "moves"]},
     {"id": "regeneration", "group": "Regeneration", "title": "Regenerate a stored shape from its turtle form",
      "resultKeys": ["shape", "faithful"]},
     {"id": "replay", "group": "Replay / determinism", "title": "Same input -> same identity + canonical form",
@@ -657,21 +805,21 @@ _SOW_COVERAGE = [
     ("P2", "2c", "Represent relationships (adjacency/containment)", "full", "full", None),
     ("P2", "2d", "Represent position/orientation/scale", "full", "full", None),
     ("P2", "3a", "Stable identity across encounters", "full", "full", "store-then-recognize"),
-    ("P2", "3b", "Stable identity across state transitions", "full", "full", None),
-    ("P2", "4a", "Match corresponding objects between states", "full", "full", None),
-    ("P2", "4b", "Match across repeated encounters", "full", "full", None),
-    ("P2", "5a", "Recognize despite position", "full", "full", None),
-    ("P2", "5b", "Recognize despite rotation", "full", "full", None),
+    ("P2", "3b", "Stable identity across state transitions", "full", "full", "correspondence"),
+    ("P2", "4a", "Match corresponding objects between states", "full", "full", "correspondence"),
+    ("P2", "4b", "Match across repeated encounters", "full", "full", "store-then-recognize"),
+    ("P2", "5a", "Recognize despite position", "full", "full", "store-then-recognize"),
+    ("P2", "5b", "Recognize despite rotation", "full", "full", "rotation"),
     ("P2", "5c", "Recognize despite scale", "full", "full", "resize"),
-    ("P2", "5d", "Recognize despite reflection", "full", "full", None),
+    ("P2", "5d", "Recognize despite reflection", "full", "full", "reflection"),
     ("P2", "5e", "Recognize despite colour", "full", "full", "recolor"),
     ("P2", "5f", "Recognize despite noise", "none", "none", None),
     ("P2", "5g", "Recognize despite partial visibility", "full", "full", "occlusion-t"),
     ("P2", "6a", "Detect movement", "full", "full", "input-video"),
     ("P2", "6b", "Detect recoloring (as change)", "partial", "partial", None),
     ("P2", "6c", "Detect resizing (as change)", "partial", "partial", None),
-    ("P2", "6d", "Detect addition", "full", "full", None),
-    ("P2", "6e", "Detect removal", "full", "full", None),
+    ("P2", "6d", "Detect addition", "full", "full", "addition"),
+    ("P2", "6e", "Detect removal", "full", "full", "removal"),
     ("P2", "6f", "Detect structural change", "full", "full", "new-distinguished"),
     ("P2", "7", "Normalized store -> regenerate", "full", "full", "regeneration"),
     ("P2", "8", "Distinguish recognized vs new", "full", "full", "new-distinguished"),
@@ -688,19 +836,34 @@ _SOW_COVERAGE = [
     ("P2", "15a", "Tests", "full", "full", None),
     ("P2", "15b", "Documentation", "full", "full", None),
     ("P3", "1", "Interface / data contract to Game Object Learner", "full", "full", None),
-    ("P3", "2", "Provide objects/props/relationships/correspondences/diffs/history", "full", "full", None),
+    ("P3", "2a", "Provide detected objects", "full", "full", None),
+    ("P3", "2b", "Provide properties", "full", "full", None),
+    ("P3", "2c", "Provide relationships", "full", "full", None),
+    ("P3", "2d", "Provide correspondences", "full", "full", None),
+    ("P3", "2e", "Provide state differences", "full", "full", None),
+    ("P3", "2f", "Provide encounter history", "full", "full", None),
     ("P3", "3", "Stable interface decoupled from perception internals", "full", "full", None),
-    ("P3", "4", "Validation, structured errors, integration tests, workflows", "full", "full", None),
+    ("P3", "4a", "Interface validation", "full", "full", None),
+    ("P3", "4b", "Structured errors", "full", "full", None),
+    ("P3", "4c", "Integration tests", "full", "full", None),
+    ("P3", "4d", "Example workflows", "full", "full", None),
     ("P3", "5", "Infer candidate transformations / transition rules", "full", "full", "phase3"),
-    ("P3", "6", "Multiple interpretations + evidence for success & failure", "full", "full", "phase3"),
+    ("P3", "6a", "Support multiple candidate interpretations", "full", "full", "phase3"),
+    ("P3", "6b", "Retain evidence for successful & unsuccessful rules", "full", "full", "phase3"),
     ("P3", "7", "Apply learned transformations to new cases", "full", "full", "phase3"),
     ("P3", "8", "Predict later states before outcomes", "full", "full", "phase3"),
     ("P3", "9", "Compare predictions with independent outcomes", "full", "full", "phase3"),
     ("P3", "10", "Update rule evidence on success/failure", "full", "full", "phase3"),
     ("P3", "11", "Prevent post-hoc explanations counting as predictions", "full", "full", "phase3"),
-    ("P3", "12", "Recognition + completion of partly occluded objects", "full", "full", "occlusion-t"),
-    ("P3", "13", "Operation across grid + raster environments", "partial", "full", None),
-    ("P3", "14", "Integration docs, example scripts, acceptance, dev notes", "full", "full", None),
+    ("P3", "12a", "Recognition of partly occluded objects", "full", "full", "occlusion-t"),
+    ("P3", "12b", "Completion of partly occluded objects", "full", "full", "occlusion-t"),
+    ("P3", "13a", "Operation in grid environments", "full", "full", "live-ls20"),
+    ("P3", "13b", "Operation in raster environments", "full", "full", "input-gradient"),
+    ("P3", "13c", "Rendered arcade / fixed-camera physics / top-down manipulation", "partial", "full", None),
+    ("P3", "14a", "Integration documentation", "full", "full", None),
+    ("P3", "14b", "Example scripts", "full", "full", None),
+    ("P3", "14c", "Acceptance-test results", "full", "full", None),
+    ("P3", "14d", "Developer notes", "full", "full", None),
 ]
 
 
