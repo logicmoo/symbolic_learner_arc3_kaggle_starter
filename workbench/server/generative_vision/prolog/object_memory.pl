@@ -18,6 +18,12 @@
 % For each sig/2 it prints one line:  mem <GlobalId> <Key> <Color> <Seen> <t|f>
 % where Seen is the accumulated encounter count and the last field is t when the
 % object is brand new to memory, f when it was recognized from a prior encounter.
+%
+% Placement: the batch may also provide place/5 facts recording, per game and per
+% tracked instance, its move-to-move (x,y,shape) trajectory. This is stored
+% separately from the (position-invariant) shape identity so a moving object is
+% not seen as new; the recorded shape-per-move lets a later similar shape be
+% recognized as a meaningful recurrence.
 
 :- use_module(library(persistency)).
 
@@ -25,11 +31,14 @@
 :- dynamic db/1.
 :- dynamic when_stamp/1.
 :- dynamic shape/3.
+:- dynamic place/5.
 
 :- persistent
      known_object(key:atom, color:atom, first:atom, last:atom, seen:integer).
 :- persistent
      known_shape(key:atom, name:atom, turtle:atom).
+:- persistent
+     known_placement(game:atom, iid:atom, gid:atom, points:atom, moves:integer).
 
 % recognize-or-add: reuse an existing identity and bump its encounter count, or
 % mint a new persistent identity the first time this (shape,color) is seen.
@@ -55,6 +64,13 @@ seed_shape(Key, Name, Turtle) :-
           assert_known_shape(Key, Name, Turtle) )
     ;  assert_known_shape(Key, Name, Turtle) ).
 
+% record (or refresh) a tracked instance's move-to-move (x,y,shape) trajectory for
+% a game. Keyed by (game, instance-id); replaces the prior trajectory for that pair.
+remember_placement(Game, Iid, Gid, Points, Moves) :-
+    forall(known_placement(Game, Iid, G0, P0, M0),
+           retract_known_placement(Game, Iid, G0, P0, M0)),
+    assert_known_placement(Game, Iid, Gid, Points, Moves).
+
 run_seed :-
     ( db(DB) -> db_attach(DB, []) ; true ),
     forall(shape(K, N, T), seed_shape(K, N, T)),
@@ -70,5 +86,8 @@ run_memory :-
            ( remember(Key, Color, When, Id, Seen, New),
              ( known_shape(Key, SName, _) -> true ; SName = '-' ),
              format("mem ~w ~w ~w ~w ~w ~w~n", [Id, Key, Color, Seen, New, SName]) )),
+    forall(place(Game, Iid, Gid, Points, Moves),
+           ( remember_placement(Game, Iid, Gid, Points, Moves),
+             format("place ~w ~w ~w~n", [Iid, Moves, Gid]) )),
     halt.
 run_memory :- halt(1).

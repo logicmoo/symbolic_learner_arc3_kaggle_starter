@@ -986,6 +986,19 @@ def _name_of_cells(cells) -> str:
     return _named_lookup().get(ck) or _box_cut_name(ck)
 
 
+def _shape_recurred(sigs) -> bool:
+    """True if a shape returns after changing away from it (A .. B .. A): a
+    meaningful shape recurrence along a tracked instance's trajectory."""
+    seen: set = set()
+    prev = None
+    for s in sigs:
+        if s != prev and s in seen:
+            return True
+        seen.add(s)
+        prev = s
+    return False
+
+
 _ORIENT_CACHE: dict = {}
 
 
@@ -1056,20 +1069,35 @@ def remember_objects(results: list[dict], char: str, mem_db: str) -> None:
     minting an identity the first time and bumping the encounter count on
     recognition. Annotates each part with globalId / memSeen / memNew and emits a
     `(memory ...)` fact per part into each frame's metta."""
-    # distinct (sig, color) across the whole sequence = the objects of this encounter.
+    # distinct (sig, color) across the whole sequence = the objects of this
+    # encounter; plus each tracked instance's move-to-move (x, y, shape) trajectory
+    # (glyph-scale objects only), so placement is remembered and a later similar
+    # shape can be recognized as a meaningful recurrence.
     distinct: dict[tuple[str, str], str] = {}
-    for r in results:
+    traj: dict[str, list] = {}
+    traj_gid: dict[str, str] = {}
+    traj_last: dict[str, int] = {}
+    for fi, r in enumerate(results):
         for p in r.get("geom", []):
             sg = p.get("sig")
             col = _cname(p.get("color", ""))
-            if sg:
-                distinct[(sg, col)] = ""
+            if not sg:
+                continue
+            distinct[(sg, col)] = ""
+            iid = p.get("id")
+            if iid and 0 < len(p.get("off") or []) <= _MAX_REP_CELLS:
+                traj.setdefault(iid, []).append((p.get("cx", 0), p.get("cy", 0), sg))
+                traj_gid.setdefault(iid, f"gobj_{col}_{sg}")
+                traj_last[iid] = fi
     if not distinct:
         return
     facts = [f"db('{Path(mem_db).as_posix()}').", f"when_stamp('{char}')."]
     facts.extend(_seed_shape_facts())
     for (sg, col) in distinct:
         facts.append(f"sig('{sg}', '{col}').")
+    for iid, pts in traj.items():
+        points = ";".join(f"{x},{y},{s}" for (x, y, s) in pts)
+        facts.append(f"place('{char}', '{iid}', '{traj_gid[iid]}', '{points}', {len(pts)}).")
     Path(mem_db).parent.mkdir(parents=True, exist_ok=True)
     info: dict[tuple[str, str], tuple[str, int, bool, str]] = {}
     with tempfile.NamedTemporaryFile("w", suffix=".pl", delete=False, encoding="utf-8") as f:
@@ -1093,7 +1121,22 @@ def remember_objects(results: list[dict], char: str, mem_db: str) -> None:
                 info[(key, col)] = (gid, int(seen), new == "t", sname)
             except ValueError:
                 continue
-    for r in results:
+    # per-instance placement summary, emitted into the frame where the instance is
+    # last seen: how many moves it was tracked, how many distinct shapes it took
+    # (morph), and whether a shape recurred (a meaningful A..B..A return).
+    place_lines: dict[int, list[str]] = {}
+    for iid, pts in traj.items():
+        sigs = [s for (_x, _y, s) in pts]
+        nshapes = len(set(sigs))
+        fi = traj_last.get(iid, len(results) - 1)
+        gid = traj_gid.get(iid, "")
+        acc = place_lines.setdefault(fi, [])
+        acc.append(f"(placement {char} {iid} {gid} (moves {len(pts)}) (shapes {nshapes}))")
+        if nshapes > 1:
+            acc.append(f"(morph {char} {iid} {nshapes})")
+        if _shape_recurred(sigs):
+            acc.append(f"(shape-recurs {char} {iid})")
+    for fi, r in enumerate(results):
         lines: list[str] = []
         for p in r.get("geom", []):
             k = (p.get("sig"), _cname(p.get("color", "")))
@@ -1132,6 +1175,7 @@ def remember_objects(results: list[dict], char: str, mem_db: str) -> None:
                         lines.append(
                             f"(start-point {char} {p['id']} {sp[0]} {sp[1]} "
                             f"{p.get('heading', 'none')} {nsp})")
+        lines.extend(place_lines.get(fi, []))
         if lines:
             r["metta"] = r["metta"].rstrip("\n") + "\n" + "\n".join(lines) + "\n"
 
