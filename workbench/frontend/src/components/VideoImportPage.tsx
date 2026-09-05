@@ -455,6 +455,7 @@ type Induction = {
   interacted: Array<{ mover: string; target: string }>;
   revealed: Array<{ mover: string; color: string; x: number; y: number }>;
   action?: string;
+  induceMs?: number;
 };
 function parseInduction(text: string): Induction {
   const ind: Induction = { moved: [], disappeared: [], appeared: [], interacted: [], revealed: [] };
@@ -462,7 +463,8 @@ function parseInduction(text: string): Induction {
   for (const raw of text.split("\n")) {
     const s = raw.trim();
     let m: RegExpMatchArray | null;
-    if ((m = s.match(/^\(transition\s+\S+\s+\S+\s+(\S+)\s+\S+\)/))) ind.action = m[1];
+    if ((m = s.match(/^;\s*induce-ms\s+(\d+)/))) ind.induceMs = +m[1];
+    else if ((m = s.match(/^\(transition\s+\S+\s+\S+\s+(\S+)\s+\S+\)/))) ind.action = m[1];
     else if ((m = s.match(/^\(moved\s+\S+\s+(\S+)\s+(-?\d+)\s+(-?\d+)\s+(\S+)\)/))) ind.moved.push({ part: m[1], dx: +m[2], dy: +m[3], tf: m[4] });
     else if ((m = s.match(/^\(disappeared\s+\S+\s+(\S+)\)/))) ind.disappeared.push(m[1]);
     else if ((m = s.match(/^\(appeared\s+\S+\s+(\S+)\s+(-?\d+)\s+(-?\d+)\)/))) ind.appeared.push({ color: m[1], x: +m[2], y: +m[3] });
@@ -6773,7 +6775,7 @@ export function VideoImportPage({
                                       disappeared: p.disappeared,
                                       appeared: p.appeared.map((f) => ({ color: f.color })),
                                     };
-                                    inductionEls.push(renderRow("induction-prolog", "Prolog Induction · Prolog Parts", "is-prolog", pev, reduceMetta[pRel] === undefined, p.action || manifestActLabel, !!p.action));
+                                    inductionEls.push(renderRow("induction-prolog", `Prolog Induction · Prolog Parts${p.induceMs != null ? ` · ${p.induceMs} ms` : ""}`, "is-prolog", pev, reduceMetta[pRel] === undefined, p.action || manifestActLabel, !!p.action));
                                   }
                                   // Induction · LLM — computed client-side from the LLM parts of both frames.
                                   const llmRow = tiers.find((r: any) => r.kind !== "prolog" && r.kind !== "oneshot") || tiers.find((r: any) => r.kind !== "prolog");
@@ -6784,8 +6786,10 @@ export function VideoImportPage({
                                     const bRel = (nextLlm.mettaPath || `data/recognition_reduce/sym/${String(nextLlm.metta || "").split("/").pop()}`).replace(/\.metta$/, ".parts.json");
                                     const pa = reduceParts[aRel]; const pb = reduceParts[bRel];
                                     const loading = pa === undefined || pb === undefined;
+                                    const _tLlm = (typeof performance !== "undefined" ? performance.now() : 0);
                                     const lev = (Array.isArray(pa) && Array.isArray(pb)) ? induceLlmPair(pa, pb) : null;
-                                    inductionEls.push(renderRow("induction-llm", "Prolog Induction · LLM Parts", "is-llm", lev, loading, manifestActLabel, false));
+                                    const llmMs = lev ? ((typeof performance !== "undefined" ? performance.now() : 0) - _tLlm) : null;
+                                    inductionEls.push(renderRow("induction-llm", `Prolog Induction · LLM Parts${llmMs != null ? ` · ${llmMs.toFixed(1)} ms` : ""}`, "is-llm", lev, loading, manifestActLabel, false));
                                   }
                                 }
                                 return (

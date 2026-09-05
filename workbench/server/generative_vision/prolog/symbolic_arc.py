@@ -18,6 +18,7 @@ from __future__ import annotations
 import json
 import subprocess
 import tempfile
+import time
 from math import gcd
 from pathlib import Path
 
@@ -417,8 +418,10 @@ def extract_frame(png_path: str, char: str, partner_path: str | None = None) -> 
     disappeared: list = []   # A gids gone in B
     appeared: list = []      # (hex, cx, cy) new in B
     edge_action: str = ""    # ARC action on the outgoing edge (from partner's provenance)
+    induce_ms: int | None = None  # wall time of the cross-frame induction (frame B)
     if partner_path:
         edge_action = _read_incoming_action(partner_path)
+        _t_ind = time.monotonic()
         try:
             idx_b, pal_b, _cb, _rb = decode_grid(partner_path)
             _lb, info_b = label_regions(idx_b)
@@ -441,6 +444,7 @@ def extract_frame(png_path: str, char: str, partner_path: str | None = None) -> 
                         for gb in info_b if gb not in used_b]
         except Exception:  # noqa: BLE001
             move_group, motion, disappeared, appeared = {}, {}, [], []
+        induce_ms = int((time.monotonic() - _t_ind) * 1000)
 
     # every part gets a partOf group: its adjacency-cluster object, else (a
     # background/large blob) its own group -> full coverage like the LLM line.
@@ -457,6 +461,8 @@ def extract_frame(png_path: str, char: str, partner_path: str | None = None) -> 
         edge_label = ARC_ACTION_LABELS.get(edge_action.upper(), edge_action)
         mlines.append(f"; provenance: {this_stem} + {edge_label} = {partner_stem}  ({edge_action})")
         mlines.append(f"(transition {char} {this_stem} {edge_label} {partner_stem})")
+        if induce_ms is not None:
+            mlines.append(f"; induce-ms {induce_ms}")
     geom = []
     partof_all: dict[str, str] = {}
     pid_of: dict[str, str] = {}
@@ -526,7 +532,7 @@ def extract_frame(png_path: str, char: str, partner_path: str | None = None) -> 
     metta = "\n".join(mlines) + "\n"
     return {"metta": metta, "geom": geom, "nparts": len(info),
             "nrels": len(pof) + len(obj), "cols": cols, "rows": rows,
-            "ngroups": len(groups)}
+            "ngroups": len(groups), "induceMs": induce_ms}
 
 
 def _pid_color(pid: str) -> str:
