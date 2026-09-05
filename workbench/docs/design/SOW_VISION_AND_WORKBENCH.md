@@ -69,6 +69,17 @@ shorter, lower-risk hops — A-to-D, D-to-E, E-to-P, P-to-Z — each of which is
 - **Measurable end to end.** Because each hop reports its own statistics, the
   whole skill produces a statistical report rather than a single pass/fail.
 
+Once a skill is decomposed, each hop is then *optimized on its own* — and the
+most valuable optimization is often to remove the LLM from that hop entirely.
+When a sub-task is small and well understood, an LLM step can be replaced by a
+deterministic implementation (a Prolog rule, a Python routine, a cached result),
+which is cheaper, faster, reproducible, and free of the occasional silent
+failure. The workbench keeps the LLM only where it still earns its place, and
+can run a deterministic implementation *alongside* the LLM so the two cross-check
+each other. The vision subsystem is exactly this: perception that an LLM first
+performed is now also done by a fully LLM-free symbolic recognizer, roughly two
+orders of magnitude faster, running next to the LLM line for direct comparison.
+
 This is why the workbench keeps operations, prompts, source, and models as
 separate first-class resources with inheritance and alternatives: a skill is
 assembled from interchangeable steps, and any step can be upgraded, downgraded,
