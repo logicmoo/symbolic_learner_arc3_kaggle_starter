@@ -319,6 +319,8 @@ export function RecognitionDemosPage() {
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [runNonce, setRunNonce] = useState<Record<string, number>>({});
   const [flashId, setFlashId] = useState<string | null>(null);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [showTop, setShowTop] = useState(false);
   const bump = useCallback((id: string) => setRunNonce((m) => ({ ...m, [id]: (m[id] || 0) + 1 })), []);
 
   // The UI only OBSERVES: it polls the server's cached run. While a run is in
@@ -420,7 +422,9 @@ export function RecognitionDemosPage() {
   const hasResults = !!data?.demos?.length;
 
   return (
-    <div style={{ padding: 16, overflow: "auto", height: "100%" }}>
+    <div ref={scrollerRef}
+      onScroll={(e) => setShowTop(e.currentTarget.scrollTop > 400)}
+      style={{ padding: 16, overflow: "auto", height: "100%", position: "relative" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
         <h2 style={{ margin: 0 }}>Sanity Tests</h2>
         {data && data.total ? (
@@ -473,6 +477,18 @@ export function RecognitionDemosPage() {
           </div>
         </section>
       ))}
+      {showTop ? (
+        <button type="button" title="Back to top" aria-label="Back to top"
+          onClick={() => scrollerRef.current?.scrollTo({ top: 0, behavior: "smooth" })}
+          style={{
+            position: "fixed", right: 30, bottom: 100, zIndex: 60,
+            width: 44, height: 44, borderRadius: 22, cursor: "pointer",
+            background: "#12233a", color: "#8bd450", border: "1px solid #2a3346",
+            fontSize: 20, fontWeight: 800, lineHeight: 1,
+            boxShadow: "0 4px 14px rgba(0,0,0,0.45)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>↑</button>
+      ) : null}
     </div>
   );
 }
