@@ -943,6 +943,50 @@ def _demo_mem_root() -> Path:
     return _demo_mem_root_cache
 
 
+_demo_parts_root_cache: Path | None = None
+
+
+def _demo_parts_root() -> Path:
+    """Root of the isolated demo committed-parts cache (recognition_demo_parts): the
+    per-frame Prolog part-graphs the live-ls20 demo saves so a recording it has
+    already recognised replays FAST next time (and shows as '✓ computed'). Kept apart
+    from the real vision_frames committed graphs so the demo never edits canonical
+    data."""
+    global _demo_parts_root_cache
+    if _demo_parts_root_cache is None:
+        import symbolic_arc as sa  # noqa: PLC0415
+        _demo_parts_root_cache = Path(sa.memory_dir()).parent / "recognition_demo_parts"
+    return _demo_parts_root_cache
+
+
+def _safe_name(s: str) -> str:
+    """Filesystem-safe token for a recording key / frame id."""
+    import re  # noqa: PLC0415
+    return re.sub(r"[^A-Za-z0-9_.-]", "_", s or "")
+
+
+def _bust_recs_cache() -> None:
+    global _ls20_recs_cache
+    _ls20_recs_cache = None
+
+
+def _recording_computed(key: str | None) -> bool:
+    """True if the recording already has committed part-graphs on disk — either in the
+    demo's OWN saved cache (recognition_demo_parts/<key>/sym) or, for reduced (vf)
+    recordings, in their native vision-frame sym/ dir — so a run reads them instead of
+    recomputing (that is what the '✓ computed' badge reports)."""
+    if not key:
+        return False
+    dc = _demo_parts_root() / _safe_name(key) / "sym"
+    if dc.is_dir() and next(dc.glob("*__prolog.parts.json"), None) is not None:
+        return True
+    if key.startswith("vf:"):
+        sub = _LS20_DIR.parent / key[3:]
+        if (sub / "sym").is_dir() and next((sub / "sym").glob("*__prolog.parts.json"), None) is not None:
+            return True
+    return False
+
+
 def _ls20_base(name: str) -> str:
     """Strip the '_attempt<N>_size<M>' / '_size<M>' segment suffix to get the run id."""
     import re
@@ -996,10 +1040,11 @@ def _ls20_recordings() -> list:
                 n = len(list(sub.glob("*.png")))
                 if n >= 2:
                     short = sub.name.replace("data-arc3_games-recordings-ls20-", "")
-                    # 'computed' = has committed Prolog part-graphs, so a run is fast.
-                    computed = bool(next((sub / "sym").glob("*__prolog.parts.json"), None)) if (sub / "sym").is_dir() else False
+                    # 'computed' = extracted per-frame part-graphs are cached on disk
+                    # (native or demo-saved), so a run skips extraction. Induction
+                    # still runs at runtime regardless.
                     recs.append({"key": "vf:" + sub.name, "label": f"reduced · {short} · {n} frames",
-                                 "count": n, "computed": computed})
+                                 "count": n, "computed": _recording_computed("vf:" + sub.name)})
     if _RAW_LS20_DIR.is_dir():
         groups: dict = {}
         for sub in _RAW_LS20_DIR.iterdir():
@@ -1008,9 +1053,10 @@ def _ls20_recordings() -> list:
         for base, dirs in sorted(groups.items()):
             frames = _raw_base_frames(dirs)
             if len(frames) >= 2:
-                # raw runs have no committed graphs -> recognised live on each run.
+                # raw runs ship no committed graphs, but the demo can SAVE the parts it
+                # extracts (recognition_demo_parts) so a re-run skips extraction.
                 recs.append({"key": "raw:" + base, "label": f"raw run · {base} · {len(frames)} frames",
-                             "count": len(frames), "computed": False})
+                             "count": len(frames), "computed": _recording_computed("raw:" + base)})
     recs.sort(key=lambda r: r["count"], reverse=True)
     _ls20_recs_cache = recs
     return recs
@@ -1117,9 +1163,26 @@ def _demo_live_ls20_sequence():
                                          "recordings": _ls20_recordings()}, "passed": False,
                 "description": "Plays a real recorded ls20 playthrough with live recognition; run a reduce first."}
 
+    # The demo's OWN isolated cache of EXTRACTED parts for this recording. Only the
+    # per-frame extraction (image -> part-graph) is ever cached here; the INDUCTION
+    # (cross-frame learning: shape vocabulary, individuals, recolour, provenance,
+    # object memory) always re-runs at runtime below from these parts.
+    demo_cache = _demo_parts_root() / _safe_name(key or "default")
+
     def _parts_for(disp, png, game):
-        """A frame's parts: use the committed Prolog part-graph if present (reduced
-        recordings), else extract the frame fresh on the fly (raw recordings)."""
+        """A frame's EXTRACTED parts, and whether they came from disk. Order: the
+        demo's own saved parts cache, then a reduced recording's native committed
+        graph, else extract the frame fresh (raw / not-yet-saved). Extraction is the
+        only step cached — induction always runs on the returned parts."""
+        cj = demo_cache / "sym" / f"{_safe_name(disp)}__prolog.parts.json"
+        if cj.is_file():
+            try:
+                parts = _json.loads(cj.read_text(encoding="utf-8"))
+            except (OSError, _json.JSONDecodeError):
+                parts = None
+            if parts is not None:
+                idx, hexpal, _c, _r = sa.decode_grid(png)
+                return idx, hexpal, parts, True
         if committed_dir is not None:
             pj = committed_dir / "sym" / f"{disp}__prolog.parts.json"
             if pj.is_file():
@@ -1128,15 +1191,15 @@ def _demo_live_ls20_sequence():
                 except (OSError, _json.JSONDecodeError):
                     parts = []
                 idx, hexpal, _c, _r = sa.decode_grid(png)
-                return idx, hexpal, parts
+                return idx, hexpal, parts, True
         try:
             pr = sa.extract_frame(png, game)
         except Exception:  # noqa: BLE001
             pr = None
         if not pr or pr.get("nparts", 0) <= 0 or pr.get("cols", 999) > 160 or pr.get("rows", 999) > 160:
-            return None, None, None
+            return None, None, None, False
         idx, hexpal, _c, _r = sa.decode_grid(png)
-        return idx, hexpal, pr.get("geom", [])
+        return idx, hexpal, pr.get("geom", []), False
 
     _MAX_FRAMES = 420          # bound runtime for very long recordings
     order = entries[:_MAX_FRAMES]
@@ -1163,13 +1226,19 @@ def _demo_live_ls20_sequence():
     prev_hex = None
     last_boundary = -_MIN_GAP
     frame_results: list = []       # per-frame geom, reused to persist object memory cheaply
+    to_save: list = []             # (disp, parts) freshly EXTRACTED this run -> save to cache
+    read_from_disk = 0             # frames whose parts were read from the parts cache
 
     for i, (disp, png, action) in enumerate(order):
-        idx, hexpal, parts = _parts_for(disp, png, game)
+        idx, hexpal, parts, from_disk = _parts_for(disp, png, game)
         if idx is None:
             continue
+        if from_disk:
+            read_from_disk += 1
         if parts:
             frame_results.append({"geom": parts, "metta": ""})
+            if not from_disk:      # newly extracted -> persist the EXTRACTION only
+                to_save.append((disp, parts))
         # Scene-reset boundary detection folded into the play pass (one decode per
         # frame): a big change in the palette-stable HEX grid marks a new level.
         hexgrid = _np.asarray(hexpal, dtype=object)[idx]
@@ -1254,6 +1323,28 @@ def _demo_live_ls20_sequence():
     recolored_shapes += sum(1 for cs in level_colours.values() if len(cs) > 1)   # final level
     levels_detected = level_no
 
+    # Save whatever we EXTRACTED this run to disk (precache), so this recording
+    # replays fast next time and shows as '✓ computed'. This persists ONLY the
+    # per-frame part-graphs — the extraction. The induction above (learning /
+    # recognition build-up / object memory) was just re-run at runtime and is never
+    # cached, so re-runs always re-derive it from these parts.
+    parts_saved = 0
+    parts_status = (f"read {read_from_disk} frame graphs from cache"
+                    if read_from_disk else "no part-graphs")
+    if to_save:
+        try:
+            symdir = demo_cache / "sym"
+            symdir.mkdir(parents=True, exist_ok=True)
+            for disp, parts in to_save:
+                (symdir / f"{_safe_name(disp)}__prolog.parts.json").write_text(
+                    _json.dumps(parts), encoding="utf-8")
+            parts_saved = len(to_save)
+            parts_status = (f"extracted + saved {parts_saved} frame graphs to disk"
+                            + (f" ({read_from_disk} from cache)" if read_from_disk else ""))
+            _bust_recs_cache()      # refresh the '✓ computed' badge
+        except OSError as _pe:
+            parts_status = f"save failed: {_pe}"
+
     # Object memory. The user chooses WHERE recognized objects/shapes are saved via
     # a store-mode combo: 'none' (ephemeral), 'recording' (this recording's OWN
     # isolated store, default), 'base' (a shared long-term demo base recordings
@@ -1327,6 +1418,8 @@ def _demo_live_ls20_sequence():
                        "geometry_recognized": f"{total_geo_recog}/{total_parts} ({geo_pct:.0f}%)",
                        "individuals_recognized": f"{total_ind_recog}/{total_parts}",
                        "moves_seen": moves_seen,
+                       "parts_saved": parts_saved,
+                       "parts_status": parts_status,
                        "memory_store": memory_store,
                        "memory_identities": memory_identities,
                        "memory_shapes": memory_shapes,
@@ -1383,6 +1476,7 @@ _DEMO_CATALOG = [
                     "objects_learned", "shapes_learned", "max_learners_per_shape",
                     "most_learned_shape", "learners_direct", "learners_via_filter",
                     "geometry_recognized", "individuals_recognized", "moves_seen",
+                    "parts_saved", "parts_status",
                     "memory_store", "memory_identities", "memory_shapes", "memory_mode",
                     "recolored_shapes", "recolor_events"]},
     {"id": "occlusion-t", "group": "Occlusion completion", "title": "T tetromino — stem occluded",
@@ -1729,14 +1823,15 @@ def get_demo_state() -> dict:
                   "playing": _is_playing_locked(d.get("id", ""))} for d in res.get("demos", [])]
         any_playing = any(_is_playing_locked(k) for k in _play)
         epoch = _play_epoch
-    # Enrich the (cached) recordings list with a FRESH per-recording memory check so
-    # the chooser can badge which recordings already have a saved object-memory store.
+    # Enrich the (cached) recordings list with FRESH per-recording flags so the chooser
+    # badges stay correct: hasMemory = an object-memory store exists; computed = the
+    # extracted part-graphs are cached on disk (native or demo-saved).
     import re as _re
     root = _demo_mem_root()
     recs = []
     for r in _ls20_recordings():
         store = root / _re.sub(r"[^A-Za-z0-9_.-]", "_", r.get("key", ""))
-        recs.append({**r, "hasMemory": store.is_dir()})
+        recs.append({**r, "hasMemory": store.is_dir(), "computed": _recording_computed(r.get("key"))})
     return {"demos": demos, "total": res.get("total", 0), "passed": res.get("passed", 0),
             "catalog": demo_catalog(), "coverage": sow_coverage(), "running": st["running"],
             "anyPlaying": any_playing, "playEpoch": epoch,

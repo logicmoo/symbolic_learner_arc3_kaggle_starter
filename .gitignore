@@ -269,6 +269,11 @@ __pycache__/
 runtime/
 node_modules/
 workbench/data/
+# Generated demo caches (recognition Sanity Tests): the live-ls20 demo saves the
+# per-frame EXTRACTED part-graphs here to replay fast, plus its isolated object
+# memory. Both are regenerated at runtime and must never be committed.
+/data/recognition_demo_parts/
+/data/object_memory_demo/
 # Default local agent-mailbox store (mailbox_channels / mailbox_chat fallback
 # client, scripts/agent_mailbox.py, scripts/stt_mailbox_listener.py). Set
 # AGENT_MAILBOX_DIR to relocate; this repo-root default is machine-local state.
