@@ -469,6 +469,65 @@ function parseInduction(text: string): Induction {
   }
   return ind;
 }
+// ARC-AGI-3 action ids -> friendly labels (authoritative map mirrored from
+// arc3_play_api.py). Used to render "prev + LEFT = next" in the induction rows.
+const ACTION_LABELS: Record<string, string> = {
+  ACTION1: "UP", ACTION2: "DOWN", ACTION3: "LEFT", ACTION4: "RIGHT",
+  ACTION5: "SPACE", ACTION6: "CLICK", ACTION7: "UNDO",
+};
+const actionLabel = (a: string): string => ACTION_LABELS[String(a || "").toUpperCase()] || String(a || "");
+// Unified induced-event shape rendered by both the Prolog and LLM induction rows.
+type IndEvent = {
+  moved: Array<{ name: string; dx: number; dy: number; tf?: string }>;
+  interacted: Array<{ mover: string; target: string }>;
+  revealed: Array<{ mover: string; color: string }>;
+  disappeared: string[];
+  appeared: Array<{ color: string }>;
+};
+// Centroid of a part's normalized turtle program (0..1000), mirroring the
+// Python _turtle_centroid so the LLM induction row matches the backend inducer.
+function turtleCentroid(t: any): [number, number] | null {
+  const xs: number[] = []; const ys: number[] = [];
+  for (const c of (t && Array.isArray(t.commands) ? t.commands : [])) {
+    if (Array.isArray(c.box) && c.box.length === 4) { xs.push(c.box[0], c.box[2]); ys.push(c.box[1], c.box[3]); }
+    for (const p of (Array.isArray(c.points) ? c.points : [])) { if (Array.isArray(p) && p.length === 2) { xs.push(p[0]); ys.push(p[1]); } }
+    if (typeof c.x === "number" && typeof c.y === "number") { xs.push(c.x); ys.push(c.y); }
+  }
+  if (!xs.length) return null;
+  return [xs.reduce((a, b) => a + b, 0) / xs.length, ys.reduce((a, b) => a + b, 0) / ys.length];
+}
+// Client-side per-transition induction over the LLM parts of two consecutive
+// frames (color + nearest-centroid matching), mirroring induce_from_frames in
+// symbolic_arc.py. The LLM line has no pixel regions, so this is centroid-based
+// (no rotation/flip detection) — coarser than the Prolog row on purpose.
+function induceLlmPair(a: any[], b: any[], moveMin = 8, near = 60): IndEvent {
+  const ev: IndEvent = { moved: [], interacted: [], revealed: [], disappeared: [], appeared: [] };
+  const mk = (arr: any[]) => (arr || []).map((p) => ({ label: p.label || p.id || "?", color: String(p.color || "").toLowerCase(), c: turtleCentroid(p.turtle) })).filter((p) => p.c) as Array<{ label: string; color: string; c: [number, number] }>;
+  const ca = mk(a); const cb = mk(b);
+  const byc = new Map<string, number[]>();
+  cb.forEach((p, j) => { const arr = byc.get(p.color) || []; arr.push(j); byc.set(p.color, arr); });
+  const used = new Set<number>(); const matched = new Map<number, number>();
+  ca.forEach((pa, i) => {
+    const cands = (byc.get(pa.color) || []).filter((j) => !used.has(j));
+    if (!cands.length) return;
+    let best = cands[0]; let bd = Infinity;
+    for (const j of cands) { const dx = cb[j].c[0] - pa.c[0]; const dy = cb[j].c[1] - pa.c[1]; const d = dx * dx + dy * dy; if (d < bd) { bd = d; best = j; } }
+    used.add(best); matched.set(i, best);
+  });
+  const disappeared = ca.map((_, i) => i).filter((i) => !matched.has(i));
+  const appeared = cb.map((_, j) => j).filter((j) => !used.has(j));
+  matched.forEach((j, i) => {
+    const dx = cb[j].c[0] - ca[i].c[0]; const dy = cb[j].c[1] - ca[i].c[1];
+    if (Math.abs(dx) < moveMin && Math.abs(dy) < moveMin) return;
+    ev.moved.push({ name: ca[i].label, dx: Math.round(dx), dy: Math.round(dy) });
+    const dxp = cb[j].c[0]; const dyp = cb[j].c[1];
+    for (const di of disappeared) { if (Math.abs(dxp - ca[di].c[0]) <= near && Math.abs(dyp - ca[di].c[1]) <= near) ev.interacted.push({ mover: ca[i].label, target: ca[di].label }); }
+    for (const aj of appeared) { if (Math.abs(dxp - cb[aj].c[0]) <= near && Math.abs(dyp - cb[aj].c[1]) <= near) ev.revealed.push({ mover: ca[i].label, color: cb[aj].color }); }
+  });
+  disappeared.forEach((i) => ev.disappeared.push(ca[i].label));
+  appeared.forEach((j) => ev.appeared.push({ color: cb[j].color }));
+  return ev;
+}
 // Render a normalized turtle program (from a part's parts.json) as SVG shapes in
 // the 0..1000 frame — the same look as the part map, for a single part.
 function turtleToSvg(prog: any, keyBase: string, fallbackColor: string, outlineOnly = false, flatFill = false): any[] {
@@ -6645,50 +6704,76 @@ export function VideoImportPage({
                                     </div>
                                   );
                                 });
-                                const prologRow = tiers.find((r: any) => r.kind === "prolog");
                                 const nextItem = list[idx + 1];
-                                let inductionEl: any = null;
-                                if (prologRow && nextItem) {
-                                  const pRel = prologRow.mettaPath || `data/recognition_reduce/sym/${String(prologRow.metta || "").split("/").pop()}`;
-                                  const ind = parseInduction(reduceMetta[pRel] || "");
+                                const inductionEls: any[] = [];
+                                if (nextItem) {
                                   const nextRel = nextItem.inputPath || `data/recognition_reduce/pool/${String(nextItem.input || "").split("/").pop()}`;
-                                  const action = nextItem.action || "";
-                                  const nfacts = ind.moved.length + ind.disappeared.length + ind.appeared.length + ind.interacted.length + ind.revealed.length;
-                                  inductionEl = (
-                                    <div className="video-import-reduce-induction" key="induction-prolog">
-                                      <div className="video-import-reduce-indlabel">Induction · Prolog</div>
-                                      <div className="video-import-reduce-indbody">
-                                        <div className="video-import-reduce-indflow">
-                                          <figure className="video-import-reduce-indframe">
-                                            <img src={asset(inputRel)} alt={it.id} loading="lazy" />
-                                            <figcaption>{it.id}</figcaption>
-                                          </figure>
-                                          <div className="video-import-reduce-indop">+ <b>{action || "?"}</b> =</div>
-                                          <figure className="video-import-reduce-indframe">
-                                            <img src={asset(nextRel)} alt={nextItem.id} loading="lazy" />
-                                            <figcaption>{nextItem.id}</figcaption>
-                                          </figure>
-                                          <div className="video-import-reduce-indfacts">
-                                            {reduceMetta[pRel] === undefined ? <span className="video-import-reduce-indempty">loading…</span>
-                                              : nfacts === 0 ? <span className="video-import-reduce-indempty">no motion induced</span> : (
-                                              <>
-                                                {ind.moved.map((f, i) => <span key={"m" + i} className="video-import-reduce-indchip is-moved">{f.part} moved ({f.dx},{f.dy}){f.tf !== "identity" ? " · " + f.tf : ""}</span>)}
-                                                {ind.interacted.map((f, i) => <span key={"x" + i} className="video-import-reduce-indchip is-interacted">{f.mover} → {f.target}</span>)}
-                                                {ind.revealed.map((f, i) => <span key={"r" + i} className="video-import-reduce-indchip is-revealed">{f.mover} revealed {f.color}</span>)}
-                                                {ind.disappeared.map((f, i) => <span key={"d" + i} className="video-import-reduce-indchip is-gone">{f} gone</span>)}
-                                                {ind.appeared.map((f, i) => <span key={"a" + i} className="video-import-reduce-indchip is-new">{f.color} appeared</span>)}
-                                              </>
-                                            )}
+                                  const actLabel = actionLabel(nextItem.action || "");
+                                  const actTitle = nextItem.action || "";
+                                  const renderRow = (rowKey: string, label: string, cls: string, ev: IndEvent | null, loading: boolean) => {
+                                    const nfacts = ev ? (ev.moved.length + ev.interacted.length + ev.revealed.length + ev.disappeared.length + ev.appeared.length) : 0;
+                                    return (
+                                      <div className={`video-import-reduce-induction ${cls}`} key={rowKey}>
+                                        <div className="video-import-reduce-indlabel">{label}</div>
+                                        <div className="video-import-reduce-indbody">
+                                          <div className="video-import-reduce-indflow">
+                                            <figure className="video-import-reduce-indframe">
+                                              <img src={asset(inputRel)} alt={it.id} loading="lazy" />
+                                              <figcaption>{it.id}</figcaption>
+                                            </figure>
+                                            <div className="video-import-reduce-indop">+ <b title={actTitle}>{actLabel || "?"}</b> =</div>
+                                            <figure className="video-import-reduce-indframe">
+                                              <img src={asset(nextRel)} alt={nextItem.id} loading="lazy" />
+                                              <figcaption>{nextItem.id}</figcaption>
+                                            </figure>
+                                            <div className="video-import-reduce-indfacts">
+                                              {loading ? <span className="video-import-reduce-indempty">loading…</span>
+                                                : nfacts === 0 ? <span className="video-import-reduce-indempty">no motion induced</span> : (
+                                                <>
+                                                  {ev!.moved.map((f, i) => <span key={"m" + i} className="video-import-reduce-indchip is-moved">{f.name} moved ({f.dx},{f.dy}){f.tf && f.tf !== "identity" ? " · " + f.tf : ""}</span>)}
+                                                  {ev!.interacted.map((f, i) => <span key={"x" + i} className="video-import-reduce-indchip is-interacted">{f.mover} → {f.target}</span>)}
+                                                  {ev!.revealed.map((f, i) => <span key={"r" + i} className="video-import-reduce-indchip is-revealed">{f.mover} revealed {f.color}</span>)}
+                                                  {ev!.disappeared.map((f, i) => <span key={"d" + i} className="video-import-reduce-indchip is-gone">{f} gone</span>)}
+                                                  {ev!.appeared.map((f, i) => <span key={"a" + i} className="video-import-reduce-indchip is-new">{f.color} appeared</span>)}
+                                                </>
+                                              )}
+                                            </div>
                                           </div>
                                         </div>
                                       </div>
-                                    </div>
-                                  );
+                                    );
+                                  };
+                                  // Induction · Prolog — parsed from this frame's __prolog.metta (rigid, D4-aware).
+                                  const prologRow = tiers.find((r: any) => r.kind === "prolog");
+                                  if (prologRow) {
+                                    const pRel = prologRow.mettaPath || `data/recognition_reduce/sym/${String(prologRow.metta || "").split("/").pop()}`;
+                                    const p = parseInduction(reduceMetta[pRel] || "");
+                                    const pev: IndEvent = {
+                                      moved: p.moved.map((f) => ({ name: f.part, dx: f.dx, dy: f.dy, tf: f.tf })),
+                                      interacted: p.interacted,
+                                      revealed: p.revealed.map((f) => ({ mover: f.mover, color: f.color })),
+                                      disappeared: p.disappeared,
+                                      appeared: p.appeared.map((f) => ({ color: f.color })),
+                                    };
+                                    inductionEls.push(renderRow("induction-prolog", "Induction · Prolog", "is-prolog", pev, reduceMetta[pRel] === undefined));
+                                  }
+                                  // Induction · LLM — computed client-side from the LLM parts of both frames.
+                                  const llmRow = tiers.find((r: any) => r.kind !== "prolog" && r.kind !== "oneshot") || tiers.find((r: any) => r.kind !== "prolog");
+                                  const nextRows = nextItem.rows || [];
+                                  const nextLlm = nextRows.find((r: any) => r.kind !== "prolog" && r.kind !== "oneshot") || nextRows.find((r: any) => r.kind !== "prolog");
+                                  if (llmRow && nextLlm) {
+                                    const aRel = (llmRow.mettaPath || `data/recognition_reduce/sym/${String(llmRow.metta || "").split("/").pop()}`).replace(/\.metta$/, ".parts.json");
+                                    const bRel = (nextLlm.mettaPath || `data/recognition_reduce/sym/${String(nextLlm.metta || "").split("/").pop()}`).replace(/\.metta$/, ".parts.json");
+                                    const pa = reduceParts[aRel]; const pb = reduceParts[bRel];
+                                    const loading = pa === undefined || pb === undefined;
+                                    const lev = (Array.isArray(pa) && Array.isArray(pb)) ? induceLlmPair(pa, pb) : null;
+                                    inductionEls.push(renderRow("induction-llm", "Induction · LLM", "is-llm", lev, loading));
+                                  }
                                 }
                                 return (
                                   <div className="video-import-reduce-tierstack">
                                     {stageEls}
-                                    {inductionEl}
+                                    {inductionEls}
                                   </div>
                                 );
                               })()}
