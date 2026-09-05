@@ -1,0 +1,332 @@
+Master Services Agreement — Logicmoo, Co. and SingularityNET 
+Master Services Agreement  
+Company Logicmoo, Co. 
+3601 NE 51st St, Apt 4, Vancouver, WA 98661, USA 
+Customer SingularityNET 
+Baarerstrasse 141, 6300 Zug, Switzerland 
+Effective Date July 1, 2026 
+Anticipated Completion Date September 30, 2026, subject to the delivery schedule in Exhibit A 
+This Master Services Agreement (“Agreement”) is made between Logicmoo, Co. ("Company") and SingularityNET ("Customer") 
+as of the Effective Date specified above and governs the purchase and provision of professional services (the “Services”) as 
+more fully described in a Statement of Work referencing this Agreement (“SOW”). If Customer purchases the Services for use by 
+its Affiliate(s), Customer will ensure that such Affiliate(s) complies with the terms and conditions of this Agreement. The term 
+“Affiliate” means an entity that controls (i.e., parent), is controlled by (i.e., subsidiary), or is under common control with (i.e., 
+sister) a party to this Agreement. Customer’s standard terms and conditions of purchase, purchase order, or other documents 
+are for Customer’s convenience only and any terms set forth therein that are inconsistent with or add to the terms and 
+conditions set forth in this Agreement shall not be binding on Company unless otherwise agreed by the parties in writing, and are 
+hereby rejected. 
+1. PRICE AND PAYMENT 
+1.1 SOW Pricing and Payment 
+The Services shall be performed through independently agreed and executed SOWs. Each SOW shall establish the total price, 
+fixed fees, milestone payments, licensing fees, reimbursable charges, or other compensation applicable to that engagement. 
+No hourly rate, minimum headcount allocation, minimum purchase commitment, or minimum volume of Services shall apply 
+under this Agreement unless expressly stated in an applicable SOW. 
+Company shall invoice Customer according to the invoicing schedule specified in the applicable SOW. Unless an SOW provides 
+otherwise, all undisputed invoiced amounts shall be paid by Customer within thirty (30) days after the invoice date. 
+If Customer disputes an invoiced amount, Customer shall notify Company in writing within ten (10) business days after receiving 
+the invoice and shall provide a reasonable explanation of the disputed amount. Customer shall timely pay all undisputed 
+portions of the invoice. 
+If an undisputed amount remains unpaid for more than thirty (30) days after its applicable due date, Company may, in its sole 
+discretion and upon written notice to Customer: 
+1. suspend performance under the affected SOW until payment is received; or 
+2. terminate the affected SOW. 
+A payment dispute or default relating to one SOW shall not automatically affect any other SOW unless the parties agree 
+otherwise in writing or the default materially affects Company’s ability to perform the other SOW. 
+1.2 Expenses 
+Company may invoice Customer for expenses that have been authorized in advance in accordance with the applicable SOW. 
+Customer shall reimburse Company for actual expenses reasonably and properly incurred in performing the Services, provided 
+that: 
+1. the expense was approved as required by the applicable SOW; and 
+2. Company submits copies of valid receipts or other reasonable supporting documentation. 
+Each SOW may establish expense limits, categories of permitted expenses, travel policies, or alternative reimbursement 
+procedures. 
+1.3 Services Term 
+The parties may enter into one or more SOWs during the term of this Agreement. Each SOW shall be separately negotiated and 
+shall specify its applicable terms.  Unless otherwise expressly stated, completion, expiration, or termination of one SOW shall 
+not terminate or otherwise affect any other SOW. 
+Master Services Agreement — Logicmoo, Co. and SingularityNET 
+2. CUSTOMER RESPONSIBILITIES 
+Customer acknowledges that Company will require information, documents, data, records, and cooperation by Customer in 
+order to properly perform the Services and that Company is not responsible for errors, delays, or other consequences arising 
+from the failure of Customer to timely and appropriately provide such information, data, records, or cooperation. Customer shall 
+provide Company and its personnel with such access to Customer’s hosting provider account(s) as reasonably required for 
+Company to provide the Services. For clarity, Customer shall at all times be solely responsible for granting, controlling, and 
+administering any permissions with respect to such account(s) and for monitoring and paying all costs related to such 
+account(s). Customer acknowledges and agrees to provide Company with prompt and adequate responses to Company’s 
+requests for information and other requests related to the Services to be performed under the applicable SOW. Company shall 
+not be held liable for any delays or failures in performance arising from Customer’s failure to provide such information, 
+documents, data, records, or cooperation in a timely and appropriate manner. 
+3. INTELLECTUAL PROPERTY OWNERSHIP 
+3.1 Customer Materials 
+Customer shall retain all rights, title, and interest in any and all Customer products, data, plans, specifications, reports, designs, 
+network architecture, documentation, and other similar information, or any derivatives thereof, developed, used, or disclosed by 
+Customer in its receipt of Services under this Agreement and any applicable Statement of Work (SOW) (collectively “Customer 
+Materials”). Except as explicitly set forth herein, no rights, title, or interest in any Customer Materials are transferred to 
+Company. 
+3.2 Company Materials 
+Company shall retain all rights, title, and interest in all data, plans, processes, methods, specifications, reports, designs, 
+templates, scripts, code, technological “know-how,” technology, documentation, and other similar information, and any 
+derivatives thereof, developed, used, or disclosed by Company (or a third-party service provider acting on Company’s behalf) in 
+the provision of Services under this Agreement and any applicable SOW (collectively “Company Materials”). Except as explicitly 
+set forth herein, no rights, title, or interest in any Company Materials is transferred to Customer under this Agreement. 
+3.3 Software Licensing 
+All software and related documentation created or developed by Company under this Agreement and any applicable SOW will be 
+licensed to Customer and any designated Affiliates under the terms of the Lesser General Public License (LGPL). This includes, 
+but is not limited to, all source code, executables, and configurations. Company shall ensure that all such software and 
+documentation are compatible with the LGPL terms to maintain the integrity and distribution rights as prescribed by the LGPL. 
+4. WARRANTIES 
+4.1 Acceptance 
+Each phase or milestone submitted under an SOW shall be reviewed against the SOW within ten (10) workdays after submission 
+(the “Acceptance Period”). If Customer finds that the submitted work is incomplete or not in accordance with the SOW, 
+Customer shall provide written notification describing the deficiencies by the end of the Acceptance Period, in which case 
+Company will promptly correct the stated deficiencies. If Customer does not provide such written notification by the end of the 
+Acceptance Period, the submitted phase or milestone shall be deemed accepted. 
+4.2 Security 
+Company warrants that it shall implement appropriate organizational, technical, and physical security measures and controls to 
+protect and ensure the security and confidentiality of Customer Materials and Customer’s Confidential Information (as 
+applicable) to prevent accidental, unauthorized, or unlawful destruction, alteration, unauthorized disclosure or access, misuse, 
+modification, or loss consistent with industry practices. 
+4.3 Third Party 
+Company does not warrant any products, links, resources, plugins, or services developed or sourced from third parties but made 
+available to Customer by Company for Customer’s use in connection with the Services (“Third Party Applications”), whether or 
+not such Third Party Applications are designated by Company as ”certified,” ”approved,” “recommended”. Any purchase or use 
+by Customer of any Third Party Application is solely between Customer and the applicable third-party provider, and Customer 
+Master Services Agreement — Logicmoo, Co. and SingularityNET 
+agrees that Company has no liability or obligation to Customer for such Third Party Applications, the results of the use thereof, or 
+the effect that the use thereof has on the enjoyment of the Services. 
+4.4 WARRANTY DISCLAIMER 
+EXCEPT AS EXPRESSLY PROVIDED HEREIN, THE SERVICES AND DELIVERABLES ARE PROVIDED HEREUNDER ON AN “AS 
+IS” BASIS, AND COMPANY MAKES NO, AND HEREBY DISCLAIMS ALL, REPRESENTATIONS OR WARRANTIES OF ANY KIND 
+(EXPRESS, IMPLIED OR OTHERWISE) WITH RESPECT THERETO, INCLUDING ANY IMPLIED WARRANTY OF 
+MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE OR ANY WARRANTY AS TO NON-INFRINGEMENT, 
+UNINTERRUPTED OR ERROR-FREE PERFORMANCE OR CONFORMITY TO SPECIFICATIONS. 
+5. INDEMNITY 
+5.1 General Indemnification 
+Each party shall indemnify, defend, and hold the other party harmless from the associated costs and fees (including reasonable 
+attorneys’ fees and expenses) finally awarded by a court of competent jurisdiction or agreed to in settlement or compromise, to 
+the extent that such fees and costs arise from a third-party claim, proceeding, or suit which is based on the grossly negligent acts 
+or willful misconduct of its employees or agents, that directly causes damage or bodily injury to persons or property, real or 
+tangible, and such damage or bodily injury directly arises out of performance of this Agreement, or for its failure to comply with 
+applicable laws (a “Claim”). 
+5.2 Procedure 
+A party’s obligations of indemnification hereunder shall be conditioned on the indemnified party promptly notifying the 
+indemnifying party of any such Claim and permitting the indemnifying party to assume full control over the defense and 
+settlement of such Claim; provided, however, that: (i) the indemnifying party shall keep the other party informed of, and consult 
+with it in connection with the progress of such litigation or settlement; and (ii) the indemnifying party shall not have any right, 
+without the other party’s written consent (which shall not be unreasonably withheld), to settle any such Claim if such settlement 
+contains a stipulation to or admission or acknowledgment of any liability or wrongdoing (whether in contract, tort or otherwise) 
+on the other party’s part, or requires any specific performance or non-pecuniary remedy by the other party. The indemnified party 
+shall have the right to participate in the defense of any claim with its own counsel, at its own expense. 
+6. LIMITATION OF LIABILITY 
+6.1 Exclusion of Indirect and Consequential Damages 
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, NEITHER PARTY, ITS LICENSORS, AFFILIATES, AGENTS, SUPPLIERS, 
+DISTRIBUTORS, AND RESELLERS SHALL BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE 
+DAMAGES, INCLUDING WITHOUT LIMITATION DAMAGES FOR LOST PROFITS, LOST DATA OR LOSS OF USE, OR PROCUREMENT 
+OF REPLACEMENT GOODS, HOWEVER INCURRED BY THE OTHER PARTY OR ANY THIRD PARTY, WHETHER IN AN ACTION IN 
+CONTRACT OR TORT, EVEN IF SUCH PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. 
+6.2 Aggregate Liability Cap 
+IN NO EVENT SHALL EITHER PARTY’S AGGREGATE LIABILITY FOR DIRECT DAMAGES ARISING OUT OF OR RELATED TO THIS 
+AGREEMENT EXCEED THE TOTAL FEES PAID OR PAYABLE UNDER THE SOW FOR THE SPECIFIC SERVICES AT ISSUE. This 
+limitation of liability is cumulative and not per incident (i.e., the existence of two or more claims will not enlarge this limit). 
+7. CONFIDENTIALITY 
+7.1 Confidential Information 
+“Confidential Information” means any information which is disclosed by a party (the “Discloser”) in connection with this 
+Agreement, directly or indirectly, in writing, orally, or by drawings or inspection of equipment or software, to the other party (the 
+“Recipient”) or any of its employees or agents and that is designated or marked as ”confidential” or ”proprietary” at the time of 
+disclosure or that, based on the circumstances surrounding the disclosure, the Recipient knows or reasonably should know is 
+considered confidential. Confidential Information shall also include all documents provided with the Services that contain 
+Company’s confidential trade secret information. The restrictions on disclosure set forth in this Section 7 shall not apply to 
+Confidential Information which: (i) becomes publicly known without breach of this Agreement; or (ii) the Recipient can show by 
+written records was rightfully in its possession prior to the disclosure by the Discloser or becomes rightfully known to the 
+Master Services Agreement — Logicmoo, Co. and SingularityNET 
+Recipient without confidential or proprietary restriction from a source other than the Discloser; (iii) is approved for disclosure 
+without the restriction in a written document which is signed by a duly authorized officer of the Discloser, or (iv) is independently 
+developed by the Recipient prior to the disclosure without reference to the Discloser’s Confidential Information. 
+7.2 Obligations 
+Recipient may use the Discloser’s Confidential Information solely for the purpose of exercising its rights and performing its 
+obligations under this Agreement. Recipient agrees to take the same care with the Discloser’s Confidential Information as it does 
+with its own information of a similar nature, but in no event with less than a reasonable degree of care. Recipient shall limit 
+access to the Confidential Information to those persons having a need to know such information, provided that each such 
+employee and consultant is subject to a written agreement containing confidentiality obligations no less protective than those 
+contained in this Agreement. Recipient may disclose Confidential Information: (i) insofar as disclosure is reasonably necessary 
+to carry out and effectuate the terms of this Agreement; (ii) insofar as the Recipient is required by law or legal proceedings to 
+disclose such information provided that the Recipient provides the Discloser with prompt written notice of such requirement to 
+enable the Discloser to seek a protective order; (iii) insofar as disclosure is necessary to be made to the Recipient’s independent 
+accountants for tax or audit purposes; and (iv) insofar as the parties may mutually agree in writing upon language to be contained 
+in one or more press releases. In addition, neither party will disclose to any third party the terms of this Agreement without the 
+prior written consent of the other party. 
+8. COMPLIANCE WITH LAWS 
+Each party will comply fully with all international and national laws and regulations that apply to the Services and to Customer’s 
+use thereof. 
+9. TERM AND TERMINATION 
+9.1 Term 
+This Agreement is effective as of the Effective Date set forth above. The anticipated delivery period for all phases is 
+approximately three (3) months from the Effective Date, with an anticipated completion date of September 30, 2026. Customer 
+is purchasing the deliverables specified in the applicable SOW rather than a fixed number of hours or days. Accordingly, the 
+deliverables may be completed earlier or may require additional time. Company shall notify Customer in writing of any material 
+change to the anticipated delivery schedule. This Agreement will not automatically renew, and any continuation or additional 
+work shall be agreed upon in writing by the parties. 
+9.2 Termination 
+Either party may terminate this Agreement, in whole or in part, for the other party’s material breach (including Customer’s 
+payment obligations) that is not cured within two (2) weeks after the date of receipt of notice of the breach from the non-
+breaching party. In addition, Company may terminate this Agreement, in whole or in part, immediately if Customer becomes the 
+subject of a voluntary or involuntary petition in bankruptcy or any proceeding relating to insolvency, receivership, liquidation, or 
+composition for the benefit of creditors. Either party may terminate the Agreement upon providing two (2) weeks’ written notice 
+to the other party. 
+9.3 Effect of Termination 
+Upon termination of this Agreement, in whole or in part, Customer agrees to pay Company, within thirty (30) days from the 
+effective date of termination, all earned and unpaid fees, whether invoiced or work in process, up to the effective date of 
+termination. Any unearned payments made in advance to Company are non-refundable. In addition, upon termination of this 
+Agreement, Customer shall immediately cease using or destroy or return Company Confidential Information to Company. Upon 
+Company’s request, Customer shall provide Company a certificate of destruction evidencing compliance with the foregoing. The 
+terms which, by their nature, shall survive, will survive any expiration or termination of this Agreement. 
+10. GENERAL 
+10.1 Publicity 
+Customer agrees that Company may publish a description of Customer’s use of the Services and identify Customer as a 
+Company customer on any of Company’s websites, customer lists, press releases, and/or other marketing materials. 
+Master Services Agreement — Logicmoo, Co. and SingularityNET 
+10.2 Independent Contractors 
+The relationship of Company and Customer is that of independent contractors. There is no relationship of agency, partnership, 
+joint venture, employment or franchise between the parties. Neither party has the authority to bind the other or to incur any 
+obligation on the other’s behalf or to represent itself as the other’s agent or in any way that might result in confusion as to the 
+fact that the parties are separate and distinct entities. 
+10.3 Force Majeure 
+Neither party shall be liable for any loss, damage, or penalty resulting from delays or failures in performance resulting from acts 
+of God, material shortages, or other causes beyond such party’s remedy or control. 
+10.4 Governing Law 
+This Agreement will be governed and construed under the laws of Switzerland. Any disputes arising out of or in connection with 
+this Agreement shall be subject to the exclusive jurisdiction of the courts of Zurich, Switzerland. 
+10.5 Notices 
+All notices under this Agreement are required to be sent either via electronic delivery or to the principal addresses specified 
+above by commercial overnight courier with written verification of delivery. All notices so given will be deemed received upon the 
+date of receipt if by electronic delivery or five (5) days after dispatch for courier deliveries. 
+10.6 Severability 
+If any provision of this Agreement is held invalid by the final determination of any court or other tribunal of competent 
+jurisdiction, such provision shall be reformed only to the extent necessary to make it enforceable, and shall not affect the 
+enforceability of (i) such provision under other circumstances or jurisdictions, or (ii) any other provision under all circumstances 
+or jurisdictions. The invalid or unenforceable provision will be construed by such judicial body so as to be enforceable to the 
+maximum extent compatible with applicable law. 
+10.7 Headings 
+The headings used in this Agreement are for ease of reference only and will not be used to interpret any aspect of this Agreement. 
+10.8 Assignment 
+Customer may not assign or transfer this Agreement, nor any rights or obligations under this Agreement without the prior written 
+consent of Company. Any attempted assignment in violation of the foregoing shall be void and of no effect. However, 
+notwithstanding the foregoing, either party may assign this Agreement in its entirety to (i) any Affiliate of such party; (ii) any 
+successor in interest to such party by way of merger or consolidation; or (iii) a purchaser of all or substantially all of the assets of 
+such party, provided that the assignee agrees in writing to be bound by all of the terms and conditions of this Agreement. This 
+Agreement shall be binding on and inure to the benefit of the successors and permitted assigns of the parties. 
+10.9 Entire Agreement 
+This Agreement constitutes the entire agreement between Company and Customer with respect to the subject matter hereof, 
+and supersedes all prior agreements, understandings, and negotiations, both written and oral, between the parties with respect 
+to such subject matter. No waiver, amendment, or modification of any provision of this Agreement shall be enforceable against a 
+party unless it is in writing and signed by such party. Except for the exclusive remedies specified herein, each party will have all 
+rights and remedies available to it at law or in equity for the protection of its rights hereunder, including an injunction enjoining 
+the breach or threatened breach of this Agreement. This Agreement is not governed by the United Nations Convention of 
+Contracts for the International Sale of Goods or the Uniform Computer Information Transactions Act, the application of each of 
+which is hereby expressly excluded. 
+10.10 Counterparts 
+This Agreement may be executed in two (2) counterparts, both of which taken together shall constitute one (1) single agreement 
+between the parties. The parties may execute this Agreement by electronic signature which shall be deemed an original 
+signature for all purposes. The parties agree that a version of this Agreement transmitted by means of electronic message or 
+electronic record (electronic mail, electronic data interchange), once duly signed by the authorized representatives of each 
+party, shall constitute a binding agreement and shall have the same force and effect as a document bearing original signatures. 
+  
+Master Services Agreement — Logicmoo, Co. and SingularityNET 
+Exhibit A — Statement of Work  
+Image Perception to Recognizable Memory 
+This Statement of Work (“SOW”) is entered into under the Master Services Agreement above. It defines three deliverable-based 
+phases. The total fixed price for all phases is $20,000 USD. 
+Total Fixed Price $20,000 USD 
+Anticipated Overall Period Approximately three (3) months from the Effective Date 
+Schedule Flexibility 
+Deliverables may be submitted earlier or may require 
+additional time. Company will notify Customer in writing of 
+any material schedule change. 
+Invoicing 
+Company may invoice the applicable fixed phase price upon 
+submission of each phase. Payment terms remain governed 
+by Section 1 of the Agreement. 
+Phase 1 — Grid Infrastructure and ARC3 Debugger Foundation 
+• Adapt the existing ARC debugger workflow to the ARC3 environment. 
+• Load and interact with selected ARC3 games and levels. 
+• Capture game states, actions, observations, and execution history. 
+• Store explored states in a GitHub-browsable action tree. 
+• Generate structured artifacts describing states, objects, differences, similarities, reconstructions, and candidate rules. 
+• Maintain stable and human-readable object identities across state transitions. 
+• Support replay, reset, restart, and navigation through previously captured states. 
+• Provide combined analysis of the current state and its transition from the previous state. 
+• Cache generated artifacts for repeatable inspection and reuse. 
+• Establish the initial grid infrastructure for object extraction, correspondence, transformation analysis, and rule inspection. 
+• Provide documentation covering the debugger architecture, state trees, symbolic artifacts, and evidence records. 
+Delivery 3 weeks 
+Price $4,000 USD 
+Phase 2 — Object Perception, Recognition, and Persistent Memory 
+• Extract and represent objects from grid, image, and simple video inputs. 
+• Represent object properties, structure, relationships, position, orientation, scale, and appearance. 
+• Maintain stable object identities across examples, encounters, and state transitions. 
+• Match corresponding objects between states and across repeated encounters. 
+• Recognize recurring objects despite supported changes in position, orientation, scale, reflection, color, noise, or partial 
+visibility. 
+• Detect object movement, recoloring, resizing, addition, removal, and structural change. 
+• Store objects in a normalized form from which they can be regenerated. 
+• Distinguish recognized content from potentially new object structure. 
+• Prevent duplicate storage of objects that have already been recognized. 
+• Accumulate evidence and provenance across repeated encounters. 
+• Preserve encounter history and support deterministic replay. 
+• Provide persistent symbolic memory for recognized objects, observations, and associated artifacts. 
+• Demonstrate object regeneration from stored representations. 
+• Demonstrate recognition under modest degradation and partial occlusion. 
+• Provide tests and documentation covering object identity, recognition, regeneration, memory, and replay. 
+Demonstration workflow: 
+Input image or game state  →  Object extraction  →  Object representation  →  Object matching and correspondence  →  Before-
+and-after state comparison  →  Persistent storage  →  Later recognition as the same object 
+Delivery 1 month 
+Price $8,000 USD 
+Master Services Agreement — Logicmoo, Co. and SingularityNET 
+Phase 3 — Game Object Learner Integration and Predictive Rule Learning 
+• Define the interface and data contract connecting the object-perception and memory layer to the Game Object Learner. 
+• Provide detected objects, properties, relationships, correspondences, state differences, and encounter history to the game-
+learning system. 
+• Provide a stable interface that does not require the Game Object Learner to depend directly on debugger or perception-layer 
+internals. 
+• Add interface validation, structured errors, integration tests, and example workflows. 
+• Infer candidate object-level transformations and transition rules from observed examples. 
+• Support multiple candidate interpretations and retain evidence for successful and unsuccessful rules. 
+• Apply learned object-level transformations to new cases. 
+• Predict later states before their outcomes are observed. 
+• Compare predictions with independently observed outcomes. 
+• Update rule evidence based on prediction success or failure. 
+• Prevent post-hoc explanations from being treated as successful predictions. 
+• Demonstrate recognition and completion of partly occluded objects. 
+• Demonstrate operation across the approved grid and raster test environments. 
+• Provide integration documentation, example scripts, acceptance-test results, and developer notes. 
+Demonstration workflow: 
+Input game state  →  Object perception and recognition  →  Persistent object identity  →  Structured handoff to the Game 
+Object Learner  →  State-transition analysis  →  Candidate transformation learning  →  Prediction of a later state  →  Application 
+to a new case  →  Evaluation of the prediction  →  Resulting prediction, learned rule, or action recommendation 
+Representative environments: 
+ARC-style grids  →  Rendered arcade environments  →  Fixed-camera physics examples  →  Top-down manipulation with 
+partial occlusion 
+Delivery 1 month 
+Price $8,000 USD 
+Project Summary 
+Phase Delivery Fixed Price 
+Phase 1 3 weeks $4,000 USD 
+Phase 2 1 month $8,000 USD 
+Phase 3 1 month $8,000 USD 
+Total Fixed Price: $20,000 USD 
+  
+Master Services Agreement — Logicmoo, Co. and SingularityNET 
+Signatures 
+The parties have executed this Master Services Agreement and the attached Statement of Work as of the dates written below. 
+Logicmoo, Co. 
+Signature: ____________________________ 
+Name: Douglas Miles 
+Title: Treasurer 
+Date: ____________________________ 
+SingularityNET 
+Signature: ____________________________ 
+Name: Benjamin Goertzel 
+Title: CEO 
+Date: ____________________________ 
+ 
