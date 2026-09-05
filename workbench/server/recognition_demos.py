@@ -922,6 +922,9 @@ _RAW_LS20_DIR = (Path(__file__).resolve().parents[1] / "workspaces" / "arc3_rand
 
 _ls20_selected: str | None = None   # user-chosen recording key (else default = longest)
 _ls20_recs_cache: list | None = None
+_ls20_write_memory: bool = False    # when True, the live-ls20 demo COMMITS recognized
+                                    # objects to the persistent registry (default OFF so
+                                    # the demo stays ephemeral and can't pollute memory)
 # ARC-AGI-3 movement actions -> direction arrows (the "move" made between two frames).
 _ACTION_ARROW = {"ACTION1": "↑", "ACTION2": "↓", "ACTION3": "←", "ACTION4": "→",
                  "ACTION5": "•", "ACTION6": "*"}
@@ -1044,6 +1047,14 @@ def set_ls20_source(key: str | None) -> None:
     global _ls20_selected
     with _demo_lock:
         _ls20_selected = key or None
+
+
+def set_ls20_write(value: bool) -> None:
+    """Toggle whether the live-ls20 demo commits recognized objects to the persistent
+    long-term registry (default OFF: the demo stays ephemeral / from-empty)."""
+    global _ls20_write_memory
+    with _demo_lock:
+        _ls20_write_memory = bool(value)
 
 
 def _variant_prov(exemplar, wh, cname) -> str:
@@ -1216,6 +1227,29 @@ def _demo_live_ls20_sequence():
     recolored_shapes += sum(1 for cs in level_colours.values() if len(cs) > 1)   # final level
     levels_detected = level_no
 
+    # Object memory. The demo always tracks objects/shapes across frames in-run.
+    # When the user opts in (checkbox), it ALSO commits them to an ISOLATED per-
+    # recording memory area — a separate store rooted at object_memory_demo/<key>,
+    # NEVER the canonical registry — so the persistent object memory can be tested
+    # and inspected without polluting long-term memory. (Each recording gets its own
+    # area; inheriting from a shared longer-term base is a planned follow-up.)
+    with _demo_lock:
+        write_mem = _ls20_write_memory
+    memory_store = "ephemeral (in-run only — from empty each run)"
+    memory_identities = memory_shapes = 0
+    if write_mem:
+        import re as _re
+        area = Path(sa.memory_dir()).parent / "object_memory_demo" / (_re.sub(r"[^A-Za-z0-9_.-]", "_", key or "default"))
+        try:
+            sa.extract_sequence([p for (_d, p, _a) in order], "ls20-live",
+                                mem_dir=str(area), write=True, game=source_label)
+            snap = sa.registry_snapshot(str(area))
+            memory_shapes = snap.get("shapeCount", 0)
+            memory_identities = sum(len(s.get("identities", [])) for s in snap.get("scopes", {}).values())
+            memory_store = str(area)
+        except Exception as _e:  # noqa: BLE001
+            memory_store = f"write failed: {_e}"
+
     # per-shape learner evidence + provenance: how many raw variants (identities)
     # instantiate each shape, and how many only exist because a normalization
     # filter (scale/rotation/colour) collapsed a raw variant onto the shape.
@@ -1253,6 +1287,9 @@ def _demo_live_ls20_sequence():
                        "geometry_recognized": f"{total_geo_recog}/{total_parts} ({geo_pct:.0f}%)",
                        "individuals_recognized": f"{total_ind_recog}/{total_parts}",
                        "moves_seen": moves_seen,
+                       "memory_store": memory_store,
+                       "memory_identities": memory_identities,
+                       "memory_shapes": memory_shapes,
                        "recolored_shapes": recolored_shapes,
                        "recolor_events": recolor_events},
             "passed": passed,
@@ -1305,6 +1342,7 @@ _DEMO_CATALOG = [
                     "objects_learned", "shapes_learned", "max_learners_per_shape",
                     "most_learned_shape", "learners_direct", "learners_via_filter",
                     "geometry_recognized", "individuals_recognized", "moves_seen",
+                    "memory_store", "memory_identities", "memory_shapes",
                     "recolored_shapes", "recolor_events"]},
     {"id": "occlusion-t", "group": "Occlusion completion", "title": "T tetromino — stem occluded",
      "resultKeys": ["recognized", "scale", "orientation", "residual", "confidence", "faithful"]},
@@ -1654,6 +1692,7 @@ def get_demo_state() -> dict:
             "catalog": demo_catalog(), "coverage": sow_coverage(), "running": st["running"],
             "anyPlaying": any_playing, "playEpoch": epoch,
             "ls20Recordings": _ls20_recordings(), "ls20Source": _current_ls20_key(),
+            "ls20WriteMemory": _ls20_write_memory,
             "startedAt": st["startedAt"], "finishedAt": st["finishedAt"], "only": st["only"]}
 
 
