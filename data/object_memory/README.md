@@ -13,9 +13,10 @@ recognition.
 Regenerated deterministically from the code and **consulted** (read) by Prolog.
 
 - `shape(Key, Name, Turtle)` - each free polyomino (monomino..octomino) keyed by
-  its **rotation-normalized full** form (flipped/rotated so the bottom-right
-  corner/quadrant holds the most pixels). `Name` is a letter name (orders 1-5) or
-  a `box_HxW[_cut_...]` descriptor.
+  its **rotation-normalized full** form via the **Buttered Toast Algorithm**
+  (flipped/rotated so the bottom-right corner/quadrant holds the most pixels; see
+  `workbench/docs/design/BUTTERED_TOAST_NORMALIZATION.md`). `Name` is a letter
+  name (orders 1-5) or a `box_HxW[_cut_...]` descriptor.
 - `variant(VKey, Name, Kind, Base)` - the shape's other forms mapping back to it:
   the unrotated full, and the **squared** / **aspect** shrinks and **45-degree**
   diagonal in both unrotated and rotation-normalized orientations. This lets a

@@ -397,13 +397,17 @@ def _canon_key(offs) -> tuple:
 
 
 def _canon_br(offs) -> tuple:
-    """Rotational normalization: flip/rotate the shape so it sits most toward the
-    bottom-right. Scoring, highest priority first:
-      1. the bottom-right CORNER cell (w-1, h-1) is filled (touching the corner
-         beats any mere pixel count),
+    """The Buttered Toast Algorithm: bottom-right rotational normalization.
+
+    Like buttered toast landing butter-side down, flip/rotate the shape so its
+    heavy side falls to the bottom-right, giving a deterministic canonical
+    orientation (see workbench/docs/design/BUTTERED_TOAST_NORMALIZATION.md).
+    Scoring, highest priority first (each rule breaks ties of the previous one):
+      1. the bottom-right CORNER cell (w-1, h-1) is filled -- touching the corner
+         beats any mere pixel count,
       2. most pixels in the bottom-right QUADRANT,
-      3. most pixels in the BOTTOM HALF,
-      4. mass toward bottom-right (sum x+y), then lexicographic.
+      3. else most pixels in the BOTTOM HALF,
+      4. most mass toward bottom-right (sum x+y), then lexicographic.
     If no orientation beats the current one it is already normalized. Same D4
     equivalence class as _canon_key, just a bottom-right representative."""
     best = None
