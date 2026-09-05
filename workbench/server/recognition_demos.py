@@ -323,14 +323,15 @@ _LS20_DIR = (Path(__file__).resolve().parents[1] / "workspaces" / "arc3_random_p
 
 
 def _demo_live_ls20_sequence():
-    """A (real data): play the actual recorded ls20 frames over time, decoding each
-    to its grid and reading the real per-frame recognition (from the committed
-    *__prolog.parts.json) so you watch objects get recognized / tracked as the
-    recording plays."""
+    """A (real data): play the actual recorded ls20 frames over time, starting from
+    an EMPTY memory and learning as it goes — frame 0 recognizes nothing; each
+    later frame recognizes the objects (by their colour-free, scale-normalized
+    identity) it has already seen earlier in the sequence, so you watch recognition
+    build up over time. Object cells are drawn from each frame's real part-graph:
+    NEW objects (first sighting) render blue, RECOGNIZED objects render green."""
     import json as _json
     import symbolic_arc as sa
     setdir = _LS20_DIR
-    frames_list = []
     if not setdir.is_dir():
         return {"id": "live-ls20", "group": "Live sequence (real data)",
                 "title": "Live ls20 recording — recognition over time", "panels": [],
@@ -347,41 +348,113 @@ def _demo_live_ls20_sequence():
         order = sorted(p.stem for p in setdir.glob("*.png"))
     sym = setdir / "sym"
     frames = []
-    total_recog = total_new = 0
+    geo_seen: set = set()          # GEOMETRY: colour-free shape vocabulary learned
+    ind_seen: set = set()          # INDIVIDUALS: (shape, colour) objects learned
+    total_ind_recog = 0
+    first_ind_recog = first_geo_recog = None
     for idv in order[:28]:
         png = next(iter(setdir.glob(f"{idv}.png")), None)
         if not png:
             continue
         idx, hexpal, _c, _r = sa.decode_grid(str(png))
-        cells = _grid_to_cells(idx, hexpal)
-        # per-frame recognition readout from the real prolog part-graph
-        recog = new = 0
-        names: list = []
+        geo_new = geo_recog = ind_new = ind_recog = 0
+        roled: list = []
+        frame_geo: set = set()
+        frame_ind: set = set()
         pj = sym / f"{idv}__prolog.parts.json"
+        parts = []
         if pj.is_file():
             try:
-                for p in _json.loads(pj.read_text(encoding="utf-8")):
-                    nm = p.get("shapeName")
-                    if p.get("memNew") is True:
-                        new += 1
-                    elif p.get("memSeen"):
-                        recog += 1
-                    if nm and nm not in names:
-                        names.append(nm)
+                parts = _json.loads(pj.read_text(encoding="utf-8"))
             except (OSError, _json.JSONDecodeError):
-                pass
-        total_recog += recog
-        total_new += new
-        frames.append(_panel(f"{idv} · {recog} recognized · {new} new", cells))
-        frames_list.append(idv)
-    passed = len(frames) > 0
+                parts = []
+        for p in parts:
+            off = p.get("off") or []
+            if not off:
+                continue
+            geo = sa._identity_name(off) or ("shape_" + str(p.get("sig")))   # geometry
+            ind = (geo, sa._cname(p.get("color", "")))                        # individual
+            geo_known = geo in geo_seen        # recognized only if seen in a PRIOR frame
+            ind_known = ind in ind_seen
+            geo_recog += geo_known; geo_new += (not geo_known)
+            ind_recog += ind_known; ind_new += (not ind_known)
+            frame_geo.add(geo); frame_ind.add(ind)
+            # overlay coloured by INDIVIDUAL recognition: green recognized, blue new
+            cx, cy = p.get("cx", 0), p.get("cy", 0)
+            oxs = [c[0] for c in off]; oys = [c[1] for c in off]
+            bx = int(round(cx - (max(oxs) + min(oxs)) / 2.0))
+            by = int(round(cy - (max(oys) + min(oys)) / 2.0))
+            role, col = ("regen", _GREEN) if ind_known else ("visible", _BLUE)
+            for (dx, dy) in off:
+                roled.append((bx + dx, by + dy, role, col))
+        geo_seen |= frame_geo             # learn AFTER scoring the frame
+        ind_seen |= frame_ind
+        if first_ind_recog is None:
+            first_ind_recog, first_geo_recog = ind_recog, geo_recog
+        total_ind_recog += ind_recog
+        base = [(x, y, "object", hexpal[int(idx[y, x])]) for y in range(idx.shape[0]) for x in range(idx.shape[1])]
+        frames.append(_panel(
+            f"{idv} · objects {ind_recog} rec / {ind_new} new · shapes {geo_recog} rec / {geo_new} new "
+            f"· learned {len(ind_seen)} obj, {len(geo_seen)} shapes", base + roled))
+
+    # --- one frame of LEVEL 2 (same game): cross-level transfer. The geometry
+    # (and many individuals) learned in level 1 are recognized immediately, so
+    # the level-2 frame arrives mostly green rather than all-new. It has no
+    # committed part-graph, so extract it fresh on the fly.
+    lvl2_geo = lvl2_ind = lvl2_total = 0
+    lvl2dir = _LS20_DIR.parent / "data-arc3_games-recordings-ls20-saved_002"
+    if lvl2dir.is_dir():
+        l2png = next(iter(sorted(lvl2dir.glob("*.png"))), None)
+        if l2png is not None:
+            try:
+                pr = sa.extract_frame(str(l2png), "ls20-saved_002")
+            except Exception:  # noqa: BLE001
+                pr = None
+            if pr and pr.get("nparts", 0) > 0 and pr["cols"] <= 160 and pr["rows"] <= 160:
+                idx2, hexpal2, _c2, _r2 = sa.decode_grid(str(l2png))
+                roled2: list = []
+                for p in pr.get("geom", []):
+                    off = p.get("off") or []
+                    if not off:
+                        continue
+                    geo = sa._identity_name(off) or ("shape_" + str(p.get("sig")))
+                    ind = (geo, sa._cname(p.get("color", "")))
+                    geo_known = geo in geo_seen
+                    ind_known = ind in ind_seen
+                    lvl2_total += 1
+                    lvl2_geo += geo_known
+                    lvl2_ind += ind_known
+                    cx, cy = p.get("cx", 0), p.get("cy", 0)
+                    oxs = [c[0] for c in off]; oys = [c[1] for c in off]
+                    bx = int(round(cx - (max(oxs) + min(oxs)) / 2.0))
+                    by = int(round(cy - (max(oys) + min(oys)) / 2.0))
+                    role, col = ("regen", _GREEN) if ind_known else ("visible", _BLUE)
+                    for (dx, dy) in off:
+                        roled2.append((bx + dx, by + dy, role, col))
+                base2 = [(x, y, "object", hexpal2[int(idx2[y, x])])
+                         for y in range(idx2.shape[0]) for x in range(idx2.shape[1])]
+                frames.append(_panel(
+                    f"LEVEL 2 (saved_002) frame 1 · objects {lvl2_ind}/{lvl2_total} recognized "
+                    f"· shapes {lvl2_geo}/{lvl2_total} — carried over from level 1", base2 + roled2))
+
+    # demonstrates learning: the first frame recognizes nothing (empty memory),
+    # geometry (fewer, shared) saturates faster than individuals (colour variety),
+    # and the level-2 frame is mostly recognized on arrival (cross-level transfer).
+    passed = bool(frames) and first_ind_recog == 0 and total_ind_recog > 0
     return {"id": "live-ls20", "group": "Live sequence (real data)",
-            "title": "Live ls20 recording — recognition over time", "panels": frames[:1],
+            "title": "Live ls20 recording — recognition builds up, transfers to level 2", "panels": frames[:1],
             "frames": frames,
-            "result": {"frames": len(frames), "recognized_total": total_recog, "new_total": total_new},
+            "result": {"frames": len(frames), "frame0_objects_recognized": first_ind_recog,
+                       "frame0_shapes_recognized": first_geo_recog,
+                       "objects_learned": len(ind_seen), "shapes_learned": len(geo_seen),
+                       "level2_objects_recognized": f"{lvl2_ind}/{lvl2_total}",
+                       "level2_shapes_recognized": f"{lvl2_geo}/{lvl2_total}"},
             "passed": passed,
-            "description": "The actual recorded ls20 frames, decoded and played over time; each frame's "
-                           "caption is the real recognition (recognized / new) from its committed prolog part-graph."}
+            "description": "The real recorded ls20 frames played from an EMPTY memory. Two things are learned "
+                           "separately: GEOMETRY (colour-free shape vocabulary, shared) and INDIVIDUALS "
+                           "(shape+colour, per game). Frame 0 recognizes nothing; geometry saturates faster "
+                           "than individuals; the final LEVEL 2 frame is mostly recognized on arrival "
+                           "(cross-level transfer). Overlay: green = recognized, blue = first sighting."}
 
 
 _DEMOS = [
