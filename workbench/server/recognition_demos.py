@@ -838,6 +838,7 @@ def _demo_live_ls20_sequence():
     import symbolic_arc as sa
     l1dir = _LS20_DIR
     l2dir = _LS20_DIR.parent / "data-arc3_games-recordings-ls20-saved_002"
+    l3dir = _LS20_DIR.parent / "data-arc3_games-recordings-ls20-saved_003"
     if not l1dir.is_dir():
         return {"id": "live-ls20", "group": "Live sequence (real data)",
                 "title": "Live ls20 recording — recognition over time", "panels": [],
@@ -885,15 +886,19 @@ def _demo_live_ls20_sequence():
         return idx, hexpal, pr.get("geom", [])
 
     def _play_level(level_label, setdir, game, max_frames):
-        """Play one level's frames in order over the SHARED memory, appending an
-        animated scene per frame and returning per-level recognition stats."""
+        """Play one level's frames in order over the SHARED geometry/individual
+        memory, appending an animated scene per frame and returning per-level
+        recognition stats. Colour history is tracked PER LEVEL so 'recolour' means
+        the same shape wearing a new colour WITHIN this level."""
         stats = {"frames": 0, "first_ind_recog": None, "first_geo_recog": None,
-                 "first_total": 0, "total_ind_recog": 0, "total_geo_recog": 0, "total_parts": 0}
+                 "first_total": 0, "first_recolor": 0, "recolor": 0, "recolored_shapes": 0,
+                 "total_ind_recog": 0, "total_geo_recog": 0, "total_parts": 0}
+        level_colours: dict = {}   # shape -> {colours seen so far THIS level}
         for idv in _frame_order(setdir)[:max_frames]:
             idx, hexpal, parts = _parts_for(setdir, idv, game)
             if idx is None:
                 continue
-            geo_new = geo_recog = ind_new = ind_recog = frame_parts = 0
+            geo_new = geo_recog = ind_new = ind_recog = frame_parts = frame_recolor = 0
             roled: list = []
             frame_geo: dict = {}       # shape -> {variantKey: rawform}  raw parts seen this frame
             frame_ind: set = set()
@@ -913,6 +918,8 @@ def _demo_live_ls20_sequence():
                 frame_parts += 1
                 geo_recog += geo_known; geo_new += (not geo_known)
                 ind_recog += ind_known; ind_new += (not ind_known)
+                if geo in level_colours and cname not in level_colours[geo]:   # same shape, NEW colour this level = recoloured
+                    frame_recolor += 1
                 frame_geo.setdefault(geo, {})[vk] = ((w, h), cname)
                 frame_ind.add(ind)
                 # overlay coloured by INDIVIDUAL recognition: green recognized, blue new
@@ -929,25 +936,30 @@ def _demo_live_ls20_sequence():
                 if g not in geo_exemplar:            # first raw form founds the shape (direct)
                     geo_exemplar[g] = next(iter(variants.values()))
                 dst = geo_seen.setdefault(g, {})
+                lc = level_colours.setdefault(g, set())
                 for vk, ((w, h), cname) in variants.items():
                     dst[vk] = _variant_prov(geo_exemplar[g], (w, h), cname)
+                    lc.add(cname)             # remember every colour this shape wore this level
             ind_seen.update(frame_ind)
             after_obj, after_geo = len(ind_seen), len(geo_seen)     # known AFTER learning this frame
             if stats["first_ind_recog"] is None:
                 stats["first_ind_recog"] = ind_recog
                 stats["first_geo_recog"] = geo_recog
                 stats["first_total"] = frame_parts
+                stats["first_recolor"] = frame_recolor
             stats["frames"] += 1
             stats["total_ind_recog"] += ind_recog
             stats["total_geo_recog"] += geo_recog
             stats["total_parts"] += frame_parts
+            stats["recolor"] += frame_recolor
             direct = sum(1 for v in geo_seen.values() for pr in v.values() if pr == "direct")
             made = sum(1 for v in geo_seen.values() for pr in v.values() if pr != "direct")
             rows, cols = idx.shape[0], idx.shape[1]
             base = [(x, y, "object", hexpal[int(idx[y, x])]) for y in range(rows) for x in range(cols)]
             scene = _panel(
-                f"{level_label} · {idv} · this frame: {ind_recog} recognized, {ind_new} new "
-                f"· objects known {before_obj}→{after_obj}, shapes {before_geo}→{after_geo} "
+                f"{level_label} · {idv} · this frame: {ind_recog} recognized, {ind_new} new"
+                + (f", {frame_recolor} recoloured" if frame_recolor else "")
+                + f" · objects known {before_obj}→{after_obj}, shapes {before_geo}→{after_geo} "
                 f"· learners {direct} direct / {made} via filter",
                 base)
             # Recognition map shown to the SIDE (not painted over the scene): green =
@@ -955,15 +967,20 @@ def _demo_live_ls20_sequence():
             scene["aux"] = _panel(f"{level_label} recognition · green = recognized · blue = new",
                                   roled, ox=0, oy=0, w=cols, h=rows)
             frames.append(scene)
+        stats["recolored_shapes"] = sum(1 for cs in level_colours.values() if len(cs) > 1)
         return stats
 
-    # Play BOTH levels of the same game as full sequences over one shared memory.
-    # Level 1 (saved_001) starts from EMPTY and learns; level 2 (saved_002) is then
-    # played on the same memory, so its shapes are recognized on arrival.
+    # Play THREE levels of the same game as full sequences over one shared memory.
+    # Level 1 (saved_001) starts from EMPTY and learns; levels 2 and 3 are then
+    # played on the same memory, so their shapes are recognized on arrival. Level 3
+    # (saved_003) recolours objects: geometry stays recognized while many objects
+    # arrive as NEW individuals of a KNOWN shape (only their colour changed).
+    _empty = {"frames": 0, "first_ind_recog": None, "first_geo_recog": 0, "first_total": 0,
+              "first_recolor": 0, "recolor": 0, "recolored_shapes": 0, "total_ind_recog": 0,
+              "total_geo_recog": 0, "total_parts": 0}
     l1 = _play_level("LEVEL 1 (saved_001)", l1dir, "ls20-saved_001", 28)
-    l2 = _play_level("LEVEL 2 (saved_002)", l2dir, "ls20-saved_002", 34) if l2dir.is_dir() else {
-        "frames": 0, "first_ind_recog": None, "first_geo_recog": 0, "first_total": 0,
-        "total_ind_recog": 0, "total_geo_recog": 0, "total_parts": 0}
+    l2 = _play_level("LEVEL 2 (saved_002)", l2dir, "ls20-saved_002", 34) if l2dir.is_dir() else dict(_empty)
+    l3 = _play_level("LEVEL 3 (saved_003)", l3dir, "ls20-saved_003", 34) if l3dir.is_dir() else dict(_empty)
 
     # per-shape learner evidence + provenance: how many raw variants (identities)
     # instantiate each shape, and how many only exist because a normalization
@@ -972,20 +989,26 @@ def _demo_live_ls20_sequence():
     top_shape = (f"{ev[0][1]} ({ev[0][0]} learners)" if ev else "none")
     direct_all = sum(1 for v in geo_seen.values() for pr in v.values() if pr == "direct")
     made_all = sum(1 for v in geo_seen.values() for pr in v.values() if pr != "direct")
-    # Cross-level transfer: on the FIRST level-2 frame the shapes learned in level 1
-    # are recognized on arrival (level 1 frame 0 recognized nothing from empty memory).
+    # Cross-level transfer: on the FIRST frame of a later level the shapes learned
+    # earlier are recognized on arrival (level 1 frame 0 recognized nothing).
     l2_arrival_geo = l2.get("first_geo_recog") or 0
     l2_arrival_total = l2.get("first_total") or 0
-    # Demonstrates learning across two levels: level 1 frame 0 recognizes nothing,
+    l3_arrival_geo = l3.get("first_geo_recog") or 0
+    l3_arrival_total = l3.get("first_total") or 0
+    # Demonstrates learning across three levels: level 1 frame 0 recognizes nothing,
     # geometry (fewer, shared) saturates faster than individuals (colour variety),
-    # and level 2 arrives already recognizing the level-1 vocabulary.
+    # levels 2 & 3 arrive already recognizing the vocabulary, and level 3 recolours
+    # objects so many arrive as NEW individuals of a KNOWN shape (colour changed).
     passed = (bool(frames)
               and l1.get("first_ind_recog") == 0          # level 1 started from empty memory
               and l1.get("total_ind_recog", 0) > 0        # learned within level 1
               and l2.get("frames", 0) > 0                 # level 2 played as its own sequence
-              and l2_arrival_geo > 0)                     # shapes carried over on arrival (transfer)
+              and l2_arrival_geo > 0                      # level-1 shapes carried over on arrival
+              and l3.get("frames", 0) > 0                 # level 3 played as its own sequence
+              and l3.get("recolored_shapes", 0) > 0)      # level 3 shows colour-change (same shape, new colour)
     return {"id": "live-ls20", "group": "Live sequence (real data)",
-            "title": "Live ls20 recording — recognition builds up, transfers to level 2", "panels": frames[:1],
+            "title": "Live ls20 recording — recognition builds up, transfers across 3 levels (recolour)",
+            "panels": frames[:1],
             "frames": frames,
             "result": {"frames": len(frames),
                        "frame0_objects_recognized": l1.get("first_ind_recog"),
@@ -997,19 +1020,27 @@ def _demo_live_ls20_sequence():
                        "learners_via_filter": made_all,
                        "level1_frames": l1.get("frames", 0),
                        "level2_frames": l2.get("frames", 0),
+                       "level3_frames": l3.get("frames", 0),
                        "level2_arrival_shapes": f"{l2_arrival_geo}/{l2_arrival_total}",
                        "level2_objects_recognized": f"{l2.get('total_ind_recog', 0)}/{l2.get('total_parts', 0)}",
-                       "level2_shapes_recognized": f"{l2.get('total_geo_recog', 0)}/{l2.get('total_parts', 0)}"},
+                       "level2_shapes_recognized": f"{l2.get('total_geo_recog', 0)}/{l2.get('total_parts', 0)}",
+                       "level3_arrival_shapes": f"{l3_arrival_geo}/{l3_arrival_total}",
+                       "level3_objects_recognized": f"{l3.get('total_ind_recog', 0)}/{l3.get('total_parts', 0)}",
+                       "level3_shapes_recognized": f"{l3.get('total_geo_recog', 0)}/{l3.get('total_parts', 0)}",
+                       "level3_recolored_shapes": l3.get("recolored_shapes", 0),
+                       "level3_recolor_events": l3.get("recolor", 0)},
             "passed": passed,
-            "description": "The real recorded ls20 frames played from an EMPTY memory across TWO levels of the "
+            "description": "The real recorded ls20 frames played from an EMPTY memory across THREE levels of the "
                            "same game. LEVEL 1 (saved_001) starts blank: frame 0 recognizes nothing, then GEOMETRY "
                            "(colour-free shape vocabulary, shared) and INDIVIDUALS (shape+colour, per game) are "
                            "learned separately — each shape accruing evidence = the raw variants that use it, and "
                            "every learner keeping its provenance: 'direct' (matched as-is) vs. made by the "
                            "normalization filter (scale/rotation/colour). LEVEL 2 (saved_002) is then played as "
                            "its OWN full sequence on the SAME memory: the level-1 shapes are recognized on arrival "
-                           "(cross-level transfer) and level 2 keeps learning anything genuinely new. Overlay: "
-                           "green = recognized, blue = first sighting."}
+                           "(cross-level transfer) and it keeps learning anything genuinely new. LEVEL 3 (saved_003) "
+                           "RECOLOURS objects: the same shapes are seen in new colours across the level, yet the "
+                           "colour-free GEOMETRY stays recognized (~99%) — proof the recogniser separates shape "
+                           "identity from colour. Overlay: green = recognized, blue = first sighting."}
 
 
 _DEMOS = [
@@ -1043,12 +1074,14 @@ _DEMOS = [
 # Kept in sync with the id/group/title each builder returns.
 _DEMO_CATALOG = [
     {"id": "live-ls20", "group": "Live sequence (real data)",
-     "title": "Live ls20 recording — recognition builds up, transfers to level 2",
+     "title": "Live ls20 recording — recognition builds up, transfers across 3 levels (recolour)",
      "resultKeys": ["frames", "frame0_objects_recognized", "frame0_shapes_recognized",
                     "objects_learned", "shapes_learned", "max_learners_per_shape",
                     "most_learned_shape", "learners_direct", "learners_via_filter",
-                    "level1_frames", "level2_frames", "level2_arrival_shapes",
-                    "level2_objects_recognized", "level2_shapes_recognized"]},
+                    "level1_frames", "level2_frames", "level3_frames",
+                    "level2_arrival_shapes", "level2_objects_recognized", "level2_shapes_recognized",
+                    "level3_arrival_shapes", "level3_objects_recognized", "level3_shapes_recognized",
+                    "level3_recolored_shapes", "level3_recolor_events"]},
     {"id": "occlusion-t", "group": "Occlusion completion", "title": "T tetromino — stem occluded",
      "resultKeys": ["recognized", "scale", "orientation", "residual", "confidence", "faithful"]},
     {"id": "occlusion-plus", "group": "Occlusion completion", "title": "Plus pentomino — centre + arm occluded",
