@@ -22,15 +22,16 @@ type DemosResponse = {
 };
 
 const CELL = 16;
-const MAX_PX = 240;
+const MAX_PX = 360;
 
 function GridPanel({ panel }: { panel: Panel }) {
   const px = Math.max(3, Math.min(CELL, Math.floor(MAX_PX / Math.max(panel.w, panel.h, 1))));
   const W = panel.w * px;
   const H = panel.h * px;
+  const dense = Math.max(panel.w, panel.h) >= 24;  // big real scenes: draw as a clean bitmap
   return (
     <figure style={{ margin: 0, display: "flex", flexDirection: "column", gap: 4, alignItems: "center" }}>
-      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`}
+      <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} shapeRendering="crispEdges"
         style={{ background: "#0b0f1a", borderRadius: 4, border: "1px solid #1c2333" }}>
         {panel.cells.map((c, i) => {
           const x = c.x * px;
@@ -49,6 +50,13 @@ function GridPanel({ panel }: { panel: Panel }) {
           const fill = c.color || "#8a8f98";
           const filled = c.role === "filled";
           const regen = c.role === "regen";
+          // Dense real scenes: draw every ordinary cell as a borderless bitmap pixel
+          // so grid lines don't swamp the image; colour alone encodes recognized
+          // (green) vs new (blue) vs scene. Keep outlines only for the sparse
+          // occlusion markers (filled '+' / hidden '?') used by the small demos.
+          if (dense && !filled && c.role !== "hidden") {
+            return <rect key={i} x={x} y={y} width={px} height={px} fill={fill} />;
+          }
           return (
             <g key={i}>
               <rect x={x + 0.5} y={y + 0.5} width={px - 1} height={px - 1} fill={fill}
@@ -186,34 +194,33 @@ function DemoCard({ demo, onRun, onStep, onStop, onClear, running, stepMode }: {
           </>
         )}
       </div>
-      {demo.description ? <div style={{ fontSize: 11.5, opacity: 0.72, lineHeight: 1.4 }}>{demo.description}</div> : null}
-      {notRun ? (
-        <>
-          <div style={{ display: "flex", justifyContent: "center", padding: "4px 0" }}>
-            {demo.preview ? <GridPanel panel={demo.preview} /> : <BlankMap />}
-          </div>
-          <div style={{ display: "flex", justifyContent: "center" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-start" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "center", flex: "0 0 auto" }}>
+          {notRun
+            ? (demo.preview ? <GridPanel panel={demo.preview} /> : <BlankMap />)
+            : <AnimatedGrid frames={frames} autoplay={!stepMode} />}
+          {notRun ? (
             <PreRunControls onRun={() => onRun(demo.id)} onStep={() => onStep(demo.id)} disabled={running} />
-          </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6, minHeight: 22 }}>
-            {(demo.resultKeys && demo.resultKeys.length ? demo.resultKeys : ["result"]).map((k) => (
-              <span key={k} style={{
-                fontSize: 11, padding: "2px 7px", borderRadius: 5, background: "rgba(148,163,184,0.06)",
-                border: "1px dashed rgba(148,163,184,0.25)", color: "#94a3b8",
-              }}>
-                <span style={{ opacity: 0.7 }}>{k}:</span> <b>—</b>
-              </span>
-            ))}
-          </div>
-        </>
-      ) : (
-        <>
-          <div style={{ display: "flex", justifyContent: "center", padding: "4px 0" }}>
-            <AnimatedGrid frames={frames} autoplay={!stepMode} />
-          </div>
-          <ResultChips result={demo.result} />
-        </>
-      )}
+          ) : null}
+        </div>
+        <div style={{ flex: "1 1 240px", minWidth: 220, display: "flex", flexDirection: "column", gap: 8 }}>
+          {demo.description ? <div style={{ fontSize: 11.5, opacity: 0.72, lineHeight: 1.4 }}>{demo.description}</div> : null}
+          {notRun ? (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, minHeight: 22 }}>
+              {(demo.resultKeys && demo.resultKeys.length ? demo.resultKeys : ["result"]).map((k) => (
+                <span key={k} style={{
+                  fontSize: 11, padding: "2px 7px", borderRadius: 5, background: "rgba(148,163,184,0.06)",
+                  border: "1px dashed rgba(148,163,184,0.25)", color: "#94a3b8",
+                }}>
+                  <span style={{ opacity: 0.7 }}>{k}:</span> <b>—</b>
+                </span>
+              ))}
+            </div>
+          ) : (
+            <ResultChips result={demo.result} />
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -345,7 +352,7 @@ export function RecognitionDemosPage() {
       {Object.entries(groups).map(([group, demos]) => (
         <section key={group} style={{ marginBottom: 20 }}>
           <h3 style={{ margin: "8px 0", fontSize: 14, opacity: 0.85 }}>{group}</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))", gap: 12 }}>
             {demos.map((d) => {
               const cardRunning = running && (data?.only == null || data?.only === d.id);
               return (
