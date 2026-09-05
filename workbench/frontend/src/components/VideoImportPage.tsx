@@ -6773,7 +6773,7 @@ export function VideoImportPage({
                                       disappeared: p.disappeared,
                                       appeared: p.appeared.map((f) => ({ color: f.color })),
                                     };
-                                    inductionEls.push(renderRow("induction-prolog", "Induction · Prolog", "is-prolog", pev, reduceMetta[pRel] === undefined, p.action || manifestActLabel, !!p.action));
+                                    inductionEls.push(renderRow("induction-prolog", "Prolog Induction · Prolog Parts", "is-prolog", pev, reduceMetta[pRel] === undefined, p.action || manifestActLabel, !!p.action));
                                   }
                                   // Induction · LLM — computed client-side from the LLM parts of both frames.
                                   const llmRow = tiers.find((r: any) => r.kind !== "prolog" && r.kind !== "oneshot") || tiers.find((r: any) => r.kind !== "prolog");
@@ -6785,7 +6785,7 @@ export function VideoImportPage({
                                     const pa = reduceParts[aRel]; const pb = reduceParts[bRel];
                                     const loading = pa === undefined || pb === undefined;
                                     const lev = (Array.isArray(pa) && Array.isArray(pb)) ? induceLlmPair(pa, pb) : null;
-                                    inductionEls.push(renderRow("induction-llm", "Induction · LLM", "is-llm", lev, loading, manifestActLabel, false));
+                                    inductionEls.push(renderRow("induction-llm", "Prolog Induction · LLM Parts", "is-llm", lev, loading, manifestActLabel, false));
                                   }
                                 }
                                 return (
