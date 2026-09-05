@@ -110,6 +110,108 @@ def _demo_occlusion_reject():
             "description": "The cell the form needs is not under the occluder, so no completion is accepted."}
 
 
+def _demo_progressive_reveal():
+    """Progressive occlusion during LEARNING (a small, controlled version of what the
+    live ls20 recording shows): an object starts mostly hidden and is uncovered in
+    connected CHUNKS as the player/AI moves. Each newly revealed chunk is registered
+    as a PART; the object is built up incrementally from its parts, and its turtle
+    (canonical form) stays PROVISIONAL — refined as parts arrive — only finalised once
+    the whole object is uncovered. Early on the object may even read as several
+    DISJOINT pieces before a later chunk connects them into one."""
+    import symbolic_arc as sa
+    from scipy import ndimage
+    import numpy as _np
+    # The object as the ordered CHUNKS a moving player reveals (each chunk = a part).
+    # A PLUS/cross revealed arm-by-arm: the four arms appear as DISJOINT pieces, then
+    # the centre chunk snaps them together into one connected object.
+    parts = [
+        [(2, 0), (2, 1)],       # 1: top arm
+        [(0, 2), (1, 2)],       # 2: left arm  (disjoint -> 2 pieces)
+        [(3, 2), (4, 2)],       # 3: right arm (disjoint -> 3 pieces)
+        [(2, 3), (2, 4)],       # 4: bottom arm (disjoint -> 4 pieces)
+        [(2, 2)],               # 5: centre — connects every arm into ONE object
+    ]
+    full = sorted({tuple(c) for pt in parts for c in pt})
+    fullset = set(full)
+    ox, oy, w, h = _bbox(fullset)
+
+    def _pieces(cells):
+        if not cells:
+            return 0
+        g = _np.zeros((h, w), dtype=int)
+        for (x, y) in cells:
+            g[y - oy, x - ox] = 1
+        _lab, n = ndimage.label(g)
+        return int(n)
+
+    def _prov_name(cells):
+        cl = sorted(cells)
+        try:
+            nm = sa._identity_name(cl)
+        except Exception:  # noqa: BLE001
+            nm = None
+        if nm:
+            return nm
+        try:
+            return "form_" + str(sa._shape_key((None, sa._canon_br(cl))))[:8]
+        except Exception:  # noqa: BLE001
+            return f"form_{len(cl)}cells"
+
+    frames: list = []
+    revealed: set = set()
+    pieces_seq: list = []
+    reads: list = []
+    assembled_at = None
+    for k, pt in enumerate(parts):
+        chunk = {tuple(c) for c in pt}
+        prev = set(revealed)
+        revealed |= chunk
+        pieces = _pieces(revealed)
+        prev_pieces = pieces_seq[-1] if pieces_seq else None
+        pieces_seq.append(pieces)
+        name = _prov_name(revealed)
+        reads.append(name)
+        complete = revealed == fullset
+        if assembled_at is None and pieces == 1 and prev_pieces is not None and prev_pieces > 1:
+            assembled_at = k + 1
+        hidden = fullset - revealed
+        scene = _panel(
+            f"reveal {k + 1}/{len(parts)} · +1 part ({len(chunk)} cells) · parts {k + 1} · pieces {pieces} · "
+            + ("turtle FINAL" if complete else "turtle provisional") + f" · reads as {name}",
+            [(x, y, "filled", _GREEN) for (x, y) in prev]
+            + [(x, y, "visible", _BLUE) for (x, y) in chunk]
+            + [(x, y, "hidden", None) for (x, y) in hidden], ox, oy, w, h)
+        scene["aux"] = _panel(
+            f"assembled from parts · {k + 1} part(s) · {pieces} piece(s) · "
+            + ("COMPLETE" if complete else "provisional"),
+            [(x, y, "object", _GREEN) for (x, y) in revealed], ox, oy, w, h)
+        frames.append(scene)
+
+    faithful = revealed == fullset
+    turtle_evolved = len(set(reads)) > 1
+    final_name = reads[-1] if reads else None
+    passed = bool(frames) and faithful and len(parts) >= 2 and turtle_evolved and bool(final_name)
+    return {"id": "progressive-reveal", "group": "Occlusion completion",
+            "title": "Progressively revealed object — built from parts",
+            "panels": [frames[0], frames[-1]], "frames": frames,
+            "result": {"parts": len(parts), "frames": len(frames),
+                       "pieces_over_time": pieces_seq,
+                       "provisional_reads": reads,
+                       "assembled_at_frame": assembled_at,
+                       "final_shape": final_name,
+                       "turtle_final": faithful,
+                       "turtle_evolved": turtle_evolved,
+                       "faithful": faithful},
+            "passed": passed,
+            "description": "A small controlled version of what the live ls20 recording shows: an object is "
+                           "revealed in connected CHUNKS as the player/AI moves. Each chunk is registered as a "
+                           "PART and the object is assembled incrementally; its turtle (canonical form) stays "
+                           "PROVISIONAL and is refined as parts arrive, only finalised once the whole object is "
+                           "uncovered. Note the object first reads as TWO disjoint pieces, then a later chunk "
+                           "connects them into one. Overlay: green = already revealed, blue = the chunk just "
+                           "discovered, dark = still occluded."}
+
+
 # --- identity (recolor / resize) --------------------------------------------
 
 def _frame_col(color, off, cx=5, cy=5):
@@ -1066,6 +1168,7 @@ _DEMOS = [
                              for dx in range(2) for dy in range(2)],
                             [(2, 2), (3, 2), (2, 3), (3, 3)], [(0, 0), (1, 0), (2, 0), (1, 1)]),
     _demo_occlusion_reject,
+    _demo_progressive_reveal,
     _demo_recolor, _demo_resize,
     _demo_rotation, _demo_reflection,
     _demo_store_then_recognize, _demo_new_distinguished,
@@ -1100,6 +1203,9 @@ _DEMO_CATALOG = [
      "resultKeys": ["recognized", "scale", "orientation", "residual", "confidence", "faithful"]},
     {"id": "occlusion-reject", "group": "Occlusion completion", "title": "Inconsistent fragment is rejected",
      "resultKeys": ["recognized", "note"]},
+    {"id": "progressive-reveal", "group": "Occlusion completion", "title": "Progressively revealed object — built from parts",
+     "resultKeys": ["parts", "frames", "pieces_over_time", "provisional_reads", "assembled_at_frame",
+                    "final_shape", "turtle_final", "turtle_evolved", "faithful"]},
     {"id": "recolor", "group": "Identity (recolor / resize)", "title": "Recolour is the same object",
      "resultKeys": ["object", "seen", "colours", "recognized_not_new", "identities"]},
     {"id": "resize", "group": "Identity (recolor / resize)", "title": "Resize is the same object",
@@ -1298,6 +1404,7 @@ _SOW_COVERAGE = [
     ("P3", "11", "Prevent post-hoc explanations counting as predictions", "full", "full", "phase3-live"),
     ("P3", "12a", "Recognition of partly occluded objects", "full", "full", "occlusion-t"),
     ("P3", "12b", "Completion of partly occluded objects", "full", "full", "occlusion-t"),
+    ("P3", "12c", "Progressive reveal — object built from parts while occlusion lifts", "full", "full", "progressive-reveal"),
     ("P3", "13a", "Operation in grid environments", "full", "full", "live-ls20"),
     ("P3", "13b", "Operation in raster environments", "full", "full", "input-gradient"),
     ("P3", "13c", "Rendered arcade / fixed-camera physics / top-down manipulation", "full", "full", "environments"),
