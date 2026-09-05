@@ -55,9 +55,23 @@ def _occlusion_demo(did, title, full, hidden, candidate):
     ox, oy, w, h = _bbox(full_s, hid_s)
     before = _panel("occluded view", [(x, y, "visible", _BLUE) for (x, y) in frag]
                     + [(x, y, "hidden", None) for (x, y) in hid_s], ox, oy, w, h)
+    frames = [before]
     if r:
-        after = _panel("completed", [(x, y, "visible", _BLUE) for (x, y) in r["visible"]]
+        # Animate the real completion: reveal each filled cell one at a time, in
+        # the order the recognizer returned them, until the object is whole.
+        filled = [tuple(c) for c in r["filled"]]
+        shown: list = []
+        for i, cell in enumerate(filled):
+            shown.append(cell)
+            rest = [c for c in hid_s if c not in set(shown)]
+            frames.append(_panel(f"completing {i + 1}/{len(filled)}",
+                                 [(x, y, "visible", _BLUE) for (x, y) in r["visible"]]
+                                 + [(x, y, "filled", _GREEN) for (x, y) in shown]
+                                 + [(x, y, "hidden", None) for (x, y) in rest], ox, oy, w, h))
+        after = _panel(f"completed → {r['name']}",
+                       [(x, y, "visible", _BLUE) for (x, y) in r["visible"]]
                        + [(x, y, "filled", _GREEN) for (x, y) in r["filled"]], ox, oy, w, h)
+        frames.append(after)
         faithful = {tuple(c) for c in r["cells"]} == {tuple(c) for c in sa._norm(list(full_s))}
         result = {"recognized": r["name"], "scale": r["scale"], "orientation": r["orientation"],
                   "residual": r["residual"], "confidence": r["confidence"], "faithful": faithful}
@@ -68,7 +82,7 @@ def _occlusion_demo(did, title, full, hidden, candidate):
         passed = candidate is None or not (hid_s & full_s)  # reject-case demo expects None
         panels = [before]
     return {"id": did, "group": "Occlusion completion", "title": title, "panels": panels,
-            "result": result, "passed": passed,
+            "frames": frames, "result": result, "passed": passed,
             "description": "Hypothesize the held form from the visible fragment, run it forward to "
                            "fill the hidden cells, accept only when every filled cell lies under the occluder."}
 
@@ -199,10 +213,23 @@ def _demo_regeneration():
         mx = min(x for x, _ in cs_); my = min(y for _, y in cs_)
         return {(x - mx, y - my) for x, y in cs_}
     faithful = _n(got) == _n(want)
+    # Animate the turtle replaying its program: reveal one rectangle (cell) per
+    # frame in the real command order, so the shape is drawn stroke by stroke.
+    ow = max(x for x, _ in got) - min(x for x, _ in got) + 1
+    oh = max(y for _, y in got) - min(y for _, y in got) + 1
+    oxg = min(x for x, _ in got); oyg = min(y for _, y in got)
+    seq = [(round(b["box"][0] / cs), round(b["box"][1] / cs)) for b in rects]
+    frames = []
+    drawn: list = []
+    for i, cell in enumerate(seq):
+        drawn.append(cell)
+        frames.append(_panel(f"drawing {i + 1}/{len(seq)}",
+                             [(x, y, "regen", _GREEN) for (x, y) in drawn], oxg, oyg, ow, oh))
     panels = [_panel("stored shape", [(x, y, "object", _BLUE) for (x, y) in want]),
               _panel("regenerated from turtle", [(x, y, "regen", _GREEN) for (x, y) in got])]
     return {"id": "regeneration", "group": "Regeneration",
             "title": f"Regenerate {shp['name']} from its stored form", "panels": panels,
+            "frames": frames or panels,
             "result": {"shape": shp["name"], "faithful": faithful},
             "passed": faithful,
             "description": "The stored turtle program replays to the exact normalized cells (faithful on grids)."}
@@ -289,7 +316,74 @@ def _demo_input_video():
                            "committed object, not re-minted per frame."}
 
 
+_LS20_DIR = (Path(__file__).resolve().parents[1] / "workspaces" / "arc3_random_player" / "data"
+             / "vision_frames" / "arc_recordings" / "data-arc3_games-recordings-ls20-saved_001")
+
+
+def _demo_live_ls20_sequence():
+    """A (real data): play the actual recorded ls20 frames over time, decoding each
+    to its grid and reading the real per-frame recognition (from the committed
+    *__prolog.parts.json) so you watch objects get recognized / tracked as the
+    recording plays."""
+    import json as _json
+    import symbolic_arc as sa
+    setdir = _LS20_DIR
+    frames_list = []
+    if not setdir.is_dir():
+        return {"id": "live-ls20", "group": "Live sequence (real data)",
+                "title": "Live ls20 recording — recognition over time", "panels": [],
+                "frames": [], "result": {"note": "ls20 recording set not found"}, "passed": False,
+                "description": "Plays the real recorded ls20 frames with live recognition; run a reduce first."}
+    mf_path = setdir / "manifest.json"
+    order = []
+    if mf_path.is_file():
+        try:
+            order = [it["id"] for it in _json.loads(mf_path.read_text(encoding="utf-8")).get("items", [])]
+        except (OSError, _json.JSONDecodeError):
+            order = []
+    if not order:
+        order = sorted(p.stem for p in setdir.glob("*.png"))
+    sym = setdir / "sym"
+    frames = []
+    total_recog = total_new = 0
+    for idv in order[:28]:
+        png = next(iter(setdir.glob(f"{idv}.png")), None)
+        if not png:
+            continue
+        idx, hexpal, _c, _r = sa.decode_grid(str(png))
+        cells = _grid_to_cells(idx, hexpal)
+        # per-frame recognition readout from the real prolog part-graph
+        recog = new = 0
+        names: list = []
+        pj = sym / f"{idv}__prolog.parts.json"
+        if pj.is_file():
+            try:
+                for p in _json.loads(pj.read_text(encoding="utf-8")):
+                    nm = p.get("shapeName")
+                    if p.get("memNew") is True:
+                        new += 1
+                    elif p.get("memSeen"):
+                        recog += 1
+                    if nm and nm not in names:
+                        names.append(nm)
+            except (OSError, _json.JSONDecodeError):
+                pass
+        total_recog += recog
+        total_new += new
+        frames.append(_panel(f"{idv} · {recog} recognized · {new} new", cells))
+        frames_list.append(idv)
+    passed = len(frames) > 0
+    return {"id": "live-ls20", "group": "Live sequence (real data)",
+            "title": "Live ls20 recording — recognition over time", "panels": frames[:1],
+            "frames": frames,
+            "result": {"frames": len(frames), "recognized_total": total_recog, "new_total": total_new},
+            "passed": passed,
+            "description": "The actual recorded ls20 frames, decoded and played over time; each frame's "
+                           "caption is the real recognition (recognized / new) from its committed prolog part-graph."}
+
+
 _DEMOS = [
+    _demo_live_ls20_sequence,
     lambda: _occlusion_demo("occlusion-t", "T tetromino — stem occluded",
                             [(0, 0), (1, 0), (2, 0), (1, 1)], [(1, 1)], [(0, 0), (1, 0), (2, 0), (1, 1)]),
     lambda: _occlusion_demo("occlusion-plus", "Plus pentomino — centre + arm occluded",
@@ -313,9 +407,10 @@ def run_demos(only: str | None = None) -> dict:
     for make in _DEMOS:
         try:
             demo = make()
+            demo.setdefault("frames", demo.get("panels") or [])  # animate: default to panels
         except Exception as err:  # noqa: BLE001 - surface a failed demo, don't crash the page
             out.append({"id": "error", "group": "Error", "title": str(err),
-                        "panels": [], "result": {"error": str(err)}, "passed": False})
+                        "panels": [], "frames": [], "result": {"error": str(err)}, "passed": False})
             continue
         if only and demo.get("id") != only:
             continue

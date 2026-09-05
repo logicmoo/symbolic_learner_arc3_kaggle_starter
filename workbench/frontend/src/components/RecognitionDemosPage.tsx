@@ -12,7 +12,7 @@ type Cell = { x: number; y: number; role: string; color: string | null };
 type Panel = { label: string; w: number; h: number; cells: Cell[] };
 type Demo = {
   id: string; group: string; title: string; description: string;
-  panels: Panel[]; result: Record<string, unknown>; passed: boolean;
+  panels: Panel[]; frames?: Panel[]; result: Record<string, unknown>; passed: boolean;
 };
 type DemosResponse = { demos: Demo[]; total: number; passed: number };
 
@@ -76,7 +76,38 @@ function ResultChips({ result }: { result: Record<string, unknown> }) {
   );
 }
 
+function AnimatedGrid({ frames }: { frames: Panel[] }) {
+  const [i, setI] = useState(0);
+  const [playing, setPlaying] = useState(true);
+  const multi = frames.length > 1;
+  useEffect(() => { if (i > frames.length - 1) setI(0); }, [frames.length, i]);
+  useEffect(() => {
+    if (!multi || !playing) return;
+    const t = setInterval(() => setI((v) => (v + 1) % frames.length), 700);
+    return () => clearInterval(t);
+  }, [multi, playing, frames.length]);
+  if (!frames.length) return <div style={{ opacity: 0.5, fontSize: 12 }}>no frames</div>;
+  const cur = frames[Math.min(i, frames.length - 1)];
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "center" }}>
+      <GridPanel panel={cur} />
+      {multi ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
+          <button type="button" onClick={() => setPlaying((p) => !p)}
+            style={{ fontSize: 11, padding: "1px 8px", borderRadius: 4, cursor: "pointer" }}>{playing ? "⏸" : "▶"}</button>
+          <input type="range" min={0} max={frames.length - 1} value={Math.min(i, frames.length - 1)}
+            onChange={(e) => { setPlaying(false); setI(Number(e.target.value)); }} style={{ width: 120 }} />
+          <span style={{ opacity: 0.6, minWidth: 42, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
+            {Math.min(i, frames.length - 1) + 1}/{frames.length}
+          </span>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function DemoCard({ demo, onRun, running }: { demo: Demo; onRun: (id: string) => void; running: boolean }) {
+  const frames = (demo.frames && demo.frames.length ? demo.frames : demo.panels) || [];
   return (
     <div style={{
       border: "1px solid #1c2333", borderRadius: 8, padding: 12, background: "#0d1320",
@@ -95,8 +126,8 @@ function DemoCard({ demo, onRun, running }: { demo: Demo; onRun: (id: string) =>
         </button>
       </div>
       <div style={{ fontSize: 11.5, opacity: 0.72, lineHeight: 1.4 }}>{demo.description}</div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 16, alignItems: "flex-start", padding: "4px 0" }}>
-        {demo.panels.map((p, i) => <GridPanel key={i} panel={p} />)}
+      <div style={{ display: "flex", justifyContent: "center", padding: "4px 0" }}>
+        <AnimatedGrid frames={frames} />
       </div>
       <ResultChips result={demo.result} />
     </div>
