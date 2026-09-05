@@ -33,7 +33,7 @@ from .benchmark import (
     ProviderAblationRunner,
     RasterPerturbationGenerator,
 )
-from .forms import CellLogoForm, FitResult, GenerativeForm
+from .forms import AbstractGenerativeForm, FitResult, GenerativeForm
 from .environment_fixtures import (
     EnvironmentProgressionFixtures,
     environment_progression_fixtures,
@@ -156,7 +156,7 @@ __all__ = [
     "CandidateObject",
     "CalibrationPoint",
     "ChangeDetector",
-    "CellLogoForm",
+    "AbstractGenerativeForm",
     "CommittedAtom",
     "ConfidenceHistoryRecord",
     "CorrespondenceEvidenceBuilder",

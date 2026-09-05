@@ -198,7 +198,7 @@ The other files under `workbench/frontend/src/pages/` and older shell-oriented c
 - [`python/omega_vision/replay.py`](python/omega_vision/replay.py) — exact semantic codecs, durable Prolog facts, queryable MeTTa AtomSpace records, and action-tree replay.
 - [`python/omega_vision/models.py`](python/omega_vision/models.py) — backend-neutral execution mode, normalized result, object, residual, atom, rule, evidence, confidence, and prediction records.
 - [`python/omega_vision/providers.py`](python/omega_vision/providers.py) — one provider interface with PROLOG, GPT-artifact, and deterministic PYTHON implementations.
-- [`python/omega_vision/forms.py`](python/omega_vision/forms.py) — `GenerativeForm` and `CellLogoForm`; Phase 2 extends these into one regenerating Turtle program per object using movement, rotation, pen state, and pen width rather than box filling.
+- [`python/omega_vision/forms.py`](python/omega_vision/forms.py) — `AbstractGenerativeForm` and `GenerativeForm`; Phase 2 extends these into one regenerating Turtle program per object using movement, rotation, pen state, and pen width rather than box filling.
 - [`python/omega_vision/adapters.py`](python/omega_vision/adapters.py) — modality-neutral perception adapter and thin grid-extractor adapter, with later image and simple-video providers sharing the same contracts.
 - [`python/omega_vision/memory.py`](python/omega_vision/memory.py) — residual admission, reference storage, zero-confidence commitments, positive/negative evidence updates, confidence governance, and tombstones through `SingleWriter`.
 - [`python/omega_vision/prediction.py`](python/omega_vision/prediction.py) — exact-identity rule store and prediction-before-outcome ledger.

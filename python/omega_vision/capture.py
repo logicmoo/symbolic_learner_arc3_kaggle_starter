@@ -11,7 +11,7 @@ from project_paths import PROJECT_ROOT
 from swipl_bridge import SWIPrologBridge
 
 from .adapters import GridAdapter
-from .forms import CellLogoForm, FitResult
+from .forms import GenerativeForm, FitResult
 from .integration import Phase2LearnerPayloadBuilder
 from .learning import (
     OutcomeChannel,
@@ -104,7 +104,7 @@ class SemanticGridCaptureObserver:
         adapter: GridAdapter,
         grid_selector: Callable[[Any], Any],
         symbolic_store: SymbolicStore | None = None,
-        turtle_form_factory: Callable[[str], CellLogoForm] | None = None,
+        turtle_form_factory: Callable[[str], GenerativeForm] | None = None,
         identity_writer: SingleWriter | None = None,
         learner_plugin: Any | None = None,
     ) -> None:
@@ -123,7 +123,7 @@ class SemanticGridCaptureObserver:
             pipeline.semantic_store = self.symbolic_store
         if turtle_form_factory is None:
             bridge = SWIPrologBridge(PROJECT_ROOT / "prolog" / "arc3_agent.pl")
-            turtle_form_factory = lambda source: CellLogoForm(source, swi_bridge=bridge)
+            turtle_form_factory = lambda source: GenerativeForm(source, swi_bridge=bridge)
         self.turtle_form_factory = turtle_form_factory
         self._latest_by_candidate: dict[str, str] = {}
         self._latest_observation_id: str | None = None

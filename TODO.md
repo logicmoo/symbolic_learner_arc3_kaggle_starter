@@ -85,7 +85,7 @@ Keep the shared records in `python/omega_vision/models.py`; do not create anothe
 - [x] Use pen-up and pen-down state for stroke positioning and repositioning.
 - [x] Use pen width for supported thick lines rather than drawing adjacent filled rectangles.
 - [x] Preserve supported color or drawing-state changes.
-- [x] Connect `CellLogoForm.render()` to `prolog/turtle_dsl.pl` through `SWIPrologBridge`.
+- [x] Connect `GenerativeForm.render()` to `prolog/turtle_dsl.pl` through `SWIPrologBridge`.
 - [x] Define normalized Turtle-program storage and artifact references.
 - [x] Implement `fit`, `distance`, residual measurement, and description length.
 - [x] Compare regenerated cells with the source object.

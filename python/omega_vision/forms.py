@@ -11,8 +11,8 @@ class FitResult:
     residual: float
 
 
-class GenerativeForm(ABC):
-    """Typed facade for existing Turtle/LOGO and later raster forms."""
+class AbstractGenerativeForm(ABC):
+    """Abstract typed contract for a generative form (Turtle/LOGO and later raster)."""
 
     domain: str
 
@@ -29,12 +29,12 @@ class GenerativeForm(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def distance(self, other: "GenerativeForm") -> float:
+    def distance(self, other: "AbstractGenerativeForm") -> float:
         raise NotImplementedError
 
 
-class CellLogoForm(GenerativeForm):
-    """Compatibility facade over the existing canonical Turtle DSL program."""
+class GenerativeForm(AbstractGenerativeForm):
+    """Canonical Turtle/LOGO generative form over the existing DSL program."""
 
     domain = "grid"
 
@@ -73,8 +73,8 @@ class CellLogoForm(GenerativeForm):
             residual=residual,
         )
 
-    def distance(self, other: GenerativeForm) -> float:
-        if not isinstance(other, CellLogoForm):
+    def distance(self, other: AbstractGenerativeForm) -> float:
+        if not isinstance(other, GenerativeForm):
             return 1.0
         if self.renderer is None or other.renderer is None:
             return 0.0 if self.canonicalize() == other.canonicalize() else 1.0

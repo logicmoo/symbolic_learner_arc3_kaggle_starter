@@ -1767,7 +1767,7 @@ Preserve the canonical checkout and its `codex/workbench-navigation-v2` branch.
   semantic encounter history, and automatic artifact/Turtle indexing. Provide
   a deterministic in-memory backend for tests while leaving the durable
   backend slot open for Prolog or AtomSpace.
-- [x] Connect `CellLogoForm` to the canonical Turtle DSL through the existing
+- [x] Connect `GenerativeForm` to the canonical Turtle DSL through the existing
   `SWIPrologBridge`. Correct extracted programs to stamp their initial cell,
   declare pen width, and preserve one-cell/disconnected objects; calculate
   regenerated-cell fit, distance, residual, and description length. Live

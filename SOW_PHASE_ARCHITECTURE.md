@@ -457,7 +457,7 @@ Pluggable providers should extend the same normalized object and encounter contr
 
 These adapters should not change the persistent identity or learner interfaces.
 
-## `GenerativeForm`
+## `AbstractGenerativeForm`
 
 Interface for a normalized representation capable of regenerating an object.
 
@@ -470,9 +470,9 @@ Required methods conceptually include:
 - `description_length()`;
 - `supports(transform)`.
 
-## `CellLogoForm` and per-object Turtle programs
+## `GenerativeForm` and per-object Turtle programs
 
-`CellLogoForm` is the exact-grid generative form backed by `prolog/turtle_dsl.pl`.
+`GenerativeForm` is the exact-grid generative form backed by `prolog/turtle_dsl.pl`.
 
 Every recognized grid object should store or reference a Turtle program that redraws that object using:
 
