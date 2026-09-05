@@ -1759,9 +1759,34 @@ def stop_demo_run() -> dict:
     return get_demo_state()
 
 
+def _wipe_demo_memory(only: str | None) -> None:
+    """Delete the ISOLATED demo object-memory store(s) so Clear truly resets learning.
+    Only ever touches object_memory_demo/* — NEVER the canonical registry."""
+    try:
+        import shutil  # noqa: PLC0415
+        import re as _re  # noqa: PLC0415
+        import symbolic_arc as sa  # noqa: PLC0415
+        root = Path(sa.memory_dir()).parent / "object_memory_demo"
+    except Exception:  # noqa: BLE001
+        return
+    try:
+        if only == "live-ls20":
+            key = _current_ls20_key()
+            if key:
+                target = root / _re.sub(r"[^A-Za-z0-9_.-]", "_", key)
+                if target.is_dir():
+                    shutil.rmtree(target, ignore_errors=True)
+        elif not only:
+            if root.is_dir():
+                shutil.rmtree(root, ignore_errors=True)
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def clear_demo_state(only: str | None = None) -> dict:
     """Stop any in-flight run AND clear cached results. With `only`, clear just that
-    one test (back to 'not run'); without it, clear everything."""
+    one test (back to 'not run'); without it, clear everything. Also wipes the demo's
+    ISOLATED object-memory store(s) so Clear resets persisted learning too."""
     global _demo_gen
     with _demo_lock:
         _demo_gen += 1                    # invalidate any in-flight job
@@ -1782,4 +1807,5 @@ def clear_demo_state(only: str | None = None) -> dict:
             _demo_state["finishedAt"] = None
             _demo_state["only"] = None
         _touch_play_locked()
+    _wipe_demo_memory(only)               # outside the lock: disk I/O + reads selection
     return get_demo_state()
