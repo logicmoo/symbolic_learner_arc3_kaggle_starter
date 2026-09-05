@@ -1359,10 +1359,13 @@
 .video-import-reduce-indempty { font-size: 11px; opacity: 0.5; font-style: italic; }
 .video-import-reduce-indchip { font-size: 10.5px; font-weight: 600; padding: 2px 7px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.05); white-space: nowrap; }
 .video-import-reduce-indchip.is-moved { color: #8bd450; border-color: rgba(139,212,80,0.4); }
+.video-import-reduce-indchip.is-transformed { color: #c78bff; border-color: rgba(199,139,255,0.45); }
 .video-import-reduce-indchip.is-interacted { color: #ff7ab6; border-color: rgba(255,122,182,0.45); }
-.video-import-reduce-indchip.is-revealed { color: #f2c14e; border-color: rgba(242,193,78,0.45); }
+.video-import-reduce-indchip.is-occluded { color: #f2c14e; border-color: rgba(242,193,78,0.45); }
+.video-import-reduce-indchip.is-revealed { color: #27dcc2; border-color: rgba(39,220,194,0.45); }
+.video-import-reduce-indchip.is-consumed { color: #ef476f; border-color: rgba(239,71,111,0.5); }
 .video-import-reduce-indchip.is-gone { color: #ff8b5e; border-color: rgba(255,139,94,0.45); }
-.video-import-reduce-indchip.is-new { color: #27dcc2; border-color: rgba(39,220,194,0.45); }
+.video-import-reduce-indchip.is-new { color: #7c9cff; border-color: rgba(124,156,255,0.45); }
 .video-import-reduce-stage { margin: 0; display: flex; flex-direction: column; gap: 2px; }
 .video-import-reduce-stage figcaption { font-size: 9.5px; letter-spacing: 0.03em; text-transform: uppercase; opacity: 0.6; text-align: center; }
 .video-import-reduce-svg { width: 130px; height: 130px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); background: #fff; }

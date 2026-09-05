@@ -485,10 +485,36 @@ def extract_frame(png_path: str, char: str, partner_path: str | None = None,
                     back_map[cg] = carry["prev_pid"][pg]
         except Exception:  # noqa: BLE001
             back_map = {}
+    # gap re-identification: a region that does NOT match the previous frame but
+    # matches a recently-vanished identity (same D4 shape, nearest cell) reclaims
+    # that id, so identity survives short occlusions (vanish -> return) and object
+    # permanence can be resolved.
+    reclaim: dict[int, str] = {}
+    recent = carry.get("recent") if carry is not None else None
+    if recent:
+        used_recent: set = set()
+        for gid, i in order:
+            if gid in back_map:
+                continue
+            best_pid = None
+            best_d = None
+            for pid, r in recent.items():
+                if pid in used_recent or r.get("sig") != i.get("sig"):
+                    continue
+                d = (r["cx"] - i["cx"]) ** 2 + (r["cy"] - i["cy"]) ** 2
+                if best_d is None or d < best_d:
+                    best_d = d
+                    best_pid = pid
+            if best_pid is not None:
+                reclaim[gid] = best_pid
+                used_recent.add(best_pid)
     for gid, i in order:
         rid = f"r{gid}"
         if gid in back_map:
             pid = back_map[gid]
+            lbl = pid[5:] if pid.startswith("part_") else pid
+        elif gid in reclaim:
+            pid = reclaim[gid]
             lbl = pid[5:] if pid.startswith("part_") else pid
         else:
             cname = _color_name(i["hex"])
@@ -502,7 +528,7 @@ def extract_frame(png_path: str, char: str, partner_path: str | None = None,
         raw_of[pid] = move_group.get(rid) or obj.get(rid) or f"g{gid}"
         mlines.append(f'(part {char} {pid} (label "{lbl}") (color {i["hex"]}))')
         geom.append({"id": pid, "label": lbl, "color": i["hex"],
-                     "partOf": "",
+                     "partOf": "", "cx": i["cx"], "cy": i["cy"],
                      "turtle": region_turtle(i["cells"], cols, rows, i["hex"])})
     # unify every group id (adjacency clusters + singletons) to obj_N. With
     # carry, a group whose members were mostly carried forward reuses the
@@ -550,16 +576,21 @@ def extract_frame(png_path: str, char: str, partner_path: str | None = None,
         pid = pid_of.get(rid)
         if pid and ((dx, dy) != (0, 0) or tf != "identity"):
             mlines.append(f"(moved {char} {pid} {dx} {dy} {tf})")
-    for g in disappeared:
-        pid = pid_of.get(f"r{g}")
-        if pid:
-            mlines.append(f"(disappeared {char} {pid})")
-    for hexc, cx, cy in appeared:
-        mlines.append(f"(appeared {char} {hexc} {cx} {cy})")
-    # spatial event links: a mover whose DESTINATION lands on a vanished cell
-    # likely caused it (interacted); on a newborn cell -> revealed it. This
-    # grounds induction so temporally-coincident but far-apart events (e.g. a
-    # rotation across the map) are not spuriously linked.
+    # In sequence mode the permanence of a vanished/appeared part cannot be known
+    # from a single transition (occluded vs gone vs consumed vs transformed), so
+    # extract_sequence resolves it across later frames. Only emit the raw
+    # disappeared/appeared here for standalone (no-carry) calls.
+    if carry is None:
+        for g in disappeared:
+            pid = pid_of.get(f"r{g}")
+            if pid:
+                mlines.append(f"(disappeared {char} {pid})")
+        for hexc, cx, cy in appeared:
+            mlines.append(f"(appeared {char} {_color_name(hexc)} {cx} {cy})")
+    # spatial interaction: a mover whose DESTINATION lands on a vanished cell
+    # likely caused it (interacted) -> disambiguates consumed_or_taken vs gone.
+    interacted_pairs: list = []
+
     def _near(ax: int, ay: int, bx: int, by: int, tol: int = 2) -> bool:
         return abs(ax - bx) <= tol and abs(ay - by) <= tol
     for rid, (dx, dy, tf) in motion.items():
@@ -573,32 +604,118 @@ def extract_frame(png_path: str, char: str, partner_path: str | None = None,
                 dp = pid_of.get(f"r{g}")
                 if dp:
                     mlines.append(f"(interacted {char} {mp} {dp})")
-        for hexc, ax, ay in appeared:
-            if _near(destx, desty, ax, ay):
-                mlines.append(f"(revealed {char} {mp} {hexc} {ax} {ay})")
+                    interacted_pairs.append((mp, dp))
     metta = "\n".join(mlines) + "\n"
-    # thread identity forward for the next frame in the sequence.
+    # thread identity forward + maintain the recent-vanished buffer for gaps.
     if carry is not None:
+        rec = carry.get("recent") or {}
+        for pid in set(reclaim.values()):
+            rec.pop(pid, None)
+        for pid in list(rec):
+            rec[pid]["age"] = rec[pid].get("age", 0) + 1
+            if rec[pid]["age"] > 4:
+                rec.pop(pid, None)
+        carried = set(cur_pid_by_gid.values())
+        for pgid, ppid in (carry.get("prev_pid") or {}).items():
+            if ppid not in carried:
+                pr = (carry.get("prev_info") or {}).get(pgid)
+                if pr is not None:
+                    rec[ppid] = {"sig": pr.get("sig"), "cx": pr.get("cx"), "cy": pr.get("cy"), "age": 1}
+        carry["recent"] = rec
         carry["prev_info"] = info
         carry["prev_pid"] = cur_pid_by_gid
         carry["prev_group"] = partof_all
     return {"metta": metta, "geom": geom, "nparts": len(info),
             "nrels": len(pof) + len(obj), "cols": cols, "rows": rows,
-            "ngroups": len(groups), "induceMs": induce_ms}
+            "ngroups": len(groups), "induceMs": induce_ms,
+            "interacted": interacted_pairs}
 
 
 def extract_sequence(frame_paths: list[str], char: str) -> list[dict]:
     """Run extract_frame over an ordered list of frames, threading part/object
-    identity forward: a region matched to the previous frame keeps its name/id,
-    so names stay stable across the sequence (like the LLM line's consolidated
-    names). Returns one result dict per frame."""
+    identity forward (stable ids, gap re-identified across short occlusions), then
+    resolve object permanence across the whole sequence: a vanished part is only
+    classified once later frames reveal whether it came back."""
     carry: dict = {"prev_info": None, "prev_pid": {}, "name_state": {},
-                   "prev_group": {}, "group_state": 0}
+                   "prev_group": {}, "group_state": 0, "recent": {}}
     out: list[dict] = []
     for k, fp in enumerate(frame_paths):
         partner = frame_paths[k + 1] if k + 1 < len(frame_paths) else None
         out.append(extract_frame(fp, char, partner, carry=carry))
+    _classify_permanence(out, char)
     return out
+
+
+def _classify_permanence(results: list[dict], char: str) -> None:
+    """Resolve each per-transition disappearance/appearance using the full
+    sequence (the truth is only knowable after processing later frames):
+      disappeared -> occluded (id returns later) | transformed (co-located new
+                     shape) | consumed_or_taken (mover on its cell, never returns)
+                     | gone (unexplained, never returns)
+      appeared    -> no-longer-occluded (id seen earlier) | transformed (skip) | new
+    and appends the resolved facts to each frame's metta."""
+    n = len(results)
+    cells: list[dict] = []
+    idsets: list[set] = []
+    for r in results:
+        m = {p["id"]: (p.get("cx", 0), p.get("cy", 0)) for p in r.get("geom", [])}
+        cells.append(m)
+        idsets.append(set(m.keys()))
+
+    def after(pid: str, i: int) -> bool:
+        return any(pid in idsets[j] for j in range(i + 1, n))
+
+    def before(pid: str, i: int) -> bool:
+        return any(pid in idsets[j] for j in range(0, i))
+
+    for i in range(n - 1):
+        disappeared = idsets[i] - idsets[i + 1]
+        appeared = idsets[i + 1] - idsets[i]
+        inter_targets = {t for (_m, t) in results[i].get("interacted", [])}
+        # transformed: pair a vanishing part (that never returns) with a co-located
+        # appearing part (never seen before) -> same thing changed form.
+        used_app: set = set()
+        trans: list = []
+        for x in disappeared:
+            if after(x, i):
+                continue
+            xc = cells[i].get(x)
+            best = None
+            best_d = None
+            for y in appeared:
+                if y in used_app or before(y, i + 1):
+                    continue
+                yc = cells[i + 1].get(y)
+                if xc and yc:
+                    d = (xc[0] - yc[0]) ** 2 + (xc[1] - yc[1]) ** 2
+                    if d <= 9 and (best_d is None or d < best_d):
+                        best_d = d
+                        best = y
+            if best is not None:
+                used_app.add(best)
+                trans.append((x, best))
+        trans_from = {x for x, _y in trans}
+        lines: list[str] = []
+        for x, y in trans:
+            lines.append(f"(transformed {char} {x} {y})")
+        for x in disappeared:
+            if x in trans_from:
+                continue
+            if after(x, i):
+                lines.append(f"(occluded {char} {x})")
+            elif x in inter_targets:
+                lines.append(f"(consumed_or_taken {char} {x})")
+            else:
+                lines.append(f"(gone {char} {x})")
+        for y in appeared:
+            if y in used_app:
+                continue
+            if before(y, i + 1):
+                lines.append(f"(no-longer-occluded {char} {y})")
+            else:
+                lines.append(f"(new {char} {y})")
+        if lines:
+            results[i]["metta"] = results[i]["metta"].rstrip("\n") + "\n" + "\n".join(lines) + "\n"
 
 
 def _pid_color(pid: str) -> str:

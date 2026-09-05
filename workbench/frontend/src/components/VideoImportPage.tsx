@@ -445,31 +445,45 @@ function parseMettaParts(text: string): { parts: MettaPart[]; nrels: number; gro
   const groups: MettaGroup[] = [...gp.entries()].map(([id, ps]) => ({ id, parts: ps }));
   return { parts, nrels, groups };
 }
-// Parse the cross-frame INDUCED event facts the Prolog recognizer emits into a
-// frame's *__prolog.metta (motion from this frame to the next): moved / gone /
-// appeared / interacted / revealed. The 2nd token (workspace slug) is skipped.
-type Induction = {
-  moved: Array<{ part: string; dx: number; dy: number; tf: string }>;
-  disappeared: string[];
-  appeared: Array<{ color: string; x: number; y: number }>;
+// Induced event ontology, shared by both induction rows. Resolved across the
+// whole sequence (a vanish is only knowable once later frames are seen):
+//   moved / transformed(X->Y) / interacted(M,X) / occluded / no-longer-occluded
+//   / consumed_or_taken / gone / new.
+type IndEvent = {
+  moved: Array<{ name: string; dx: number; dy: number; tf?: string }>;
+  transformed: Array<{ from: string; to: string }>;
   interacted: Array<{ mover: string; target: string }>;
-  revealed: Array<{ mover: string; color: string; x: number; y: number }>;
-  action?: string;
-  induceMs?: number;
+  occluded: string[];
+  noLongerOccluded: string[];
+  consumedOrTaken: string[];
+  gone: string[];
+  appeared: string[];
 };
+type Induction = IndEvent & { action?: string; induceMs?: number };
+function emptyIndEvent(): IndEvent {
+  return { moved: [], transformed: [], interacted: [], occluded: [], noLongerOccluded: [], consumedOrTaken: [], gone: [], appeared: [] };
+}
+// Parse the resolved induction facts the Prolog line emits into a frame's
+// *__prolog.metta. Falls back to the legacy disappeared/appeared vocabulary for
+// older data. The 2nd token (workspace slug) is skipped.
 function parseInduction(text: string): Induction {
-  const ind: Induction = { moved: [], disappeared: [], appeared: [], interacted: [], revealed: [] };
+  const ind: Induction = emptyIndEvent();
   if (!text) return ind;
   for (const raw of text.split("\n")) {
     const s = raw.trim();
     let m: RegExpMatchArray | null;
     if ((m = s.match(/^;\s*induce-ms\s+(\d+)/))) ind.induceMs = +m[1];
     else if ((m = s.match(/^\(transition\s+\S+\s+\S+\s+(\S+)\s+\S+\)/))) ind.action = m[1];
-    else if ((m = s.match(/^\(moved\s+\S+\s+(\S+)\s+(-?\d+)\s+(-?\d+)\s+(\S+)\)/))) ind.moved.push({ part: m[1], dx: +m[2], dy: +m[3], tf: m[4] });
-    else if ((m = s.match(/^\(disappeared\s+\S+\s+(\S+)\)/))) ind.disappeared.push(m[1]);
-    else if ((m = s.match(/^\(appeared\s+\S+\s+(\S+)\s+(-?\d+)\s+(-?\d+)\)/))) ind.appeared.push({ color: m[1], x: +m[2], y: +m[3] });
+    else if ((m = s.match(/^\(moved\s+\S+\s+(\S+)\s+(-?\d+)\s+(-?\d+)\s+(\S+)\)/))) ind.moved.push({ name: m[1], dx: +m[2], dy: +m[3], tf: m[4] });
+    else if ((m = s.match(/^\(transformed\s+\S+\s+(\S+)\s+(\S+)\)/))) ind.transformed.push({ from: m[1], to: m[2] });
     else if ((m = s.match(/^\(interacted\s+\S+\s+(\S+)\s+(\S+)\)/))) ind.interacted.push({ mover: m[1], target: m[2] });
-    else if ((m = s.match(/^\(revealed\s+\S+\s+(\S+)\s+(\S+)\s+(-?\d+)\s+(-?\d+)\)/))) ind.revealed.push({ mover: m[1], color: m[2], x: +m[3], y: +m[4] });
+    else if ((m = s.match(/^\(occluded\s+\S+\s+(\S+)\)/))) ind.occluded.push(m[1]);
+    else if ((m = s.match(/^\(no-longer-occluded\s+\S+\s+(\S+)\)/))) ind.noLongerOccluded.push(m[1]);
+    else if ((m = s.match(/^\(consumed_or_taken\s+\S+\s+(\S+)\)/))) ind.consumedOrTaken.push(m[1]);
+    else if ((m = s.match(/^\(gone\s+\S+\s+(\S+)\)/))) ind.gone.push(m[1]);
+    else if ((m = s.match(/^\(new\s+\S+\s+(\S+)\)/))) ind.appeared.push(m[1]);
+    else if ((m = s.match(/^\(disappeared\s+\S+\s+(\S+)\)/))) ind.gone.push(m[1]);
+    else if ((m = s.match(/^\(appeared\s+\S+\s+(\S+)\s+-?\d+\s+-?\d+\)/))) ind.appeared.push(m[1]);
   }
   return ind;
 }
@@ -480,14 +494,6 @@ const ACTION_LABELS: Record<string, string> = {
   ACTION5: "SPACE", ACTION6: "CLICK", ACTION7: "UNDO",
 };
 const actionLabel = (a: string): string => ACTION_LABELS[String(a || "").toUpperCase()] || String(a || "");
-// Unified induced-event shape rendered by both the Prolog and LLM induction rows.
-type IndEvent = {
-  moved: Array<{ name: string; dx: number; dy: number; tf?: string }>;
-  interacted: Array<{ mover: string; target: string }>;
-  revealed: Array<{ mover: string; color: string }>;
-  disappeared: string[];
-  appeared: Array<{ color: string }>;
-};
 // Centroid of a part's normalized turtle program (0..1000), mirroring the
 // Python _turtle_centroid so the LLM induction row matches the backend inducer.
 function turtleCentroid(t: any): [number, number] | null {
@@ -500,36 +506,62 @@ function turtleCentroid(t: any): [number, number] | null {
   if (!xs.length) return null;
   return [xs.reduce((a, b) => a + b, 0) / xs.length, ys.reduce((a, b) => a + b, 0) / ys.length];
 }
-// Client-side per-transition induction over the LLM parts of two consecutive
-// frames (color + nearest-centroid matching), mirroring induce_from_frames in
-// symbolic_arc.py. The LLM line has no pixel regions, so this is centroid-based
-// (no rotation/flip detection) — coarser than the Prolog row on purpose.
-function induceLlmPair(a: any[], b: any[], moveMin = 8, near = 60): IndEvent {
-  const ev: IndEvent = { moved: [], interacted: [], revealed: [], disappeared: [], appeared: [] };
-  const mk = (arr: any[]) => (arr || []).map((p) => ({ label: p.label || p.id || "?", color: String(p.color || "").toLowerCase(), c: turtleCentroid(p.turtle) })).filter((p) => p.c) as Array<{ label: string; color: string; c: [number, number] }>;
-  const ca = mk(a); const cb = mk(b);
-  const byc = new Map<string, number[]>();
-  cb.forEach((p, j) => { const arr = byc.get(p.color) || []; arr.push(j); byc.set(p.color, arr); });
-  const used = new Set<number>(); const matched = new Map<number, number>();
-  ca.forEach((pa, i) => {
-    const cands = (byc.get(pa.color) || []).filter((j) => !used.has(j));
-    if (!cands.length) return;
-    let best = cands[0]; let bd = Infinity;
-    for (const j of cands) { const dx = cb[j].c[0] - pa.c[0]; const dy = cb[j].c[1] - pa.c[1]; const d = dx * dx + dy * dy; if (d < bd) { bd = d; best = j; } }
-    used.add(best); matched.set(i, best);
+// Sequence-aware induction over the LLM parts (identity = the LLM's own stable
+// label). Classifies the transition i -> i+1 with the SAME object-permanence
+// ontology as the Prolog line, resolved across the whole sequence: a label that
+// vanishes but is seen later is occluded (not gone); its return is
+// no-longer-occluded; a label under a mover that never returns is
+// consumed_or_taken; a co-located vanish+appear is a transform.
+function induceLlmSequence(framesParts: Array<any[] | undefined>, i: number, moveMin = 8, near = 90): IndEvent {
+  const ev = emptyIndEvent();
+  const n = framesParts.length;
+  const A = framesParts[i] || []; const B = framesParts[i + 1] || [];
+  const cent = (parts: any[]) => { const m = new Map<string, [number, number]>(); for (const p of parts || []) { const c = turtleCentroid(p.turtle); if (c) m.set(p.label || p.id, c); } return m; };
+  const ca = cent(A); const cb = cent(B);
+  const aIds = new Set(ca.keys()); const bIds = new Set(cb.keys());
+  const present = (id: string, from: number, to: number) => {
+    for (let j = Math.max(0, from); j <= Math.min(n - 1, to); j++) {
+      const fp = framesParts[j];
+      if (fp && fp.some((p: any) => (p.label || p.id) === id)) return true;
+    }
+    return false;
+  };
+  ca.forEach((cA, id) => {
+    if (!bIds.has(id)) return;
+    const cB = cb.get(id)!; const dx = Math.round(cB[0] - cA[0]); const dy = Math.round(cB[1] - cA[1]);
+    if (Math.abs(dx) >= moveMin || Math.abs(dy) >= moveMin) ev.moved.push({ name: id, dx, dy });
   });
-  const disappeared = ca.map((_, i) => i).filter((i) => !matched.has(i));
-  const appeared = cb.map((_, j) => j).filter((j) => !used.has(j));
-  matched.forEach((j, i) => {
-    const dx = cb[j].c[0] - ca[i].c[0]; const dy = cb[j].c[1] - ca[i].c[1];
-    if (Math.abs(dx) < moveMin && Math.abs(dy) < moveMin) return;
-    ev.moved.push({ name: ca[i].label, dx: Math.round(dx), dy: Math.round(dy) });
-    const dxp = cb[j].c[0]; const dyp = cb[j].c[1];
-    for (const di of disappeared) { if (Math.abs(dxp - ca[di].c[0]) <= near && Math.abs(dyp - ca[di].c[1]) <= near) ev.interacted.push({ mover: ca[i].label, target: ca[di].label }); }
-    for (const aj of appeared) { if (Math.abs(dxp - cb[aj].c[0]) <= near && Math.abs(dyp - cb[aj].c[1]) <= near) ev.revealed.push({ mover: ca[i].label, color: cb[aj].color }); }
-  });
-  disappeared.forEach((i) => ev.disappeared.push(ca[i].label));
-  appeared.forEach((j) => ev.appeared.push({ color: cb[j].color }));
+  const disappeared = [...aIds].filter((id) => !bIds.has(id));
+  const appeared = [...bIds].filter((id) => !aIds.has(id));
+  const movers = ev.moved.map((mv) => ({ id: mv.name, d: cb.get(mv.name) })).filter((m) => m.d) as Array<{ id: string; d: [number, number] }>;
+  for (const x of disappeared) {
+    const dc = ca.get(x)!;
+    for (const mv of movers) { if (Math.abs(mv.d[0] - dc[0]) <= near && Math.abs(mv.d[1] - dc[1]) <= near) ev.interacted.push({ mover: mv.id, target: x }); }
+  }
+  const interTargets = new Set(ev.interacted.map((x) => x.target));
+  const usedApp = new Set<string>();
+  for (const x of disappeared) {
+    if (present(x, i + 1, n - 1)) continue;
+    const xc = ca.get(x)!; let best: string | null = null; let bd = Infinity;
+    for (const y of appeared) {
+      if (usedApp.has(y) || present(y, 0, i - 1)) continue;
+      const yc = cb.get(y)!; const d = (xc[0] - yc[0]) ** 2 + (xc[1] - yc[1]) ** 2;
+      if (d <= near * near && d < bd) { bd = d; best = y; }
+    }
+    if (best) { usedApp.add(best); ev.transformed.push({ from: x, to: best }); }
+  }
+  const transFrom = new Set(ev.transformed.map((t) => t.from));
+  for (const x of disappeared) {
+    if (transFrom.has(x)) continue;
+    if (present(x, i + 1, n - 1)) ev.occluded.push(x);
+    else if (interTargets.has(x)) ev.consumedOrTaken.push(x);
+    else ev.gone.push(x);
+  }
+  for (const y of appeared) {
+    if (usedApp.has(y)) continue;
+    if (present(y, 0, i - 1)) ev.noLongerOccluded.push(y);
+    else ev.appeared.push(y);
+  }
   return ev;
 }
 // Render a normalized turtle program (from a part's parts.json) as SVG shapes in
@@ -6523,6 +6555,17 @@ export function VideoImportPage({
             const expandAll = () => setCollapsedReduceChars(new Set());
             const reducedCount = list.filter((it: any) => (it.rows || []).length > 0).length;
             const reduceRunning = pipelineRunStatus === "running" && pipelineCounts.stage === "reduce";
+            // Ordered LLM parts per frame, so the LLM induction row can resolve
+            // object permanence across the whole sequence (identity = LLM label).
+            // undefined = still loading; [] = no LLM line for that frame.
+            const llmFrames: Array<any[] | undefined> = list.map((it: any) => {
+              const rows = it.rows || [];
+              const row = rows.find((r: any) => r.kind !== "prolog" && r.kind !== "oneshot") || rows.find((r: any) => r.kind !== "prolog");
+              if (!row) return [];
+              const rel = (row.mettaPath || `data/recognition_reduce/sym/${String(row.metta || "").split("/").pop()}`).replace(/\.metta$/, ".parts.json");
+              const pd = reduceParts[rel];
+              return Array.isArray(pd) ? pd : undefined;
+            });
             return (
               <div className="video-import-reduce">
                 {!recogHeadCollapsed && <h3 className="video-import-recognition-subhead">All images · {reducedCount} of {recognitionReduce.items.length} reduced</h3>}
@@ -6731,7 +6774,7 @@ export function VideoImportPage({
                                   const manifestActLabel = actionLabel(nextItem.action || "");
                                   const actTitle = nextItem.action || "";
                                   const renderRow = (rowKey: string, label: string, cls: string, ev: IndEvent | null, loading: boolean, actLabel: string, fromText: boolean) => {
-                                    const nfacts = ev ? (ev.moved.length + ev.interacted.length + ev.revealed.length + ev.disappeared.length + ev.appeared.length) : 0;
+                                    const nfacts = ev ? (ev.moved.length + ev.transformed.length + ev.interacted.length + ev.occluded.length + ev.noLongerOccluded.length + ev.consumedOrTaken.length + ev.gone.length + ev.appeared.length) : 0;
                                     return (
                                       <div className={`video-import-reduce-induction ${cls}`} key={rowKey}>
                                         <div className="video-import-reduce-indlabel">{label}</div>
@@ -6747,14 +6790,17 @@ export function VideoImportPage({
                                               <figcaption>{nextItem.id}</figcaption>
                                             </figure>
                                             <div className="video-import-reduce-indfacts">
-                                              {loading ? <span className="video-import-reduce-indempty">loading…</span>
-                                                : nfacts === 0 ? <span className="video-import-reduce-indempty">no motion induced</span> : (
+                                              {loading ? <span className="video-import-reduce-indempty">resolving…</span>
+                                                : nfacts === 0 ? <span className="video-import-reduce-indempty">no change induced</span> : (
                                                 <>
                                                   {ev!.moved.map((f, i) => <span key={"m" + i} className="video-import-reduce-indchip is-moved">{f.name} moved ({f.dx},{f.dy}){f.tf && f.tf !== "identity" ? " · " + f.tf : ""}</span>)}
+                                                  {ev!.transformed.map((f, i) => <span key={"t" + i} className="video-import-reduce-indchip is-transformed">{f.from} → {f.to} transformed</span>)}
                                                   {ev!.interacted.map((f, i) => <span key={"x" + i} className="video-import-reduce-indchip is-interacted">{f.mover} → {f.target}</span>)}
-                                                  {ev!.revealed.map((f, i) => <span key={"r" + i} className="video-import-reduce-indchip is-revealed">{f.mover} revealed {f.color}</span>)}
-                                                  {ev!.disappeared.map((f, i) => <span key={"d" + i} className="video-import-reduce-indchip is-gone">{f} gone</span>)}
-                                                  {ev!.appeared.map((f, i) => <span key={"a" + i} className="video-import-reduce-indchip is-new">{f.color} appeared</span>)}
+                                                  {ev!.occluded.map((f, i) => <span key={"o" + i} className="video-import-reduce-indchip is-occluded" title="vanished but returns later — still there, just hidden">{f} occluded</span>)}
+                                                  {ev!.noLongerOccluded.map((f, i) => <span key={"n" + i} className="video-import-reduce-indchip is-revealed" title="a previously-seen part is visible again">{f} back</span>)}
+                                                  {ev!.consumedOrTaken.map((f, i) => <span key={"c" + i} className="video-import-reduce-indchip is-consumed" title="was under a mover and never returns — picked up or eaten (unknown which)">{f} consumed/taken</span>)}
+                                                  {ev!.gone.map((f, i) => <span key={"g" + i} className="video-import-reduce-indchip is-gone" title="vanished with no mover and never returns">{f} gone</span>)}
+                                                  {ev!.appeared.map((f, i) => <span key={"a" + i} className="video-import-reduce-indchip is-new" title="appeared, never seen before">{f} new</span>)}
                                                 </>
                                               )}
                                             </div>
@@ -6763,34 +6809,20 @@ export function VideoImportPage({
                                       </div>
                                     );
                                   };
-                                  // Induction · Prolog — parsed from this frame's __prolog.metta (rigid, D4-aware).
+                                  // Prolog Induction · Prolog Parts — resolved facts parsed from __prolog.metta.
                                   const prologRow = tiers.find((r: any) => r.kind === "prolog");
                                   if (prologRow) {
                                     const pRel = prologRow.mettaPath || `data/recognition_reduce/sym/${String(prologRow.metta || "").split("/").pop()}`;
                                     const p = parseInduction(reduceMetta[pRel] || "");
-                                    const pev: IndEvent = {
-                                      moved: p.moved.map((f) => ({ name: f.part, dx: f.dx, dy: f.dy, tf: f.tf })),
-                                      interacted: p.interacted,
-                                      revealed: p.revealed.map((f) => ({ mover: f.mover, color: f.color })),
-                                      disappeared: p.disappeared,
-                                      appeared: p.appeared.map((f) => ({ color: f.color })),
-                                    };
-                                    inductionEls.push(renderRow("induction-prolog", `Prolog Induction · Prolog Parts${p.induceMs != null ? ` · ${p.induceMs} ms` : ""}`, "is-prolog", pev, reduceMetta[pRel] === undefined, p.action || manifestActLabel, !!p.action));
+                                    inductionEls.push(renderRow("induction-prolog", `Prolog Induction · Prolog Parts${p.induceMs != null ? ` · ${p.induceMs} ms` : ""}`, "is-prolog", p, reduceMetta[pRel] === undefined, p.action || manifestActLabel, !!p.action));
                                   }
-                                  // Induction · LLM — computed client-side from the LLM parts of both frames.
-                                  const llmRow = tiers.find((r: any) => r.kind !== "prolog" && r.kind !== "oneshot") || tiers.find((r: any) => r.kind !== "prolog");
-                                  const nextRows = nextItem.rows || [];
-                                  const nextLlm = nextRows.find((r: any) => r.kind !== "prolog" && r.kind !== "oneshot") || nextRows.find((r: any) => r.kind !== "prolog");
-                                  if (llmRow && nextLlm) {
-                                    const aRel = (llmRow.mettaPath || `data/recognition_reduce/sym/${String(llmRow.metta || "").split("/").pop()}`).replace(/\.metta$/, ".parts.json");
-                                    const bRel = (nextLlm.mettaPath || `data/recognition_reduce/sym/${String(nextLlm.metta || "").split("/").pop()}`).replace(/\.metta$/, ".parts.json");
-                                    const pa = reduceParts[aRel]; const pb = reduceParts[bRel];
-                                    const loading = pa === undefined || pb === undefined;
-                                    const _tLlm = (typeof performance !== "undefined" ? performance.now() : 0);
-                                    const lev = (Array.isArray(pa) && Array.isArray(pb)) ? induceLlmPair(pa, pb) : null;
-                                    const llmMs = lev ? ((typeof performance !== "undefined" ? performance.now() : 0) - _tLlm) : null;
-                                    inductionEls.push(renderRow("induction-llm", `Prolog Induction · LLM Parts${llmMs != null ? ` · ${llmMs.toFixed(1)} ms` : ""}`, "is-llm", lev, loading, manifestActLabel, false));
-                                  }
+                                  // Prolog Induction · LLM Parts — same object-permanence ontology, resolved
+                                  // across the whole sequence from the LLM's own stable labels.
+                                  const _tLlm = (typeof performance !== "undefined" ? performance.now() : 0);
+                                  const llmReady = llmFrames.every((f) => Array.isArray(f)) && Array.isArray(llmFrames[idx]) && Array.isArray(llmFrames[idx + 1]);
+                                  const lev = llmReady ? induceLlmSequence(llmFrames, idx) : null;
+                                  const llmMs = lev ? ((typeof performance !== "undefined" ? performance.now() : 0) - _tLlm) : null;
+                                  inductionEls.push(renderRow("induction-llm", `Prolog Induction · LLM Parts${llmMs != null ? ` · ${llmMs.toFixed(1)} ms` : ""}`, "is-llm", lev, !llmReady, manifestActLabel, false));
                                 }
                                 return (
                                   <div className="video-import-reduce-tierstack">
