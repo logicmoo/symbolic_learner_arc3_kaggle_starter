@@ -12,6 +12,7 @@ from __future__ import annotations
 import sys
 import tempfile
 import threading
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -1460,21 +1461,92 @@ _demo_state: dict = {"running": False, "results": None, "startedAt": None,
 _demo_lock = threading.Lock()
 _demo_gen = 0  # bumped on every start/stop/clear; an in-flight job whose gen is stale is discarded
 
+# --- server-OWNED animation playhead ---------------------------------------
+# The frame each demo shows is decided by the SERVER (advanced by elapsed time),
+# not by any client-side loop. The UI just renders the frame index the server
+# reports and sends run/stop/clear/play/seek as commands. "Stop all" freezes the
+# playheads here, so the animation genuinely stops everywhere.
+_PLAY_INTERVAL = 0.7  # seconds per frame
+_play: dict = {}      # demo id -> {"playing": bool, "t0": float, "n": int, "idx": int}
+_play_epoch = 0       # bumped whenever playhead state changes, so observers can diff cheaply
+
+
+def _cur_index_locked(did: str) -> int:
+    """Current frame index for a demo, computed from elapsed time when playing."""
+    p = _play.get(did)
+    if not p or p["n"] <= 1:
+        return 0
+    if p["playing"]:
+        return int((time.monotonic() - p["t0"]) / _PLAY_INTERVAL) % p["n"]
+    return max(0, min(p["idx"], p["n"] - 1))
+
+
+def _is_playing_locked(did: str) -> bool:
+    p = _play.get(did)
+    return bool(p and p["playing"] and p["n"] > 1)
+
+
+def _touch_play_locked() -> None:
+    global _play_epoch
+    _play_epoch += 1
+
+
+def demo_heads() -> dict:
+    """Lightweight playhead snapshot the UI renders without any client loop."""
+    with _demo_lock:
+        heads = {k: _cur_index_locked(k) for k in _play}
+        playing = {k: _is_playing_locked(k) for k in _play}
+        any_playing = any(playing.values())
+        return {"heads": heads, "playing": playing, "anyPlaying": any_playing,
+                "running": _demo_state["running"], "epoch": _play_epoch, "generation": _demo_gen}
+
+
+def set_demo_play(did: str, playing: bool) -> dict:
+    """Play/pause one demo's animation on the server."""
+    with _demo_lock:
+        p = _play.get(did)
+        if p:
+            p["idx"] = _cur_index_locked(did)          # freeze where we are
+            p["playing"] = bool(playing) and p["n"] > 1
+            if p["playing"]:                            # resume so current frame == idx
+                p["t0"] = time.monotonic() - p["idx"] * _PLAY_INTERVAL
+            _touch_play_locked()
+    return demo_heads()
+
+
+def seek_demo(did: str, index: int) -> dict:
+    """Jump one demo to a specific frame (pauses it) on the server."""
+    with _demo_lock:
+        p = _play.get(did)
+        if p:
+            p["playing"] = False
+            p["idx"] = max(0, min(int(index), p["n"] - 1))
+            _touch_play_locked()
+    return demo_heads()
+
 
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
 def get_demo_state() -> dict:
-    """Observe the latest server run: {running, results, startedAt, finishedAt}."""
+    """Observe the latest server run: {running, results, startedAt, finishedAt}.
+    Each demo carries the SERVER's current frame index (frameIndex) so the UI never
+    decides frame advancement itself."""
     with _demo_lock:
         st = dict(_demo_state)
-    res = st.get("results") or {"demos": [], "total": 0, "passed": 0}
-    return {**res, "catalog": demo_catalog(), "coverage": sow_coverage(), "running": st["running"],
+        res = st.get("results") or {"demos": [], "total": 0, "passed": 0}
+        demos = [{**d, "frameIndex": _cur_index_locked(d.get("id", "")),
+                  "playing": _is_playing_locked(d.get("id", ""))} for d in res.get("demos", [])]
+        any_playing = any(_is_playing_locked(k) for k in _play)
+        epoch = _play_epoch
+    return {"demos": demos, "total": res.get("total", 0), "passed": res.get("passed", 0),
+            "catalog": demo_catalog(), "coverage": sow_coverage(), "running": st["running"],
+            "anyPlaying": any_playing, "playEpoch": epoch,
             "startedAt": st["startedAt"], "finishedAt": st["finishedAt"], "only": st["only"]}
 
 
-def _run_job(only: str | None, gen: int) -> None:
+def _run_job(only: str | None, gen: int, stepped: bool = False) -> None:
     try:
         res = run_demos(only=only)
         with _demo_lock:
@@ -1490,6 +1562,13 @@ def _run_job(only: str | None, gen: int) -> None:
                 demos = res["demos"]
             _demo_state["results"] = {"demos": demos, "total": len(demos),
                                       "passed": sum(1 for d in demos if d.get("passed"))}
+            # Server OWNS the animation: (re)start the playhead for each demo that
+            # just (re)computed, so it advances by elapsed time on the server. When
+            # 'stepped', start PAUSED at frame 0 so the user steps manually.
+            for d in res["demos"]:
+                n = len(d.get("frames") or d.get("panels") or [])
+                _play[d["id"]] = {"playing": (n > 1) and not stepped, "t0": time.monotonic(), "n": n, "idx": 0}
+            _touch_play_locked()
     finally:
         with _demo_lock:
             if gen == _demo_gen:          # only the current job may flip running off
@@ -1497,11 +1576,11 @@ def _run_job(only: str | None, gen: int) -> None:
                 _demo_state["finishedAt"] = _now()
 
 
-def start_demo_run(only: str | None = None) -> dict:
+def start_demo_run(only: str | None = None, stepped: bool = False) -> dict:
     """Kick off a background server run and return immediately. PREEMPTS any run
     already in progress (its stale generation makes it discard its result) so Run
     and Run step 1 always restart cleanly from the beginning. The page observes
-    progress via get_demo_state()."""
+    progress via get_demo_state(). `stepped` starts the demo PAUSED at frame 0."""
     global _demo_gen
     with _demo_lock:
         _demo_gen += 1                    # preempt/cancel any in-flight run
@@ -1510,19 +1589,23 @@ def start_demo_run(only: str | None = None) -> dict:
         _demo_state["startedAt"] = _now()
         _demo_state["finishedAt"] = None
         _demo_state["only"] = only
-    threading.Thread(target=_run_job, args=(only, gen), name=f"sanity-tests-{only or 'all'}",
+    threading.Thread(target=_run_job, args=(only, gen, stepped), name=f"sanity-tests-{only or 'all'}",
                      daemon=True).start()
     return get_demo_state()
 
 
 def stop_demo_run() -> dict:
-    """Stop any in-flight server run. The running job (if any) finishes its
-    computation but its result is discarded; the cached results are kept."""
+    """Stop any in-flight server run AND freeze every animation playhead, so the
+    demos genuinely stop (the UI holds on whatever frame the server last reported)."""
     global _demo_gen
     with _demo_lock:
         _demo_gen += 1                    # invalidate any in-flight job
         _demo_state["running"] = False
         _demo_state["finishedAt"] = _now()
+        for did, p in _play.items():      # freeze each playhead where it currently is
+            p["idx"] = _cur_index_locked(did)
+            p["playing"] = False
+        _touch_play_locked()
     return get_demo_state()
 
 
@@ -1535,6 +1618,7 @@ def clear_demo_state(only: str | None = None) -> dict:
         _demo_state["running"] = False
         _demo_state["finishedAt"] = _now()
         if only:
+            _play.pop(only, None)
             res = _demo_state.get("results")
             if res and res.get("demos"):
                 demos = [d for d in res["demos"] if d.get("id") != only]
@@ -1542,8 +1626,10 @@ def clear_demo_state(only: str | None = None) -> dict:
                                            "passed": sum(1 for d in demos if d.get("passed"))}
                                           if demos else None)
         else:
+            _play.clear()
             _demo_state["results"] = None
             _demo_state["startedAt"] = None
             _demo_state["finishedAt"] = None
             _demo_state["only"] = None
+        _touch_play_locked()
     return get_demo_state()

@@ -14,6 +14,7 @@ type Demo = {
   id: string; group: string; title: string; description: string;
   panels: Panel[]; frames?: Panel[]; result: Record<string, unknown>; passed: boolean;
   notRun?: boolean; preview?: Panel | null; resultKeys?: string[];
+  frameIndex?: number; playing?: boolean;
 };
 type CatalogEntry = { id: string; group: string; title: string; preview?: Panel | null; resultKeys?: string[] };
 type CoverageRow = {
@@ -23,7 +24,7 @@ type CoverageRow = {
 };
 type DemosResponse = {
   demos: Demo[]; total: number; passed: number; running?: boolean; catalog?: CatalogEntry[];
-  coverage?: CoverageRow[]; only?: string | null;
+  coverage?: CoverageRow[]; only?: string | null; anyPlaying?: boolean; playEpoch?: number;
 };
 
 const CELL = 16;
@@ -136,20 +137,16 @@ function ResultChips({ result }: { result: Record<string, unknown> }) {
   );
 }
 
-function AnimatedGrid({ frames, autoplay = true, resetToken = 0 }: { frames: Panel[]; autoplay?: boolean; resetToken?: number }) {
-  const [i, setI] = useState(0);
-  const [playing, setPlaying] = useState(autoplay);
+function AnimatedGrid({ frames, index = 0, playing = false, onToggle, onSeek }: {
+  frames: Panel[]; index?: number; playing?: boolean;
+  onToggle?: (playing: boolean) => void; onSeek?: (index: number) => void;
+}) {
   const multi = frames.length > 1;
-  // Restart the animation to the beginning when a new run is triggered for this card.
-  useEffect(() => { setI(0); setPlaying(autoplay); }, [resetToken, autoplay]);
-  useEffect(() => { if (i > frames.length - 1) setI(0); }, [frames.length, i]);
-  useEffect(() => {
-    if (!multi || !playing) return;
-    const t = setInterval(() => setI((v) => (v + 1) % frames.length), 700);
-    return () => clearInterval(t);
-  }, [multi, playing, frames.length]);
   if (!frames.length) return <div style={{ opacity: 0.5, fontSize: 12 }}>no frames</div>;
-  const cur = frames[Math.min(i, frames.length - 1)];
+  // The SERVER owns the playhead: render exactly the frame index it reports. No
+  // client-side timer advances frames — the demo just displays what it's told.
+  const i = Math.max(0, Math.min(index, frames.length - 1));
+  const cur = frames[i];
   // Reserve the largest rendered box across ALL frames so frames of different sizes
   // don't resize the card mid-animation (which shoves the rest of the grid around).
   const pxOf = (p: Panel) => Math.max(3, Math.min(CELL, Math.floor(MAX_PX / Math.max(p.w, p.h, 1))));
@@ -169,18 +166,18 @@ function AnimatedGrid({ frames, autoplay = true, resetToken = 0 }: { frames: Pan
       {multi ? (
         <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
           <button type="button" title="Previous step"
-            onClick={() => { setPlaying(false); setI((v) => (v - 1 + frames.length) % frames.length); }}
+            onClick={() => onSeek?.((i - 1 + frames.length) % frames.length)}
             style={{ fontSize: 11, padding: "1px 8px", borderRadius: 4, cursor: "pointer" }}>◀</button>
           <button type="button" title={playing ? "Pause" : "Play"}
-            onClick={() => setPlaying((p) => !p)}
+            onClick={() => onToggle?.(!playing)}
             style={{ fontSize: 11, padding: "1px 8px", borderRadius: 4, cursor: "pointer" }}>{playing ? "⏸" : "▶"}</button>
           <button type="button" title="Next step"
-            onClick={() => { setPlaying(false); setI((v) => (v + 1) % frames.length); }}
+            onClick={() => onSeek?.((i + 1) % frames.length)}
             style={{ fontSize: 11, padding: "1px 8px", borderRadius: 4, cursor: "pointer" }}>▶❙</button>
-          <input type="range" min={0} max={frames.length - 1} value={Math.min(i, frames.length - 1)}
-            onChange={(e) => { setPlaying(false); setI(Number(e.target.value)); }} style={{ width: 110 }} />
+          <input type="range" min={0} max={frames.length - 1} value={i}
+            onChange={(e) => onSeek?.(Number(e.target.value))} style={{ width: 110 }} />
           <span style={{ opacity: 0.6, minWidth: 42, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
-            {Math.min(i, frames.length - 1) + 1}/{frames.length}
+            {i + 1}/{frames.length}
           </span>
         </div>
       ) : null}
@@ -251,9 +248,10 @@ function CoverageSection({ rows, onRun }: { rows: CoverageRow[]; onRun: (id: str
   );
 }
 
-function DemoCard({ demo, onRun, onStep, onClear, running, stepMode, resetToken, flash }: {
+function DemoCard({ demo, onRun, onStep, onClear, onToggle, onSeek, running, flash }: {
   demo: Demo; onRun: (id: string) => void; onStep: (id: string) => void;
-  onClear: (id: string) => void; running: boolean; stepMode: boolean; resetToken: number; flash?: boolean;
+  onClear: (id: string) => void; onToggle: (id: string, playing: boolean) => void;
+  onSeek: (id: string, index: number) => void; running: boolean; flash?: boolean;
 }) {
   const frames = (demo.frames && demo.frames.length ? demo.frames : demo.panels) || [];
   const notRun = !!demo.notRun;
@@ -284,7 +282,8 @@ function DemoCard({ demo, onRun, onStep, onClear, running, stepMode, resetToken,
         <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "center", flex: "0 0 auto" }}>
           {notRun
             ? (demo.preview ? <GridPanel panel={demo.preview} /> : <BlankMap />)
-            : <AnimatedGrid frames={frames} autoplay={!stepMode} resetToken={resetToken} />}
+            : <AnimatedGrid frames={frames} index={demo.frameIndex || 0} playing={!!demo.playing}
+                onToggle={(p) => onToggle(demo.id, p)} onSeek={(idx) => onSeek(demo.id, idx)} />}
           {notRun ? (
             <PreRunControls onRun={() => onRun(demo.id)} onStep={() => onStep(demo.id)} disabled={running} />
           ) : null}
@@ -313,56 +312,81 @@ function DemoCard({ demo, onRun, onStep, onClear, running, stepMode, resetToken,
 
 export function RecognitionDemosPage() {
   const [data, setData] = useState<DemosResponse | null>(null);
+  const [heads, setHeads] = useState<Record<string, number>>({});
+  const [playingMap, setPlayingMap] = useState<Record<string, boolean>>({});
   const [err, setErr] = useState("");
   const [running, setRunning] = useState(false);
-  const [stepIds, setStepIds] = useState<Set<string>>(new Set());
-  const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [runNonce, setRunNonce] = useState<Record<string, number>>({});
   const [flashId, setFlashId] = useState<string | null>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [showTop, setShowTop] = useState(false);
-  const bump = useCallback((id: string) => setRunNonce((m) => ({ ...m, [id]: (m[id] || 0) + 1 })), []);
+  const wsRef = useRef<WebSocket | null>(null);
+  const pendingRef = useRef<string[]>([]);
 
-  // The UI only OBSERVES: it polls the server's cached run. While a run is in
-  // progress it polls fast to animate; when idle it keeps polling slowly so a run
-  // triggered elsewhere (e.g. by a collaborator on the same page) shows up here too.
-  const observe = useCallback(() => {
-    fetch("/workbench/recognition/demos")
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((d: DemosResponse) => {
-        setData(d);
-        setRunning(!!d.running);
-        if (pollRef.current) clearTimeout(pollRef.current);
-        pollRef.current = setTimeout(observe, d.running ? 1200 : 3500);
-      })
-      .catch((e) => setErr(String(e)));
+  // Server-OWNED animation over a WebSocket: the server decides each demo's current
+  // frame (its playhead is advanced on the server) and PUSHES it; the page renders
+  // exactly what it receives. There is NO client-side animation loop — buttons only
+  // send commands (run / stop / clear / play / seek), and each demo cooperatively
+  // follows the shared server control state.
+  useEffect(() => {
+    let closed = false;
+    let retry: ReturnType<typeof setTimeout> | null = null;
+    const connect = () => {
+      const proto = window.location.protocol === "https:" ? "wss" : "ws";
+      const ws = new WebSocket(`${proto}://${window.location.host}/workbench/recognition/demos/ws`);
+      wsRef.current = ws;
+      ws.onopen = () => {
+        setErr("");
+        const q = pendingRef.current;
+        pendingRef.current = [];
+        q.forEach((s) => { try { ws.send(s); } catch { /* noop */ } });
+      };
+      ws.onmessage = (ev) => {
+        let m: (DemosResponse & { type: string; heads?: Record<string, number>; playing?: Record<string, boolean>; error?: string });
+        try { m = JSON.parse(ev.data); } catch { return; }
+        if (m.type === "state") {
+          setData(m);
+          setRunning(!!m.running);
+          const h: Record<string, number> = {};
+          const pl: Record<string, boolean> = {};
+          (m.demos || []).forEach((d) => {
+            if (typeof d.frameIndex === "number") h[d.id] = d.frameIndex;
+            pl[d.id] = !!d.playing;
+          });
+          setHeads(h);
+          setPlayingMap(pl);
+          setErr("");
+        } else if (m.type === "heads") {
+          setHeads(m.heads || {});
+          setPlayingMap(m.playing || {});
+          setRunning(!!m.running);
+        } else if (m.type === "error") {
+          setErr(String(m.error || "error"));
+        }
+      };
+      ws.onclose = () => { if (wsRef.current === ws) wsRef.current = null; if (!closed) retry = setTimeout(connect, 1000); };
+      ws.onerror = () => { try { ws.close(); } catch { /* noop */ } };
+    };
+    connect();
+    return () => { closed = true; if (retry) clearTimeout(retry); try { wsRef.current?.close(); } catch { /* noop */ } };
   }, []);
 
-  const runOnServer = useCallback((only?: string) => {
-    setErr("");
-    setRunning(true);
-    fetch("/workbench/recognition/demos/run", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(only ? { only } : {}),
-    })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then(() => observe())
-      .catch((e) => setErr(String(e)));
-  }, [observe]);
+  // Commands are queued if the socket isn't open yet and flushed on open, so a click
+  // right after load is never lost (and never shows a spurious "not connected").
+  const send = useCallback((msg: Record<string, unknown>) => {
+    const s = JSON.stringify(msg);
+    const ws = wsRef.current;
+    if (ws && ws.readyState === WebSocket.OPEN) ws.send(s);
+    else pendingRef.current.push(s);
+  }, []);
 
-  // "Run" auto-plays; "Run Stepped" runs then starts PAUSED so you step manually.
-  // Both restart the animation to the beginning via the per-card run nonce.
-  const runOne = useCallback((id: string) => {
-    setStepIds((s) => { const n = new Set(s); n.delete(id); return n; });
-    bump(id);
-    runOnServer(id);
-  }, [runOnServer, bump]);
-  const stepOne = useCallback((id: string) => {
-    setStepIds((s) => new Set(s).add(id));
-    bump(id);
-    runOnServer(id);
-  }, [runOnServer, bump]);
-  const runAll = useCallback(() => runOnServer(), [runOnServer]);
+  const runOne = useCallback((id: string) => send({ cmd: "run", id }), [send]);
+  const stepOne = useCallback((id: string) => send({ cmd: "run", id, stepped: true }), [send]);
+  const runAll = useCallback(() => send({ cmd: "run" }), [send]);
+  const stopAll = useCallback(() => send({ cmd: "stop" }), [send]);
+  const clearOne = useCallback((id: string) => send({ cmd: "clear", id }), [send]);
+  const clearAll = useCallback(() => send({ cmd: "clear" }), [send]);
+  const togglePlay = useCallback((id: string, playing: boolean) => send({ cmd: "play", id, playing }), [send]);
+  const seek = useCallback((id: string, index: number) => send({ cmd: "seek", id, index }), [send]);
 
   // Coverage-table ▶ buttons live far above the demo cards, so besides starting the
   // run we scroll the matching card into view and briefly highlight it — otherwise
@@ -380,40 +404,21 @@ export function RecognitionDemosPage() {
     setTimeout(() => setFlashId((cur) => (cur === id ? null : cur)), 2200);
   }, [runOne]);
 
-  const stopOnServer = useCallback(() => {
-    fetch("/workbench/recognition/demos/stop", { method: "POST" })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then(() => { setRunning(false); observe(); })
-      .catch((e) => setErr(String(e)));
-  }, [observe]);
-
-  const clearOnServer = useCallback((only?: string) => {
-    if (pollRef.current) clearTimeout(pollRef.current);
-    if (only) setStepIds((s) => { const n = new Set(s); n.delete(only); return n; });
-    fetch("/workbench/recognition/demos/clear", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(only ? { only } : {}),
-    })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((d: DemosResponse) => { setRunning(false); setData(d); })
-      .catch((e) => setErr(String(e)));
-  }, []);
-  const clearOne = useCallback((id: string) => clearOnServer(id), [clearOnServer]);
-  const clearAll = useCallback(() => clearOnServer(), [clearOnServer]);
-
-  useEffect(() => {
-    observe();
-    return () => { if (pollRef.current) clearTimeout(pollRef.current); };
-  }, [observe]);
+  const anyPlaying = !!data?.anyPlaying || Object.values(playingMap).some(Boolean);
 
   // Merge the catalog (all available tests) with any results: tests that haven't
   // run yet appear as "not run" stub cards so the user can start them individually.
+  // Then overlay the SERVER's live playhead (frame index + playing) for each demo.
   const byId = new Map((data?.demos || []).map((d) => [d.id, d]));
   const catalog = data?.catalog || [];
   const merged: Demo[] = catalog.map(
     (c) => byId.get(c.id) || { ...c, description: "", panels: [], frames: [], result: {}, passed: false, notRun: true },
   );
   (data?.demos || []).forEach((d) => { if (!catalog.some((c) => c.id === d.id)) merged.push(d); });
+  merged.forEach((d) => {
+    if (heads[d.id] !== undefined) d.frameIndex = heads[d.id];
+    if (playingMap[d.id] !== undefined) d.playing = playingMap[d.id];
+  });
 
   const groups = merged.reduce<Record<string, Demo[]>>((acc, d) => {
     (acc[d.group] = acc[d.group] || []).push(d);
@@ -439,8 +444,8 @@ export function RecognitionDemosPage() {
           style={{ marginLeft: "auto", fontSize: 12, padding: "4px 12px", borderRadius: 6, cursor: "pointer" }}>
           {running ? "Running…" : "▶ Run all on server"}
         </button>
-        <button type="button" onClick={stopOnServer} disabled={!running}
-          style={{ fontSize: 12, padding: "4px 12px", borderRadius: 6, cursor: running ? "pointer" : "not-allowed" }}>
+        <button type="button" onClick={stopAll} disabled={!running && !anyPlaying}
+          style={{ fontSize: 12, padding: "4px 12px", borderRadius: 6, cursor: (running || anyPlaying) ? "pointer" : "not-allowed" }}>
           ■ Stop all
         </button>
         <button type="button" onClick={clearAll} disabled={!running && !data?.total}
@@ -470,8 +475,8 @@ export function RecognitionDemosPage() {
               const cardRunning = running && (data?.only == null || data?.only === d.id);
               return (
                 <DemoCard key={d.id} demo={d} onRun={runOne} onStep={stepOne}
-                  onClear={clearOne} running={cardRunning} stepMode={stepIds.has(d.id)}
-                  resetToken={runNonce[d.id] || 0} flash={flashId === d.id} />
+                  onClear={clearOne} onToggle={togglePlay} onSeek={seek}
+                  running={cardRunning} flash={flashId === d.id} />
               );
             })}
           </div>

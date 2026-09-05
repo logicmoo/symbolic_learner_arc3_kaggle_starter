@@ -4,10 +4,12 @@ SCOPE (game, shared across its levels; or `_all_games_`), the persistent
 identities and placement trajectories."""
 from __future__ import annotations
 
+import asyncio
+import json
 import sys
 from pathlib import Path
 
-from fastapi import APIRouter, Body, Query
+from fastapi import APIRouter, Body, Query, WebSocket, WebSocketDisconnect
 
 router = APIRouter()
 
@@ -80,6 +82,85 @@ def recognition_demos_clear(payload: dict | None = Body(default=None)) -> dict:
     if isinstance(payload, dict) and payload.get("only"):
         only = str(payload["only"]).strip()
     return rd.clear_demo_state(only)
+
+
+@router.websocket("/recognition/demos/ws")
+async def recognition_demos_ws(websocket: WebSocket) -> None:
+    """Server-OWNED Sanity Tests channel. The server decides which frame each demo
+    shows (the playhead is advanced by elapsed time on the server) and PUSHES it; the
+    page only renders what it receives — there is no client-side animation loop. Run
+    / stop / clear / play / seek arrive as command messages, so buttons just send.
+    """
+    await websocket.accept()
+    import recognition_demos as rd
+
+    stop_flag = asyncio.Event()
+
+    async def push_loop() -> None:
+        last_epoch = None
+        last_heads = None
+        while not stop_flag.is_set():
+            head = await asyncio.to_thread(rd.demo_heads)
+            # Discrete events (run finished, stop, clear, play, seek) bump the epoch:
+            # push the FULL state (which carries every demo's frames) on those.
+            if head["epoch"] != last_epoch:
+                last_epoch = head["epoch"]
+                state = await asyncio.to_thread(rd.get_demo_state)
+                try:
+                    await websocket.send_json({"type": "state", **state})
+                except Exception:  # noqa: BLE001 - client went away
+                    stop_flag.set()
+                    return
+                last_heads = json.dumps(head["heads"], sort_keys=True)
+            else:
+                hk = json.dumps({"h": head["heads"], "pl": head["playing"],
+                                 "p": head["anyPlaying"], "r": head["running"]}, sort_keys=True)
+                if hk != last_heads:
+                    last_heads = hk
+                    try:
+                        await websocket.send_json({"type": "heads", "heads": head["heads"],
+                                                   "playing": head["playing"],
+                                                   "anyPlaying": head["anyPlaying"], "running": head["running"]})
+                    except Exception:  # noqa: BLE001
+                        stop_flag.set()
+                        return
+            await asyncio.sleep(0.25 if (head["anyPlaying"] or head["running"]) else 0.8)
+
+    async def receive_loop() -> None:
+        while not stop_flag.is_set():
+            try:
+                msg = await websocket.receive_json()
+            except WebSocketDisconnect:
+                stop_flag.set()
+                return
+            except Exception:  # noqa: BLE001 - malformed frame; keep the socket open
+                continue
+            cmd = (msg or {}).get("cmd")
+            did = msg.get("id")
+            try:
+                if cmd == "run":
+                    await asyncio.to_thread(rd.start_demo_run, (str(did).strip() if did else None), bool(msg.get("stepped")))
+                elif cmd == "stop":
+                    await asyncio.to_thread(rd.stop_demo_run)
+                elif cmd == "clear":
+                    await asyncio.to_thread(rd.clear_demo_state, (str(did).strip() if did else None))
+                elif cmd == "play" and did:
+                    await asyncio.to_thread(rd.set_demo_play, str(did), bool(msg.get("playing", True)))
+                elif cmd == "seek" and did is not None and "index" in msg:
+                    await asyncio.to_thread(rd.seek_demo, str(did), int(msg.get("index", 0)))
+            except Exception as error:  # noqa: BLE001 - report, keep socket open
+                try:
+                    await websocket.send_json({"type": "error", "error": str(error)})
+                except Exception:  # noqa: BLE001
+                    stop_flag.set()
+                    return
+
+    try:
+        await asyncio.gather(push_loop(), receive_loop())
+    except WebSocketDisconnect:
+        pass
+    finally:
+        stop_flag.set()
 
 
 @router.get("/recognition/phase3")
