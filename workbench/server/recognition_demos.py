@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import sys
 import tempfile
+import threading
+from datetime import datetime, timezone
 from pathlib import Path
 
 _PROLOG_DIR = Path(__file__).resolve().parent / "generative_vision" / "prolog"
@@ -416,3 +418,59 @@ def run_demos(only: str | None = None) -> dict:
             continue
         out.append(demo)
     return {"demos": out, "total": len(out), "passed": sum(1 for d in out if d.get("passed"))}
+
+
+# --- server-owned background runs (the UI only OBSERVES) ---------------------
+# The sanity tests run on the SERVER in a background thread; the page polls the
+# cached results and animates them. The UI never computes.
+_demo_state: dict = {"running": False, "results": None, "startedAt": None,
+                     "finishedAt": None, "only": None}
+_demo_lock = threading.Lock()
+
+
+def _now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def get_demo_state() -> dict:
+    """Observe the latest server run: {running, results, startedAt, finishedAt}."""
+    with _demo_lock:
+        st = dict(_demo_state)
+    res = st.get("results") or {"demos": [], "total": 0, "passed": 0}
+    return {**res, "running": st["running"], "startedAt": st["startedAt"],
+            "finishedAt": st["finishedAt"], "only": st["only"]}
+
+
+def _run_job(only: str | None) -> None:
+    try:
+        res = run_demos(only=only)
+        with _demo_lock:
+            prev = (_demo_state.get("results") or {}).get("demos", [])
+            if only and prev:
+                fresh = res["demos"][0] if res["demos"] else None
+                demos = [(fresh if fresh and d["id"] == only else d) for d in prev]
+                if fresh and all(d["id"] != only for d in prev):
+                    demos.append(fresh)
+            else:
+                demos = res["demos"]
+            _demo_state["results"] = {"demos": demos, "total": len(demos),
+                                      "passed": sum(1 for d in demos if d.get("passed"))}
+    finally:
+        with _demo_lock:
+            _demo_state["running"] = False
+            _demo_state["finishedAt"] = _now()
+
+
+def start_demo_run(only: str | None = None) -> dict:
+    """Kick off a background server run (no-op if one is already running) and
+    return immediately. The page observes progress via get_demo_state()."""
+    with _demo_lock:
+        if _demo_state["running"]:
+            return get_demo_state()
+        _demo_state["running"] = True
+        _demo_state["startedAt"] = _now()
+        _demo_state["finishedAt"] = None
+        _demo_state["only"] = only
+    threading.Thread(target=_run_job, args=(only,), name=f"sanity-tests-{only or 'all'}",
+                     daemon=True).start()
+    return get_demo_state()

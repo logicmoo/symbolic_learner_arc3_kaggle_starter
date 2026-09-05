@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
  * Recognition Demos — runs the symbolic_arc Phase-2 acceptance behaviours
@@ -14,7 +14,7 @@ type Demo = {
   id: string; group: string; title: string; description: string;
   panels: Panel[]; frames?: Panel[]; result: Record<string, unknown>; passed: boolean;
 };
-type DemosResponse = { demos: Demo[]; total: number; passed: number };
+type DemosResponse = { demos: Demo[]; total: number; passed: number; running?: boolean };
 
 const CELL = 16;
 const MAX_PX = 240;
@@ -137,32 +137,42 @@ function DemoCard({ demo, onRun, running }: { demo: Demo; onRun: (id: string) =>
 export function RecognitionDemosPage() {
   const [data, setData] = useState<DemosResponse | null>(null);
   const [err, setErr] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [runningId, setRunningId] = useState<string | null>(null);
+  const [running, setRunning] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const runAll = () => {
-    setLoading(true);
-    setErr("");
+  // The UI only OBSERVES: it polls the server's cached run and re-polls while a
+  // background run is in progress. It never computes the tests itself.
+  const observe = useCallback(() => {
     fetch("/workbench/recognition/demos")
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((d: DemosResponse) => setData(d))
-      .catch((e) => setErr(String(e)))
-      .finally(() => setLoading(false));
-  };
-
-  const runOne = (id: string) => {
-    setRunningId(id);
-    fetch(`/workbench/recognition/demos?only=${encodeURIComponent(id)}`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((d: DemosResponse) => {
-        const one = d.demos[0];
-        if (one) setData((prev) => prev ? { ...prev, demos: prev.demos.map((x) => (x.id === id ? one : x)) } : prev);
+        setData(d);
+        setRunning(!!d.running);
+        if (pollRef.current) clearTimeout(pollRef.current);
+        if (d.running) pollRef.current = setTimeout(observe, 1200);
       })
-      .catch((e) => setErr(String(e)))
-      .finally(() => setRunningId(null));
-  };
+      .catch((e) => setErr(String(e)));
+  }, []);
 
-  useEffect(runAll, []);
+  const runOnServer = useCallback((only?: string) => {
+    setErr("");
+    setRunning(true);
+    fetch("/workbench/recognition/demos/run", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(only ? { only } : {}),
+    })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then(() => observe())
+      .catch((e) => setErr(String(e)));
+  }, [observe]);
+
+  const runAll = useCallback(() => runOnServer(), [runOnServer]);
+  const runOne = useCallback((id: string) => runOnServer(id), [runOnServer]);
+
+  useEffect(() => {
+    observe();
+    return () => { if (pollRef.current) clearTimeout(pollRef.current); };
+  }, [observe]);
 
   const groups = (data?.demos || []).reduce<Record<string, Demo[]>>((acc, d) => {
     (acc[d.group] = acc[d.group] || []).push(d);
@@ -173,30 +183,31 @@ export function RecognitionDemosPage() {
     <div style={{ padding: 16, overflow: "auto", height: "100%" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
         <h2 style={{ margin: 0 }}>Sanity Tests</h2>
-        {data ? (
+        {data && data.total ? (
           <span style={{
             fontSize: 12, padding: "3px 9px", borderRadius: 6,
             background: data.passed === data.total ? "rgba(139,212,80,0.18)" : "rgba(224,72,63,0.2)",
             color: data.passed === data.total ? "#8bd450" : "#ff8b81",
           }}>{data.passed}/{data.total} passing</span>
         ) : null}
-        <button type="button" onClick={runAll} disabled={loading}
+        {running ? <span style={{ fontSize: 12, opacity: 0.7 }}>● running on server…</span> : null}
+        <button type="button" onClick={runAll} disabled={running}
           style={{ marginLeft: "auto", fontSize: 12, padding: "4px 12px", borderRadius: 6, cursor: "pointer" }}>
-          {loading ? "Running…" : "▶ Run all"}
+          {running ? "Running…" : "▶ Run all on server"}
         </button>
       </div>
       <p style={{ fontSize: 12, opacity: 0.7, marginTop: 0 }}>
-        Each sanity test runs a real symbolic_arc Phase-2 acceptance behaviour against live code (SOW Exhibit A Phase 2).
-        Legend: solid = visible/object, <span style={{ color: "#8bd450" }}>green outline / +</span> = generatively
-        filled or regenerated, dashed <b>?</b> = behind the occluder.
+        The server runs each real symbolic_arc Phase-2 acceptance behaviour (SOW Exhibit A Phase 2); this page only
+        observes and animates the results. Legend: solid = visible/object,{" "}
+        <span style={{ color: "#8bd450" }}>green outline / +</span> = generatively filled or regenerated, dashed <b>?</b> = behind the occluder.
       </p>
       {err ? <div style={{ color: "#ff8b81", fontSize: 12, marginBottom: 8 }}>Error: {err}</div> : null}
-      {loading && !data ? <div style={{ opacity: 0.6 }}>Running demos…</div> : null}
+      {running && !data?.demos?.length ? <div style={{ opacity: 0.6 }}>Server is running the sanity tests…</div> : null}
       {Object.entries(groups).map(([group, demos]) => (
         <section key={group} style={{ marginBottom: 20 }}>
           <h3 style={{ margin: "8px 0", fontSize: 14, opacity: 0.85 }}>{group}</h3>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: 12 }}>
-            {demos.map((d) => <DemoCard key={d.id} demo={d} onRun={runOne} running={runningId === d.id} />)}
+            {demos.map((d) => <DemoCard key={d.id} demo={d} onRun={runOne} running={running} />)}
           </div>
         </section>
       ))}

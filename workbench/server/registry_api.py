@@ -7,7 +7,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Body, Query
 
 router = APIRouter()
 
@@ -36,9 +36,28 @@ def registry_snapshot(
 
 
 @router.get("/recognition/demos")
-def recognition_demos(only: str | None = Query(None, description="run a single demo by id")) -> dict:
-    """Run the symbolic_arc Phase-2 acceptance demonstrations and return their
-    visual grid panels + result + pass/fail for the Recognition Demos page."""
+def recognition_demos() -> dict:
+    """OBSERVE the latest server-run sanity tests (visual grid panels + result +
+    pass/fail per demo, plus a `running` flag). Does not compute — if nothing has
+    run yet it kicks off one background server run and returns the empty/running
+    state for the page to poll."""
     import recognition_demos as rd  # lazy: pulls numpy/scipy/PIL/swipl
 
-    return rd.run_demos(only=only)
+    st = rd.get_demo_state()
+    if st.get("results") is None and not st.get("running") and not st.get("demos"):
+        rd.start_demo_run(None)
+        st = rd.get_demo_state()
+    return st
+
+
+@router.post("/recognition/demos/run")
+def recognition_demos_run(payload: dict | None = Body(default=None)) -> dict:
+    """Ask the SERVER to (re)run the sanity tests in the background. Returns the
+    running state immediately; the page observes results via GET. `only` reruns a
+    single test by id."""
+    import recognition_demos as rd
+
+    only = None
+    if isinstance(payload, dict) and payload.get("only"):
+        only = str(payload["only"]).strip()
+    return rd.start_demo_run(only)
