@@ -922,9 +922,12 @@ _RAW_LS20_DIR = (Path(__file__).resolve().parents[1] / "workspaces" / "arc3_rand
 
 _ls20_selected: str | None = None   # user-chosen recording key (else default = longest)
 _ls20_recs_cache: list | None = None
-_ls20_write_memory: bool = False    # when True, the live-ls20 demo COMMITS recognized
-                                    # objects to the persistent registry (default OFF so
-                                    # the demo stays ephemeral and can't pollute memory)
+# Where the live-ls20 demo saves recognized object memory. Never canonical unless
+# the user explicitly picks it. "recording" = this recording's own isolated store
+# (default), "base" = a shared long-term demo base, "none" = ephemeral (no disk),
+# "canonical" = the real registry (explicit opt-in).
+_LS20_STORE_MODES = ("none", "recording", "base", "canonical")
+_ls20_store_mode: str = "recording"
 # ARC-AGI-3 movement actions -> direction arrows (the "move" made between two frames).
 _ACTION_ARROW = {"ACTION1": "↑", "ACTION2": "↓", "ACTION3": "←", "ACTION4": "→",
                  "ACTION5": "•", "ACTION6": "*"}
@@ -1050,11 +1053,16 @@ def set_ls20_source(key: str | None) -> None:
 
 
 def set_ls20_write(value: bool) -> None:
-    """Toggle whether the live-ls20 demo commits recognized objects to the persistent
-    long-term registry (default OFF: the demo stays ephemeral / from-empty)."""
-    global _ls20_write_memory
+    """Back-compat: map the old boolean to a store mode (True -> base, False -> recording)."""
+    set_ls20_store("base" if value else "recording")
+
+
+def set_ls20_store(mode: str) -> None:
+    """Choose WHERE the live-ls20 demo saves recognized object memory:
+    none / recording (isolated, default) / base (shared long-term) / canonical."""
+    global _ls20_store_mode
     with _demo_lock:
-        _ls20_write_memory = bool(value)
+        _ls20_store_mode = mode if mode in _LS20_STORE_MODES else "recording"
 
 
 def _variant_prov(exemplar, wh, cname) -> str:
@@ -1138,11 +1146,14 @@ def _demo_live_ls20_sequence():
     boundaries: list = []
     prev_hex = None
     last_boundary = -_MIN_GAP
+    frame_results: list = []       # per-frame geom, reused to persist object memory cheaply
 
     for i, (disp, png, action) in enumerate(order):
         idx, hexpal, parts = _parts_for(disp, png, game)
         if idx is None:
             continue
+        if parts:
+            frame_results.append({"geom": parts, "metta": ""})
         # Scene-reset boundary detection folded into the play pass (one decode per
         # frame): a big change in the palette-stable HEX grid marks a new level.
         hexgrid = _np.asarray(hexpal, dtype=object)[idx]
@@ -1227,26 +1238,39 @@ def _demo_live_ls20_sequence():
     recolored_shapes += sum(1 for cs in level_colours.values() if len(cs) > 1)   # final level
     levels_detected = level_no
 
-    # Object memory. The demo always tracks objects/shapes across frames in-run.
-    # When the user opts in (checkbox), it ALSO commits them to an ISOLATED per-
-    # recording memory area — a separate store rooted at object_memory_demo/<key>,
-    # NEVER the canonical registry — so the persistent object memory can be tested
-    # and inspected without polluting long-term memory. (Each recording gets its own
-    # area; inheriting from a shared longer-term base is a planned follow-up.)
+    # Object memory. The user chooses WHERE recognized objects/shapes are saved via
+    # a store-mode combo: 'none' (ephemeral), 'recording' (this recording's OWN
+    # isolated store, default), 'base' (a shared long-term demo base recordings
+    # accumulate into), or 'canonical' (the real registry — explicit opt-in only).
+    # Reuses the per-frame parts already computed, so there is no extra extraction.
     with _demo_lock:
-        write_mem = _ls20_write_memory
-    memory_store = "ephemeral (in-run only — from empty each run)"
+        store_mode = _ls20_store_mode
+    _demo_root = Path(sa.memory_dir()).parent / "object_memory_demo"
+    import re as _re
+    _targets = {
+        "none": None,
+        "recording": _demo_root / (_re.sub(r"[^A-Za-z0-9_.-]", "_", key or "default")),
+        "base": _demo_root / "_base_",
+        "canonical": Path(sa.memory_dir()),
+    }
+    target = _targets.get(store_mode)
+    memory_store = "none (ephemeral — nothing written)"
     memory_identities = memory_shapes = 0
-    if write_mem:
-        import re as _re
-        area = Path(sa.memory_dir()).parent / "object_memory_demo" / (_re.sub(r"[^A-Za-z0-9_.-]", "_", key or "default"))
+    if target is not None and frame_results:
         try:
-            sa.extract_sequence([p for (_d, p, _a) in order], "ls20-live",
-                                mem_dir=str(area), write=True, game=source_label)
-            snap = sa.registry_snapshot(str(area))
+            # Each run REBUILDS the per-recording store from empty (reproducible), but
+            # the shared 'base' and 'canonical' stores ACCUMULATE across runs.
+            if store_mode == "recording" and target.is_dir():
+                import shutil as _sh  # noqa: PLC0415
+                _sh.rmtree(target, ignore_errors=True)
+            # Scope by the GAME family ("ls20"), not the individual recording, so the
+            # shared 'base' store accumulates one ls20 brain across all recordings
+            # (per-recording stores stay isolated by their own directory).
+            sa.remember_objects(frame_results, "ls20-live", str(target), game="ls20", write=True)
+            snap = sa.registry_snapshot(str(target))
             memory_shapes = snap.get("shapeCount", 0)
             memory_identities = sum(len(s.get("identities", [])) for s in snap.get("scopes", {}).values())
-            memory_store = str(area)
+            memory_store = str(target)
         except Exception as _e:  # noqa: BLE001
             memory_store = f"write failed: {_e}"
 
@@ -1290,6 +1314,7 @@ def _demo_live_ls20_sequence():
                        "memory_store": memory_store,
                        "memory_identities": memory_identities,
                        "memory_shapes": memory_shapes,
+                       "memory_mode": store_mode,
                        "recolored_shapes": recolored_shapes,
                        "recolor_events": recolor_events},
             "passed": passed,
@@ -1342,7 +1367,7 @@ _DEMO_CATALOG = [
                     "objects_learned", "shapes_learned", "max_learners_per_shape",
                     "most_learned_shape", "learners_direct", "learners_via_filter",
                     "geometry_recognized", "individuals_recognized", "moves_seen",
-                    "memory_store", "memory_identities", "memory_shapes",
+                    "memory_store", "memory_identities", "memory_shapes", "memory_mode",
                     "recolored_shapes", "recolor_events"]},
     {"id": "occlusion-t", "group": "Occlusion completion", "title": "T tetromino — stem occluded",
      "resultKeys": ["recognized", "scale", "orientation", "residual", "confidence", "faithful"]},
@@ -1692,7 +1717,7 @@ def get_demo_state() -> dict:
             "catalog": demo_catalog(), "coverage": sow_coverage(), "running": st["running"],
             "anyPlaying": any_playing, "playEpoch": epoch,
             "ls20Recordings": _ls20_recordings(), "ls20Source": _current_ls20_key(),
-            "ls20WriteMemory": _ls20_write_memory,
+            "ls20StoreMode": _ls20_store_mode,
             "startedAt": st["startedAt"], "finishedAt": st["finishedAt"], "only": st["only"]}
 
 
@@ -1760,8 +1785,11 @@ def stop_demo_run() -> dict:
 
 
 def _wipe_demo_memory(only: str | None) -> None:
-    """Delete the ISOLATED demo object-memory store(s) so Clear truly resets learning.
-    Only ever touches object_memory_demo/* — NEVER the canonical registry."""
+    """Delete the demo object-memory store the CURRENT store-mode targets, so Clear
+    resets whatever you're writing to. clear-one wipes the selected target
+    (recording -> its own dir, base -> the shared base); clear-all wipes the whole
+    object_memory_demo root. Only ever touches object_memory_demo/* — the canonical
+    registry is NEVER deleted (even in canonical mode)."""
     try:
         import shutil  # noqa: PLC0415
         import re as _re  # noqa: PLC0415
@@ -1769,13 +1797,20 @@ def _wipe_demo_memory(only: str | None) -> None:
         root = Path(sa.memory_dir()).parent / "object_memory_demo"
     except Exception:  # noqa: BLE001
         return
+    with _demo_lock:
+        mode = _ls20_store_mode
     try:
         if only == "live-ls20":
-            key = _current_ls20_key()
-            if key:
-                target = root / _re.sub(r"[^A-Za-z0-9_.-]", "_", key)
-                if target.is_dir():
-                    shutil.rmtree(target, ignore_errors=True)
+            target = None
+            if mode == "recording":
+                key = _current_ls20_key()
+                if key:
+                    target = root / _re.sub(r"[^A-Za-z0-9_.-]", "_", key)
+            elif mode == "base":
+                target = root / "_base_"
+            # 'none' and 'canonical' clear nothing on disk here (canonical is protected)
+            if target is not None and target.is_dir():
+                shutil.rmtree(target, ignore_errors=True)
         elif not only:
             if root.is_dir():
                 shutil.rmtree(root, ignore_errors=True)

@@ -26,7 +26,7 @@ type Ls20Recording = { key: string; label: string; count: number };
 type DemosResponse = {
   demos: Demo[]; total: number; passed: number; running?: boolean; catalog?: CatalogEntry[];
   coverage?: CoverageRow[]; only?: string | null; anyPlaying?: boolean; playEpoch?: number;
-  ls20Recordings?: Ls20Recording[]; ls20Source?: string | null; ls20WriteMemory?: boolean;
+  ls20Recordings?: Ls20Recording[]; ls20Source?: string | null; ls20StoreMode?: string;
 };
 
 const CELL = 16;
@@ -250,12 +250,12 @@ function CoverageSection({ rows, onRun }: { rows: CoverageRow[]; onRun: (id: str
   );
 }
 
-function DemoCard({ demo, onRun, onStep, onClear, onToggle, onSeek, running, flash, recordings, source, onSelectSource, writeMemory, onSetWriteMemory }: {
+function DemoCard({ demo, onRun, onStep, onClear, onToggle, onSeek, running, flash, recordings, source, onSelectSource, storeMode, onSetStoreMode }: {
   demo: Demo; onRun: (id: string) => void; onStep: (id: string) => void;
   onClear: (id: string) => void; onToggle: (id: string, playing: boolean) => void;
   onSeek: (id: string, index: number) => void; running: boolean; flash?: boolean;
   recordings?: Ls20Recording[]; source?: string | null; onSelectSource?: (key: string) => void;
-  writeMemory?: boolean; onSetWriteMemory?: (v: boolean) => void;
+  storeMode?: string; onSetStoreMode?: (v: string) => void;
 }) {
   const frames = (demo.frames && demo.frames.length ? demo.frames : demo.panels) || [];
   const notRun = !!demo.notRun;
@@ -293,10 +293,17 @@ function DemoCard({ demo, onRun, onStep, onClear, onToggle, onSeek, running, fla
             ))}
           </select>
           <span style={{ opacity: 0.5 }}>choose which ls20 playthrough to learn from</span>
-          <label style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 5, cursor: "pointer", opacity: 0.85 }}
-            title="Persist recognized objects to an isolated per-recording demo store (never the canonical registry). Off = ephemeral, from empty each run.">
-            <input type="checkbox" checked={!!writeMemory} onChange={(e) => onSetWriteMemory?.(e.target.checked)} />
-            save object memory (separate store)
+          <label style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 5, opacity: 0.85 }}
+            title="Where recognized object memory is saved. none = ephemeral (nothing on disk); recording = this recording's own isolated store; base = a shared long-term demo brain that accumulates across ALL ls20 recordings; canonical = the real production registry (explicit).">
+            <span style={{ opacity: 0.7 }}>store:</span>
+            <select value={storeMode || "recording"} onChange={(e) => onSetStoreMode?.(e.target.value)}
+              style={{ fontSize: 11.5, padding: "3px 6px", borderRadius: 5,
+                       background: "#0b1220", color: "#cfe", border: "1px solid #2a3346" }}>
+              <option value="none">none (ephemeral)</option>
+              <option value="recording">this recording (isolated)</option>
+              <option value="base">shared long-term base</option>
+              <option value="canonical">canonical registry</option>
+            </select>
           </label>
         </div>
       ) : null}
@@ -410,7 +417,7 @@ export function RecognitionDemosPage() {
   const togglePlay = useCallback((id: string, playing: boolean) => send({ cmd: "play", id, playing }), [send]);
   const seek = useCallback((id: string, index: number) => send({ cmd: "seek", id, index }), [send]);
   const selectSource = useCallback((sourceKey: string) => send({ cmd: "select_source", source: sourceKey }), [send]);
-  const setWriteMemory = useCallback((value: boolean) => send({ cmd: "set_write_memory", value }), [send]);
+  const setStoreMode = useCallback((value: string) => send({ cmd: "set_store_mode", value }), [send]);
 
   // Coverage-table ▶ buttons live far above the demo cards, so besides starting the
   // run we scroll the matching card into view and briefly highlight it — otherwise
@@ -503,7 +510,7 @@ export function RecognitionDemosPage() {
                   running={cardRunning} flash={flashId === d.id}
                   recordings={data?.ls20Recordings} source={data?.ls20Source}
                   onSelectSource={selectSource}
-                  writeMemory={data?.ls20WriteMemory} onSetWriteMemory={setWriteMemory} />
+                  storeMode={data?.ls20StoreMode} onSetStoreMode={setStoreMode} />
               );
             })}
           </div>

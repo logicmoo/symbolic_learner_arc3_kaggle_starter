@@ -153,6 +153,8 @@ async def recognition_demos_ws(websocket: WebSocket) -> None:
                     await asyncio.to_thread(rd.start_demo_run, "live-ls20", False)
                 elif cmd == "set_write_memory":
                     await asyncio.to_thread(rd.set_ls20_write, bool(msg.get("value")))
+                elif cmd == "set_store_mode":
+                    await asyncio.to_thread(rd.set_ls20_store, str(msg.get("value") or "recording"))
             except Exception as error:  # noqa: BLE001 - report, keep socket open
                 try:
                     await websocket.send_json({"type": "error", "error": str(error)})
