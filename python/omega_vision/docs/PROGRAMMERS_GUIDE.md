@@ -61,6 +61,51 @@ every entry point.
 | `configs/`                  | `omega_vision/configs/adapters.yaml`      | A.6 adapter registry |
 | `tests/`                    | `tests/test_omega_vision.py`              | repo test suite |
 
+## Reality status — what is real vs. new vs. stub
+
+Which SoW-named classes are backed by a substantial, tested Phase-2
+implementation, which are compact new code authored here, and which are only
+stubs. Legend: **✅ Real** = re-exported from a substantial, tested implementation
+in `object_memory`; **🟩 New/compact** = implemented in `omega_vision` because the
+SoW named it but it had no prior home (functional + unit-tested, but minimal vs. a
+full SoW-grade build); **🔗 Façade/alias/factory** = thin `omega_vision` glue;
+**⛔ Future stub** = importable but raises `FutureComponentError` (SoW §16).
+
+| SoW class / name | Status | Backing / notes |
+|---|---|---|
+| `SingleWriter` | ✅ Real | `object_memory.memory` — the one commit path |
+| `SymbolicMemory` | ✅ Real | `object_memory.memory` (Atomspace layer) |
+| `AtomStore` | 🔗 Alias | = `SymbolicMemory` |
+| `SymbolicStore`, `ArtifactIndex` | ✅ Real | `object_memory.store` |
+| `EncounterLog` | ✅ Real | `object_memory.memory` |
+| `ResidualGate` | ✅ Real | `object_memory.memory` |
+| `ResidualAnalyzer` | ✅ Real | `object_memory.recognition` |
+| `PredictionLedger`, `RuleStore` | ✅ Real | `object_memory.prediction` |
+| `RegistryCorrespondenceAuthority` | ✅ Real | `object_memory.recognition` |
+| `IdentityMerge` | 🔗 Façade | wrapper over `SingleWriter.merge_identities`/`split_identity` |
+| `TransitionAnalyzer`, `TransformationLearner`, `RuleInducer`, `RuleRanker`, `RuleExecutor` | ✅ Real | `object_memory.learning` typed contracts; Phase-2 providers in `object_memory.integration` |
+| `GameLearningPipeline`, `PredictionEvaluator`, `OutcomeChannel` | ✅ Real | `object_memory.learning` |
+| `RecognitionCalibrator`, `AcceptanceReport` | ✅ Real | `object_memory.calibration` / `acceptance` |
+| `PerceptionBenchmarkRunner`, `RecognitionBenchmarkRunner`, `ProviderAblationRunner` | ✅ Real | `object_memory.benchmark` / `recognition_benchmark` |
+| `Observation`, `CandidateObject`, `RecognitionAccount`, `ResidualCandidate`, `CommittedAtom`, `TransitionRule`, `PredictionRecord` | ✅ Real | `object_memory.models` dataclasses (A.4) |
+| `GenerativeForm` | ✅ Real (partial iface) | base has `canonicalize/render/fit_instance/distance`; `residual/code_length/complete` are per-form |
+| `CellLogoForm` | ✅ Real | grid form; `description_length` = `code_length` |
+| `ContourFillForm` | 🟩 New/compact | raster form, authored in `omega_vision.forms.contour_fill` |
+| `PerceptionAdapter`, `GridAdapter`, `ImageAdapter`, `SimpleVideoAdapter`, `SpriteAdapter`, `AlphaContourProvider` | ✅ Real | `object_memory.adapters` / `sprite` |
+| `GridIndividuator`, `RasterSegmenter` | 🟩 New/compact | candidate providers, authored in `omega_vision.adapters` |
+| `PerceptualHash`, `VectorTraceIndex`, `FaissIndex` | 🟩 New/compact | recall-only, dependency-free, authored in `omega_vision.accelerators` |
+| `GridMetrics`, `RasterMetrics` | 🟩 New/compact | scorers, authored in `omega_vision.core.evaluation` |
+| `new_memory`, `new_writer`, `build_store`, `process_observation` | 🔗 Factory | `omega_vision` entry layer |
+| `LayeredStrokeForm`, `PartGraph3DForm` | ⛔ Future stub | §16 (`omega_vision.forms`) |
+| `Robot3DAdapter`, `RGBDObjectProposer`, `AnimeRegionProposer` | ⛔ Future stub | §16 (`omega_vision.adapters`) |
+| `SketchformerEmbedding` | ⛔ Future stub | §16 (`omega_vision.accelerators`) |
+
+Summary: the deterministic core, the store, the data types, the grid form, the
+grid/raster adapters, the rule/prediction loop, and the benchmarks are **real**
+(object_memory). The raster form, the candidate providers, the recall
+accelerators, and the metric scorers are **new compact** code that lives in
+`omega_vision`. Six §16 names are **future stubs**.
+
 ## §3.1 / A.1 — the deterministic core invariants
 
 | Invariant | Where it is carried |
