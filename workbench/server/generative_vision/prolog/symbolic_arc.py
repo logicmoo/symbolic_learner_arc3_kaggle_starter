@@ -72,6 +72,37 @@ def identity_dir() -> Path:
     return d
 
 
+def _game_of(char: str) -> str:
+    """Derive the GAME key from an encounter/level id by stripping a trailing level
+    suffix, so an object recurs across a game's levels: 'ls20-saved_001' -> 'ls20',
+    'sonic_level_3' -> 'sonic'. Falls back to the whole id."""
+    import re
+    g = re.sub(r"[-_](?:saved[-_]?)?(?:level[-_]?)?\d+$", "", str(char or "").strip())
+    g = re.sub(r"[-_]saved[-_]?\d*$", "", g)
+    return g or str(char or "unknown")
+
+
+def _across_games_default() -> bool:
+    return os.environ.get("OBJECT_MEMORY_ACROSS_GAMES", "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def identity_scope(game: str, cross_game: bool | None = None) -> str:
+    """The identity sub-store scope: a single shared store across ALL games when
+    cross_game is on (default from $OBJECT_MEMORY_ACROSS_GAMES), else per-game so
+    identity is shared across that game's levels only."""
+    if cross_game is None:
+        cross_game = _across_games_default()
+    return "_all_games_" if cross_game else (game or "unknown")
+
+
+def identity_db_for(mem_dir: str, game: str, cross_game: bool | None = None) -> Path:
+    """Persistent identity DB path for a game scope, under <mem_dir>/identity_dir/."""
+    scope = identity_scope(game, cross_game)
+    p = Path(mem_dir) / "identity_dir" / scope / "identities.db.pl"
+    p.parent.mkdir(parents=True, exist_ok=True)
+    return p
+
+
 def shape_lib_path() -> str:
     """Generated Prolog file holding the shape vocabulary (shape/3 + variant/4);
     consulted (read) by Prolog before recognition."""
@@ -789,13 +820,14 @@ _CONF_FLOOR = 0.1
 
 def extract_sequence(frame_paths: list[str], char: str,
                      horizon: int = DEFAULT_OCCLUSION_HORIZON,
-                     mem_dir: str | None = None) -> list[dict]:
+                     mem_dir: str | None = None, game: str | None = None,
+                     cross_game: bool | None = None) -> list[dict]:
     """Run extract_frame over an ordered list of frames, threading part/object
     identity forward (stable ids, gap re-identified across occlusions), resolve
     object permanence across the whole sequence, and (when mem_dir is given)
-    recognize each distinct object against the persistent GLOBAL object memory
-    (shape_dir vocabulary + identity_dir identities) so objects recurring across
-    encounters keep one identity."""
+    recognize each distinct object against the persistent object memory. Identity is
+    scoped per GAME (shared across its levels); pass cross_game=True (or set
+    $OBJECT_MEMORY_ACROSS_GAMES) to share one identity store across all games."""
     carry: dict = {"prev_info": None, "prev_pid": {}, "name_state": {},
                    "prev_group": {}, "group_state": 0, "recent": {}}
     out: list[dict] = []
@@ -804,7 +836,7 @@ def extract_sequence(frame_paths: list[str], char: str,
         out.append(extract_frame(fp, char, partner, carry=carry))
     _classify_permanence(out, char, horizon)
     if mem_dir:
-        remember_objects(out, char, mem_dir)
+        remember_objects(out, char, mem_dir, game=game, cross_game=cross_game)
     return out
 
 
@@ -1321,14 +1353,71 @@ def write_shape_library(path: str | None = None) -> str:
     return str(p)
 
 
-def remember_objects(results: list[dict], char: str, mem_dir: str) -> None:
+def _dump_identity_db(db_file: str) -> tuple[list, list]:
+    """Read one scoped identity DB via swipl -> (identities, placements)."""
+    objs: list = []
+    plcs: list = []
+    try:
+        out = subprocess.run(
+            ["swipl", "-q", "-g",
+             f"consult('{MEM_PL.as_posix()}'), assertz(db('{Path(db_file).as_posix()}')), run_dump",
+             "-t", "halt"],
+            capture_output=True, text=True, timeout=60).stdout
+    except Exception:  # noqa: BLE001
+        return objs, plcs
+    for ln in out.splitlines():
+        p = ln.split("\t")
+        if p[0] == "obj" and len(p) == 6:
+            objs.append({"key": p[1], "color": p[2], "first": p[3],
+                         "last": p[4], "seen": int(p[5]) if p[5].isdigit() else p[5]})
+        elif p[0] == "plc" and len(p) == 6:
+            pts = [tuple(s.split(",")) for s in p[4].split(";") if s]
+            plcs.append({"game": p[1], "iid": p[2], "gid": p[3],
+                         "points": [[int(a), int(b), c] for a, b, c in pts if a.lstrip('-').isdigit()],
+                         "moves": int(p[5]) if p[5].isdigit() else p[5]})
+    return objs, plcs
+
+
+def registry_snapshot(mem_dir: str | None = None, include_turtles: bool = True) -> dict:
+    """The entire object-memory registry for inspection (the Sprite Viewer):
+    the colorless SHAPE vocabulary (key / name / turtle / composition / box) and,
+    per identity SCOPE (game or `_all_games_`), the persistent identities and
+    placement trajectories."""
+    mem_dir = str(mem_dir or memory_dir())
+    _seed_shape_facts()
+    shapes: list = []
+    idx = _vocab_index()
+    for key, (composed, box, rn_cells) in (_SHAPE_DESCRIPTORS or {}).items():
+        entry = {"key": key, "name": idx.get(key, box), "box": box,
+                 "cells": [[int(x), int(y)] for x, y in rn_cells],
+                 "size": len(rn_cells),
+                 "composedOf": list(composed) if composed else None}
+        if include_turtles:
+            entry["turtle"] = _poly_turtle(list(rn_cells))
+        shapes.append(entry)
+    shapes.sort(key=lambda s: (s["size"], s["name"]))
+    scopes: dict = {}
+    idroot = Path(mem_dir) / "identity_dir"
+    if idroot.is_dir():
+        for scope_dir in sorted(p for p in idroot.iterdir() if p.is_dir()):
+            dbf = scope_dir / "identities.db.pl"
+            if dbf.is_file():
+                objs, plcs = _dump_identity_db(str(dbf))
+                scopes[scope_dir.name] = {"identities": objs, "placements": plcs}
+    return {"memDir": mem_dir, "shapeCount": len(shapes), "shapes": shapes,
+            "scopes": scopes}
+
+
+def remember_objects(results: list[dict], char: str, mem_dir: str,
+                     game: str | None = None, cross_game: bool | None = None) -> None:
     """Recognize every distinct object of this sequence against the persistent
-    GLOBAL object memory rooted at `mem_dir`, which holds two sub-stores:
-      <mem_dir>/shape_dir/shapes.pl        -- colorless shape vocabulary (consulted)
-      <mem_dir>/identity_dir/identities.db.pl -- persistent identities (shape+color)
-    Mints an identity the first time a (shape, color) is seen and bumps its
-    encounter count on recognition. Annotates each part with globalId / memSeen /
-    memNew / shapeName and emits `(memory ...)` / `(shape ...)` facts per part."""
+    object memory rooted at `mem_dir`, which holds:
+      <mem_dir>/shape_dir/shapes.pl                    -- colorless shape vocabulary
+      <mem_dir>/identity_dir/<scope>/identities.db.pl  -- persistent identities
+    Identity is scoped per GAME by default (scope = game derived from `char`, shared
+    across that game's levels); cross_game=True (or $OBJECT_MEMORY_ACROSS_GAMES)
+    uses a single `_all_games_` scope. Mints an identity the first time a (shape,
+    color) is seen and bumps its encounter count on recognition."""
     # distinct (sig, color) across the whole sequence = the objects of this
     # encounter; plus each tracked instance's move-to-move (x, y, shape) trajectory
     # (glyph-scale objects only), so placement is remembered and a later similar
@@ -1360,8 +1449,7 @@ def remember_objects(results: list[dict], char: str, mem_dir: str) -> None:
     sig_overlaps: dict[str, list] = {sg: _shape_overlaps(off) for sg, off in sig_off.items()}
     base = Path(mem_dir)
     shape_lib = base / "shape_dir" / "shapes.pl"
-    identity_db = base / "identity_dir" / "identities.db.pl"
-    identity_db.parent.mkdir(parents=True, exist_ok=True)
+    identity_db = identity_db_for(str(base), game or _game_of(char), cross_game)
     write_shape_library(str(shape_lib))
     facts = [f"db('{identity_db.as_posix()}').", f"when_stamp('{char}')."]
     for (sg, col) in distinct:

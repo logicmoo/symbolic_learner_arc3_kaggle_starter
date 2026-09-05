@@ -87,3 +87,14 @@ run_memory :-
              format("place ~w ~w ~w~n", [Iid, Moves, Gid]) )),
     halt.
 run_memory :- halt(1).
+
+% dump the attached identity store (known_object + known_placement) as
+% tab-delimited lines for the registry viewer. db(DB) selects which scope.
+run_dump :-
+    ( db(DB) -> db_attach(DB, []) ; true ),
+    forall(known_object(K, C, F, L, S),
+           format("obj\t~w\t~w\t~w\t~w\t~w~n", [K, C, F, L, S])),
+    forall(known_placement(G, I, Gd, P, M),
+           format("plc\t~w\t~w\t~w\t~w\t~w~n", [G, I, Gd, P, M])),
+    halt.
+run_dump :- halt(1).
