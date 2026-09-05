@@ -435,6 +435,47 @@ def _norm(offs) -> frozenset:
     return frozenset((o[0] - mnx, o[1] - mny) for o in offs)
 
 
+def denoise_cells(offs) -> tuple:
+    """Noise-robust cleanup: keep the largest 4-connected component of an observed
+    blob and drop scattered speck pixels, returning translation-normalized offsets.
+    Recognition of a noisy shape reduces to recognising this cleaned form."""
+    pts = {(int(x), int(y)) for (x, y) in offs}
+    if not pts:
+        return ()
+    seen: set = set()
+    best: list = []
+    for start in pts:
+        if start in seen:
+            continue
+        comp = [start]
+        seen.add(start)
+        stack = [start]
+        while stack:
+            cx, cy = stack.pop()
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                nb = (cx + dx, cy + dy)
+                if nb in pts and nb not in seen:
+                    seen.add(nb)
+                    comp.append(nb)
+                    stack.append(nb)
+        if len(comp) > len(best):
+            best = comp
+    return tuple(sorted(_norm(best)))
+
+
+def downscale_cells(offs, factor: int) -> tuple:
+    """Degradation-robust recognition: bin an over-scaled/blurry blob by `factor`
+    and keep each block that is majority-filled, so a down-scaled shape with some
+    missing cells recovers to its base form. Returns normalized offsets."""
+    from collections import Counter
+    if factor <= 1:
+        return tuple(sorted(_norm([(int(x), int(y)) for (x, y) in offs])))
+    cnt = Counter((int(x) // factor, int(y) // factor) for (x, y) in offs)
+    thresh = (factor * factor + 1) // 2
+    keep = [b for b, c in cnt.items() if c >= thresh]
+    return tuple(sorted(_norm(keep)))
+
+
 def _canon_key(offs) -> tuple:
     """Shape key invariant under all 8 flips/rotations (smallest variant)."""
     best = None

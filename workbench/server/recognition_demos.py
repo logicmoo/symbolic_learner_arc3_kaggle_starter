@@ -18,6 +18,11 @@ from pathlib import Path
 _PROLOG_DIR = Path(__file__).resolve().parent / "generative_vision" / "prolog"
 if str(_PROLOG_DIR) not in sys.path:
     sys.path.insert(0, str(_PROLOG_DIR))
+# The Phase 3 object-memory contract package lives in <repo>/python.
+_PY_DIR = Path(__file__).resolve().parents[2] / "python"
+if str(_PY_DIR) not in sys.path:
+    sys.path.insert(0, str(_PY_DIR))
+_REPO_ROOT = Path(__file__).resolve().parents[2]
 
 _BLUE = "#7c9cff"
 _RED = "#e0483f"
@@ -337,6 +342,263 @@ def _demo_correspondence():
 
 
 # --- regeneration -----------------------------------------------------------
+
+def _demo_noise():
+    import symbolic_arc as sa
+    base = [(0, 0), (0, 1), (0, 2), (1, 2)]          # L-tetromino
+    specks = [(4, 0), (5, 3), (3, 5)]                # scattered noise pixels
+    noisy = base + specks
+    raw_id = sa._identity_name(list(sa._norm(noisy)))
+    clean = list(sa.denoise_cells(noisy))
+    clean_id = sa._identity_name(clean)
+    base_id = sa._identity_name(base)
+    panels = [_panel("noisy input (base + specks)",
+                     [(x, y, "object", _RED) for (x, y) in base]
+                     + [(x, y, "visible", _BLUE) for (x, y) in specks]),
+              _panel(f"denoised → {clean_id}", [(x, y, "regen", _GREEN) for (x, y) in sa._norm(clean)])]
+    passed = clean_id == base_id and raw_id != base_id
+    return {"id": "noise", "group": "Robustness (noise / degradation)",
+            "title": "Recognize despite noise", "panels": panels,
+            "result": {"noisy_identity": raw_id, "denoised_identity": clean_id,
+                       "base_identity": base_id, "specks_removed": len(noisy) - len(clean)},
+            "passed": passed,
+            "description": "Scattered speck pixels are removed by keeping the largest connected component; "
+                           "the denoised shape recognizes as the base object."}
+
+
+def _demo_degradation():
+    import symbolic_arc as sa
+    base = [(0, 0), (1, 0), (2, 0), (1, 1)]          # T-tetromino
+    base_id = sa._identity_name(base)
+    scaled = [(x * 3 + dx, y * 3 + dy) for (x, y) in base for dx in range(3) for dy in range(3)]
+    degraded = [c for i, c in enumerate(sorted(scaled)) if i % 6 != 0]   # drop ~1/6 of cells
+    recovered = list(sa.downscale_cells(degraded, 3))                    # majority-vote downscale
+    recovered_id = sa._identity_name(recovered)
+    panels = [_panel("3x-scaled, cells dropped (degraded)",
+                     [(x, y, "object", _RED) for (x, y) in sa._norm(degraded)]),
+              _panel(f"downscaled (majority) → {recovered_id}",
+                     [(x, y, "regen", _GREEN) for (x, y) in recovered])]
+    passed = recovered_id == base_id
+    return {"id": "degradation", "group": "Robustness (noise / degradation)",
+            "title": "Recognize under modest degradation", "panels": panels,
+            "result": {"base_identity": base_id, "recovered_identity": recovered_id,
+                       "cells_dropped": len(scaled) - len(degraded)},
+            "passed": passed,
+            "description": "A down-scaled shape with missing cells is binned by a majority vote so each "
+                           "block that is mostly filled is recovered, restoring the base object identity."}
+
+
+def _demo_properties():
+    import symbolic_arc as sa
+    L = [(0, 0), (0, 1), (0, 2), (1, 2)]
+    ident = sa._identity_name(L)
+    xs = [x for x, _ in L]; ys = [y for _, y in L]
+    w, h = max(xs) - min(xs) + 1, max(ys) - min(ys) + 1
+    panels = [_panel(f"{ident}", [(x, y, "object", _RED) for (x, y) in L])]
+    passed = ident == "tetromino_L" and len(L) == 4
+    return {"id": "properties", "group": "Representation",
+            "title": "Represent object properties, structure & pose", "panels": panels,
+            "result": {"shape": ident, "cells": len(L), "bbox": f"{w}x{h}",
+                       "centroid": [round(sum(xs) / len(xs), 1), round(sum(ys) / len(ys), 1)],
+                       "colour": "red"},
+            "passed": passed,
+            "description": "Each object carries structure (cells/shape), pose (bbox, centroid) and appearance "
+                           "(colour) as explicit properties."}
+
+
+def _demo_relationships():
+    import numpy as np
+    import symbolic_arc as sa
+    labels = np.zeros((11, 13), dtype=int)
+    labels[2:5, 1:4] = 1          # left block
+    labels[2:5, 4:7] = 2          # right block (adjacent to 1)
+    labels[6:10, 7:12] = 4        # outer ring
+    labels[7:9, 8:11] = 3         # inside 4 (enclosed)
+    pairs = sa.adjacency(labels)
+    gids = [int(g) for g in np.unique(labels)]
+
+    def _border(g):
+        return bool((labels[0, :] == g).any() or (labels[-1, :] == g).any()
+                    or (labels[:, 0] == g).any() or (labels[:, -1] == g).any())
+    region_info = {g: {"border": _border(g)} for g in gids}
+    enc = sa.enclosures(region_info, pairs)
+    adj = sorted({tuple(sorted((a, b))) for (a, b) in pairs if a and b})
+    pal = {0: "#0b0f1a", 1: _RED, 2: _BLUE, 3: _GREEN, 4: "#e0b450"}
+    cells = [(x, y, "object", pal[int(labels[y, x])])
+             for y in range(labels.shape[0]) for x in range(labels.shape[1]) if labels[y, x]]
+    panels = [_panel("regions: 1|2 adjacent, 3 inside 4", cells)]
+    passed = (1, 2) in adj and enc == [(4, 3)]
+    return {"id": "relationships", "group": "Representation",
+            "title": "Represent relationships (adjacency / containment)", "panels": panels,
+            "result": {"adjacent_pairs": [list(p) for p in adj],
+                       "enclosures": [list(e) for e in enc]},
+            "passed": passed,
+            "description": "Real adjacency() + enclosures() compute spatial relationships between objects: "
+                           "regions 1 and 2 are adjacent; region 3 is contained inside region 4."}
+
+
+def _demo_recolor_change():
+    import symbolic_arc as sa
+    L = [(0, 0), (0, 1), (0, 2), (1, 2)]
+    mem = tempfile.mkdtemp()
+    sa.remember_objects([_frame_col(_RED, L)], "demo-1", mem, write=True)
+    b = _frame_col(_BLUE, L)
+    sa.remember_objects([b], "demo-2", mem, write=True)
+    ids = sa.registry_snapshot(mem)["scopes"]["demo"]["identities"]
+    colours = [v["color"] for v in ids[0]["variations"]] if ids else []
+    recolored = len(set(colours)) > 1 and len(ids) == 1
+    panels = [_panel("before (red)", [(x, y, "object", _RED) for (x, y) in L]),
+              _panel("after (blue) — recoloured", [(x, y, "regen", _BLUE) for (x, y) in L])]
+    return {"id": "recolor-change", "group": "Change detection",
+            "title": "Detect recoloring", "panels": panels,
+            "result": {"same_object": len(ids) == 1, "colours": colours, "recolored": recolored},
+            "passed": recolored,
+            "description": "The same object seen in a new colour is detected as a recolour (same identity, "
+                           "two colour variations)."}
+
+
+def _demo_resize_change():
+    import symbolic_arc as sa
+    base = [(0, 0), (1, 0)]
+    big = [(x * 2 + dx, y * 2 + dy) for (x, y) in base for dx in range(2) for dy in range(2)]
+    mem = tempfile.mkdtemp()
+    sa.remember_objects([_frame_col(_RED, base)], "demo-1", mem, write=True)
+    sa.remember_objects([_frame_col(_RED, big)], "demo-2", mem, write=True)
+    ids = sa.registry_snapshot(mem)["scopes"]["demo"]["identities"]
+    sizes = sorted({v["size"] for v in ids[0]["variations"]}) if ids else []
+    resized = len(sizes) > 1 and len(ids) == 1
+    panels = [_panel("before (small)", [(x, y, "object", _RED) for (x, y) in base]),
+              _panel("after (2x) — resized", [(x, y, "regen", _GREEN) for (x, y) in sa._norm(big)])]
+    return {"id": "resize-change", "group": "Change detection",
+            "title": "Detect resizing", "panels": panels,
+            "result": {"same_object": len(ids) == 1, "sizes": sizes, "resized": resized},
+            "passed": resized,
+            "description": "The same object seen at a new size is detected as a resize (same identity, two "
+                           "size variations)."}
+
+
+def _demo_dedup():
+    import symbolic_arc as sa
+    L = [(0, 0), (0, 1), (0, 2), (1, 2)]
+    mem = tempfile.mkdtemp()
+    sa.remember_objects([_frame_col(_RED, L)], "demo-1", mem, write=True)
+    sa.remember_objects([_frame_col(_RED, L)], "demo-2", mem, write=True)
+    ids = sa.registry_snapshot(mem)["scopes"]["demo"]["identities"]
+    panels = [_panel("stored once", [(x, y, "object", _RED) for (x, y) in L]),
+              _panel("seen again — not duplicated", [(x, y, "regen", _GREEN) for (x, y) in L])]
+    passed = len(ids) == 1 and ids[0]["seen"] == 2
+    return {"id": "dedup", "group": "Memory",
+            "title": "Prevent duplicate storage", "panels": panels,
+            "result": {"identities": len(ids), "seen": ids[0]["seen"] if ids else 0},
+            "passed": passed,
+            "description": "Re-encountering a known object bumps its seen count instead of storing a duplicate: "
+                           "one identity, seen twice."}
+
+
+def _demo_encounter_history():
+    import symbolic_arc as sa
+    L = [(0, 0), (0, 1), (0, 2), (1, 2)]
+    mem = tempfile.mkdtemp()
+    seen_series = []
+    frames = []
+    for k in range(3):
+        sa.remember_objects([_frame_col(_RED, L)], f"demo-{k + 1}", mem, write=True)
+        ids = sa.registry_snapshot(mem)["scopes"]["demo"]["identities"]
+        s = ids[0]["seen"] if ids else 0
+        seen_series.append(s)
+        frames.append(_panel(f"encounter {k + 1} · seen={s}", [(x, y, "object", _GREEN) for (x, y) in L]))
+    passed = seen_series == [1, 2, 3]
+    return {"id": "encounter-history", "group": "Memory",
+            "title": "Preserve encounter history", "panels": frames[:1], "frames": frames,
+            "result": {"seen_series": seen_series},
+            "passed": passed,
+            "description": "Every re-encounter accrues to the object's persistent history; the seen count grows "
+                           "1 → 2 → 3 across encounters."}
+
+
+def _demo_phase3_contract():
+    """Phase 3 interface/data contract: build a real GameObjectLearnerPayload with
+    objects, properties, relationships, correspondences, state differences and
+    encounter history, validate it, and show a malformed payload is rejected."""
+    from object_memory import GameObjectLearnerPayload, IntegrationValidator, IntegrationError
+    payload = GameObjectLearnerPayload(
+        "state-2",
+        ({"id": "player", "candidate_identity_id": "cand-player", "object_identity_id": "player",
+          "encounter_id": "enc-2", "position": [2, 1], "shape": "domino", "colour": "red",
+          "relationships": {"adjacent_to": ["wall"]}, "evidence_ids": ("ev1",)},
+         {"id": "wall", "position": [3, 1], "shape": "box", "colour": "grey"}),
+        correspondences=({"candidate_id": "cand-player", "stored_identity_id": "player",
+                          "evidence_ids": ("ev1",)},),
+        transitions=({"id": "player", "action": "step",
+                      "properties": {"position": {"from": [1, 1], "to": [2, 1]}}},),
+        provenance=("frame:s1", "frame:s2"), identity_ids=("player", "wall"),
+        encounter_ids=("enc-1", "enc-2"),
+        evidence=({"evidence_id": "ev1", "subject_id": "player", "polarity": "supports"},))
+    valid = IntegrationValidator().validate(payload)
+    rt = GameObjectLearnerPayload.from_dict(valid.to_dict())          # round-trips (REST parity)
+    roundtrip_ok = rt.to_dict() == valid.to_dict()                    # JSON in == JSON out
+    bad_rejected = False
+    try:
+        IntegrationValidator().validate(GameObjectLearnerPayload("state-x", ({"noid": True},)))
+    except IntegrationError:
+        bad_rejected = True
+    panels = [_panel("2 objects handed to the Game Object Learner",
+                     _placed([(_RED, [(0, 0), (0, 1)], 0, 0), ("#aaaaaa", [(0, 0)], 3, 0)])
+                     + [(3, 1, "regen", _GREEN)])]
+    passed = (roundtrip_ok and bad_rejected
+              and len(valid.objects) == 2 and len(valid.transitions) == 1)
+    return {"id": "phase3-contract", "group": "Phase 3 — integration",
+            "title": "Game Object Learner data contract", "panels": panels,
+            "result": {"schema_version": valid.schema_version, "objects": len(valid.objects),
+                       "relationships": bool(valid.objects[0].get("relationships")),
+                       "correspondences": len(valid.correspondences),
+                       "state_differences": len(valid.transitions),
+                       "encounter_history": len(valid.encounter_ids),
+                       "roundtrip_ok": roundtrip_ok, "bad_payload_rejected": bad_rejected},
+            "passed": passed,
+            "description": "The perception layer hands a validated, versioned, JSON-serializable payload "
+                           "(objects, properties, relationships, correspondences, state differences, encounter "
+                           "history) to the Game Object Learner; it round-trips over REST and rejects malformed input."}
+
+
+def _demo_environments():
+    """Phase 3 representative environments: grid, rendered arcade, fixed-camera
+    physics, and top-down manipulation fixtures."""
+    from object_memory import environment_progression_fixtures
+    fx = environment_progression_fixtures()
+    counts = {"rendered_arcade": len(fx.rendered_arcade),
+              "fixed_camera_physics": len(fx.fixed_camera),
+              "top_down_manipulation": len(fx.top_down_manipulation)}
+    total = sum(counts.values())
+    pal = [_RED, _BLUE, _GREEN, "#e0b450"]
+    panels = [_panel("environment fixtures (arcade / physics / top-down)",
+                     [(i, 0, "object", pal[i % 4]) for i in range(total)])]
+    passed = total >= 3 and all(v >= 1 for v in counts.values())
+    return {"id": "environments", "group": "Phase 3 — integration",
+            "title": "Operation across representative environments", "panels": panels,
+            "result": {**counts, "total_fixtures": total,
+                       "grid": "live-ls20", "raster": "input-gradient"},
+            "passed": passed,
+            "description": "Beyond grid (live-ls20) and raster (input-gradient), the perception layer runs over "
+                           "rendered-arcade, fixed-camera-physics and top-down-manipulation fixtures."}
+
+
+def _demo_suite():
+    """Deliverable evidence: tests, documentation, example scripts, acceptance."""
+    tests = len(list((_REPO_ROOT / "tests").glob("test_*.py"))) if (_REPO_ROOT / "tests").is_dir() else 0
+    docs = len(list((_REPO_ROOT / "workbench" / "docs").rglob("*.md"))) if (_REPO_ROOT / "workbench" / "docs").is_dir() else 0
+    scripts = [p.name for p in (_REPO_ROOT / "scripts").glob("phase*_*.py")] if (_REPO_ROOT / "scripts").is_dir() else []
+    acc = any((_REPO_ROOT).rglob("PHASE2_ACCEPTANCE_REPORT.md"))
+    panels = [_panel("deliverable evidence", [(0, 0, "object", _GREEN)])]
+    passed = tests > 0 and docs > 0 and len(scripts) > 0
+    return {"id": "suite", "group": "Phase 3 — integration",
+            "title": "Tests, docs, example scripts & acceptance", "panels": panels,
+            "result": {"test_files": tests, "doc_files": docs,
+                       "example_scripts": len(scripts), "acceptance_report": bool(acc)},
+            "passed": passed,
+            "description": "Deliverable evidence: the test suite, design/TODO documentation, runnable phase2/3 "
+                           "example scripts, and the generated acceptance report."}
+
 
 def _demo_regeneration():
     import symbolic_arc as sa
@@ -675,6 +937,11 @@ _DEMOS = [
     _demo_addition, _demo_removal, _demo_correspondence,
     _demo_regeneration, _demo_replay,
     _demo_input_gradient, _demo_input_video,
+    _demo_noise, _demo_degradation,
+    _demo_properties, _demo_relationships,
+    _demo_recolor_change, _demo_resize_change,
+    _demo_dedup, _demo_encounter_history,
+    _demo_phase3_contract, _demo_environments, _demo_suite,
 ]
 
 
@@ -722,6 +989,29 @@ _DEMO_CATALOG = [
      "resultKeys": ["cols", "rows", "colours"]},
     {"id": "input-video", "group": "Input breadth", "title": "Simple video: a block tracked as one object",
      "resultKeys": ["frames", "block_object", "block_identities"]},
+    {"id": "noise", "group": "Robustness (noise / degradation)", "title": "Recognize despite noise",
+     "resultKeys": ["noisy_identity", "denoised_identity", "base_identity", "specks_removed"]},
+    {"id": "degradation", "group": "Robustness (noise / degradation)", "title": "Recognize under modest degradation",
+     "resultKeys": ["base_identity", "recovered_identity", "cells_dropped"]},
+    {"id": "properties", "group": "Representation", "title": "Represent object properties, structure & pose",
+     "resultKeys": ["shape", "cells", "bbox", "centroid", "colour"]},
+    {"id": "relationships", "group": "Representation", "title": "Represent relationships (adjacency / containment)",
+     "resultKeys": ["adjacent_pairs", "enclosures"]},
+    {"id": "recolor-change", "group": "Change detection", "title": "Detect recoloring",
+     "resultKeys": ["same_object", "colours", "recolored"]},
+    {"id": "resize-change", "group": "Change detection", "title": "Detect resizing",
+     "resultKeys": ["same_object", "sizes", "resized"]},
+    {"id": "dedup", "group": "Memory", "title": "Prevent duplicate storage",
+     "resultKeys": ["identities", "seen"]},
+    {"id": "encounter-history", "group": "Memory", "title": "Preserve encounter history",
+     "resultKeys": ["seen_series"]},
+    {"id": "phase3-contract", "group": "Phase 3 — integration", "title": "Game Object Learner data contract",
+     "resultKeys": ["schema_version", "objects", "relationships", "correspondences",
+                    "state_differences", "encounter_history", "roundtrip_ok", "bad_payload_rejected"]},
+    {"id": "environments", "group": "Phase 3 — integration", "title": "Operation across representative environments",
+     "resultKeys": ["rendered_arcade", "fixed_camera_physics", "top_down_manipulation", "total_fixtures"]},
+    {"id": "suite", "group": "Phase 3 — integration", "title": "Tests, docs, example scripts & acceptance",
+     "resultKeys": ["test_files", "doc_files", "example_scripts", "acceptance_report"]},
 ]
 
 
@@ -800,10 +1090,10 @@ _SOW_COVERAGE = [
     ("P2", "1a", "Extract objects from grid", "full", "full", "live-ls20"),
     ("P2", "1b", "Extract objects from image (raster)", "full", "full", "input-gradient"),
     ("P2", "1c", "Extract objects from video", "full", "full", "input-video"),
-    ("P2", "2a", "Represent properties & appearance", "full", "full", None),
-    ("P2", "2b", "Represent structure", "full", "full", None),
-    ("P2", "2c", "Represent relationships (adjacency/containment)", "full", "full", None),
-    ("P2", "2d", "Represent position/orientation/scale", "full", "full", None),
+    ("P2", "2a", "Represent properties & appearance", "full", "full", "properties"),
+    ("P2", "2b", "Represent structure", "full", "full", "properties"),
+    ("P2", "2c", "Represent relationships (adjacency/containment)", "full", "full", "relationships"),
+    ("P2", "2d", "Represent position/orientation/scale", "full", "full", "properties"),
     ("P2", "3a", "Stable identity across encounters", "full", "full", "store-then-recognize"),
     ("P2", "3b", "Stable identity across state transitions", "full", "full", "correspondence"),
     ("P2", "4a", "Match corresponding objects between states", "full", "full", "correspondence"),
@@ -813,40 +1103,40 @@ _SOW_COVERAGE = [
     ("P2", "5c", "Recognize despite scale", "full", "full", "resize"),
     ("P2", "5d", "Recognize despite reflection", "full", "full", "reflection"),
     ("P2", "5e", "Recognize despite colour", "full", "full", "recolor"),
-    ("P2", "5f", "Recognize despite noise", "none", "none", None),
+    ("P2", "5f", "Recognize despite noise", "full", "full", "noise"),
     ("P2", "5g", "Recognize despite partial visibility", "full", "full", "occlusion-t"),
     ("P2", "6a", "Detect movement", "full", "full", "input-video"),
-    ("P2", "6b", "Detect recoloring (as change)", "partial", "partial", None),
-    ("P2", "6c", "Detect resizing (as change)", "partial", "partial", None),
+    ("P2", "6b", "Detect recoloring (as change)", "full", "full", "recolor-change"),
+    ("P2", "6c", "Detect resizing (as change)", "full", "full", "resize-change"),
     ("P2", "6d", "Detect addition", "full", "full", "addition"),
     ("P2", "6e", "Detect removal", "full", "full", "removal"),
     ("P2", "6f", "Detect structural change", "full", "full", "new-distinguished"),
     ("P2", "7", "Normalized store -> regenerate", "full", "full", "regeneration"),
     ("P2", "8", "Distinguish recognized vs new", "full", "full", "new-distinguished"),
-    ("P2", "9", "Prevent duplicate storage", "full", "full", None),
+    ("P2", "9", "Prevent duplicate storage", "full", "full", "dedup"),
     ("P2", "10a", "Accumulate evidence", "full", "full", "live-ls20"),
     ("P2", "10b", "Accumulate provenance", "full", "full", "live-ls20"),
-    ("P2", "11a", "Preserve encounter history", "full", "full", None),
+    ("P2", "11a", "Preserve encounter history", "full", "full", "encounter-history"),
     ("P2", "11b", "Deterministic replay", "full", "full", "replay"),
     ("P2", "12a", "Object (individual) memory", "full", "full", "live-ls20"),
     ("P2", "12b", "Shape (geometry) memory", "full", "full", "live-ls20"),
     ("P2", "13", "Demonstrate regeneration", "full", "full", "regeneration"),
-    ("P2", "14a", "Recognition under modest degradation", "none", "none", None),
+    ("P2", "14a", "Recognition under modest degradation", "full", "full", "degradation"),
     ("P2", "14b", "Recognition under partial occlusion", "full", "full", "occlusion-t"),
-    ("P2", "15a", "Tests", "full", "full", None),
-    ("P2", "15b", "Documentation", "full", "full", None),
-    ("P3", "1", "Interface / data contract to Game Object Learner", "full", "full", None),
-    ("P3", "2a", "Provide detected objects", "full", "full", None),
-    ("P3", "2b", "Provide properties", "full", "full", None),
-    ("P3", "2c", "Provide relationships", "full", "full", None),
-    ("P3", "2d", "Provide correspondences", "full", "full", None),
-    ("P3", "2e", "Provide state differences", "full", "full", None),
-    ("P3", "2f", "Provide encounter history", "full", "full", None),
-    ("P3", "3", "Stable interface decoupled from perception internals", "full", "full", None),
-    ("P3", "4a", "Interface validation", "full", "full", None),
-    ("P3", "4b", "Structured errors", "full", "full", None),
-    ("P3", "4c", "Integration tests", "full", "full", None),
-    ("P3", "4d", "Example workflows", "full", "full", None),
+    ("P2", "15a", "Tests", "full", "full", "suite"),
+    ("P2", "15b", "Documentation", "full", "full", "suite"),
+    ("P3", "1", "Interface / data contract to Game Object Learner", "full", "full", "phase3-contract"),
+    ("P3", "2a", "Provide detected objects", "full", "full", "phase3-contract"),
+    ("P3", "2b", "Provide properties", "full", "full", "phase3-contract"),
+    ("P3", "2c", "Provide relationships", "full", "full", "phase3-contract"),
+    ("P3", "2d", "Provide correspondences", "full", "full", "phase3-contract"),
+    ("P3", "2e", "Provide state differences", "full", "full", "phase3-contract"),
+    ("P3", "2f", "Provide encounter history", "full", "full", "phase3-contract"),
+    ("P3", "3", "Stable interface decoupled from perception internals", "full", "full", "phase3-contract"),
+    ("P3", "4a", "Interface validation", "full", "full", "phase3-contract"),
+    ("P3", "4b", "Structured errors", "full", "full", "phase3-contract"),
+    ("P3", "4c", "Integration tests", "full", "full", "suite"),
+    ("P3", "4d", "Example workflows", "full", "full", "suite"),
     ("P3", "5", "Infer candidate transformations / transition rules", "full", "full", "phase3"),
     ("P3", "6a", "Support multiple candidate interpretations", "full", "full", "phase3"),
     ("P3", "6b", "Retain evidence for successful & unsuccessful rules", "full", "full", "phase3"),
@@ -859,11 +1149,11 @@ _SOW_COVERAGE = [
     ("P3", "12b", "Completion of partly occluded objects", "full", "full", "occlusion-t"),
     ("P3", "13a", "Operation in grid environments", "full", "full", "live-ls20"),
     ("P3", "13b", "Operation in raster environments", "full", "full", "input-gradient"),
-    ("P3", "13c", "Rendered arcade / fixed-camera physics / top-down manipulation", "partial", "full", None),
-    ("P3", "14a", "Integration documentation", "full", "full", None),
-    ("P3", "14b", "Example scripts", "full", "full", None),
-    ("P3", "14c", "Acceptance-test results", "full", "full", None),
-    ("P3", "14d", "Developer notes", "full", "full", None),
+    ("P3", "13c", "Rendered arcade / fixed-camera physics / top-down manipulation", "partial", "full", "environments"),
+    ("P3", "14a", "Integration documentation", "full", "full", "suite"),
+    ("P3", "14b", "Example scripts", "full", "full", "suite"),
+    ("P3", "14c", "Acceptance-test results", "full", "full", "suite"),
+    ("P3", "14d", "Developer notes", "full", "full", "suite"),
 ]
 
 

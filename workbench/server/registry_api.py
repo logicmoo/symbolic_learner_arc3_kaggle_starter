@@ -14,6 +14,9 @@ router = APIRouter()
 _PROLOG_DIR = Path(__file__).resolve().parent / "generative_vision" / "prolog"
 if str(_PROLOG_DIR) not in sys.path:
     sys.path.insert(0, str(_PROLOG_DIR))
+_PY_DIR = Path(__file__).resolve().parents[2] / "python"
+if str(_PY_DIR) not in sys.path:
+    sys.path.insert(0, str(_PY_DIR))
 
 
 @router.get("/registry/snapshot")
@@ -104,3 +107,56 @@ def recognition_phase3_clear() -> dict:
     import phase3_pipeline as p3
 
     return p3.clear_state()
+
+
+@router.post("/phase3/contract/validate")
+def phase3_contract_validate(payload: dict = Body(...)) -> dict:
+    """REST access to the object-memory data contract: accept a GameObjectLearnerPayload
+    as JSON, validate it, and return the normalized payload (or a structured error).
+    The SAME dataclasses are usable via local import; this proves REST parity."""
+    from object_memory import GameObjectLearnerPayload, IntegrationValidator, IntegrationError
+
+    try:
+        parsed = GameObjectLearnerPayload.from_dict(payload)
+        valid = IntegrationValidator().validate(parsed)
+        return {"ok": True, "payload": valid.to_dict()}
+    except IntegrationError as err:
+        return {"ok": False, "error": str(err)}
+    except Exception as err:  # noqa: BLE001 - malformed input -> structured error
+        return {"ok": False, "error": f"{type(err).__name__}: {err}"}
+
+
+@router.post("/phase3/learn")
+def phase3_learn(payload: dict | None = Body(default=None)) -> dict:
+    """REST access to the Phase 3 learning pipeline: POST {before, action, after}
+    GameObjectLearnerPayload dicts and get the induced rules back as JSON. Runs the
+    same GameLearningPipeline used by local import."""
+    from object_memory import (
+        GameObjectLearnerPayload, PipelineGameObjectLearnerPlugin, GameLearningPipeline,
+        RuleStore, PredictionLedger, InMemorySemanticBackend, SymbolicStore,
+    )
+    from object_memory.integration import (
+        phase2_transition_analyzer, phase2_transformation_learner,
+        phase2_rule_inducer, phase2_rule_ranker,
+    )
+
+    if not isinstance(payload, dict) or "before" not in payload or "after" not in payload:
+        return {"ok": False, "error": "expected {before, action, after}"}
+    try:
+        before = GameObjectLearnerPayload.from_dict(payload["before"])
+        after = GameObjectLearnerPayload.from_dict(payload["after"])
+        pipe = GameLearningPipeline(
+            phase2_transition_analyzer(), phase2_transformation_learner(),
+            phase2_rule_inducer(), phase2_rule_ranker(),
+            RuleStore(), PredictionLedger(), SymbolicStore(InMemorySemanticBackend()))
+        step = PipelineGameObjectLearnerPlugin(pipe).consume_transition(
+            before, payload.get("action", "step"), after).value.learning_step
+        return {"ok": True,
+                "rules": [{"id": r.rule_id,
+                           "interpretation": (r.predicted_effects[0].get("interpretation")
+                                              if r.predicted_effects and isinstance(r.predicted_effects[0], dict) else None),
+                           "bootstrap_probability": r.bootstrap_probability}
+                          for r in step.rules],
+                "candidates": [c.candidate_id for c in step.candidates]}
+    except Exception as err:  # noqa: BLE001
+        return {"ok": False, "error": f"{type(err).__name__}: {err}"}
