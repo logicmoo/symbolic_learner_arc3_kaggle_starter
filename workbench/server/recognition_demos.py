@@ -931,6 +931,16 @@ _ls20_store_mode: str = "recording"
 # ARC-AGI-3 movement actions -> direction arrows (the "move" made between two frames).
 _ACTION_ARROW = {"ACTION1": "↑", "ACTION2": "↓", "ACTION3": "←", "ACTION4": "→",
                  "ACTION5": "•", "ACTION6": "*"}
+_demo_mem_root_cache: Path | None = None
+
+
+def _demo_mem_root() -> Path:
+    """Root of the isolated demo object-memory stores (object_memory_demo)."""
+    global _demo_mem_root_cache
+    if _demo_mem_root_cache is None:
+        import symbolic_arc as sa  # noqa: PLC0415
+        _demo_mem_root_cache = Path(sa.memory_dir()).parent / "object_memory_demo"
+    return _demo_mem_root_cache
 
 
 def _ls20_base(name: str) -> str:
@@ -986,7 +996,10 @@ def _ls20_recordings() -> list:
                 n = len(list(sub.glob("*.png")))
                 if n >= 2:
                     short = sub.name.replace("data-arc3_games-recordings-ls20-", "")
-                    recs.append({"key": "vf:" + sub.name, "label": f"reduced · {short} · {n} frames", "count": n})
+                    # 'computed' = has committed Prolog part-graphs, so a run is fast.
+                    computed = bool(next((sub / "sym").glob("*__prolog.parts.json"), None)) if (sub / "sym").is_dir() else False
+                    recs.append({"key": "vf:" + sub.name, "label": f"reduced · {short} · {n} frames",
+                                 "count": n, "computed": computed})
     if _RAW_LS20_DIR.is_dir():
         groups: dict = {}
         for sub in _RAW_LS20_DIR.iterdir():
@@ -995,8 +1008,9 @@ def _ls20_recordings() -> list:
         for base, dirs in sorted(groups.items()):
             frames = _raw_base_frames(dirs)
             if len(frames) >= 2:
+                # raw runs have no committed graphs -> recognised live on each run.
                 recs.append({"key": "raw:" + base, "label": f"raw run · {base} · {len(frames)} frames",
-                             "count": len(frames)})
+                             "count": len(frames), "computed": False})
     recs.sort(key=lambda r: r["count"], reverse=True)
     _ls20_recs_cache = recs
     return recs
@@ -1715,10 +1729,18 @@ def get_demo_state() -> dict:
                   "playing": _is_playing_locked(d.get("id", ""))} for d in res.get("demos", [])]
         any_playing = any(_is_playing_locked(k) for k in _play)
         epoch = _play_epoch
+    # Enrich the (cached) recordings list with a FRESH per-recording memory check so
+    # the chooser can badge which recordings already have a saved object-memory store.
+    import re as _re
+    root = _demo_mem_root()
+    recs = []
+    for r in _ls20_recordings():
+        store = root / _re.sub(r"[^A-Za-z0-9_.-]", "_", r.get("key", ""))
+        recs.append({**r, "hasMemory": store.is_dir()})
     return {"demos": demos, "total": res.get("total", 0), "passed": res.get("passed", 0),
             "catalog": demo_catalog(), "coverage": sow_coverage(), "running": st["running"],
             "anyPlaying": any_playing, "playEpoch": epoch,
-            "ls20Recordings": _ls20_recordings(), "ls20Source": _current_ls20_key(),
+            "ls20Recordings": recs, "ls20Source": _current_ls20_key(),
             "ls20StoreMode": _ls20_store_mode,
             "startedAt": st["startedAt"], "finishedAt": st["finishedAt"], "only": st["only"]}
 
@@ -1740,11 +1762,11 @@ def _run_job(only: str | None, gen: int, stepped: bool = False) -> None:
             _demo_state["results"] = {"demos": demos, "total": len(demos),
                                       "passed": sum(1 for d in demos if d.get("passed"))}
             # Server OWNS the animation: (re)start the playhead for each demo that
-            # just (re)computed, so it advances by elapsed time on the server. When
-            # 'stepped', start PAUSED at frame 0 so the user steps manually.
+            # just (re)computed. It starts PAUSED at frame 0 — computing must never
+            # auto-play; the user presses ▶ to run the animation.
             for d in res["demos"]:
                 n = len(d.get("frames") or d.get("panels") or [])
-                _play[d["id"]] = {"playing": (n > 1) and not stepped, "t0": time.monotonic(), "n": n, "idx": 0}
+                _play[d["id"]] = {"playing": False, "t0": time.monotonic(), "n": n, "idx": 0}
             _touch_play_locked()
     finally:
         with _demo_lock:

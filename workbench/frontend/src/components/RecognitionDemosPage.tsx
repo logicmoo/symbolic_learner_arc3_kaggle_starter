@@ -22,7 +22,7 @@ type CoverageRow = {
   implemented: "full" | "partial" | "none"; llmFree: "full" | "partial" | "none";
   demo: string | null; demoStatus: "demo" | "no-demo" | "not-done";
 };
-type Ls20Recording = { key: string; label: string; count: number };
+type Ls20Recording = { key: string; label: string; count: number; computed?: boolean; hasMemory?: boolean };
 type DemosResponse = {
   demos: Demo[]; total: number; passed: number; running?: boolean; catalog?: CatalogEntry[];
   coverage?: CoverageRow[]; only?: string | null; anyPlaying?: boolean; playEpoch?: number;
@@ -85,6 +85,27 @@ function GridPanel({ panel, reserveW, reserveH }: { panel: Panel; reserveW?: num
         height: 28, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2,
         WebkitBoxOrient: "vertical", lineHeight: "14px",
       }}>{panel.label}</figcaption>
+    </figure>
+  );
+}
+
+function ComputingBox({ label = "computing…", sub = "recognising frames on the server", spin = true }: { label?: string; sub?: string; spin?: boolean }) {
+  return (
+    <figure style={{ margin: 0, display: "flex", flexDirection: "column", gap: 8, alignItems: "center", justifyContent: "center" }}>
+      <div style={{
+        width: 300, height: 300, borderRadius: 6, border: "1px solid #1c2333", background: "#0b0f1a",
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12,
+      }}>
+        <div style={{
+          width: 34, height: 34, borderRadius: "50%",
+          border: "3px solid #1c2333", borderTopColor: "#8bd450",
+          animation: spin ? "spin 0.8s linear infinite" : undefined,
+          opacity: spin ? 1 : 0.5,
+        }} />
+        <div style={{ fontSize: 12.5, color: "#8bd450", fontWeight: 700, letterSpacing: "0.03em" }}>{label}</div>
+        <div style={{ fontSize: 11, opacity: 0.6 }}>{sub}</div>
+      </div>
+      <style>{"@keyframes spin { to { transform: rotate(360deg); } }"}</style>
     </figure>
   );
 }
@@ -250,12 +271,12 @@ function CoverageSection({ rows, onRun }: { rows: CoverageRow[]; onRun: (id: str
   );
 }
 
-function DemoCard({ demo, onRun, onStep, onClear, onToggle, onSeek, running, flash, recordings, source, onSelectSource, storeMode, onSetStoreMode }: {
+function DemoCard({ demo, onRun, onStep, onClear, onToggle, onSeek, running, flash, recordings, source, onSelectSource, storeMode, onSetStoreMode, pending }: {
   demo: Demo; onRun: (id: string) => void; onStep: (id: string) => void;
   onClear: (id: string) => void; onToggle: (id: string, playing: boolean) => void;
   onSeek: (id: string, index: number) => void; running: boolean; flash?: boolean;
   recordings?: Ls20Recording[]; source?: string | null; onSelectSource?: (key: string) => void;
-  storeMode?: string; onSetStoreMode?: (v: string) => void;
+  storeMode?: string; onSetStoreMode?: (v: string) => void; pending?: boolean;
 }) {
   const frames = (demo.frames && demo.frames.length ? demo.frames : demo.panels) || [];
   const notRun = !!demo.notRun;
@@ -273,9 +294,10 @@ function DemoCard({ demo, onRun, onStep, onClear, onToggle, onSeek, running, fla
           fontSize: 10.5, fontWeight: 800, letterSpacing: "0.04em", padding: "2px 8px", borderRadius: 5,
           background: notRun ? "rgba(148,163,184,0.16)" : demo.passed ? "rgba(139,212,80,0.18)" : "rgba(224,72,63,0.2)",
           color: notRun ? "#94a3b8" : demo.passed ? "#8bd450" : "#ff8b81",
-        }}>{running ? "RUNNING" : notRun ? "NOT RUN" : demo.passed ? "PASS" : "FAIL"}</span>
+        }}>{running ? "COMPUTING" : pending ? "QUEUED" : notRun ? "NOT RUN" : demo.passed ? "PASS" : "FAIL"}</span>
         <b style={{ flex: 1 }}>{demo.title}</b>
-        {running ? <span style={{ fontSize: 11, opacity: 0.6, marginRight: 2 }}>running…</span> : null}
+        {running ? <span style={{ fontSize: 11, opacity: 0.6, marginRight: 2 }}>computing…</span>
+          : pending ? <span style={{ fontSize: 11, opacity: 0.6, marginRight: 2 }}>loading shortly… (re-pick to change)</span> : null}
         <button type="button" onClick={() => onRun(demo.id)} style={btn}>▶ Run</button>
         <button type="button" onClick={() => onStep(demo.id)} title="Restart, then step frame by frame"
           style={btn}>▶❙ Run Stepped</button>
@@ -291,7 +313,9 @@ function DemoCard({ demo, onRun, onStep, onClear, onToggle, onSeek, running, fla
             style={{ fontSize: 11.5, padding: "3px 6px", borderRadius: 5, maxWidth: 460,
                      background: "#0b1220", color: "#cfe", border: "1px solid #2a3346" }}>
             {recordings.map((r) => (
-              <option key={r.key} value={r.key}>{r.label}</option>
+              <option key={r.key} value={r.key}>
+                {(r.computed ? "✓ computed" : "⏳ raw") + (r.hasMemory ? " · 🧠 has memory" : "") + " · " + r.label}
+              </option>
             ))}
           </select>
           <span style={{ opacity: 0.5 }}>choose which ls20 playthrough to learn from</span>
@@ -311,11 +335,15 @@ function DemoCard({ demo, onRun, onStep, onClear, onToggle, onSeek, running, fla
       ) : null}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "center", flex: "0 0 auto" }}>
-          {notRun
-            ? (demo.preview ? <GridPanel panel={demo.preview} /> : <BlankMap />)
-            : <AnimatedGrid frames={frames} index={demo.frameIndex || 0} playing={!!demo.playing}
-                onToggle={(p) => onToggle(demo.id, p)} onSeek={(idx) => onSeek(demo.id, idx)} />}
-          {notRun ? (
+          {running
+            ? <ComputingBox />
+            : pending
+              ? <ComputingBox label="loading shortly…" sub="re-pick within 5s to change your mind" spin={false} />
+              : notRun
+                ? (demo.preview ? <GridPanel panel={demo.preview} /> : <BlankMap />)
+                : <AnimatedGrid frames={frames} index={demo.frameIndex || 0} playing={!!demo.playing}
+                    onToggle={(p) => onToggle(demo.id, p)} onSeek={(idx) => onSeek(demo.id, idx)} />}
+          {notRun && !running && !pending ? (
             <PreRunControls onRun={() => onRun(demo.id)} onStep={() => onStep(demo.id)} disabled={running} />
           ) : null}
         </div>
@@ -356,6 +384,8 @@ export function RecognitionDemosPage() {
   // (the controlled value otherwise snaps back until the server confirms via state).
   const [sourceSel, setSourceSel] = useState<string>("");
   const [storeSel, setStoreSel] = useState<string>("");
+  const selectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [pendingCompute, setPendingCompute] = useState(false);
 
   // Server-OWNED animation over a WebSocket: the server decides each demo's current
   // frame (its playhead is advanced on the server) and PUSHES it; the page renders
@@ -414,15 +444,32 @@ export function RecognitionDemosPage() {
     else pendingRef.current.push(s);
   }, []);
 
-  const runOne = useCallback((id: string) => send({ cmd: "run", id }), [send]);
-  const stepOne = useCallback((id: string) => send({ cmd: "run", id, stepped: true }), [send]);
-  const runAll = useCallback(() => send({ cmd: "run" }), [send]);
+  const clearPendingCompute = useCallback(() => {
+    if (selectTimerRef.current) { clearTimeout(selectTimerRef.current); selectTimerRef.current = null; }
+    setPendingCompute(false);
+  }, []);
+  const runOne = useCallback((id: string) => { clearPendingCompute(); send({ cmd: "run", id }); }, [send, clearPendingCompute]);
+  const stepOne = useCallback((id: string) => { clearPendingCompute(); send({ cmd: "run", id, stepped: true }); }, [send, clearPendingCompute]);
+  const runAll = useCallback(() => { clearPendingCompute(); send({ cmd: "run" }); }, [send, clearPendingCompute]);
   const stopAll = useCallback(() => send({ cmd: "stop" }), [send]);
-  const clearOne = useCallback((id: string) => send({ cmd: "clear", id }), [send]);
-  const clearAll = useCallback(() => send({ cmd: "clear" }), [send]);
+  const clearOne = useCallback((id: string) => { clearPendingCompute(); send({ cmd: "clear", id }); }, [send, clearPendingCompute]);
+  const clearAll = useCallback(() => { clearPendingCompute(); send({ cmd: "clear" }); }, [send, clearPendingCompute]);
   const togglePlay = useCallback((id: string, playing: boolean) => send({ cmd: "play", id, playing }), [send]);
   const seek = useCallback((id: string, index: number) => send({ cmd: "seek", id, index }), [send]);
-  const selectSource = useCallback((sourceKey: string) => { setSourceSel(sourceKey); send({ cmd: "select_source", source: sourceKey }); }, [send]);
+  // Picking a recording sets the source now, but DEBOUNCES the compute by 5s so you
+  // can change your mind and pick something else before it starts computing. It
+  // computes PAUSED (stepped) — never auto-plays.
+  const selectSource = useCallback((sourceKey: string) => {
+    setSourceSel(sourceKey);
+    send({ cmd: "select_source", source: sourceKey });
+    if (selectTimerRef.current) clearTimeout(selectTimerRef.current);
+    setPendingCompute(true);
+    selectTimerRef.current = setTimeout(() => {
+      selectTimerRef.current = null;
+      setPendingCompute(false);
+      send({ cmd: "run", id: "live-ls20", stepped: true });
+    }, 5000);
+  }, [send]);
   const setStoreMode = useCallback((value: string) => { setStoreSel(value); send({ cmd: "set_store_mode", value }); }, [send]);
   useEffect(() => { if (data?.ls20Source) setSourceSel(data.ls20Source); }, [data?.ls20Source]);
   useEffect(() => { if (data?.ls20StoreMode) setStoreSel(data.ls20StoreMode); }, [data?.ls20StoreMode]);
@@ -518,7 +565,8 @@ export function RecognitionDemosPage() {
                   running={cardRunning} flash={flashId === d.id}
                   recordings={data?.ls20Recordings} source={sourceSel || data?.ls20Source}
                   onSelectSource={selectSource}
-                  storeMode={storeSel || data?.ls20StoreMode} onSetStoreMode={setStoreMode} />
+                  storeMode={storeSel || data?.ls20StoreMode} onSetStoreMode={setStoreMode}
+                  pending={pendingCompute && d.id === "live-ls20"} />
               );
             })}
           </div>
