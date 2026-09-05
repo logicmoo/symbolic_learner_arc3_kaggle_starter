@@ -8,4 +8,3 @@
 # excluded -- which already lost ADMIN.md, the file its manifest names in
 # "docs".
 !/web_proxy/
-!/pycoplex/

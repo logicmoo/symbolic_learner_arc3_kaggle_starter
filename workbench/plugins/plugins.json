@@ -57,7 +57,7 @@
       "repo": "https://github.com/logicmoo/coplex.git",
       "ref": "master"
     },
-    "pycoplex": {
+    "coplex_stdpy": {
       "path": "coplex_stdpy/plugin.json",
       "scan": "startup",
       "enabled": true,

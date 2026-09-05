@@ -1250,8 +1250,7 @@ values here.
   extras (previously only in `test`) since core `app.py` now imports them
   directly for the relay, not just tests. Verified: full repo pytest suite
   33 failed/865 passed both before and after (the 33 are pre-existing,
-  confirmed via `git stash` A/B diff; `test_pycoplex*` collection errors are
-  the pre-existing missing-module issue, also confirmed via A/B diff); `npm
+  confirmed via `git stash` A/B diff); `npm
   run build` succeeds; live-restarted API+Vite and curl-verified `GET
   /workbench/health`, `GET /workbench/plugins`, `GET /workbench/endpoints`
   (232 entries), `GET /workbench/web_proxy/admin` (plugin mirror works), `GET

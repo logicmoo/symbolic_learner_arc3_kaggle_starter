@@ -20,22 +20,10 @@
   },
   "mounts": [
     {
-      "path": "/pycoplex",
-      "redirect": "http://127.0.0.1:8850",
-      "description": "Redirects /pycoplex to the standalone harness server (same routes as the embedded router, on its own port).",
-      "requestedBy": "pycoplex"
-    },
-    {
       "path": "/coplex",
       "redirect": "http://127.0.0.1:8840",
       "description": "Redirects /coplex to the standalone swipl REST server (prolog/coplex_server.pl).",
       "requestedBy": "coplex"
-    },
-    {
-      "path": "/coplex_stdpy",
-      "redirect": "http://127.0.0.1:8850",
-      "description": "Redirects /coplex_stdpy to the standalone harness server (same routes as the embedded router, on its own port).",
-      "requestedBy": "coplex_stdpy"
     },
     {
       "path": "/emullm",
