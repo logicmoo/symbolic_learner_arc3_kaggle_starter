@@ -149,8 +149,9 @@ async def recognition_demos_ws(websocket: WebSocket) -> None:
                 elif cmd == "seek" and did is not None and "index" in msg:
                     await asyncio.to_thread(rd.seek_demo, str(did), int(msg.get("index", 0)))
                 elif cmd == "select_source":
+                    # ONLY set the source — never auto-run. The user explicitly presses
+                    # Run / Run Stepped to load it (e.g. to step through the 410-move run).
                     await asyncio.to_thread(rd.set_ls20_source, (str(msg.get("source")) if msg.get("source") else None))
-                    await asyncio.to_thread(rd.start_demo_run, "live-ls20", False)
                 elif cmd == "set_write_memory":
                     await asyncio.to_thread(rd.set_ls20_write, bool(msg.get("value")))
                 elif cmd == "set_store_mode":
