@@ -821,12 +821,26 @@ _PENTOMINOES = {
     "pentomino_Y": [(1, 0), (0, 1), (1, 1), (1, 2), (1, 3)],
     "pentomino_Z": [(0, 0), (1, 0), (1, 1), (1, 2), (2, 2)],
 }
+# Named non-generated shapes: hollow rectangle frames. The empty box (3x3 frame,
+# 8 px) is also a free octomino, but naming it here makes it "empty_box" rather
+# than a box-cut descriptor; the empty rectangle (3x4 frame, 10 px) is order 10,
+# beyond the generated set, so it is added to the library explicitly. Both a
+# hollow square and a hollow rectangle collapse to the 3x3 frame under shrinking,
+# so the rectangle must be its own full-size entry to stay distinguishable.
+_SPECIAL_NAMED = {
+    "empty_box": [(x, y) for y in range(3) for x in range(3) if x in (0, 2) or y in (0, 2)],
+    "empty_rectangle": [(x, y) for y in range(3) for x in range(4) if x in (0, 3) or y in (0, 2)],
+}
 _MAX_POLY_ORDER = 8  # seed monomino..octomino (1,1,2,5,12,35,108,369 = 533 free shapes)
 _MAX_REP_CELLS = 64  # cap for per-object polyomino reps: small glyph-scale shapes only
 _SEED_FACTS_CACHE: "list | None" = None
 # key -> (composed_piece_names | None, box_cut_descriptor). Populated by
 # _seed_shape_facts so remember_objects can emit compositional / box facts.
 _SHAPE_DESCRIPTORS: "dict | None" = None
+# form_key -> -imino name, for EVERY form of every seeded shape (the full shape and
+# all its variants). Lets an observed object be matched to a -imino via whichever of
+# its 6 forms overlaps, not just its identity key.
+_VOCAB_INDEX: "dict | None" = None
 
 
 def _gen_free_polyominoes(max_n: int) -> dict:
@@ -1077,12 +1091,13 @@ _NAMED_LOOKUP: "dict | None" = None
 
 def _named_lookup() -> dict:
     """Memoized {D4-canonical key: letter name} for the classically named small
-    polyominoes (monomino .. pentomino)."""
+    polyominoes (monomino .. pentomino) plus the named hollow-frame shapes
+    (empty_box, empty_rectangle)."""
     global _NAMED_LOOKUP
     if _NAMED_LOOKUP is None:
         _NAMED_LOOKUP = {}
         for nm, cells in {**_MONOMINO, **_DOMINO, **_TROMINOES,
-                          **_TETROMINOES, **_PENTOMINOES}.items():
+                          **_TETROMINOES, **_PENTOMINOES, **_SPECIAL_NAMED}.items():
             _NAMED_LOOKUP[_canon_key(cells)] = nm
     return _NAMED_LOOKUP
 
@@ -1140,7 +1155,7 @@ def _seed_shape_facts() -> list[str]:
     Base)` rows mapping back to the same -imino. Names: letter names for orders 1-5,
     else a box-cut descriptor; the decomposition into named pieces is recorded in
     _SHAPE_DESCRIPTORS. Memoized: computed once per process."""
-    global _SEED_FACTS_CACHE, _SHAPE_DESCRIPTORS
+    global _SEED_FACTS_CACHE, _SHAPE_DESCRIPTORS, _VOCAB_INDEX
     if _SEED_FACTS_CACHE is not None:
         return _SEED_FACTS_CACHE
     named: dict = {}
@@ -1148,44 +1163,95 @@ def _seed_shape_facts() -> list[str]:
     for nm, cells in {**_MONOMINO, **_DOMINO, **_TROMINOES, **_TETROMINOES, **_PENTOMINOES}.items():
         named[_canon_key(cells)] = nm
         name_size[nm] = len(cells)
+    name_lookup = dict(named)
+    for nm, cells in _SPECIAL_NAMED.items():
+        name_lookup[_canon_key(cells)] = nm
     facts: list[str] = []
     descriptors: dict = {}
+    vocab: dict = {}
     seen: set = set()
     memo: dict = {}
+    all_cks: list = []
     for n, shapes in _gen_free_polyominoes(_MAX_POLY_ORDER).items():
-        for ck in sorted(shapes):
-            forms = _shape_forms(ck)
-            if "full_rn" not in forms:
+        all_cks.extend(sorted(shapes))
+    for _nm, cells in _SPECIAL_NAMED.items():  # named shapes beyond the generated set
+        all_cks.append(_canon_key(cells))
+    for ck in all_cks:
+        forms = _shape_forms(ck)
+        if "full_rn" not in forms:
+            continue
+        base_key, rn_cells = forms["full_rn"]  # rotation-normalized full = canonical
+        if base_key in seen:
+            continue
+        seen.add(base_key)
+        composed = None if ck in name_lookup else _decompose_named(ck, named, name_size, memo)
+        box = _box_cut_name(_canon_key(rn_cells))
+        name = name_lookup.get(ck) or box
+        descriptors[base_key] = (composed, box, rn_cells)
+        vocab.setdefault(base_key, name)
+        turtle = json.dumps(_poly_turtle(list(rn_cells)), separators=(",", ":"))
+        turtle = turtle.replace("\\", "\\\\").replace("'", "\\'")
+        facts.append(f"shape('{base_key}', '{name}', '{turtle}').")
+        # the remaining 5 forms + the 45-degree diagonal -> variant keys.
+        done_v = {base_key}
+        variants = [("full_unrot", forms["full"][0]),
+                    ("squared", forms["squared"][0]),
+                    ("squared_rn", forms["squared_rn"][0]),
+                    ("aspect", forms["aspect"][0]),
+                    ("aspect_rn", forms["aspect_rn"][0])]
+        dcells = _rot45(ck)
+        if dcells:
+            variants.append(("diag45", _shape_key((None, _canon_br(dcells)))))
+        for kind, vkey in variants:
+            if vkey in done_v:
                 continue
-            base_key, rn_cells = forms["full_rn"]  # rotation-normalized full = canonical
-            if base_key in seen:
-                continue
-            seen.add(base_key)
-            composed = None if ck in named else _decompose_named(ck, named, name_size, memo)
-            box = _box_cut_name(_canon_key(rn_cells))
-            name = named.get(ck) or box
-            descriptors[base_key] = (composed, box, rn_cells)
-            turtle = json.dumps(_poly_turtle(list(rn_cells)), separators=(",", ":"))
-            turtle = turtle.replace("\\", "\\\\").replace("'", "\\'")
-            facts.append(f"shape('{base_key}', '{name}', '{turtle}').")
-            # the remaining 5 forms + the 45-degree diagonal -> variant keys.
-            done_v = {base_key}
-            variants = [("full_unrot", forms["full"][0]),
-                        ("squared", forms["squared"][0]),
-                        ("squared_rn", forms["squared_rn"][0]),
-                        ("aspect", forms["aspect"][0]),
-                        ("aspect_rn", forms["aspect_rn"][0])]
-            dcells = _rot45(ck)
-            if dcells:
-                variants.append(("diag45", _shape_key((None, _canon_br(dcells)))))
-            for kind, vkey in variants:
-                if vkey in done_v:
-                    continue
-                done_v.add(vkey)
-                facts.append(f"variant('{vkey}', '{name}', '{kind}', '{base_key}').")
+            done_v.add(vkey)
+            vocab.setdefault(vkey, name)
+            facts.append(f"variant('{vkey}', '{name}', '{kind}', '{base_key}').")
     _SEED_FACTS_CACHE = facts
     _SHAPE_DESCRIPTORS = descriptors
+    _VOCAB_INDEX = vocab
     return facts
+
+
+def _vocab_index() -> dict:
+    """{form_key: -imino name} across the full shapes and all variants."""
+    if _VOCAB_INDEX is None:
+        _seed_shape_facts()
+    return _VOCAB_INDEX or {}
+
+
+# The 5 reduced/alternate "ways" an observed object can overlap a known -imino
+# (its identity is the 6th, `full_rn`), most-specific first for shape naming.
+_OVERLAP_WAYS = ("full", "aspect_rn", "aspect", "squared_rn", "squared", "diag45")
+
+
+def _shape_overlaps(offs) -> list:
+    """For an observed shape, the known -iminos it overlaps via each of its reduced
+    forms (resize / aspect / 45-degree), as (name, way) pairs, most-specific way
+    first. Enables recognizing a rescaled or diagonally-placed object as the same
+    -imino even when its full form is not itself in the vocabulary."""
+    forms = _shape_forms(offs)
+    idx = _vocab_index()
+    keys = {"full": forms.get("full", (None,))[0],
+            "aspect_rn": forms.get("aspect_rn", (None,))[0],
+            "aspect": forms.get("aspect", (None,))[0],
+            "squared_rn": forms.get("squared_rn", (None,))[0],
+            "squared": forms.get("squared", (None,))[0]}
+    dcells = _rot45(offs)
+    if dcells:
+        keys["diag45"] = _shape_key((None, _canon_br(dcells)))
+    out: list = []
+    seen_pairs: set = set()
+    for way in _OVERLAP_WAYS:
+        k = keys.get(way)
+        if not k or k not in idx:
+            continue
+        pair = (idx[k], way)
+        if pair not in seen_pairs:
+            seen_pairs.add(pair)
+            out.append(pair)
+    return out
 
 
 def write_shape_library(path: str | None = None) -> str:
@@ -1219,6 +1285,7 @@ def remember_objects(results: list[dict], char: str, mem_dir: str) -> None:
     traj: dict[str, list] = {}
     traj_gid: dict[str, str] = {}
     traj_last: dict[str, int] = {}
+    sig_off: dict[str, list] = {}
     for fi, r in enumerate(results):
         for p in r.get("geom", []):
             sg = p.get("sig")
@@ -1226,6 +1293,9 @@ def remember_objects(results: list[dict], char: str, mem_dir: str) -> None:
             if not sg:
                 continue
             distinct[(sg, col)] = ""
+            off = p.get("off")
+            if sg not in sig_off and off and len(off) <= _MAX_REP_CELLS:
+                sig_off[sg] = off
             iid = p.get("id")
             if iid and 0 < len(p.get("off") or []) <= _MAX_REP_CELLS:
                 traj.setdefault(iid, []).append((p.get("cx", 0), p.get("cy", 0), sg))
@@ -1233,6 +1303,9 @@ def remember_objects(results: list[dict], char: str, mem_dir: str) -> None:
                 traj_last[iid] = fi
     if not distinct:
         return
+    # convergence: for each distinct shape, the -iminos it overlaps via its reduced
+    # forms (resize / aspect / 45-degree), best (most-specific) way first.
+    sig_overlaps: dict[str, list] = {sg: _shape_overlaps(off) for sg, off in sig_off.items()}
     base = Path(mem_dir)
     shape_lib = base / "shape_dir" / "shapes.pl"
     identity_db = base / "identity_dir" / "identities.db.pl"
@@ -1292,9 +1365,20 @@ def remember_objects(results: list[dict], char: str, mem_dir: str) -> None:
                 p["memSeen"] = seen
                 p["memNew"] = new
                 lines.append(f"(memory {char} {p['id']} {gid} (seen {seen}) (new {'t' if new else 'f'}))")
+                ovl = sig_overlaps.get(p.get("sig")) or []
                 if sname and sname != "-":
                     p["shapeName"] = sname
                     lines.append(f"(shape {char} {p['id']} {sname})")
+                elif ovl:
+                    # no direct match: recognize via the best (most-specific) overlap
+                    sname = ovl[0][0]
+                    p["shapeName"] = sname
+                    p["shapeVia"] = ovl[0][1]
+                    lines.append(f"(shape {char} {p['id']} {sname})")
+                if ovl:
+                    p["overlaps"] = [[nm, wy] for nm, wy in ovl]
+                    for nm, wy in ovl:
+                        lines.append(f"(overlaps {char} {p['id']} {nm} {wy})")
                 desc = (_SHAPE_DESCRIPTORS or {}).get(p.get("sig"))
                 if desc:
                     composed, box, canon = desc
