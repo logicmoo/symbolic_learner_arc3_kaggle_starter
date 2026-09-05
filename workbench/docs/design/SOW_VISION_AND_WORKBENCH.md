@@ -46,7 +46,38 @@ backend API contract, the family of rich editors, and the model-routing layer.
 
 ---
 
-## 2. Vision Level: Neurosymbolic Perception and Sequence Induction
+## 2. Design Rationale: Decomposing Skills Beyond One-Shot Reasoning
+
+The backend workbench exists to implement complex skills that are often beyond
+what a single one-shot LLM call can do reliably. Even a premium model that
+usually answers a hard task in one shot will, on the occasional "weird"
+instance, silently fail; a monolithic one-shot approach has no way to notice
+where or why.
+
+The workbench's answer is to treat a skill as a *decomposable pipeline*: instead
+of betting the whole task on one long A-to-Z leap, the system breaks it into
+shorter, lower-risk hops — A-to-D, D-to-E, E-to-P, P-to-Z — each of which is:
+
+- **Lower variance.** A short, well-scoped hop is easier to get right than the
+  full leap, so each step carries less risk.
+- **Independently verifiable.** Every intermediate result can be checked,
+  scored, and given a confidence, so a failure is localized to the hop that
+  produced it rather than hidden inside one opaque answer.
+- **Independently optimizable and swappable.** Each hop can use a cheaper model,
+  a premium model, a Prolog rule, a Python routine, or a mix — chosen per step —
+  and can be retried or replaced without redoing the whole task.
+- **Measurable end to end.** Because each hop reports its own statistics, the
+  whole skill produces a statistical report rather than a single pass/fail.
+
+This is why the workbench keeps operations, prompts, source, and models as
+separate first-class resources with inheritance and alternatives: a skill is
+assembled from interchangeable steps, and any step can be upgraded, downgraded,
+or made fully deterministic as evidence demands. The vision subsystem described
+next is the worked example of this decomposition.
+
+---
+
+## 3. Vision Level: Neurosymbolic Perception and Sequence Induction
 
 ### Objective
 Turn a stream of ARC game frames into a *symbolic, probabilistic world model*:
