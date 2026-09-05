@@ -112,11 +112,29 @@ def _detect_pitch(arr: np.ndarray) -> int:
     return max(1, g)
 
 
-def decode_grid(path: str) -> tuple[np.ndarray, int, int]:
-    """Return (idx grid rows x cols of int color-ids, cols, rows) + palette."""
+def decode_grid(path: str, quantize_colors: int = 16, target_max: int = 64) -> tuple:
+    """Return (idx grid rows x cols of int color-ids, cols, rows) + palette.
+
+    Flat-colour grid images (ARC-style) decode directly at the detected cell pitch.
+    GENERAL images (photos, anti-aliased sprites, gradients, JPEG/PNG raster, and
+    simple video frames) are auto-detected -- pitch collapses to 1 and the palette
+    explodes -- and are made grid-like first: the colour palette is quantized
+    (median cut) to flatten anti-aliasing / gradients / noise into flat regions, and
+    the image is downscaled so it becomes a small flat-colour grid. This extends the
+    recognizer's input breadth beyond flat-colour recording frames."""
     im = Image.open(path).convert("RGB")
     arr = np.asarray(im)
     pitch = _detect_pitch(arr)
+    # raster image: no clean cell pitch AND more than `quantize_colors` colours.
+    if pitch == 1 and im.getcolors(maxcolors=max(quantize_colors, 64)) is None:
+        w, h = im.size
+        longest = max(w, h)
+        if longest > target_max:
+            f = target_max / longest
+            im = im.resize((max(1, round(w * f)), max(1, round(h * f))), Image.BOX)
+        im = im.quantize(colors=quantize_colors, method=Image.MEDIANCUT).convert("RGB")
+        arr = np.asarray(im)
+        pitch = 1
     h, w, _ = arr.shape
     cols, rows = w // pitch, h // pitch
     # sample the centre of each cell
