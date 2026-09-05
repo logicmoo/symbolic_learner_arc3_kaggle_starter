@@ -1,24 +1,40 @@
-# Statement of Work: MeTTaSymbolicLearnerWorkbench and its Vision Subsystem
+# Statement of Work: Debugger (Phase 1) and Vision System (Phase 2)
 
 [Back to repository README](../../../README.md)
 
-This document frames what the workbench is as a Statement of Work (SoW), at two
-levels: the overall program (the workbench as a neurosymbolic experiment desktop)
-and the vision subsystem (the ARC recognition / perception / sequence-induction
-pipeline). It is a descriptive SoW of work already delivered, suitable for reuse
-in proposals and RFP responses that require statistical reporting.
+This document divides the delivered work along the repository's canonical
+three-phase SoW (see [SOW_PHASE_ARCHITECTURE.md](../../../SOW_PHASE_ARCHITECTURE.md)
+and [SOW_DELIVERABLES.md](../../../SOW_DELIVERABLES.md)):
+
+- **Phase 1 — the Debugger**: the workbench itself, i.e. the ARC3 debugger and
+  extensible inspection foundation. It records, displays, compares, restores, and
+  replays observations, actions, provider calls, and generated artifacts, and
+  exposes pluggable command/provider hooks — without requiring the debugger to
+  own the final perception, memory, or learning algorithms.
+- **Phase 2 — the Vision System**: object perception, recognition, sequence
+  induction, and persistent memory built *behind* the debugger. This is where the
+  ARC recognition / perception / object-permanence / statistical-induction
+  pipeline lives.
+
+So "the workbench" and "the debugger" and "Phase 1" name the same thing here; the
+"vision system" is Phase 2. This is a descriptive SoW of work already delivered,
+suitable for reuse in proposals and RFP responses that require statistical
+reporting. (Phase 3 — predictive rule learning — is out of scope for this
+document; see the canonical SoW.)
 
 ---
 
-## 1. Program Level: MeTTaSymbolicLearnerWorkbench
+## 1. Phase 1 — The Debugger (Workbench and Extensible Inspection Foundation)
 
 ### Objective
-Deliver a filesystem-backed *neurosymbolic experiment desktop* where every
-artifact of a learning system is a first-class, versioned, inspectable resource
-that a human and an AI can co-edit and execute: goals, plans, workflows,
-operations, datatypes and representations, source (prompts / Prolog / MeTTa /
-Python), models and backends, atomspaces, runs / executions / events / states /
-logs, policies, and benchmarks.
+Deliver a filesystem-backed *neurosymbolic experiment desktop / debugger* where
+every artifact of a learning system is a first-class, versioned, inspectable
+resource that a human and an AI can co-edit, run, compare, restore, and replay:
+goals, plans, workflows, operations, datatypes and representations, source
+(prompts / Prolog / MeTTa / Python), models and backends, atomspaces, runs /
+executions / events / states / logs, policies, and benchmarks. Phase 1 owns
+inspection and provenance; it invokes providers but does not itself implement the
+Phase 2 perception/memory algorithms.
 
 ### Scope of Work
 - A React/Vite workbench over a FastAPI backend, organized as five navigation
@@ -94,7 +110,7 @@ next is the worked example of this decomposition.
 
 ---
 
-## 3. Vision Level: Neurosymbolic Perception and Sequence Induction
+## 3. Phase 2 — Object Perception, Recognition, and Sequence Induction (the Vision System)
 
 ### Objective
 Turn a stream of ARC game frames into a *symbolic, probabilistic world model*:
