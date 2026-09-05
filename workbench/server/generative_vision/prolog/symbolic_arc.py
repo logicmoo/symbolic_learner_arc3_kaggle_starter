@@ -1229,6 +1229,67 @@ def _identity_name(off) -> str:
     return name
 
 
+def complete_occluded(fragment, occluded, candidates: dict | None = None,
+                      scales: tuple = (1, 2, 3)) -> dict | None:
+    """Generative completion of a partly-occluded object (SOW section 8).
+
+    Given the VISIBLE cells of an object (`fragment`) and the cells hidden behind
+    an occluder (`occluded`), hypothesize which held form the object is and run
+    that form forward to fill the hidden parts, accepting a completion only when
+    every filled cell lies under the occluder (relational consistency) -- a
+    consistent completion yields a low residual and a confident lock, an
+    inconsistent one is rejected. Recognition and completion are the same step:
+    the fragment is reduced to the cheapest held form that a placement explains.
+
+    `candidates` is a {canonical-cells tuple: name} map of held forms (defaults to
+    the classic polyomino vocabulary, which is what registry identities are named
+    by); `scales` are the integer up-scales tried so a large occluded object still
+    matches its base form. Returns the best (fewest-hidden, then smallest) account
+      {name, cells, filled, visible, residual, confidence, scale, orientation}
+    or None when no held form consistently completes the fragment (re-categorize
+    as new)."""
+    frag = {tuple(c) for c in fragment}
+    occ = {tuple(c) for c in occluded}
+    if not frag:
+        return None
+    cands = candidates if candidates is not None else _named_lookup()
+    best = None
+    for canon, name in cands.items():
+        base = list(canon)
+        if not base:
+            continue
+        for k in scales:
+            scaled = [(x * k + dx, y * k + dy) for (x, y) in base
+                      for dx in range(k) for dy in range(k)] if k > 1 else list(base)
+            for oname, f in _D4:
+                oriented = _norm([f(x, y) for x, y in scaled])
+                oset = set(map(tuple, oriented))
+                if len(oset) < len(frag):
+                    continue
+                seen_t: set = set()
+                for (fx, fy) in frag:
+                    for (cx, cy) in oset:
+                        t = (fx - cx, fy - cy)
+                        if t in seen_t:
+                            continue
+                        seen_t.add(t)
+                        placed = {(x + t[0], y + t[1]) for (x, y) in oset}
+                        if not frag <= placed:
+                            continue
+                        missing = placed - frag
+                        if not missing <= occ:      # every filled cell must be occluded
+                            continue
+                        key = (len(missing), len(placed))
+                        if best is None or key < best[0]:
+                            conf = len(frag) / len(placed)
+                            best = (key, {
+                                "name": name, "scale": k, "orientation": oname,
+                                "cells": sorted(placed), "filled": sorted(missing),
+                                "visible": sorted(frag), "residual": len(missing),
+                                "confidence": round(conf, 3)})
+    return best[1] if best else None
+
+
 def _shape_recurred(sigs) -> bool:
     """True if a shape returns after changing away from it (A .. B .. A): a
     meaningful shape recurrence along a tracked instance's trajectory."""

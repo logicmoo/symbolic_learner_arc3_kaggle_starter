@@ -72,6 +72,24 @@ Viewer renders these programs; `registry_snapshot(include_turtles=True)` returns
 them.
 Test: `test_symbolic_arc_regeneration_replay.py::test_stored_form_regenerates_its_exact_shape`.
 
+## Occlusion completion (generative)
+
+`complete_occluded(fragment, occluded, candidates=None, scales=…)` implements
+SOW §8: given the VISIBLE cells of an object and the cells hidden behind an
+occluder, it hypothesizes which held form the object is (from the visible
+fragment), runs that form forward to fill the hidden parts, and accepts a
+completion **only when every filled cell lies under the occluder** (relational
+consistency). Recognition and completion are one step — the fragment is reduced
+to the cheapest held form a placement explains, across all D4 orientations and
+integer scales. A consistent completion locks with a low residual (few hidden
+cells) and a confidence equal to the visible fraction; an inconsistent fragment
+returns `None` and is re-categorized as new. Completing to a *specific* expected
+object (e.g. one tracked from a prior frame) is driven by passing that object as
+the sole candidate.
+Runnable demo: `python scripts/occlusion_completion_demo.py` (ASCII before/after,
+recovers a T, a plus, and a 2×-scaled T, and rejects an inconsistent fragment).
+Tests: `tests/test_symbolic_arc_occlusion.py`.
+
 ## Persistent memory (evidence, provenance, placement)
 
 `object_memory.pl` uses `library(persistency)`:
