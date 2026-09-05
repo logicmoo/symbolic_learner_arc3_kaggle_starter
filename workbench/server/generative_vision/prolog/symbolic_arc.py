@@ -16,6 +16,8 @@ merged horizontal-run rectangles.
 from __future__ import annotations
 
 import json
+import hashlib
+import itertools
 import subprocess
 import tempfile
 import time
@@ -29,6 +31,14 @@ from scipy import ndimage
 STRUCT4 = np.array([[0, 1, 0], [1, 1, 1], [0, 1, 0]])
 _HERE = Path(__file__).resolve().parent
 GROUP_PL = _HERE / "arc_group.pl"
+MEM_PL = _HERE / "object_memory.pl"
+
+
+def _shape_key(sig) -> str:
+    """Stable short hash of a part's D4-canonical shape (color-independent), used
+    as the persistent-memory key so the same shape is recognized across runs."""
+    canon = sig[1] if isinstance(sig, tuple) and len(sig) > 1 else sig
+    return hashlib.sha1(repr(canon).encode("utf-8")).hexdigest()[:12]
 
 
 def _detect_pitch(arr: np.ndarray) -> int:
@@ -527,9 +537,37 @@ def extract_frame(png_path: str, char: str, partner_path: str | None = None,
         # else the adjacency cluster; else a singleton.
         raw_of[pid] = move_group.get(rid) or obj.get(rid) or f"g{gid}"
         mlines.append(f'(part {char} {pid} (label "{lbl}") (color {i["hex"]}))')
+        _off = list(i.get("off") or [])
+        # Two shrinkings run for EVERY shape (their output is small): a large thing
+        # may collapse onto a small / named shape. Only the expensive per-cell reps
+        # (16 orientations, directed turtle, start points) are capped to small
+        # glyph-scale shapes; large regions keep their full-size outline turtle.
+        _small = 0 < len(_off) <= _MAX_REP_CELLS
+        _sq = _collapse_runs(_off) if _off else []
+        _asp = _aspect_cells(_off) if _off else []
+        _sq_small = 0 < len(_sq) <= _MAX_REP_CELLS
+        _asp_small = 0 < len(_asp) <= _MAX_REP_CELLS
+        _starts = sorted((tuple(c) for c in _off), key=lambda c: (c[1], c[0])) if _small else []
+        _start = _starts[0] if _starts else None
+        _order = _bfs_order(_off, _start) if _start else []
+        _head = _dir_name(_order[0], _order[1]) if len(_order) >= 2 else "none"
         geom.append({"id": pid, "label": lbl, "color": i["hex"],
                      "partOf": "", "cx": i["cx"], "cy": i["cy"],
-                     "turtle": region_turtle(i["cells"], cols, rows, i["hex"])})
+                     "sig": _shape_key(i.get("sig")),
+                     "off": _off,
+                     "sigSquared": _shape_key((None, _canon_key(_sq))) if _sq else "",
+                     "sigAspect": _shape_key((None, _canon_key(_asp))) if _asp else "",
+                     "sigDiag": _shape_key((None, _canon_key(_rot45(_off)))) if _small else "",
+                     "squaredName": _name_of_cells(_sq) if _sq else "",
+                     "aspectName": _name_of_cells(_asp) if _asp else "",
+                     "startPoint": list(_start) if _start else None,
+                     "startPoints": [list(s) for s in _starts],
+                     "heading": _head,
+                     "orientations": _orientations(_off) if _small else [],
+                     "turtle": region_turtle(i["cells"], cols, rows, i["hex"]),
+                     "turtleSquared": _poly_turtle(_sq, i["hex"]) if _sq_small else None,
+                     "turtleAspect": _poly_turtle(_asp, i["hex"]) if _asp_small else None,
+                     "turtleDirected": _poly_turtle(_order, i["hex"]) if _order else None})
     # unify every group id (adjacency clusters + singletons) to obj_N. With
     # carry, a group whose members were mostly carried forward reuses the
     # previous frame's obj id (stable object identity); otherwise a new
@@ -646,11 +684,13 @@ _CONF_FLOOR = 0.1
 
 
 def extract_sequence(frame_paths: list[str], char: str,
-                     horizon: int = DEFAULT_OCCLUSION_HORIZON) -> list[dict]:
+                     horizon: int = DEFAULT_OCCLUSION_HORIZON,
+                     mem_db: str | None = None) -> list[dict]:
     """Run extract_frame over an ordered list of frames, threading part/object
-    identity forward (stable ids, gap re-identified across occlusions), then
-    resolve object permanence across the whole sequence: a vanished part is only
-    classified once later frames reveal whether it came back (within horizon)."""
+    identity forward (stable ids, gap re-identified across occlusions), resolve
+    object permanence across the whole sequence, and (when mem_db is given)
+    recognize each distinct object against the persistent GLOBAL Prolog memory so
+    objects recur across encounters keep one identity."""
     carry: dict = {"prev_info": None, "prev_pid": {}, "name_state": {},
                    "prev_group": {}, "group_state": 0, "recent": {}}
     out: list[dict] = []
@@ -658,7 +698,442 @@ def extract_sequence(frame_paths: list[str], char: str,
         partner = frame_paths[k + 1] if k + 1 < len(frame_paths) else None
         out.append(extract_frame(fp, char, partner, carry=carry))
     _classify_permanence(out, char, horizon)
+    if mem_db:
+        remember_objects(out, char, mem_db)
     return out
+
+
+# Canonical polyomino shape library used to INITIALIZE the persistent global
+# memory. The small free polyominoes are enumerated generatively (monomino ..
+# hexomino); the well-known orders keep their letter names (Wikipedia:
+# Tetromino, Pentomino, Polyomino), larger ones get generic order-indexed names.
+_MONOMINO = {"monomino": [(0, 0)]}
+_DOMINO = {"domino": [(0, 0), (1, 0)]}
+_TROMINOES = {
+    "tromino_I": [(0, 0), (1, 0), (2, 0)],
+    "tromino_L": [(0, 0), (1, 0), (0, 1)],
+}
+_TETROMINOES = {
+    "tetromino_I": [(0, 0), (1, 0), (2, 0), (3, 0)],
+    "tetromino_O": [(0, 0), (1, 0), (0, 1), (1, 1)],
+    "tetromino_T": [(0, 0), (1, 0), (2, 0), (1, 1)],
+    "tetromino_S": [(1, 0), (2, 0), (0, 1), (1, 1)],
+    "tetromino_L": [(0, 0), (0, 1), (0, 2), (1, 2)],
+}
+_PENTOMINOES = {
+    "pentomino_F": [(1, 0), (2, 0), (0, 1), (1, 1), (1, 2)],
+    "pentomino_I": [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0)],
+    "pentomino_L": [(0, 0), (0, 1), (0, 2), (0, 3), (1, 3)],
+    "pentomino_N": [(1, 0), (1, 1), (0, 2), (1, 2), (0, 3)],
+    "pentomino_P": [(0, 0), (1, 0), (0, 1), (1, 1), (0, 2)],
+    "pentomino_T": [(0, 0), (1, 0), (2, 0), (1, 1), (1, 2)],
+    "pentomino_U": [(0, 0), (2, 0), (0, 1), (1, 1), (2, 1)],
+    "pentomino_V": [(0, 0), (0, 1), (0, 2), (1, 2), (2, 2)],
+    "pentomino_W": [(0, 0), (0, 1), (1, 1), (1, 2), (2, 2)],
+    "pentomino_X": [(1, 0), (0, 1), (1, 1), (2, 1), (1, 2)],
+    "pentomino_Y": [(1, 0), (0, 1), (1, 1), (1, 2), (1, 3)],
+    "pentomino_Z": [(0, 0), (1, 0), (1, 1), (1, 2), (2, 2)],
+}
+_MAX_POLY_ORDER = 8  # seed monomino..octomino (1,1,2,5,12,35,108,369 = 533 free shapes)
+_MAX_REP_CELLS = 64  # cap for per-object polyomino reps: small glyph-scale shapes only
+_SEED_FACTS_CACHE: "list | None" = None
+# key -> (composed_piece_names | None, box_cut_descriptor). Populated by
+# _seed_shape_facts so remember_objects can emit compositional / box facts.
+_SHAPE_DESCRIPTORS: "dict | None" = None
+
+
+def _gen_free_polyominoes(max_n: int) -> dict:
+    """Enumerate free polyominoes (unique up to translation + all 8 flips/
+    rotations) for orders 1..max_n by growing from the monomino and canonicalizing
+    with _canon_key. Returns {n: [canonical (x,y) cell tuple, ...]}."""
+    out: dict[int, list] = {1: [_canon_key([(0, 0)])]}
+    for n in range(2, max_n + 1):
+        nxt: set = set()
+        for ck in out[n - 1]:
+            cells = set(ck)
+            cand: set = set()
+            for (x, y) in cells:
+                for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    q = (x + dx, y + dy)
+                    if q not in cells:
+                        cand.add(q)
+            for q in cand:
+                nxt.add(_canon_key(list(cells | {q})))
+        out[n] = list(nxt)
+    return out
+
+
+def _poly_turtle(cells: list, hexc: str = "#7c9cff") -> dict:
+    """A unit-cell turtle program for a polyomino, scaled into the 0..1000 box."""
+    xs = [c[0] for c in cells]
+    ys = [c[1] for c in cells]
+    span = max(max(xs) + 1, max(ys) + 1)
+    cs = 1000.0 / span
+    cmds: list = [{"op": "move", "x": round((xs[0] + 0.5) * cs), "y": round((ys[0] + 0.5) * cs)}]
+    for (x, y) in cells:
+        cmds.append({"op": "rectangle",
+                     "box": [round(x * cs), round(y * cs), round((x + 1) * cs), round((y + 1) * cs)],
+                     "fill": hexc, "outline": hexc})
+    return {"version": 1, "background": "transparent", "penColor": hexc, "penWidth": 4, "commands": cmds}
+
+
+def _collapse_runs(offs) -> list:
+    """Shrink a shape maximally by collapsing every maximal run of identical
+    adjacent rows AND columns to a single line. Holes are preserved and shrink
+    the same way (an interior empty run collapses just like a solid run): a solid
+    W x H rectangle -> 1x1; a 5x5 ring with a 3x3 hole -> a 3x3 ring with a 1x1
+    hole. Returns a list of unit (x, y) cells."""
+    cells = set(map(tuple, offs))
+    if not cells:
+        return []
+    w = max(x for x, _ in cells) + 1
+    h = max(y for _, y in cells) + 1
+    rows = [tuple((x, y) in cells for x in range(w)) for y in range(h)]
+    keep_y = [y for y in range(h) if y == 0 or rows[y] != rows[y - 1]]
+    grid = [rows[y] for y in keep_y]
+    cols = [tuple(row[x] for row in grid) for x in range(w)]
+    keep_x = [x for x in range(w) if x == 0 or cols[x] != cols[x - 1]]
+    out = []
+    for ny, y in enumerate(keep_y):
+        for nx, x in enumerate(keep_x):
+            if rows[y][x]:
+                out.append((nx, ny))
+    return out
+
+
+def _aspect_cells(offs) -> list:
+    """Aspect-minimal form: a SOLID rectangle keeps only which side is longer,
+    shrunk so longer = shorter + 1 (landscape -> 2x1, portrait -> 1x2, square ->
+    1x1); any shape with a hole or non-rectangular structure keeps its
+    hole-preserving collapsed form (same as _collapse_runs)."""
+    cells = set(map(tuple, offs))
+    if not cells:
+        return []
+    w = max(x for x, _ in cells) + 1
+    h = max(y for _, y in cells) + 1
+    if len(cells) == w * h:  # solid rectangle
+        if w > h:
+            return [(0, 0), (1, 0)]
+        if h > w:
+            return [(0, 0), (0, 1)]
+        return [(0, 0)]
+    return _collapse_runs(offs)
+
+
+_DIRS4 = (("N", 0, -1), ("W", -1, 0), ("E", 1, 0), ("S", 0, 1))
+
+
+def _bfs_order(offs, start) -> list:
+    """Deterministic traversal order of a shape's cells starting at `start`
+    (breadth-first, neighbours visited N,W,E,S). Drawing cells in this order makes
+    the turtle DIRECTED: a different start cell yields a different command order,
+    hence a distinct directed turtle program."""
+    cs = {tuple(c) for c in offs}
+    start = tuple(start)
+    order = [start]
+    seen = {start}
+    head = 0
+    while head < len(order):
+        x, y = order[head]
+        head += 1
+        for _nm, dx, dy in _DIRS4:
+            q = (x + dx, y + dy)
+            if q in cs and q not in seen:
+                seen.add(q)
+                order.append(q)
+    for c in offs:  # append any cells unreachable by 4-adjacency (safety)
+        if tuple(c) not in seen:
+            order.append(tuple(c))
+    return order
+
+
+def _dir_name(a, b) -> str:
+    """Compass heading (E/W/S/N) from cell a to adjacent cell b, else 'none'."""
+    d = (b[0] - a[0], b[1] - a[1])
+    return {(1, 0): "E", (-1, 0): "W", (0, 1): "S", (0, -1): "N"}.get(d, "none")
+
+
+def _rot45(offs) -> list:
+    """The shape rotated 45 degrees, kept on the integer grid via the rotate-45 +
+    scale-sqrt(2) lattice map (x, y) -> (x - y, x + y). A grid -imino at 45 deg
+    appears as diagonally-touching cells: a domino -> {(0,0),(1,1)} (corner pair),
+    an L-tromino -> a diagonal chevron. Returns normalized unit (x, y) cells."""
+    rot = [(x - y, x + y) for x, y in (tuple(c) for c in offs)]
+    return sorted(_norm(rot))
+
+
+def _orientations(offs) -> list:
+    """The full set of 16 orientations of a shape: 8 rotational directions at
+    45-degree steps (0/45/.../315) x {normal, flipped}. Rotations combine the 4
+    axis-aligned D4 rotations with the rot45 lattice form; flip mirrors each.
+    Returns [{deg, flip, cells}] sorted by (deg, flip); cells normalized unit
+    (x, y). Symmetric shapes yield duplicate cell sets across slots (e.g. a
+    monomino is identical in all 16) -- the slots are kept, identity still lives
+    in the D4-invariant `sig`."""
+    base = [tuple(c) for c in offs]
+    diag = _rot45(base)
+    fm = dict(_D4)
+    rots = [
+        (0, base), (90, [fm["rot90"](x, y) for x, y in base]),
+        (180, [fm["rot180"](x, y) for x, y in base]), (270, [fm["rot270"](x, y) for x, y in base]),
+        (45, diag), (135, [fm["rot90"](x, y) for x, y in diag]),
+        (225, [fm["rot180"](x, y) for x, y in diag]), (315, [fm["rot270"](x, y) for x, y in diag]),
+    ]
+    out = []
+    for deg, cells in rots:
+        out.append({"deg": deg, "flip": False, "cells": [[x, y] for x, y in sorted(_norm(cells))]})
+        flipped = [fm["flip_h"](x, y) for x, y in cells]
+        out.append({"deg": deg, "flip": True, "cells": [[x, y] for x, y in sorted(_norm(flipped))]})
+    out.sort(key=lambda d: (d["deg"], d["flip"]))
+    return out
+
+
+def _connected(cells) -> bool:
+    """True if the set of (x, y) cells is edge-connected (4-neighbourhood)."""
+    cells = set(cells)
+    if not cells:
+        return False
+    seen: set = set()
+    stack = [next(iter(cells))]
+    while stack:
+        x, y = stack.pop()
+        if (x, y) in seen:
+            continue
+        seen.add((x, y))
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            q = (x + dx, y + dy)
+            if q in cells and q not in seen:
+                stack.append(q)
+    return len(seen) == len(cells)
+
+
+def _decompose_named(ck, named: dict, name_size: dict, memo: dict):
+    """Decompose a polyomino (canonical cell tuple `ck`) into NAMED sub-polyominoes
+    (orders 1..5 are all named). Returns a sorted tuple of piece names, preferring
+    the fewest pieces, then the largest smallest-piece, then lexicographic order.
+    Every connected polyomino resolves (worst case: peel a monomino), so the
+    result is never None. Memoized by canonical key (names are D4-invariant)."""
+    if ck in named:
+        return (named[ck],)
+    if ck in memo:
+        return memo[ck]
+    cells = list(ck)
+    n = len(cells)
+    best = None
+    best_key = None
+    memo[ck] = None  # guard against re-entrancy on the same key
+    for k in range(min(5, n - 1), 0, -1):
+        if n - k > 5 and best is not None and len(best) <= 2:
+            break  # a single named remainder is impossible here; 2 pieces already found
+        for combo in itertools.combinations(cells, k):
+            a = set(combo)
+            b = set(cells) - a
+            ka = _canon_key(a)
+            if ka not in named or not _connected(a) or not _connected(b):
+                continue
+            sub = _decompose_named(_canon_key(b), named, name_size, memo)
+            if sub is None:
+                continue
+            cand = tuple(sorted((named[ka],) + sub))
+            sizes = [name_size[x] for x in cand]
+            key = (len(cand), -min(sizes), cand)
+            if best_key is None or key < best_key:
+                best_key = key
+                best = cand
+    memo[ck] = best
+    return best
+
+
+def _box_cut_name(ck) -> str:
+    """Universal fallback descriptor: the shape's bounding box (H x W) minus the
+    cells that are cut out of it. A solid rectangle is `box_HxW`; otherwise
+    `box_HxW_cut_N_at_rYcX_...` listing the removed cells in row-major order.
+    Canonical (the D4-canonical orientation) so it is unique per free shape."""
+    xs = [c[0] for c in ck]
+    ys = [c[1] for c in ck]
+    w = max(xs) + 1
+    h = max(ys) + 1
+    filled = set(ck)
+    cuts = [(x, y) for y in range(h) for x in range(w) if (x, y) not in filled]
+    if not cuts:
+        return f"box_{h}x{w}"
+    pos = "_".join(f"r{y}c{x}" for (x, y) in cuts)
+    return f"box_{h}x{w}_cut_{len(cuts)}_at_{pos}"
+
+
+_NAMED_LOOKUP: "dict | None" = None
+
+
+def _named_lookup() -> dict:
+    """Memoized {D4-canonical key: letter name} for the classically named small
+    polyominoes (monomino .. pentomino)."""
+    global _NAMED_LOOKUP
+    if _NAMED_LOOKUP is None:
+        _NAMED_LOOKUP = {}
+        for nm, cells in {**_MONOMINO, **_DOMINO, **_TROMINOES,
+                          **_TETROMINOES, **_PENTOMINOES}.items():
+            _NAMED_LOOKUP[_canon_key(cells)] = nm
+    return _NAMED_LOOKUP
+
+
+def _name_of_cells(cells) -> str:
+    """Name of a cell set: its letter name if it is a classic small polyomino,
+    otherwise its universal box-cut descriptor. Used to see whether a shrunk large
+    shape 'gets lucky' and collapses onto a named thing."""
+    if not cells:
+        return ""
+    ck = _canon_key(cells)
+    return _named_lookup().get(ck) or _box_cut_name(ck)
+
+
+_ORIENT_CACHE: dict = {}
+
+
+def _distinct_orientations(ck):
+    """A shape's distinct grid placements under the 8 D4 operations (rotations +
+    reflections). Returns (count, {rep_transform_name: normalized_form}). Symmetry
+    collapses the 8 operations onto fewer placements: a square -> 1, a domino or
+    straight bar -> 2, a fully asymmetric polyomino -> 8. The representative for
+    each placement is the first D4 transform (in _D4 order) that produces it."""
+    ck = tuple(ck)
+    if ck in _ORIENT_CACHE:
+        return _ORIENT_CACHE[ck]
+    reps: dict = {}
+    for nm, f in _D4:
+        form = tuple(sorted(_norm([f(x, y) for x, y in ck])))
+        reps.setdefault(form, nm)
+    res = (len(reps), {v: k for k, v in reps.items()})
+    _ORIENT_CACHE[ck] = res
+    return res
+
+
+def _seed_shape_facts() -> list[str]:
+    """Prolog shape/3 facts seeding the global memory with the free polyominoes
+    (monomino..octomino) as named turtle programs (canonical key + name + turtle).
+    Orders 1-5 keep their letter names; larger shapes get a unique, canonical
+    `box_HxW[_cut_N_at_...]` descriptor as their name, plus a *composition* into
+    smaller NAMED pieces (e.g. tetromino_O+tetromino_S) recorded as a relationship
+    in _SHAPE_DESCRIPTORS. Memoized: the enumeration is computed once per process."""
+    global _SEED_FACTS_CACHE, _SHAPE_DESCRIPTORS
+    if _SEED_FACTS_CACHE is not None:
+        return _SEED_FACTS_CACHE
+    named: dict = {}
+    name_size: dict = {}
+    for nm, cells in {**_MONOMINO, **_DOMINO, **_TROMINOES, **_TETROMINOES, **_PENTOMINOES}.items():
+        named[_canon_key(cells)] = nm
+        name_size[nm] = len(cells)
+    facts: list[str] = []
+    descriptors: dict = {}
+    seen: set = set()
+    memo: dict = {}
+    for n, shapes in _gen_free_polyominoes(_MAX_POLY_ORDER).items():
+        for ck in sorted(shapes):
+            key = _shape_key((None, ck))
+            if key in seen:
+                continue
+            seen.add(key)
+            composed = None
+            box = _box_cut_name(ck)
+            if ck in named:
+                name = named[ck]
+            else:
+                # unique canonical name = the box-cut descriptor; the decomposition
+                # into named pieces is recorded as a relationship, not the name.
+                composed = _decompose_named(ck, named, name_size, memo)
+                name = box
+            descriptors[key] = (composed, box, ck)
+            turtle = json.dumps(_poly_turtle(list(ck)), separators=(",", ":"))
+            turtle = turtle.replace("\\", "\\\\").replace("'", "\\'")
+            facts.append(f"shape('{key}', '{name}', '{turtle}').")
+    _SEED_FACTS_CACHE = facts
+    _SHAPE_DESCRIPTORS = descriptors
+    return facts
+
+
+def remember_objects(results: list[dict], char: str, mem_db: str) -> None:
+    """Recognize every distinct object (shape signature + color) of this
+    sequence against the persistent global Prolog memory (object_memory.pl),
+    minting an identity the first time and bumping the encounter count on
+    recognition. Annotates each part with globalId / memSeen / memNew and emits a
+    `(memory ...)` fact per part into each frame's metta."""
+    # distinct (sig, color) across the whole sequence = the objects of this encounter.
+    distinct: dict[tuple[str, str], str] = {}
+    for r in results:
+        for p in r.get("geom", []):
+            sg = p.get("sig")
+            col = _cname(p.get("color", ""))
+            if sg:
+                distinct[(sg, col)] = ""
+    if not distinct:
+        return
+    facts = [f"db('{Path(mem_db).as_posix()}').", f"when_stamp('{char}')."]
+    facts.extend(_seed_shape_facts())
+    for (sg, col) in distinct:
+        facts.append(f"sig('{sg}', '{col}').")
+    Path(mem_db).parent.mkdir(parents=True, exist_ok=True)
+    info: dict[tuple[str, str], tuple[str, int, bool, str]] = {}
+    with tempfile.NamedTemporaryFile("w", suffix=".pl", delete=False, encoding="utf-8") as f:
+        f.write("\n".join(facts) + "\n")
+        fpath = f.name
+    try:
+        out = subprocess.run(
+            ["swipl", "-q", "-g",
+             f"consult('{MEM_PL.as_posix()}'), consult('{Path(fpath).as_posix()}'), run_memory",
+             "-t", "halt"],
+            capture_output=True, text=True, timeout=60).stdout
+    except Exception:  # noqa: BLE001
+        return
+    finally:
+        Path(fpath).unlink(missing_ok=True)
+    for ln in out.splitlines():
+        p = ln.split()
+        if len(p) == 7 and p[0] == "mem":
+            _mem, gid, key, col, seen, new, sname = p
+            try:
+                info[(key, col)] = (gid, int(seen), new == "t", sname)
+            except ValueError:
+                continue
+    for r in results:
+        lines: list[str] = []
+        for p in r.get("geom", []):
+            k = (p.get("sig"), _cname(p.get("color", "")))
+            if k in info:
+                gid, seen, new, sname = info[k]
+                p["globalId"] = gid
+                p["memSeen"] = seen
+                p["memNew"] = new
+                lines.append(f"(memory {char} {p['id']} {gid} (seen {seen}) (new {'t' if new else 'f'}))")
+                if sname and sname != "-":
+                    p["shapeName"] = sname
+                    lines.append(f"(shape {char} {p['id']} {sname})")
+                desc = (_SHAPE_DESCRIPTORS or {}).get(p.get("sig"))
+                if desc:
+                    composed, box, canon = desc
+                    if composed:
+                        p["composedOf"] = list(composed)
+                        lines.append(f"(composed {char} {p['id']} " + " ".join(composed) + ")")
+                    if box:
+                        p["boxName"] = box
+                        lines.append(f"(box {char} {p['id']} {box})")
+                    off = p.get("off")
+                    if canon and off and sname and sname != "-":
+                        ori = _transform_between(list(canon), [tuple(o) for o in off])
+                        if ori and ori != "deformed":
+                            n_vis, _ = _distinct_orientations(canon)  # visually distinct
+                            n_dir = len(_D4)  # 8 directional slots (turtle is directional)
+                            p["orientation"] = ori
+                            p["orientCount"] = n_dir
+                            p["orientVisual"] = n_vis
+                            lines.append(
+                                f"(oriented {char} {p['id']} {sname} {ori} {n_dir} {n_vis})")
+                    sp = p.get("startPoint")
+                    if sp and sname and sname != "-":
+                        nsp = len(p.get("startPoints") or [])
+                        lines.append(
+                            f"(start-point {char} {p['id']} {sp[0]} {sp[1]} "
+                            f"{p.get('heading', 'none')} {nsp})")
+        if lines:
+            r["metta"] = r["metta"].rstrip("\n") + "\n" + "\n".join(lines) + "\n"
 
 
 def _classify_permanence(results: list[dict], char: str,

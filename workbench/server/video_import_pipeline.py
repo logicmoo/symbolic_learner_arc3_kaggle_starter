@@ -3216,8 +3216,9 @@ def run_reduce(
                 sp = e.get("src") or (pool_dir / f"{idv}.jpg")
                 if os.path.isfile(str(sp)):
                     groups.setdefault(e.get("slug", ""), []).append((idv, str(sp)))
+            mem_db = str(root / "knowledge" / "object_memory.db.pl")
             for sl, lst in groups.items():
-                seq = _sa.extract_sequence([sp for _i, sp in lst], sl)
+                seq = _sa.extract_sequence([sp for _i, sp in lst], sl, mem_db=mem_db)
                 for (idv, _sp), pr in zip(lst, seq):
                     if pr["nparts"] > 0 and pr["cols"] <= 160 and pr["rows"] <= 160:
                         (sym_dir / f"{idv}__prolog.metta").write_text(pr["metta"], encoding="utf-8")
