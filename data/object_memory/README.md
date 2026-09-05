@@ -1,5 +1,9 @@
 # Object-memory data directory
 
+**This is the canonical object registry** for the symbolic recognizer line — the
+single source of truth for known shapes and recognized object identities (see
+`workbench/docs/design/OBJECT_REGISTRY_CANONICAL.md`).
+
 Canonical, on-disk, **global** persistent store for the symbolic vision
 recognizer (`workbench/server/generative_vision/prolog/symbolic_arc.py` +
 `object_memory.pl`). Shared across games/levels/sessions so an object seen in one
