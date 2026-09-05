@@ -9,7 +9,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
  */
 
 type Cell = { x: number; y: number; role: string; color: string | null };
-type Panel = { label: string; w: number; h: number; cells: Cell[] };
+type Panel = { label: string; w: number; h: number; cells: Cell[]; aux?: Panel };
 type Demo = {
   id: string; group: string; title: string; description: string;
   panels: Panel[]; frames?: Panel[]; result: Record<string, unknown>; passed: boolean;
@@ -50,10 +50,8 @@ function GridPanel({ panel }: { panel: Panel }) {
           const fill = c.color || "#8a8f98";
           const filled = c.role === "filled";
           const regen = c.role === "regen";
-          // Dense real scenes: draw every ordinary cell as a borderless bitmap pixel
-          // so grid lines don't swamp the image; colour alone encodes recognized
-          // (green) vs new (blue) vs scene. Keep outlines only for the sparse
-          // occlusion markers (filled '+' / hidden '?') used by the small demos.
+          // Dense real scenes: draw every cell as a borderless bitmap pixel so the
+          // scene renders faithfully and grid lines don't swamp the image.
           if (dense && !filled && c.role !== "hidden") {
             return <rect key={i} x={x} y={y} width={px} height={px} fill={fill} />;
           }
@@ -137,7 +135,10 @@ function AnimatedGrid({ frames, autoplay = true }: { frames: Panel[]; autoplay?:
   const cur = frames[Math.min(i, frames.length - 1)];
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "center" }}>
-      <GridPanel panel={cur} />
+      <div style={{ display: "flex", gap: 10, alignItems: "flex-start", flexWrap: "wrap", justifyContent: "center" }}>
+        <GridPanel panel={cur} />
+        {cur.aux ? <GridPanel panel={cur.aux} /> : null}
+      </div>
       {multi ? (
         <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
           <button type="button" title="Previous step"
@@ -232,8 +233,9 @@ export function RecognitionDemosPage() {
   const [stepIds, setStepIds] = useState<Set<string>>(new Set());
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // The UI only OBSERVES: it polls the server's cached run and re-polls while a
-  // background run is in progress. It never computes the tests itself.
+  // The UI only OBSERVES: it polls the server's cached run. While a run is in
+  // progress it polls fast to animate; when idle it keeps polling slowly so a run
+  // triggered elsewhere (e.g. by a collaborator on the same page) shows up here too.
   const observe = useCallback(() => {
     fetch("/workbench/recognition/demos")
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
@@ -241,7 +243,7 @@ export function RecognitionDemosPage() {
         setData(d);
         setRunning(!!d.running);
         if (pollRef.current) clearTimeout(pollRef.current);
-        if (d.running) pollRef.current = setTimeout(observe, 1200);
+        pollRef.current = setTimeout(observe, d.running ? 1200 : 3500);
       })
       .catch((e) => setErr(String(e)));
   }, []);

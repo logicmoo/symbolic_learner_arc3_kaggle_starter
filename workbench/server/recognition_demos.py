@@ -383,9 +383,10 @@ def _demo_live_ls20_sequence():
                 parts = _json.loads(pj.read_text(encoding="utf-8"))
             except (OSError, _json.JSONDecodeError):
                 parts = []
+        bg_area = 0.33 * idx.shape[0] * idx.shape[1]   # skip background floods, not real objects
         for p in parts:
             off = p.get("off") or []
-            if not off:
+            if not off or len(off) > bg_area:
                 continue
             geo = sa._identity_name(off) or ("shape_" + str(p.get("sig")))   # geometry
             cname = sa._cname(p.get("color", ""))
@@ -401,8 +402,10 @@ def _demo_live_ls20_sequence():
             frame_ind.add(ind)
             # overlay coloured by INDIVIDUAL recognition: green recognized, blue new
             cx, cy = p.get("cx", 0), p.get("cy", 0)
-            bx = int(round(cx - (max(oxs) + min(oxs)) / 2.0))
-            by = int(round(cy - (max(oys) + min(oys)) / 2.0))
+            # place the blob by aligning its CENTROID (mean of offsets) to (cx, cy);
+            # the bbox midpoint used before shifted asymmetric shapes by 1-2 cells.
+            bx = int(round(cx - sum(oxs) / len(oxs)))
+            by = int(round(cy - sum(oys) / len(oys)))
             role, col = ("regen", _GREEN) if ind_known else ("visible", _BLUE)
             for (dx, dy) in off:
                 roled.append((bx + dx, by + dy, role, col))
@@ -420,12 +423,18 @@ def _demo_live_ls20_sequence():
         total_ind_recog += ind_recog
         direct = sum(1 for v in geo_seen.values() for pr in v.values() if pr == "direct")
         made = sum(1 for v in geo_seen.values() for pr in v.values() if pr != "direct")
-        base = [(x, y, "object", hexpal[int(idx[y, x])]) for y in range(idx.shape[0]) for x in range(idx.shape[1])]
-        frames.append(_panel(
+        rows, cols = idx.shape[0], idx.shape[1]
+        base = [(x, y, "object", hexpal[int(idx[y, x])]) for y in range(rows) for x in range(cols)]
+        scene = _panel(
             f"{idv} · this frame: {ind_recog} recognized, {ind_new} new "
             f"· objects known {before_obj}→{after_obj}, shapes {before_geo}→{after_geo} "
             f"· learners {direct} direct / {made} via filter",
-            base + roled))
+            base)
+        # Recognition map shown to the SIDE (not painted over the scene): green =
+        # recognized object, blue = new first sighting, rest dark.
+        scene["aux"] = _panel("recognition · green = recognized · blue = new",
+                              roled, ox=0, oy=0, w=cols, h=rows)
+        frames.append(scene)
 
     # --- one frame of LEVEL 2 (same game): cross-level transfer. The geometry
     # (and many individuals) learned in level 1 are recognized immediately, so
@@ -444,9 +453,10 @@ def _demo_live_ls20_sequence():
                 idx2, hexpal2, _c2, _r2 = sa.decode_grid(str(l2png))
                 roled2: list = []
                 l2_made = 0
+                bg2 = 0.33 * idx2.shape[0] * idx2.shape[1]
                 for p in pr.get("geom", []):
                     off = p.get("off") or []
-                    if not off:
+                    if not off or len(off) > bg2:
                         continue
                     geo = sa._identity_name(off) or ("shape_" + str(p.get("sig")))
                     cname = sa._cname(p.get("color", ""))
@@ -461,17 +471,21 @@ def _demo_live_ls20_sequence():
                     w = max(oxs) - min(oxs) + 1; h = max(oys) - min(oys) + 1
                     if geo_known and _variant_prov(geo_exemplar.get(geo, ((w, h), cname)), (w, h), cname) != "direct":
                         l2_made += 1                        # recognized only via the normalization filter
-                    bx = int(round(cx - (max(oxs) + min(oxs)) / 2.0))
-                    by = int(round(cy - (max(oys) + min(oys)) / 2.0))
+                    bx = int(round(cx - sum(oxs) / len(oxs)))
+                    by = int(round(cy - sum(oys) / len(oys)))
                     role, col = ("regen", _GREEN) if ind_known else ("visible", _BLUE)
                     for (dx, dy) in off:
                         roled2.append((bx + dx, by + dy, role, col))
+                r2, c2 = idx2.shape[0], idx2.shape[1]
                 base2 = [(x, y, "object", hexpal2[int(idx2[y, x])])
-                         for y in range(idx2.shape[0]) for x in range(idx2.shape[1])]
-                frames.append(_panel(
+                         for y in range(r2) for x in range(c2)]
+                l2scene = _panel(
                     f"LEVEL 2 (saved_002) frame 1 · objects {lvl2_ind}/{lvl2_total} recognized "
                     f"· shapes {lvl2_geo}/{lvl2_total} ({l2_made} via filter) — carried over from level 1",
-                    base2 + roled2))
+                    base2)
+                l2scene["aux"] = _panel("recognition · green = recognized · blue = new",
+                                        roled2, ox=0, oy=0, w=c2, h=r2)
+                frames.append(l2scene)
 
     # demonstrates learning: the first frame recognizes nothing (empty memory),
     # geometry (fewer, shared) saturates faster than individuals (colour variety),
