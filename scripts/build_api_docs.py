@@ -13,9 +13,11 @@ Requires: ``pip install -e ".[docs]"``            (installs pydoc-markdown)
 """
 from __future__ import annotations
 
+import json
 import shutil
 import subprocess
 import sys
+import tempfile
 import tomllib
 from pathlib import Path
 
@@ -46,15 +48,61 @@ def _targets() -> tuple[list[str], list[str]]:
 
 
 def _render(tool: str, flag: str, name: str) -> str | None:
-    """Render one package (``-p``) or module (``-m``) to Markdown, or None on error."""
-    cmd = [tool, "-I", "python", "-I", ".", "--render-toc", flag, name]
+    """Render one package (``-p``) or module (``-m``) to Markdown, or None on error.
+
+    Drives pydoc-markdown through a generated config (JSON is valid YAML) instead
+    of the bare CLI flags so the ``filter`` processor can run with
+    ``documented_only: false``. That keeps *every* public member in the output --
+    including undocumented dataclass fields (e.g. ``NormalizedResult.value``) and
+    methods that would otherwise be dropped -- while ``--render-toc`` behaviour is
+    preserved via ``render_toc: true``.
+    """
+    key = "packages" if flag == "-p" else "modules"
+    # pydoc-markdown resolves relative loader search paths relative to the config
+    # file's directory. Since the config is written to a temp file, use absolute
+    # paths so ``python/`` and the repo root are always found.
+    search_path = [str(REPO / "python"), str(REPO)]
+    config = {
+        "loaders": [{"type": "python", "search_path": search_path, key: [name]}],
+        "processors": [
+            {
+                "type": "filter",
+                # Keep undocumented members (e.g. dataclass fields such as
+                # NormalizedResult.value) so every public member is listed, but
+                # drop the re-export Indirection nodes that ``__init__`` files
+                # create -- otherwise each re-exported name appears again as an
+                # empty stub and the TOC links to the stub, not the definition.
+                "documented_only": False,
+                "skip_empty_modules": True,
+                "expression": "default() and type(obj).__name__ != 'Indirection'",
+            },
+            {"type": "smart"},
+            {"type": "crossref"},
+        ],
+        "renderer": {
+            "type": "markdown",
+            "render_toc": True,
+            # Show each data member's annotation in its header (e.g.
+            # ``value: Any``) instead of a misleading ``= None`` assignment.
+            "render_typehint_in_data_header": True,
+        },
+    }
+    tmp = tempfile.NamedTemporaryFile(
+        "w", suffix=".yml", delete=False, encoding="utf-8"
+    )
     try:
-        result = subprocess.run(
-            cmd, cwd=REPO, capture_output=True, text=True, encoding="utf-8"
-        )
-    except OSError as exc:
-        print(f"  ! {name}: {exc}")
-        return None
+        json.dump(config, tmp)
+        tmp.close()
+        cmd = [tool, tmp.name]
+        try:
+            result = subprocess.run(
+                cmd, cwd=REPO, capture_output=True, text=True, encoding="utf-8"
+            )
+        except OSError as exc:
+            print(f"  ! {name}: {exc}")
+            return None
+    finally:
+        Path(tmp.name).unlink(missing_ok=True)
     if result.returncode != 0 or not result.stdout.strip():
         print(f"  ! {name}: {(result.stderr or 'empty output').strip()[:140]}")
         return None

@@ -5,6 +5,7 @@
 * [llm\_json](#llm_json)
   * [LlmJsonError](#llm_json.LlmJsonError)
   * [parse\_or\_repair\_json\_object](#llm_json.parse_or_repair_json_object)
+  * [strict\_json\_text](#llm_json.strict_json_text)
 
 <a id="llm_json"></a>
 
@@ -36,3 +37,11 @@ Returns ``(object, repaired)``. The repair library handles missing commas,
 quotes, brackets, literal newlines, trailing commentary, and truncation.
 Required-key validation prevents a syntactically repaired but incomplete
 bundle from being accepted silently.
+
+<a id="llm_json.strict_json_text"></a>
+
+#### strict\_json\_text
+
+```python
+def strict_json_text(value: dict[str, Any]) -> str
+```
