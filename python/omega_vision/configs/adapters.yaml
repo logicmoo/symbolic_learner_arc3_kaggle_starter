@@ -1,0 +1,27 @@
+# SoW Appendix A.6 — declarative adapter registry.
+#
+# Adapters are registered as configuration; a benchmark or game selects adapters
+# without changing the kernel (SoW §3.2, A.6). Class names below resolve to
+# omega_vision modules (which re-export the object_memory implementations).
+
+adapters:
+  grid:
+    candidate_provider: GridIndividuator      # omega_vision.adapters.grid
+    adapter: GridAdapter                       # omega_vision.adapters.grid
+    form_language: CellLogoForm                # omega_vision.forms.cell_logo
+    metrics: GridMetrics                       # omega_vision.core.evaluation
+  sprite:
+    candidate_provider: RasterSegmenter        # omega_vision.adapters.sprite
+    adapter: SpriteAdapter                     # omega_vision.adapters.sprite
+    form_language: ContourFillForm             # omega_vision.forms.contour_fill
+    metrics: RasterMetrics                     # omega_vision.core.evaluation
+    accelerators: [PerceptualHash, VectorTraceIndex, FaissIndex]
+
+  # ---- future (SoW §16): stubs only, not in scope ----
+  # anime_sketch:
+  #   candidate_provider: AnimeRegionProposer
+  #   form_language: LayeredStrokeForm
+  #   accelerators: [SketchformerEmbedding, VectorTraceIndex]
+  # robot3d:
+  #   candidate_provider: RGBDObjectProposer
+  #   form_language: PartGraph3DForm

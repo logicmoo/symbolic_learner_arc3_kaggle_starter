@@ -100,7 +100,7 @@ Repository = "https://github.com/logicmoo/symbolic_learner_arc3_kaggle_starter"
 Issues = "https://github.com/logicmoo/symbolic_learner_arc3_kaggle_starter/issues"
 
 [tool.setuptools]
-packages = ["pycoplex", "object_memory", "webui", "worldworkbench", "worldworkbench.adapters"]
+packages = ["pycoplex", "object_memory", "webui", "worldworkbench", "worldworkbench.adapters", "omega_vision", "omega_vision.core", "omega_vision.forms", "omega_vision.adapters", "omega_vision.adapters.grid", "omega_vision.adapters.sprite", "omega_vision.adapters.anime_sketch", "omega_vision.adapters.robot3d", "omega_vision.accelerators", "omega_vision.accelerators.vector_trace", "omega_vision.accelerators.perceptual_hash", "omega_vision.accelerators.faiss_index", "omega_vision.accelerators.sketchformer", "omega_vision.environments"]
 py-modules = [
   "action_tree",
   "arc3_runner",
