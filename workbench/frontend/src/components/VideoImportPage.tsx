@@ -407,7 +407,8 @@ const API = "/workbench/video-import";
 // count, so the Recognition reduce rows can render each stage panel NATIVELY
 // (turtle shapes) instead of a pre-baked composite image. bbox is intentionally
 // NOT parsed or required — the turtle is the shape; the box was a throwaway.
-type MettaPart = { id: string; label: string; color: string };
+type MettaRecognition = { shapeName?: string; boxName?: string; seen?: number; isNew?: boolean; gid?: string; sigHash?: string; overlaps?: Array<[string, string]> };
+type MettaPart = { id: string; label: string; color: string; recog?: MettaRecognition };
 type MettaGroup = { id: string; parts: MettaPart[] };
 // Distinct outline colors for partOf groups (cycled by group index).
 const GROUP_COLORS = ["#27dcc2","#ff7ab6","#f2c14e","#7c9cff","#8bd450","#ff8b5e","#c78bff","#4ecdc4","#ffd166","#ef476f"];
@@ -417,11 +418,13 @@ const mettaColor = (c: string): string => {
   if (CSS_COLOR_WORDS.has(k)) return k === "cream" ? "#fff5cc" : k === "peach" ? "#ffdab9" : k;
   return "#8a8f98";
 };
-function parseMettaParts(text: string): { parts: MettaPart[]; nrels: number; groups: MettaGroup[] } {
+function parseMettaParts(text: string): { parts: MettaPart[]; nrels: number; groups: MettaGroup[]; recognized: number; newCount: number } {
   const parts: MettaPart[] = [];
   const partOf: Array<[string, string]> = [];
   let nrels = 0;
-  if (!text) return { parts, nrels, groups: [] };
+  if (!text) return { parts, nrels, groups: [], recognized: 0, newCount: 0 };
+  const recog = new Map<string, MettaRecognition>();
+  const rec = (id: string): MettaRecognition => { let r = recog.get(id); if (!r) { r = {}; recog.set(id, r); } return r; };
   for (const raw of text.split("\n")) {
     const line = raw.trim();
     const m = line.match(/^\(part\s+\S+\s+(\S+)\s+\(label\s+"([^"]*)"\)\s+\(color\s+([^)\s]+)\)/);
@@ -431,7 +434,27 @@ function parseMettaParts(text: string): { parts: MettaPart[]; nrels: number; gro
     }
     const pm = line.match(/^\(partOf\s+\S+\s+(\S+)\s+(\S+)\)/);
     if (pm) { partOf.push([pm[1], pm[2]]); continue; }
+    // Canonical registry recognition facts emitted by the symbolic_arc recognizer:
+    //   (memory <char> <id> <gid> (seen N) (new t|f))  (shape <char> <id> <name>)
+    //   (overlaps <char> <id> <name> <way>)
+    const mem = line.match(/^\(memory\s+\S+\s+(\S+)\s+(\S+)\s+\(seen\s+(\d+)\)\s+\(new\s+([tf])\)\)/);
+    if (mem) { const r = rec(mem[1]); r.gid = mem[2]; const h = mem[2].match(/_([0-9a-f]{6,})$/); r.sigHash = h ? h[1].slice(0, 6) : undefined; r.seen = parseInt(mem[3], 10); r.isNew = mem[4] === "t"; continue; }
+    const shp = line.match(/^\(shape\s+\S+\s+(\S+)\s+(\S+)\)/);
+    if (shp) { rec(shp[1]).shapeName = shp[2]; continue; }
+    const box = line.match(/^\(box\s+\S+\s+(\S+)\s+(\S+)\)/);
+    if (box) { rec(box[1]).boxName = box[2]; continue; }
+    const ov = line.match(/^\(overlaps\s+\S+\s+(\S+)\s+(\S+)\s+(\S+)\)/);
+    if (ov) { const r = rec(ov[1]); (r.overlaps = r.overlaps || []).push([ov[2], ov[3]]); continue; }
     if (/^\((?:above|left-of|right-of|below)\s/.test(line)) nrels += 1;
+  }
+  let recognized = 0;
+  let newCount = 0;
+  for (const p of parts) {
+    const r = recog.get(p.id);
+    if (r) {
+      p.recog = r;
+      if (r.isNew) newCount += 1; else if (r.seen && r.seen > 0) recognized += 1;
+    }
   }
   const byId = new Map(parts.map((p) => [p.id, p]));
   const gp = new Map<string, MettaPart[]>();
@@ -443,7 +466,7 @@ function parseMettaParts(text: string): { parts: MettaPart[]; nrels: number; gro
     gp.set(g, arr);
   }
   const groups: MettaGroup[] = [...gp.entries()].map(([id, ps]) => ({ id, parts: ps }));
-  return { parts, nrels, groups };
+  return { parts, nrels, groups, recognized, newCount };
 }
 // Induced event ontology, shared by both induction rows. Resolved across the
 // whole sequence (a vanish is only knowable once later frames are seen):
@@ -3025,6 +3048,13 @@ export function VideoImportPage({
   const [recognitionGallery, setRecognitionGallery] = useState<any[]>([]);
   // Reduction stress-test (shot-tier agreement) manifest + UI state.
   const [recognitionReduce, setRecognitionReduce] = useState<any | null>(null);
+  // Registry commit mode for the reduce: by default every reduced sequence is
+  // COMMITTED to the canonical object registry (new objects stored, recognized
+  // ones accumulate evidence). Flip this on for a recognize-only pass that
+  // matches against the registry but leaves it unchanged ("a mode that doesn't").
+  const [recognizeOnly, setRecognizeOnly] = useState<boolean>(() => {
+    try { return window.localStorage.getItem("videoImport.recognizeOnly") === "1"; } catch { return false; }
+  });
   // Shared, disk-backed IMAGE SET selector (used by both the Recognition and
   // Objects Extractions views). `selectedImageSet` is always a real reduce-style
   // set on disk (default the canonical Recognition 20x10 set); the reduce
@@ -4082,15 +4112,19 @@ export function VideoImportPage({
     }
     void api("jobs/cancel", { workspaceId, jobId }).then(() => say(`■ cancelling job ${jobId}`)).catch(() => undefined);
   };
-  const startServerStage = (stage: string) => {
+  const startServerStage = (stage: string, opts?: { prologOnly?: boolean; llmOnly?: boolean }) => {
     pipelineLogSeenRef.current = 0;
     const socket = pipelineSocketRef.current;
-    const payload = { cmd: "start", workspaceId, stage, onlySelected: true, set: selectedImageSet };
+    const prologOnly = !!opts?.prologOnly;
+    const llmOnly = !!opts?.llmOnly;
+    const payload = { cmd: "start", workspaceId, stage, onlySelected: true, set: selectedImageSet, recognizeOnly, prologOnly, llmOnly };
+    const impl = prologOnly ? " · prolog" : llmOnly ? " · llm" : "";
+    const note = stage === "reduce" ? `${impl}${recognizeOnly ? " · recognize-only" : " · commit"}` : "";
     if (socket && socket.readyState === WebSocket.OPEN) {
-      try { socket.send(JSON.stringify(payload)); say(`▶ server ${stage}`); return; } catch { /* fall through */ }
+      try { socket.send(JSON.stringify(payload)); say(`▶ server ${stage}${note}`); return; } catch { /* fall through */ }
     }
-    void api("pipeline/start", { workspaceId, stage, onlySelected: true, set: selectedImageSet })
-      .then(() => say(`▶ server ${stage}`))
+    void api("pipeline/start", { workspaceId, stage, onlySelected: true, set: selectedImageSet, recognizeOnly, prologOnly, llmOnly })
+      .then(() => say(`▶ server ${stage}${note}`))
       .catch((reason) => say(`✗ could not start server ${stage}: ${reason instanceof Error ? reason.message : String(reason)}`));
   };
   const uploadRecognitionImages = (files: FileList | null) => {
@@ -6643,7 +6677,19 @@ export function VideoImportPage({
                 <div className="video-import-reduce-listctrls">
                   {reduceRunning
                     ? <><button type="button" className="video-import-reduce-runbtn is-running" disabled>Reducing {pipelineCounts.done ?? 0}/{pipelineCounts.total ?? list.length}… · {pipelineCounts.active ?? 0} active</button><button type="button" className="video-import-reduce-foldbtn" onClick={() => void stopServerPipeline()}>■ stop</button></>
-                    : <button type="button" className="video-import-reduce-runbtn" disabled={pipelineRunStatus === "running"} title="Run the 1-shot + 2-shot reduction for ALL pool images on the server, pooled at the configured max processes" onClick={() => startServerStage("reduce")}>▶ Reduce all {recognitionReduce.items.length} on server</button>}
+                    : <>
+                        <button type="button" className="video-import-reduce-runbtn" disabled={pipelineRunStatus === "running"} title="Run ALL implementations (LLM 1-shot + 2-shot tiers AND the SWI-Prolog symbolic line + registry) for every pool image, server-side." onClick={() => startServerStage("reduce")}>▶ Reduce all {recognitionReduce.items.length} · all impls</button>
+                        <button type="button" className="video-import-reduce-foldbtn" disabled={pipelineRunStatus === "running"} title="Re-run ONLY the SWI-Prolog symbolic line + canonical registry pass for every frame — no LLM / no models required. Honors the registry mode (commit / recognize-only)." onClick={() => startServerStage("reduce", { prologOnly: true })}>⟳ (prolog){recognizeOnly ? " recog" : ""}</button>
+                        <button type="button" className="video-import-reduce-foldbtn" disabled={pipelineRunStatus === "running"} title="Run ONLY the LLM tiers (1-shot + 2-shot); skip the Prolog symbolic line and registry pass. Requires a runnable vision model." onClick={() => startServerStage("reduce", { llmOnly: true })}>⟳ (LLM)</button>
+                      </>}
+                  <label className="video-import-imageset-selector" title="Registry commit mode. Committed (default): every reduced sequence is stored in the canonical object registry — new objects are added, recognized ones accumulate evidence (seen count). Recognize-only: match each object against the registry and show new-vs-seen, but leave the registry unchanged.">
+                    <span>registry</span>
+                    <select value={recognizeOnly ? "recognize" : "commit"}
+                      onChange={(e) => { const ro = e.target.value === "recognize"; setRecognizeOnly(ro); try { window.localStorage.setItem("videoImport.recognizeOnly", ro ? "1" : "0"); } catch { /* ignore */ } }}>
+                      <option value="commit">commit (store + accumulate)</option>
+                      <option value="recognize">recognize-only (no writes)</option>
+                    </select>
+                  </label>
                   <input className="video-import-reduce-search" type="search" placeholder="Filter by character or condition…" value={reduceListQuery} onChange={(e) => setReduceListQuery(e.target.value)} />
                   <label className="video-import-imageset-selector"><span>row line</span>
                     <select value={reduceRowView} onChange={(e) => setReduceRowView(e.target.value as ReduceRowView)}>
@@ -6732,7 +6778,7 @@ export function VideoImportPage({
                                   const rp = Math.round((row.agree?.score ?? 0) * 100);
                                   const mettaRel = row.mettaPath || `data/recognition_reduce/sym/${String(row.metta || "").split("/").pop()}`;
                                   const mettaText = reduceMetta[mettaRel];
-                                  const { parts, groups } = parseMettaParts(mettaText || "");
+                                  const { parts, groups, recognized, newCount } = parseMettaParts(mettaText || "");
                                   const bigGroups = groups.filter((g) => g.parts.length >= 2);
                                   const groupColor = new Map<string, string>();
                                   bigGroups.forEach((g, gi) => groupColor.set(g.id, GROUP_COLORS[gi % GROUP_COLORS.length]));
@@ -6769,6 +6815,42 @@ export function VideoImportPage({
                                           <img className="video-import-reduce-stageimg" src={asset(inputRel)} alt={it.id} loading="lazy" />
                                           <figcaption>{engine === "prolog" ? "prolog · symbolic" : `LLM · ${row.model}`}</figcaption>
                                         </figure>
+                                        {engine === "prolog" && (recognized > 0 || newCount > 0) && (
+                                          <figure className="video-import-reduce-stage is-recog">
+                                            <div className="video-import-reduce-recog">
+                                              <div className="video-import-reduce-recoghdr">
+                                                registry · <b>{recognized}</b> recognized · <b>{newCount}</b> new
+                                                <span className="video-import-reduce-recogmode">{recognizeOnly ? "recognize-only" : "committed"}</span>
+                                              </div>
+                                              <div className="video-import-reduce-recogchips">
+                                                {parts.filter((p) => p.recog).map((p) => {
+                                                  const r = p.recog as MettaRecognition;
+                                                  const via = r.overlaps && r.overlaps.length ? r.overlaps[0][1] : "";
+                                                  // Unambiguous name: prefer a real vocab shape name, else the
+                                                  // box-cut name, else an overlap match; the color+index label
+                                                  // (gold_1) is ambiguous per-frame so it is never the identity.
+                                                  const vocab = (r.shapeName && r.shapeName !== "-") ? r.shapeName
+                                                    : r.boxName ? r.boxName
+                                                    : (via && r.overlaps && r.overlaps.length) ? `≈${r.overlaps[0][0]}`
+                                                    : "unnamed";
+                                                  const title = `${p.label || p.id} · ${vocab}${r.gid ? ` · ${r.gid}` : ""}${r.overlaps && r.overlaps.length ? ` · via ${r.overlaps.map((o) => `${o[0]}(${o[1]})`).join(", ")}` : ""}`;
+                                                  return (
+                                                    <span key={p.id} className={`video-import-reduce-recogchip${r.isNew ? " is-new" : " is-seen"}`} title={title}
+                                                      onClick={() => selectPart(p.id, false)} role="button" tabIndex={0}>
+                                                      <span className="video-import-reduce-recogdot" style={{ background: mettaColor(p.color) }} />
+                                                      <span className="video-import-reduce-recogname">{vocab}</span>
+                                                      {r.sigHash ? <span className="video-import-reduce-recogid" title={r.gid}>{p.color}·{r.sigHash}</span> : null}
+                                                      {r.isNew
+                                                        ? <span className="video-import-reduce-recogbadge new">NEW</span>
+                                                        : <span className="video-import-reduce-recogbadge seen">seen {r.seen ?? 1}</span>}
+                                                    </span>
+                                                  );
+                                                })}
+                                              </div>
+                                            </div>
+                                            <figcaption>canonical registry</figcaption>
+                                          </figure>
+                                        )}
                                         <figure className="video-import-reduce-stage is-treecol">
                                           <div className="video-import-reduce-grouptree">
                                             {bigGroups.length === 0

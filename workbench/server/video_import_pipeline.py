@@ -2786,6 +2786,9 @@ def run_reduce(
     stop_event: threading.Event | None = None,
     log: Callable[[str], None] | None = None,
     counts: dict[str, int] | None = None,
+    recognize_only: bool = False,
+    prolog_only: bool = False,
+    llm_only: bool = False,
 ) -> str:
     """Reduction PREPASS as a pooled server stage that uses the PARENT'S proven
     turtle code (turtle_prompt_lab): for every condition image it runs the parent
@@ -3067,7 +3070,7 @@ def run_reduce(
         src_path = entry.get("src") or (pool_dir / f"{idv}.jpg")
         expected_sym = [sym_dir / f"{idv}__{t['shots']}shot.metta" for t in tiers_meta]
         expected_png = [stages_dir / f"{idv}__t{t['shots']}__{k}.png" for t in tiers_meta for k in _REDUCE_STAGE_KEYS]
-        if (not nocache and not carry_mode and idv in manifest_rows
+        if (not nocache and not carry_mode and not prolog_only and idv in manifest_rows
                 and all(p.is_file() for p in expected_sym)
                 and all(p.is_file() for p in expected_png)):
             counts["done"] += 1
@@ -3078,7 +3081,9 @@ def run_reduce(
             with active:
                 src = Image.open(src_path).convert("RGB")
                 scene = entry.get("scene", cond in rp.SCENE_CONDS)
-                tiers = _tier_specs()
+                # prolog_only skips every LLM tier (no models required) and runs
+                # only the SWI-Prolog symbolic line + registry pass below.
+                tiers = [] if prolog_only else _tier_specs()
                 partner = partner_by_id.get(idv) if pair_mode else None
                 for ti, tier in enumerate(tiers):
                     _tms = time.monotonic()
@@ -3093,7 +3098,7 @@ def run_reduce(
                         tier["data"] = _extract_tier_with_retry(rp, src_path, tier, idv, scene, stop_event, emit)
                         tier["facts"] = rp._tier_facts(slug, tier)
                     tier["_ms"] = int((time.monotonic() - _tms) * 1000)
-                ref = tiers[0]["facts"]
+                ref = tiers[0]["facts"] if tiers else None
                 for tier in tiers[1:]:
                     tier["agree"] = rp.agreement(ref, tier["facts"])
                 rows: list[dict[str, Any]] = []
@@ -3138,7 +3143,9 @@ def run_reduce(
                 # --- Prolog line: the identical parts/groups derived by SWI-Prolog
                 # (perception in Python, grouping in swipl), no LLM. ARC flat-color
                 # frames only; complex frames auto-skip via the grid-size guard.
-                try:
+                # Skipped entirely in llm_only mode (the "(LLM)" reduce button).
+                if not llm_only:
+                  try:
                     import importlib  # noqa: PLC0415
                     _gvp = os.path.join(os.path.dirname(__file__), "generative_vision", "prolog")
                     if _gvp not in sys.path:
@@ -3148,6 +3155,15 @@ def run_reduce(
                     pr = _sa.extract_frame(str(src_path), slug, str(partner) if partner else None)
                     _pms = int((time.monotonic() - _pms) * 1000)
                     if pr["nparts"] > 0 and pr["cols"] <= 160 and pr["rows"] <= 160:
+                        # Recognize this frame's objects against the canonical
+                        # registry (READ-ONLY): every card shows registry shape
+                        # names + NEW/RECOGNIZED(seen N) + identity without bumping
+                        # any count. The once-per-sequence post-pass below is the
+                        # committer; per-frame recognition must never inflate counts.
+                        try:
+                            _sa.recognize_objects([pr], slug, str(_sa.memory_dir()))
+                        except Exception:  # noqa: BLE001
+                            pass
                         (sym_dir / f"{idv}__prolog.metta").write_text(pr["metta"], encoding="utf-8")
                         (sym_dir / f"{idv}__prolog.parts.json").write_text(json.dumps(pr["geom"]), encoding="utf-8")
                         rows.append({
@@ -3157,7 +3173,7 @@ def run_reduce(
                             "elapsedMs": _pms,
                             "agree": {"score": 1.0, "verdict": "ref"},
                         })
-                except Exception as perr:  # noqa: BLE001
+                  except Exception as perr:  # noqa: BLE001
                     emit(f"{_ts()} (prolog line skipped for {idv}: {perr})")
         except Exception as error:  # noqa: BLE001
             counts["failed"] += 1
@@ -3177,9 +3193,12 @@ def run_reduce(
         if carry_mode:
             _write_sequence_list()
         counts["done"] += 1
-        ag = rows[1]["agree"].get("verdict") if len(rows) > 1 else "ref"
-        carry_note = f" · seq {len(inv_order)}p/{len(inv_groups)}g" if carry_mode else ""
-        emit(f"{_ts()} ✦ {idv}: {rows[0]['nparts']}p / {rows[-1]['nparts']}p · agree {ag}{carry_note}")
+        if rows:
+            ag = rows[1]["agree"].get("verdict") if len(rows) > 1 else "ref"
+            carry_note = f" · seq {len(inv_order)}p/{len(inv_groups)}g" if carry_mode else ""
+            emit(f"{_ts()} ✦ {idv}: {rows[0]['nparts']}p / {rows[-1]['nparts']}p · agree {ag}{carry_note}")
+        else:
+            emit(f"{_ts()} ✦ {idv}: no symbolic parts (skipped)")
 
     if not entries:
         emit(f"{_ts()} no pool images in {base_rel}/pool (nothing to reduce)")
@@ -3203,7 +3222,7 @@ def run_reduce(
     # previous frame keeps its name/id), mirroring the LLM line's consolidated
     # names. This overwrites the per-frame __prolog.metta/.parts.json written by
     # reduce_one (which run pooled and can't thread sequential identity).
-    if pair_mode or carry_mode:
+    if (pair_mode or carry_mode or prolog_only) and not llm_only:
         try:
             import importlib  # noqa: PLC0415
             _gvp = os.path.join(os.path.dirname(__file__), "generative_vision", "prolog")
@@ -3224,12 +3243,16 @@ def run_reduce(
                 # extract_sequence PER SCENE so object identity / permanence is
                 # threaded within a scene and not bled across a cut. Grid games and
                 # continuous animation have no cuts -> one scene -> unchanged.
+                # This is the COMMITTER: one encounter = one scene, so seen counts
+                # accumulate per encounter (never per frame). recognize_only flips
+                # it to a non-mutating pass ("a mode that doesn't commit").
                 cuts = set(_ss.scene_cuts(paths))
                 seq: list = []
                 start = 0
                 for i in range(1, len(paths) + 1):
                     if i == len(paths) or i in cuts:
-                        seq.extend(_sa.extract_sequence(paths[start:i], sl, mem_dir=mem_dir))
+                        seq.extend(_sa.extract_sequence(
+                            paths[start:i], sl, mem_dir=mem_dir, write=not recognize_only))
                         start = i
                 for (idv, _sp), pr in zip(lst, seq):
                     if pr["nparts"] > 0 and pr["cols"] <= 160 and pr["rows"] <= 160:
@@ -3302,6 +3325,9 @@ def start_run(
     only_selected: bool = True,
     concurrency_override: int | None = None,
     set_id: str | None = None,
+    recognize_only: bool = False,
+    prolog_only: bool = False,
+    llm_only: bool = False,
 ) -> dict[str, Any]:
     """Start a background pipeline run for a workspace (one at a time)."""
     stage = stage or "describe"
@@ -3316,7 +3342,10 @@ def start_run(
 
     runner = _STAGE_RUNNERS[stage]
     # Only the reduce runner is image-set aware; other stages keep their signature.
-    extra: dict[str, Any] = {"set_id": set_id} if stage == "reduce" else {}
+    extra: dict[str, Any] = (
+        {"set_id": set_id, "recognize_only": recognize_only,
+         "prolog_only": prolog_only, "llm_only": llm_only}
+        if stage == "reduce" else {})
 
     def worker() -> None:
         try:

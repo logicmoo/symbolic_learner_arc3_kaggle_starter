@@ -53,6 +53,18 @@ remember(Key, Color, When, Id, Seen, New) :-
     ),
     format(atom(Id), 'gobj_~w_~w', [Color, Key]).
 
+% recognize-only: report the identity + accumulated count for an observed
+% (shape,color) WITHOUT minting a new identity or bumping any count. Seen is the
+% stored encounter count (0 when the object is unknown), and New = t means the
+% object is not yet in memory (it would be minted if committed), f means it was
+% recognized from a prior encounter. This is the non-mutating counterpart of
+% remember/6, used by the Recognition page's default recognize-only pass.
+recognize(Key, Color, Id, Seen, New) :-
+    ( known_object(Key, Color, _First, _Last, Seen0)
+    -> Seen = Seen0, New = f
+    ;  Seen = 0, New = t ),
+    format(atom(Id), 'gobj_~w_~w', [Color, Key]).
+
 % name of an observed shape key: the full shape, else any variant (a shrunk /
 % rotated / diagonal form) it matches, else '-'. shape/3 + variant/4 are the
 % colorless vocabulary consulted from shape_dir/shapes.pl (no identity).
@@ -87,6 +99,20 @@ run_memory :-
              format("place ~w ~w ~w~n", [Iid, Moves, Gid]) )),
     halt.
 run_memory :- halt(1).
+
+% recognize-only batch: like run_memory, but consults the store read-only. For
+% each sig/2 it prints  mem <GlobalId> <Key> <Color> <Seen> <t|f> <ShapeName>
+% exactly as run_memory does, but never asserts, bumps, or records placement, so
+% the attached identity DB is left byte-for-byte unchanged. If no db/1 is given
+% (the scope has no store yet) every object is reported unknown (Seen 0, New t).
+run_recognize :-
+    ( db(DB) -> db_attach(DB, []) ; true ),
+    forall(sig(Key, Color),
+           ( recognize(Key, Color, Id, Seen, New),
+             shape_name(Key, SName),
+             format("mem ~w ~w ~w ~w ~w ~w~n", [Id, Key, Color, Seen, New, SName]) )),
+    halt.
+run_recognize :- halt(1).
 
 % dump the attached identity store (known_object + known_placement) as
 % tab-delimited lines for the registry viewer. db(DB) selects which scope.

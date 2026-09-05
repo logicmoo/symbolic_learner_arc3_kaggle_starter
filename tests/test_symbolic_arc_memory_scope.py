@@ -57,3 +57,38 @@ def test_registry_snapshot_has_shape_vocabulary(tmp_path):
     assert snap["shapeCount"] > 500
     names = {s["name"] for s in snap["shapes"]}
     assert {"tetromino_O", "empty_box", "empty_rectangle"} <= names
+
+
+def _scope_seen(mem, char, **kw):
+    snap = sa.registry_snapshot(str(mem))
+    scope = sa.identity_scope(kw.get("game") or sa._game_of(char), kw.get("cross_game"))
+    ids = snap["scopes"].get(scope, {}).get("identities", [])
+    return ids[0]["seen"] if ids else 0
+
+
+def test_recognize_only_does_not_create_identities(tmp_path):
+    # A recognize-only pass against an empty scope must NOT mint anything.
+    fr = _frame()
+    sa.recognize_objects([fr], "ls20-saved_001", str(tmp_path))
+    assert _scope_seen(tmp_path, "ls20-saved_001") == 0
+    p = fr["geom"][0]
+    assert p.get("memNew") is True and p.get("memSeen") == 0
+    assert "(memory" in fr["metta"]
+
+
+def test_recognize_only_reports_prior_commit_without_bumping(tmp_path):
+    # Commit once (write=True), then recognize-only twice: the stored count is
+    # reported (seen 1, not new) and never incremented.
+    assert _seen(tmp_path, "ls20-saved_001") == 1
+    for _ in range(2):
+        fr = _frame()
+        sa.recognize_objects([fr], "ls20-saved_002", str(tmp_path))  # same game scope
+        p = fr["geom"][0]
+        assert p.get("memNew") is False and p.get("memSeen") == 1
+    assert _scope_seen(tmp_path, "ls20-saved_001") == 1  # store unchanged
+
+
+def test_commit_accumulates_across_encounters(tmp_path):
+    assert _seen(tmp_path, "ls20-saved_001") == 1
+    assert _seen(tmp_path, "ls20-saved_002") == 2
+    assert _seen(tmp_path, "ls20-saved_003") == 3

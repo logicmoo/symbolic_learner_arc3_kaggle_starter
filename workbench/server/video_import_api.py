@@ -812,6 +812,9 @@ async def pipeline_start(payload: dict[str, Any] = Body(...)) -> dict[str, Any]:
         only_selected=bool(payload.get("onlySelected", True)),
         concurrency_override=int(concurrency) if concurrency else None,
         set_id=(str(payload["set"]).strip() if payload.get("set") else None),
+        recognize_only=bool(payload.get("recognizeOnly", False)),
+        prolog_only=bool(payload.get("prologOnly", False)),
+        llm_only=bool(payload.get("llmOnly", False)),
     )
 
 
@@ -979,6 +982,9 @@ async def pipeline_ws(websocket: WebSocket) -> None:
                         only_selected=bool(message.get("onlySelected", True)),
                         concurrency_override=int(concurrency) if concurrency else None,
                         set_id=(str(message["set"]).strip() if message.get("set") else None),
+                        recognize_only=bool(message.get("recognizeOnly", False)),
+                        prolog_only=bool(message.get("prologOnly", False)),
+                        llm_only=bool(message.get("llmOnly", False)),
                     )
                     state["last_key"] = None
                 elif command == "stop":

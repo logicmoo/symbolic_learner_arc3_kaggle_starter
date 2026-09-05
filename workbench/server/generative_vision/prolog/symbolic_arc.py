@@ -821,13 +821,17 @@ _CONF_FLOOR = 0.1
 def extract_sequence(frame_paths: list[str], char: str,
                      horizon: int = DEFAULT_OCCLUSION_HORIZON,
                      mem_dir: str | None = None, game: str | None = None,
-                     cross_game: bool | None = None) -> list[dict]:
+                     cross_game: bool | None = None, write: bool = True) -> list[dict]:
     """Run extract_frame over an ordered list of frames, threading part/object
     identity forward (stable ids, gap re-identified across occlusions), resolve
     object permanence across the whole sequence, and (when mem_dir is given)
     recognize each distinct object against the persistent object memory. Identity is
     scoped per GAME (shared across its levels); pass cross_game=True (or set
-    $OBJECT_MEMORY_ACROSS_GAMES) to share one identity store across all games."""
+    $OBJECT_MEMORY_ACROSS_GAMES) to share one identity store across all games.
+
+    write=True (default) commits recognitions to the registry (mint/bump/placement);
+    write=False is a recognize-only pass that annotates matches but leaves the
+    store unchanged."""
     carry: dict = {"prev_info": None, "prev_pid": {}, "name_state": {},
                    "prev_group": {}, "group_state": 0, "recent": {}}
     out: list[dict] = []
@@ -836,7 +840,7 @@ def extract_sequence(frame_paths: list[str], char: str,
         out.append(extract_frame(fp, char, partner, carry=carry))
     _classify_permanence(out, char, horizon)
     if mem_dir:
-        remember_objects(out, char, mem_dir, game=game, cross_game=cross_game)
+        remember_objects(out, char, mem_dir, game=game, cross_game=cross_game, write=write)
     return out
 
 
@@ -1409,15 +1413,24 @@ def registry_snapshot(mem_dir: str | None = None, include_turtles: bool = True) 
 
 
 def remember_objects(results: list[dict], char: str, mem_dir: str,
-                     game: str | None = None, cross_game: bool | None = None) -> None:
+                     game: str | None = None, cross_game: bool | None = None,
+                     write: bool = True) -> None:
     """Recognize every distinct object of this sequence against the persistent
     object memory rooted at `mem_dir`, which holds:
       <mem_dir>/shape_dir/shapes.pl                    -- colorless shape vocabulary
       <mem_dir>/identity_dir/<scope>/identities.db.pl  -- persistent identities
     Identity is scoped per GAME by default (scope = game derived from `char`, shared
     across that game's levels); cross_game=True (or $OBJECT_MEMORY_ACROSS_GAMES)
-    uses a single `_all_games_` scope. Mints an identity the first time a (shape,
-    color) is seen and bumps its encounter count on recognition."""
+    uses a single `_all_games_` scope.
+
+    When `write` is True this mints an identity the first time a (shape, color) is
+    seen and bumps its encounter count on recognition (and records placement).
+    When `write` is False it is a pure RECOGNIZE-ONLY pass: the store is consulted
+    read-only (no mint, no count bump, no placement write), each object is
+    annotated with its stored `memSeen` (0 when unknown) and `memNew` (True when
+    not yet in memory), and the identity DB is left unchanged. This is the default
+    the Recognition page uses to match a frame against the registry without
+    modifying it; the explicit commit action re-runs with write=True."""
     # distinct (sig, color) across the whole sequence = the objects of this
     # encounter; plus each tracked instance's move-to-move (x, y, shape) trajectory
     # (glyph-scale objects only), so placement is remembered and a later similar
@@ -1451,12 +1464,20 @@ def remember_objects(results: list[dict], char: str, mem_dir: str,
     shape_lib = base / "shape_dir" / "shapes.pl"
     identity_db = identity_db_for(str(base), game or _game_of(char), cross_game)
     write_shape_library(str(shape_lib))
-    facts = [f"db('{identity_db.as_posix()}').", f"when_stamp('{char}')."]
+    # write=True attaches (creating if needed) and commits; recognize-only attaches
+    # read-only and, if the scope has no store yet, omits db/1 so nothing is created
+    # and every object is reported unknown (seen 0 / new).
+    facts: list[str] = []
+    if write or identity_db.is_file():
+        facts.append(f"db('{identity_db.as_posix()}').")
+    facts.append(f"when_stamp('{char}').")
     for (sg, col) in distinct:
         facts.append(f"sig('{sg}', '{col}').")
-    for iid, pts in traj.items():
-        points = ";".join(f"{x},{y},{s}" for (x, y, s) in pts)
-        facts.append(f"place('{char}', '{iid}', '{traj_gid[iid]}', '{points}', {len(pts)}).")
+    if write:
+        for iid, pts in traj.items():
+            points = ";".join(f"{x},{y},{s}" for (x, y, s) in pts)
+            facts.append(f"place('{char}', '{iid}', '{traj_gid[iid]}', '{points}', {len(pts)}).")
+    goal = "run_memory" if write else "run_recognize"
     info: dict[tuple[str, str], tuple[str, int, bool, str]] = {}
     with tempfile.NamedTemporaryFile("w", suffix=".pl", delete=False, encoding="utf-8") as f:
         f.write("\n".join(facts) + "\n")
@@ -1465,7 +1486,7 @@ def remember_objects(results: list[dict], char: str, mem_dir: str,
         out = subprocess.run(
             ["swipl", "-q", "-g",
              f"consult('{MEM_PL.as_posix()}'), consult('{shape_lib.as_posix()}'), "
-             f"consult('{Path(fpath).as_posix()}'), run_memory",
+             f"consult('{Path(fpath).as_posix()}'), {goal}",
              "-t", "halt"],
             capture_output=True, text=True, timeout=60).stdout
     except Exception:  # noqa: BLE001
@@ -1484,17 +1505,18 @@ def remember_objects(results: list[dict], char: str, mem_dir: str,
     # last seen: how many moves it was tracked, how many distinct shapes it took
     # (morph), and whether a shape recurred (a meaningful A..B..A return).
     place_lines: dict[int, list[str]] = {}
-    for iid, pts in traj.items():
-        sigs = [s for (_x, _y, s) in pts]
-        nshapes = len(set(sigs))
-        fi = traj_last.get(iid, len(results) - 1)
-        gid = traj_gid.get(iid, "")
-        acc = place_lines.setdefault(fi, [])
-        acc.append(f"(placement {char} {iid} {gid} (moves {len(pts)}) (shapes {nshapes}))")
-        if nshapes > 1:
-            acc.append(f"(morph {char} {iid} {nshapes})")
-        if _shape_recurred(sigs):
-            acc.append(f"(shape-recurs {char} {iid})")
+    if write:
+        for iid, pts in traj.items():
+            sigs = [s for (_x, _y, s) in pts]
+            nshapes = len(set(sigs))
+            fi = traj_last.get(iid, len(results) - 1)
+            gid = traj_gid.get(iid, "")
+            acc = place_lines.setdefault(fi, [])
+            acc.append(f"(placement {char} {iid} {gid} (moves {len(pts)}) (shapes {nshapes}))")
+            if nshapes > 1:
+                acc.append(f"(morph {char} {iid} {nshapes})")
+            if _shape_recurred(sigs):
+                acc.append(f"(shape-recurs {char} {iid})")
     for fi, r in enumerate(results):
         lines: list[str] = []
         for p in r.get("geom", []):
@@ -1548,6 +1570,15 @@ def remember_objects(results: list[dict], char: str, mem_dir: str,
         lines.extend(place_lines.get(fi, []))
         if lines:
             r["metta"] = r["metta"].rstrip("\n") + "\n" + "\n".join(lines) + "\n"
+
+
+def recognize_objects(results: list[dict], char: str, mem_dir: str,
+                      game: str | None = None, cross_game: bool | None = None) -> None:
+    """Recognize-only pass: match every object of this sequence against the
+    persistent registry and annotate it (shapeName, memSeen, memNew, globalId,
+    overlaps + (memory/shape/overlaps ...) facts) WITHOUT modifying the store.
+    Thin wrapper over remember_objects(..., write=False)."""
+    remember_objects(results, char, mem_dir, game=game, cross_game=cross_game, write=False)
 
 
 def _classify_permanence(results: list[dict], char: str,

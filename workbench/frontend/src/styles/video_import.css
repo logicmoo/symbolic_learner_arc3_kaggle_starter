@@ -1374,6 +1374,24 @@
 .video-import-reduce-stage.is-treecol { width: 160px; }
 .video-import-reduce-stage.is-treecol .video-import-reduce-grouptree { width: 160px; height: 150px; max-height: 150px; overflow: auto; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); background: #0b0e12; padding: 5px 7px; box-sizing: border-box; }
 .video-import-reduce-treeempty { font-size: 10px; font-style: italic; opacity: 0.5; padding: 4px; }
+/* Canonical registry recognition strip on the prolog (symbolic) reduce row. */
+.video-import-reduce-stage.is-recog { width: 190px; }
+.video-import-reduce-recog { width: 190px; height: 150px; max-height: 150px; overflow: auto; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); background: #0b0e12; padding: 5px 7px; box-sizing: border-box; }
+.video-import-reduce-recoghdr { font-size: 9.5px; opacity: 0.75; margin-bottom: 4px; line-height: 1.3; }
+.video-import-reduce-recoghdr b { color: #cdd6e4; }
+.video-import-reduce-recogmode { display: inline-block; margin-left: 4px; font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.03em; opacity: 0.6; }
+.video-import-reduce-recogchips { display: flex; flex-direction: column; gap: 3px; }
+.video-import-reduce-recogchip { display: flex; align-items: center; gap: 4px; font-size: 10px; padding: 2px 5px; border-radius: 5px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); cursor: pointer; }
+.video-import-reduce-recogchip:hover { background: rgba(255,255,255,0.09); }
+.video-import-reduce-recogchip.is-new { border-color: rgba(124,156,255,0.4); }
+.video-import-reduce-recogchip.is-seen { border-color: rgba(139,212,80,0.35); }
+.video-import-reduce-recogdot { width: 9px; height: 9px; border-radius: 2px; flex: 0 0 auto; border: 1px solid rgba(0,0,0,0.4); }
+.video-import-reduce-recogname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.video-import-reduce-recogid { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 8.5px; opacity: 0.7; padding: 1px 4px; border-radius: 4px; background: rgba(255,255,255,0.05); flex: 0 0 auto; }
+.video-import-reduce-recogbadge { font-size: 8.5px; font-weight: 800; letter-spacing: 0.03em; padding: 1px 5px; border-radius: 4px; flex: 0 0 auto; }
+.video-import-reduce-recogbadge.new { background: rgba(124,156,255,0.22); color: #9db4ff; }
+.video-import-reduce-recogbadge.seen { background: rgba(139,212,80,0.2); color: #8bd450; }
+.video-import-reduce-recogvia { font-size: 8.5px; opacity: 0.6; }
 .video-import-reduce-enginetag { font-size: 10px; font-weight: 800; letter-spacing: 0.04em; padding: 2px 8px; border-radius: 5px 5px 0 0; display: inline-block; margin-bottom: 2px; }
 .video-import-reduce-enginetag.is-llm { background: rgba(124,156,255,0.18); color: #9db4ff; }
 .video-import-reduce-enginetag.is-prolog { background: rgba(139,212,80,0.18); color: #8bd450; }
