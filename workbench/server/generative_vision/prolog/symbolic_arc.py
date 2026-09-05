@@ -372,7 +372,7 @@ def _motion(info_a: dict, info_b: dict):
             key = (best["cx"] - fx, best["cy"] - fy)
         else:
             key = (dx, dy)
-        out[g] = {"d": (dx, dy), "tf": tf, "key": key}
+        out[g] = {"d": (dx, dy), "tf": tf, "key": key, "to": gb}
     return out, used
 
 
@@ -399,7 +399,8 @@ def _read_incoming_action(png_path: str) -> str:
         return ""
 
 
-def extract_frame(png_path: str, char: str, partner_path: str | None = None) -> dict:
+def extract_frame(png_path: str, char: str, partner_path: str | None = None,
+                  carry: dict | None = None) -> dict:
     idx, hexpal, cols, rows = decode_grid(png_path)
     labels, info = label_regions(idx)
     for gid, i in info.items():
@@ -468,13 +469,34 @@ def extract_frame(png_path: str, char: str, partner_path: str | None = None) -> 
     pid_of: dict[str, str] = {}
     raw_of: dict[str, str] = {}
     color_n: dict[str, int] = {}
+    cur_pid_by_gid: dict[int, str] = {}
+    # persistent per-color counter (carry) vs fresh per-frame (no carry).
+    name_state = carry["name_state"] if carry is not None else color_n
+    # carry identity forward: match THIS frame's regions back to the previous
+    # frame's, so a matched part keeps its name/id across steps (like the LLM
+    # line's consolidated names) instead of being renumbered every frame.
+    back_map: dict[int, str] = {}
+    if carry is not None and carry.get("prev_info"):
+        try:
+            bmres, _bu = _motion(carry["prev_info"], info)
+            for pg, mo in bmres.items():
+                cg = mo.get("to")
+                if cg is not None and pg in carry["prev_pid"]:
+                    back_map[cg] = carry["prev_pid"][pg]
+        except Exception:  # noqa: BLE001
+            back_map = {}
     for gid, i in order:
         rid = f"r{gid}"
-        cname = _color_name(i["hex"])
-        color_n[cname] = color_n.get(cname, 0) + 1
-        lbl = f"{cname}_{color_n[cname]}"
-        pid = f"part_{lbl}"
+        if gid in back_map:
+            pid = back_map[gid]
+            lbl = pid[5:] if pid.startswith("part_") else pid
+        else:
+            cname = _color_name(i["hex"])
+            name_state[cname] = name_state.get(cname, 0) + 1
+            lbl = f"{cname}_{name_state[cname]}"
+            pid = f"part_{lbl}"
         pid_of[rid] = pid
+        cur_pid_by_gid[gid] = pid
         # common fate first: parts that moved by the same vector are one object;
         # else the adjacency cluster; else a singleton.
         raw_of[pid] = move_group.get(rid) or obj.get(rid) or f"g{gid}"
@@ -482,13 +504,38 @@ def extract_frame(png_path: str, char: str, partner_path: str | None = None) -> 
         geom.append({"id": pid, "label": lbl, "color": i["hex"],
                      "partOf": "",
                      "turtle": region_turtle(i["cells"], cols, rows, i["hex"])})
-    # unify every group id (adjacency clusters + singletons) to obj_N, numbered
-    # in first-seen (big-first) order.
+    # unify every group id (adjacency clusters + singletons) to obj_N. With
+    # carry, a group whose members were mostly carried forward reuses the
+    # previous frame's obj id (stable object identity); otherwise a new
+    # persistent obj id is minted.
     raw_order: list[str] = []
     for g in raw_of.values():
         if g not in raw_order:
             raw_order.append(g)
-    gmap = {g: f"obj_{k}" for k, g in enumerate(raw_order, 1)}
+    if carry is not None:
+        from collections import Counter
+        prev_group = carry.get("prev_group") or {}
+        members: dict[str, list[str]] = {}
+        for pid, g in raw_of.items():
+            members.setdefault(g, []).append(pid)
+        used_obj: set = set()
+        gstate = int(carry.get("group_state") or 0)
+        gmap = {}
+        for g in raw_order:
+            votes = Counter(prev_group[pid] for pid in members.get(g, []) if pid in prev_group)
+            chosen = None
+            for oid, _c in votes.most_common():
+                if oid not in used_obj:
+                    chosen = oid
+                    break
+            if chosen is None:
+                gstate += 1
+                chosen = f"obj_{gstate}"
+            used_obj.add(chosen)
+            gmap[g] = chosen
+        carry["group_state"] = gstate
+    else:
+        gmap = {g: f"obj_{k}" for k, g in enumerate(raw_order, 1)}
     partof_all = {pid: gmap[g] for pid, g in raw_of.items()}
     for e in geom:
         e["partOf"] = partof_all[e["id"]]
@@ -530,9 +577,28 @@ def extract_frame(png_path: str, char: str, partner_path: str | None = None) -> 
             if _near(destx, desty, ax, ay):
                 mlines.append(f"(revealed {char} {mp} {hexc} {ax} {ay})")
     metta = "\n".join(mlines) + "\n"
+    # thread identity forward for the next frame in the sequence.
+    if carry is not None:
+        carry["prev_info"] = info
+        carry["prev_pid"] = cur_pid_by_gid
+        carry["prev_group"] = partof_all
     return {"metta": metta, "geom": geom, "nparts": len(info),
             "nrels": len(pof) + len(obj), "cols": cols, "rows": rows,
             "ngroups": len(groups), "induceMs": induce_ms}
+
+
+def extract_sequence(frame_paths: list[str], char: str) -> list[dict]:
+    """Run extract_frame over an ordered list of frames, threading part/object
+    identity forward: a region matched to the previous frame keeps its name/id,
+    so names stay stable across the sequence (like the LLM line's consolidated
+    names). Returns one result dict per frame."""
+    carry: dict = {"prev_info": None, "prev_pid": {}, "name_state": {},
+                   "prev_group": {}, "group_state": 0}
+    out: list[dict] = []
+    for k, fp in enumerate(frame_paths):
+        partner = frame_paths[k + 1] if k + 1 < len(frame_paths) else None
+        out.append(extract_frame(fp, char, partner, carry=carry))
+    return out
 
 
 def _pid_color(pid: str) -> str:

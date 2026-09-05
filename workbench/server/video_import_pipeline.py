@@ -3198,6 +3198,32 @@ def run_reduce(
     else:
         with ThreadPoolExecutor(max_workers=concurrency) as pool:
             list(pool.map(reduce_one, entries))
+    # Prolog sequence post-pass: re-run the Prolog line in frame ORDER so that
+    # part/object identity carries forward across steps (a region matched to the
+    # previous frame keeps its name/id), mirroring the LLM line's consolidated
+    # names. This overwrites the per-frame __prolog.metta/.parts.json written by
+    # reduce_one (which run pooled and can't thread sequential identity).
+    if pair_mode or carry_mode:
+        try:
+            import importlib  # noqa: PLC0415
+            _gvp = os.path.join(os.path.dirname(__file__), "generative_vision", "prolog")
+            if _gvp not in sys.path:
+                sys.path.insert(0, _gvp)
+            _sa = importlib.import_module("symbolic_arc")
+            groups: dict[str, list] = {}
+            for e in entries:
+                idv = e["id"]
+                sp = e.get("src") or (pool_dir / f"{idv}.jpg")
+                if os.path.isfile(str(sp)):
+                    groups.setdefault(e.get("slug", ""), []).append((idv, str(sp)))
+            for sl, lst in groups.items():
+                seq = _sa.extract_sequence([sp for _i, sp in lst], sl)
+                for (idv, _sp), pr in zip(lst, seq):
+                    if pr["nparts"] > 0 and pr["cols"] <= 160 and pr["rows"] <= 160:
+                        (sym_dir / f"{idv}__prolog.metta").write_text(pr["metta"], encoding="utf-8")
+                        (sym_dir / f"{idv}__prolog.parts.json").write_text(json.dumps(pr["geom"]), encoding="utf-8")
+        except Exception:  # noqa: BLE001
+            pass
     _write_manifest()
     if carry_mode:
         _write_sequence_list()
