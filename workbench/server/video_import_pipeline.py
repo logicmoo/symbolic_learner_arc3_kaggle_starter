@@ -3216,7 +3216,7 @@ def run_reduce(
                 sp = e.get("src") or (pool_dir / f"{idv}.jpg")
                 if os.path.isfile(str(sp)):
                     groups.setdefault(e.get("slug", ""), []).append((idv, str(sp)))
-            mem_db = str(root / "knowledge" / "object_memory.db.pl")
+            mem_db = _sa.memory_db_path()
             for sl, lst in groups.items():
                 seq = _sa.extract_sequence([sp for _i, sp in lst], sl, mem_db=mem_db)
                 for (idv, _sp), pr in zip(lst, seq):

@@ -1,0 +1,4 @@
+# Generated persistent memory (shapes are re-seeded deterministically; identities
+# are runtime state). Keep the directory + README, ignore the DB journal.
+*.db.pl
+*.db.pl.new

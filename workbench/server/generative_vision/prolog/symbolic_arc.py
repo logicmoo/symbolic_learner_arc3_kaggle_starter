@@ -18,6 +18,7 @@ from __future__ import annotations
 import json
 import hashlib
 import itertools
+import os
 import subprocess
 import tempfile
 import time
@@ -32,6 +33,32 @@ STRUCT4 = np.array([[0, 1, 0], [1, 1, 1], [0, 1, 0]])
 _HERE = Path(__file__).resolve().parent
 GROUP_PL = _HERE / "arc_group.pl"
 MEM_PL = _HERE / "object_memory.pl"
+
+
+def _repo_root() -> Path:
+    """Walk up to the repository root (dir holding .git / workbench)."""
+    p = _HERE
+    for _ in range(8):
+        if (p / ".git").exists() or (p / "workbench").is_dir():
+            return p
+        p = p.parent
+    return _HERE.parents[4]
+
+
+def memory_dir() -> Path:
+    """Canonical on-disk object-memory DATA DIRECTORY. Global across games and
+    sessions by default (so an object seen in one game/level can be recognized in
+    another); override with $OBJECT_MEMORY_DIR. Created on demand. The persistent
+    Prolog store lives here and is db_attach-ed (read) before every operation."""
+    env = os.environ.get("OBJECT_MEMORY_DIR")
+    d = Path(env) if env else (_repo_root() / "data" / "object_memory")
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def memory_db_path() -> str:
+    """Path to the persistent object-memory DB file inside the data directory."""
+    return str(memory_dir() / "object_memory.db.pl")
 
 
 def _shape_key(sig) -> str:
@@ -1058,6 +1085,18 @@ def _seed_shape_facts() -> list[str]:
             turtle = json.dumps(_poly_turtle(list(ck)), separators=(",", ":"))
             turtle = turtle.replace("\\", "\\\\").replace("'", "\\'")
             facts.append(f"shape('{key}', '{name}', '{turtle}').")
+            # shape-vocabulary variants (just shapes, no identity): the two shrinks
+            # and the 45-degree diagonal form map back to this -imino name, so a
+            # rescaled / diagonally-placed object is recognized as the same shape.
+            for kind, vcells in (("squared", _collapse_runs(ck)),
+                                 ("aspect", _aspect_cells(ck)),
+                                 ("diag45", _rot45(ck))):
+                if not vcells:
+                    continue
+                vkey = _shape_key((None, _canon_key(vcells)))
+                if vkey == key:
+                    continue  # variant coincides with the full shape; nothing to add
+                facts.append(f"variant('{vkey}', '{name}', '{kind}', '{key}').")
     _SEED_FACTS_CACHE = facts
     _SHAPE_DESCRIPTORS = descriptors
     return facts
