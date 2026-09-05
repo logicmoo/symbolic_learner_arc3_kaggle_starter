@@ -836,151 +836,135 @@ def _demo_live_ls20_sequence():
     NEW objects (first sighting) render blue, RECOGNIZED objects render green."""
     import json as _json
     import symbolic_arc as sa
-    setdir = _LS20_DIR
-    if not setdir.is_dir():
+    l1dir = _LS20_DIR
+    l2dir = _LS20_DIR.parent / "data-arc3_games-recordings-ls20-saved_002"
+    if not l1dir.is_dir():
         return {"id": "live-ls20", "group": "Live sequence (real data)",
                 "title": "Live ls20 recording — recognition over time", "panels": [],
                 "frames": [], "result": {"note": "ls20 recording set not found"}, "passed": False,
                 "description": "Plays the real recorded ls20 frames with live recognition; run a reduce first."}
-    mf_path = setdir / "manifest.json"
-    order = []
-    if mf_path.is_file():
-        try:
-            order = [it["id"] for it in _json.loads(mf_path.read_text(encoding="utf-8")).get("items", [])]
-        except (OSError, _json.JSONDecodeError):
-            order = []
-    if not order:
-        order = sorted(p.stem for p in setdir.glob("*.png"))
-    sym = setdir / "sym"
-    frames = []
+
+    frames: list = []
     geo_seen: dict = {}            # shape -> {variantKey: provenance}  (learners + how each was made)
     geo_exemplar: dict = {}        # shape -> ((w,h), colour) of its first raw form (the exemplar)
-    ind_seen: set = set()          # INDIVIDUALS: (shape, colour) objects learned
-    total_ind_recog = 0
-    first_ind_recog = first_geo_recog = None
-    for idv in order[:28]:
+    ind_seen: set = set()          # INDIVIDUALS: (shape, colour) objects learned — shared across levels
+
+    def _frame_order(setdir):
+        mf_path = setdir / "manifest.json"
+        order = []
+        if mf_path.is_file():
+            try:
+                order = [it["id"] for it in _json.loads(mf_path.read_text(encoding="utf-8")).get("items", [])]
+            except (OSError, _json.JSONDecodeError):
+                order = []
+        if not order:
+            order = sorted(p.stem for p in setdir.glob("*.png"))
+        return order
+
+    def _parts_for(setdir, idv, game):
+        """A frame's parts: use the committed Prolog part-graph if present, else
+        extract the frame fresh on the fly (level 2 has no committed graph)."""
         png = next(iter(setdir.glob(f"{idv}.png")), None)
         if not png:
-            continue
-        idx, hexpal, _c, _r = sa.decode_grid(str(png))
-        geo_new = geo_recog = ind_new = ind_recog = 0
-        roled: list = []
-        frame_geo: dict = {}       # shape -> {variantKey: rawform}  raw parts seen this frame
-        frame_ind: set = set()
-        pj = sym / f"{idv}__prolog.parts.json"
-        parts = []
+            return None, None, None
+        pj = setdir / "sym" / f"{idv}__prolog.parts.json"
         if pj.is_file():
             try:
                 parts = _json.loads(pj.read_text(encoding="utf-8"))
             except (OSError, _json.JSONDecodeError):
                 parts = []
-        bg_area = 0.33 * idx.shape[0] * idx.shape[1]   # skip background floods, not real objects
-        for p in parts:
-            off = p.get("off") or []
-            if not off or len(off) > bg_area:
+            idx, hexpal, _c, _r = sa.decode_grid(str(png))
+            return idx, hexpal, parts
+        try:
+            pr = sa.extract_frame(str(png), game)
+        except Exception:  # noqa: BLE001
+            pr = None
+        if not pr or pr.get("nparts", 0) <= 0 or pr.get("cols", 999) > 160 or pr.get("rows", 999) > 160:
+            return None, None, None
+        idx, hexpal, _c, _r = sa.decode_grid(str(png))
+        return idx, hexpal, pr.get("geom", [])
+
+    def _play_level(level_label, setdir, game, max_frames):
+        """Play one level's frames in order over the SHARED memory, appending an
+        animated scene per frame and returning per-level recognition stats."""
+        stats = {"frames": 0, "first_ind_recog": None, "first_geo_recog": None,
+                 "first_total": 0, "total_ind_recog": 0, "total_geo_recog": 0, "total_parts": 0}
+        for idv in _frame_order(setdir)[:max_frames]:
+            idx, hexpal, parts = _parts_for(setdir, idv, game)
+            if idx is None:
                 continue
-            geo = sa._identity_name(off) or ("shape_" + str(p.get("sig")))   # geometry
-            cname = sa._cname(p.get("color", ""))
-            ind = (geo, cname)                                               # individual
-            oxs = [c[0] for c in off]; oys = [c[1] for c in off]
-            w = max(oxs) - min(oxs) + 1; h = max(oys) - min(oys) + 1         # raw (pre-normalization) size
-            vk = (w, h, cname)                                               # distinct raw variant key
-            geo_known = geo in geo_seen        # recognized only if seen in a PRIOR frame
-            ind_known = ind in ind_seen
-            geo_recog += geo_known; geo_new += (not geo_known)
-            ind_recog += ind_known; ind_new += (not ind_known)
-            frame_geo.setdefault(geo, {})[vk] = ((w, h), cname)
-            frame_ind.add(ind)
-            # overlay coloured by INDIVIDUAL recognition: green recognized, blue new
-            cx, cy = p.get("cx", 0), p.get("cy", 0)
-            # place the blob by aligning its CENTROID (mean of offsets) to (cx, cy);
-            # the bbox midpoint used before shifted asymmetric shapes by 1-2 cells.
-            bx = int(round(cx - sum(oxs) / len(oxs)))
-            by = int(round(cy - sum(oys) / len(oys)))
-            role, col = ("regen", _GREEN) if ind_known else ("visible", _BLUE)
-            for (dx, dy) in off:
-                roled.append((bx + dx, by + dy, role, col))
-        before_obj, before_geo = len(ind_seen), len(geo_seen)   # known BEFORE learning this frame
-        for g, variants in frame_geo.items():   # learn AFTER scoring: accrue evidence + provenance
-            if g not in geo_exemplar:            # first raw form founds the shape (direct)
-                geo_exemplar[g] = next(iter(variants.values()))
-            dst = geo_seen.setdefault(g, {})
-            for vk, ((w, h), cname) in variants.items():
-                dst[vk] = _variant_prov(geo_exemplar[g], (w, h), cname)
-        ind_seen |= frame_ind
-        after_obj, after_geo = len(ind_seen), len(geo_seen)     # known AFTER learning this frame
-        if first_ind_recog is None:
-            first_ind_recog, first_geo_recog = ind_recog, geo_recog
-        total_ind_recog += ind_recog
-        direct = sum(1 for v in geo_seen.values() for pr in v.values() if pr == "direct")
-        made = sum(1 for v in geo_seen.values() for pr in v.values() if pr != "direct")
-        rows, cols = idx.shape[0], idx.shape[1]
-        base = [(x, y, "object", hexpal[int(idx[y, x])]) for y in range(rows) for x in range(cols)]
-        scene = _panel(
-            f"{idv} · this frame: {ind_recog} recognized, {ind_new} new "
-            f"· objects known {before_obj}→{after_obj}, shapes {before_geo}→{after_geo} "
-            f"· learners {direct} direct / {made} via filter",
-            base)
-        # Recognition map shown to the SIDE (not painted over the scene): green =
-        # recognized object, blue = new first sighting, rest dark.
-        scene["aux"] = _panel("recognition · green = recognized · blue = new",
-                              roled, ox=0, oy=0, w=cols, h=rows)
-        frames.append(scene)
+            geo_new = geo_recog = ind_new = ind_recog = frame_parts = 0
+            roled: list = []
+            frame_geo: dict = {}       # shape -> {variantKey: rawform}  raw parts seen this frame
+            frame_ind: set = set()
+            bg_area = 0.33 * idx.shape[0] * idx.shape[1]   # skip background floods, not real objects
+            for p in parts:
+                off = p.get("off") or []
+                if not off or len(off) > bg_area:
+                    continue
+                geo = sa._identity_name(off) or ("shape_" + str(p.get("sig")))   # geometry
+                cname = sa._cname(p.get("color", ""))
+                ind = (geo, cname)                                               # individual
+                oxs = [c[0] for c in off]; oys = [c[1] for c in off]
+                w = max(oxs) - min(oxs) + 1; h = max(oys) - min(oys) + 1         # raw (pre-normalization) size
+                vk = (w, h, cname)                                               # distinct raw variant key
+                geo_known = geo in geo_seen        # recognized only if seen in a PRIOR frame (any level)
+                ind_known = ind in ind_seen
+                frame_parts += 1
+                geo_recog += geo_known; geo_new += (not geo_known)
+                ind_recog += ind_known; ind_new += (not ind_known)
+                frame_geo.setdefault(geo, {})[vk] = ((w, h), cname)
+                frame_ind.add(ind)
+                # overlay coloured by INDIVIDUAL recognition: green recognized, blue new
+                cx, cy = p.get("cx", 0), p.get("cy", 0)
+                # place the blob by aligning its CENTROID (mean of offsets) to (cx, cy);
+                # the bbox midpoint used before shifted asymmetric shapes by 1-2 cells.
+                bx = int(round(cx - sum(oxs) / len(oxs)))
+                by = int(round(cy - sum(oys) / len(oys)))
+                role, col = ("regen", _GREEN) if ind_known else ("visible", _BLUE)
+                for (dx, dy) in off:
+                    roled.append((bx + dx, by + dy, role, col))
+            before_obj, before_geo = len(ind_seen), len(geo_seen)   # known BEFORE learning this frame
+            for g, variants in frame_geo.items():   # learn AFTER scoring: accrue evidence + provenance
+                if g not in geo_exemplar:            # first raw form founds the shape (direct)
+                    geo_exemplar[g] = next(iter(variants.values()))
+                dst = geo_seen.setdefault(g, {})
+                for vk, ((w, h), cname) in variants.items():
+                    dst[vk] = _variant_prov(geo_exemplar[g], (w, h), cname)
+            ind_seen.update(frame_ind)
+            after_obj, after_geo = len(ind_seen), len(geo_seen)     # known AFTER learning this frame
+            if stats["first_ind_recog"] is None:
+                stats["first_ind_recog"] = ind_recog
+                stats["first_geo_recog"] = geo_recog
+                stats["first_total"] = frame_parts
+            stats["frames"] += 1
+            stats["total_ind_recog"] += ind_recog
+            stats["total_geo_recog"] += geo_recog
+            stats["total_parts"] += frame_parts
+            direct = sum(1 for v in geo_seen.values() for pr in v.values() if pr == "direct")
+            made = sum(1 for v in geo_seen.values() for pr in v.values() if pr != "direct")
+            rows, cols = idx.shape[0], idx.shape[1]
+            base = [(x, y, "object", hexpal[int(idx[y, x])]) for y in range(rows) for x in range(cols)]
+            scene = _panel(
+                f"{level_label} · {idv} · this frame: {ind_recog} recognized, {ind_new} new "
+                f"· objects known {before_obj}→{after_obj}, shapes {before_geo}→{after_geo} "
+                f"· learners {direct} direct / {made} via filter",
+                base)
+            # Recognition map shown to the SIDE (not painted over the scene): green =
+            # recognized object, blue = new first sighting, rest dark.
+            scene["aux"] = _panel(f"{level_label} recognition · green = recognized · blue = new",
+                                  roled, ox=0, oy=0, w=cols, h=rows)
+            frames.append(scene)
+        return stats
 
-    # --- one frame of LEVEL 2 (same game): cross-level transfer. The geometry
-    # (and many individuals) learned in level 1 are recognized immediately, so
-    # the level-2 frame arrives mostly green rather than all-new. It has no
-    # committed part-graph, so extract it fresh on the fly.
-    lvl2_geo = lvl2_ind = lvl2_total = 0
-    lvl2dir = _LS20_DIR.parent / "data-arc3_games-recordings-ls20-saved_002"
-    if lvl2dir.is_dir():
-        l2png = next(iter(sorted(lvl2dir.glob("*.png"))), None)
-        if l2png is not None:
-            try:
-                pr = sa.extract_frame(str(l2png), "ls20-saved_002")
-            except Exception:  # noqa: BLE001
-                pr = None
-            if pr and pr.get("nparts", 0) > 0 and pr["cols"] <= 160 and pr["rows"] <= 160:
-                idx2, hexpal2, _c2, _r2 = sa.decode_grid(str(l2png))
-                roled2: list = []
-                l2_made = 0
-                bg2 = 0.33 * idx2.shape[0] * idx2.shape[1]
-                for p in pr.get("geom", []):
-                    off = p.get("off") or []
-                    if not off or len(off) > bg2:
-                        continue
-                    geo = sa._identity_name(off) or ("shape_" + str(p.get("sig")))
-                    cname = sa._cname(p.get("color", ""))
-                    ind = (geo, cname)
-                    geo_known = geo in geo_seen
-                    ind_known = ind in ind_seen
-                    lvl2_total += 1
-                    lvl2_geo += geo_known
-                    lvl2_ind += ind_known
-                    cx, cy = p.get("cx", 0), p.get("cy", 0)
-                    oxs = [c[0] for c in off]; oys = [c[1] for c in off]
-                    w = max(oxs) - min(oxs) + 1; h = max(oys) - min(oys) + 1
-                    if geo_known and _variant_prov(geo_exemplar.get(geo, ((w, h), cname)), (w, h), cname) != "direct":
-                        l2_made += 1                        # recognized only via the normalization filter
-                    bx = int(round(cx - sum(oxs) / len(oxs)))
-                    by = int(round(cy - sum(oys) / len(oys)))
-                    role, col = ("regen", _GREEN) if ind_known else ("visible", _BLUE)
-                    for (dx, dy) in off:
-                        roled2.append((bx + dx, by + dy, role, col))
-                r2, c2 = idx2.shape[0], idx2.shape[1]
-                base2 = [(x, y, "object", hexpal2[int(idx2[y, x])])
-                         for y in range(r2) for x in range(c2)]
-                l2scene = _panel(
-                    f"LEVEL 2 (saved_002) frame 1 · objects {lvl2_ind}/{lvl2_total} recognized "
-                    f"· shapes {lvl2_geo}/{lvl2_total} ({l2_made} via filter) — carried over from level 1",
-                    base2)
-                l2scene["aux"] = _panel("recognition · green = recognized · blue = new",
-                                        roled2, ox=0, oy=0, w=c2, h=r2)
-                frames.append(l2scene)
+    # Play BOTH levels of the same game as full sequences over one shared memory.
+    # Level 1 (saved_001) starts from EMPTY and learns; level 2 (saved_002) is then
+    # played on the same memory, so its shapes are recognized on arrival.
+    l1 = _play_level("LEVEL 1 (saved_001)", l1dir, "ls20-saved_001", 28)
+    l2 = _play_level("LEVEL 2 (saved_002)", l2dir, "ls20-saved_002", 34) if l2dir.is_dir() else {
+        "frames": 0, "first_ind_recog": None, "first_geo_recog": 0, "first_total": 0,
+        "total_ind_recog": 0, "total_geo_recog": 0, "total_parts": 0}
 
-    # demonstrates learning: the first frame recognizes nothing (empty memory),
-    # geometry (fewer, shared) saturates faster than individuals (colour variety),
-    # and the level-2 frame is mostly recognized on arrival (cross-level transfer).
     # per-shape learner evidence + provenance: how many raw variants (identities)
     # instantiate each shape, and how many only exist because a normalization
     # filter (scale/rotation/colour) collapsed a raw variant onto the shape.
@@ -988,28 +972,44 @@ def _demo_live_ls20_sequence():
     top_shape = (f"{ev[0][1]} ({ev[0][0]} learners)" if ev else "none")
     direct_all = sum(1 for v in geo_seen.values() for pr in v.values() if pr == "direct")
     made_all = sum(1 for v in geo_seen.values() for pr in v.values() if pr != "direct")
-    passed = bool(frames) and first_ind_recog == 0 and total_ind_recog > 0
+    # Cross-level transfer: on the FIRST level-2 frame the shapes learned in level 1
+    # are recognized on arrival (level 1 frame 0 recognized nothing from empty memory).
+    l2_arrival_geo = l2.get("first_geo_recog") or 0
+    l2_arrival_total = l2.get("first_total") or 0
+    # Demonstrates learning across two levels: level 1 frame 0 recognizes nothing,
+    # geometry (fewer, shared) saturates faster than individuals (colour variety),
+    # and level 2 arrives already recognizing the level-1 vocabulary.
+    passed = (bool(frames)
+              and l1.get("first_ind_recog") == 0          # level 1 started from empty memory
+              and l1.get("total_ind_recog", 0) > 0        # learned within level 1
+              and l2.get("frames", 0) > 0                 # level 2 played as its own sequence
+              and l2_arrival_geo > 0)                     # shapes carried over on arrival (transfer)
     return {"id": "live-ls20", "group": "Live sequence (real data)",
             "title": "Live ls20 recording — recognition builds up, transfers to level 2", "panels": frames[:1],
             "frames": frames,
-            "result": {"frames": len(frames), "frame0_objects_recognized": first_ind_recog,
-                       "frame0_shapes_recognized": first_geo_recog,
+            "result": {"frames": len(frames),
+                       "frame0_objects_recognized": l1.get("first_ind_recog"),
+                       "frame0_shapes_recognized": l1.get("first_geo_recog"),
                        "objects_learned": len(ind_seen), "shapes_learned": len(geo_seen),
                        "max_learners_per_shape": (ev[0][0] if ev else 0),
                        "most_learned_shape": top_shape,
                        "learners_direct": direct_all,
                        "learners_via_filter": made_all,
-                       "level2_objects_recognized": f"{lvl2_ind}/{lvl2_total}",
-                       "level2_shapes_recognized": f"{lvl2_geo}/{lvl2_total}"},
+                       "level1_frames": l1.get("frames", 0),
+                       "level2_frames": l2.get("frames", 0),
+                       "level2_arrival_shapes": f"{l2_arrival_geo}/{l2_arrival_total}",
+                       "level2_objects_recognized": f"{l2.get('total_ind_recog', 0)}/{l2.get('total_parts', 0)}",
+                       "level2_shapes_recognized": f"{l2.get('total_geo_recog', 0)}/{l2.get('total_parts', 0)}"},
             "passed": passed,
-            "description": "The real recorded ls20 frames played from an EMPTY memory. Two things are learned "
-                           "separately: GEOMETRY (colour-free shape vocabulary, shared) and INDIVIDUALS "
-                           "(shape+colour, per game). Each shape accrues evidence = the raw variants that use "
-                           "it, and every learner keeps its provenance: 'direct' (matched as-is) vs. made by "
-                           "the normalization filter (scale/rotation/colour) that collapsed a raw variant onto "
-                           "the shape. Frame 0 recognizes nothing; geometry saturates faster than individuals; "
-                           "the final LEVEL 2 frame is mostly recognized on arrival (cross-level transfer). "
-                           "Overlay: green = recognized, blue = first sighting."}
+            "description": "The real recorded ls20 frames played from an EMPTY memory across TWO levels of the "
+                           "same game. LEVEL 1 (saved_001) starts blank: frame 0 recognizes nothing, then GEOMETRY "
+                           "(colour-free shape vocabulary, shared) and INDIVIDUALS (shape+colour, per game) are "
+                           "learned separately — each shape accruing evidence = the raw variants that use it, and "
+                           "every learner keeping its provenance: 'direct' (matched as-is) vs. made by the "
+                           "normalization filter (scale/rotation/colour). LEVEL 2 (saved_002) is then played as "
+                           "its OWN full sequence on the SAME memory: the level-1 shapes are recognized on arrival "
+                           "(cross-level transfer) and level 2 keeps learning anything genuinely new. Overlay: "
+                           "green = recognized, blue = first sighting."}
 
 
 _DEMOS = [
@@ -1047,6 +1047,7 @@ _DEMO_CATALOG = [
      "resultKeys": ["frames", "frame0_objects_recognized", "frame0_shapes_recognized",
                     "objects_learned", "shapes_learned", "max_learners_per_shape",
                     "most_learned_shape", "learners_direct", "learners_via_filter",
+                    "level1_frames", "level2_frames", "level2_arrival_shapes",
                     "level2_objects_recognized", "level2_shapes_recognized"]},
     {"id": "occlusion-t", "group": "Occlusion completion", "title": "T tetromino — stem occluded",
      "resultKeys": ["recognized", "scale", "orientation", "residual", "confidence", "faithful"]},
