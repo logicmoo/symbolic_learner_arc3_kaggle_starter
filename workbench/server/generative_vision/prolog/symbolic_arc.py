@@ -613,7 +613,7 @@ def extract_frame(png_path: str, char: str, partner_path: str | None = None,
             rec.pop(pid, None)
         for pid in list(rec):
             rec[pid]["age"] = rec[pid].get("age", 0) + 1
-            if rec[pid]["age"] > 4:
+            if rec[pid]["age"] > _ID_RETENTION:
                 rec.pop(pid, None)
         carried = set(cur_pid_by_gid.values())
         for pgid, ppid in (carry.get("prev_pid") or {}).items():
@@ -631,28 +631,41 @@ def extract_frame(png_path: str, char: str, partner_path: str | None = None,
             "interacted": interacted_pairs}
 
 
-def extract_sequence(frame_paths: list[str], char: str) -> list[dict]:
+# Object-permanence tuning. DEFAULT_OCCLUSION_HORIZON is how many following
+# frames a vanished part may stay missing before it is committed to a verdict
+# (occluded if it returns within the horizon, else gone/consumed). It is the
+# baked backend default; the UI can preview other horizons live. _ID_RETENTION
+# is how long an identity is kept for gap re-identification -- kept generously
+# larger than the default so the live slider can look further than the bake.
+DEFAULT_OCCLUSION_HORIZON = 4
+_ID_RETENTION = 30
+
+
+def extract_sequence(frame_paths: list[str], char: str,
+                     horizon: int = DEFAULT_OCCLUSION_HORIZON) -> list[dict]:
     """Run extract_frame over an ordered list of frames, threading part/object
-    identity forward (stable ids, gap re-identified across short occlusions), then
+    identity forward (stable ids, gap re-identified across occlusions), then
     resolve object permanence across the whole sequence: a vanished part is only
-    classified once later frames reveal whether it came back."""
+    classified once later frames reveal whether it came back (within horizon)."""
     carry: dict = {"prev_info": None, "prev_pid": {}, "name_state": {},
                    "prev_group": {}, "group_state": 0, "recent": {}}
     out: list[dict] = []
     for k, fp in enumerate(frame_paths):
         partner = frame_paths[k + 1] if k + 1 < len(frame_paths) else None
         out.append(extract_frame(fp, char, partner, carry=carry))
-    _classify_permanence(out, char)
+    _classify_permanence(out, char, horizon)
     return out
 
 
-def _classify_permanence(results: list[dict], char: str) -> None:
-    """Resolve each per-transition disappearance/appearance using the full
-    sequence (the truth is only knowable after processing later frames):
-      disappeared -> occluded (id returns later) | transformed (co-located new
-                     shape) | consumed_or_taken (mover on its cell, never returns)
-                     | gone (unexplained, never returns)
-      appeared    -> no-longer-occluded (id seen earlier) | transformed (skip) | new
+def _classify_permanence(results: list[dict], char: str,
+                         horizon: int = DEFAULT_OCCLUSION_HORIZON) -> None:
+    """Resolve each per-transition disappearance/appearance using the sequence
+    (the truth is only knowable after processing later frames, up to `horizon`
+    frames of patience; horizon <= 0 waits for the whole sequence):
+      disappeared -> occluded (id returns within horizon) | transformed
+                     (co-located new shape) | consumed_or_taken (mover on its
+                     cell, never returns) | gone (unexplained, never returns)
+      appeared    -> no-longer-occluded (id seen within horizon back) | transformed | new
     and appends the resolved facts to each frame's metta."""
     n = len(results)
     cells: list[dict] = []
@@ -663,15 +676,27 @@ def _classify_permanence(results: list[dict], char: str) -> None:
         idsets.append(set(m.keys()))
 
     def after(pid: str, i: int) -> bool:
-        return any(pid in idsets[j] for j in range(i + 1, n))
+        hi = n if horizon <= 0 else min(n, i + 1 + horizon)
+        return any(pid in idsets[j] for j in range(i + 1, hi))
 
     def before(pid: str, i: int) -> bool:
-        return any(pid in idsets[j] for j in range(0, i))
+        lo = 0 if horizon <= 0 else max(0, i - horizon)
+        return any(pid in idsets[j] for j in range(lo, i))
 
     for i in range(n - 1):
         disappeared = idsets[i] - idsets[i + 1]
         appeared = idsets[i + 1] - idsets[i]
         inter_targets = {t for (_m, t) in results[i].get("interacted", [])}
+        # confidence = fraction of the horizon window we actually got to observe.
+        # A "gone" is only as trustworthy as how many later frames we watched
+        # without a return (forward); a "new" as how many prior frames we watched
+        # without it existing (backward). Observed verdicts (occluded / back) = 1.
+        rem_fwd = (n - 1) - (i + 1)
+        req_fwd = horizon if horizon > 0 else rem_fwd
+        conf_fwd = round(min(req_fwd, rem_fwd) / req_fwd, 2) if req_fwd > 0 else 0.0
+        rem_bwd = i + 1
+        req_bwd = horizon if horizon > 0 else rem_bwd
+        conf_bwd = round(min(req_bwd, rem_bwd) / req_bwd, 2) if req_bwd > 0 else 0.0
         # transformed: pair a vanishing part (that never returns) with a co-located
         # appearing part (never seen before) -> same thing changed form.
         used_app: set = set()
@@ -693,27 +718,28 @@ def _classify_permanence(results: list[dict], char: str) -> None:
                         best = y
             if best is not None:
                 used_app.add(best)
-                trans.append((x, best))
-        trans_from = {x for x, _y in trans}
+                trans.append((x, best, best_d or 0))
+        trans_from = {x for x, _y, _d in trans}
         lines: list[str] = []
-        for x, y in trans:
-            lines.append(f"(transformed {char} {x} {y})")
+        for x, y, d in trans:
+            conf_t = round(max(0.5, 1.0 - (d ** 0.5) / 3.0), 2)
+            lines.append(f"(transformed {char} {x} {y} {conf_t})")
         for x in disappeared:
             if x in trans_from:
                 continue
             if after(x, i):
-                lines.append(f"(occluded {char} {x})")
+                lines.append(f"(occluded {char} {x} 1.0)")
             elif x in inter_targets:
-                lines.append(f"(consumed_or_taken {char} {x})")
+                lines.append(f"(consumed_or_taken {char} {x} {conf_fwd})")
             else:
-                lines.append(f"(gone {char} {x})")
+                lines.append(f"(gone {char} {x} {conf_fwd})")
         for y in appeared:
             if y in used_app:
                 continue
             if before(y, i + 1):
-                lines.append(f"(no-longer-occluded {char} {y})")
+                lines.append(f"(no-longer-occluded {char} {y} 1.0)")
             else:
-                lines.append(f"(new {char} {y})")
+                lines.append(f"(new {char} {y} {conf_bwd})")
         if lines:
             results[i]["metta"] = results[i]["metta"].rstrip("\n") + "\n" + "\n".join(lines) + "\n"
 

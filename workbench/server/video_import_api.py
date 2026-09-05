@@ -2406,9 +2406,16 @@ def _flat_set_manifest(root: Path, set_id: str) -> dict[str, Any]:
 
     sequence_rules = _parse_rules(d / "sequence_rules.metta")
     sequence_rules_llm = _parse_rules(d / "sequence_rules_llm.metta")
+    # object-permanence default horizon (frames) baked into the metta; the UI
+    # slider previews other values live and initializes from this.
+    try:
+        from generative_vision.prolog import symbolic_arc as _sa_mod  # noqa: PLC0415
+        occlusion_horizon = int(getattr(_sa_mod, "DEFAULT_OCCLUSION_HORIZON", 4))
+    except Exception:  # noqa: BLE001
+        occlusion_horizon = 4
     return {"tiers": tiers, "count": len(items), "items": items, "set": set_id,
             "sequenceParts": sequence_parts, "sequenceRules": sequence_rules,
-            "sequenceRulesLlm": sequence_rules_llm}
+            "sequenceRulesLlm": sequence_rules_llm, "occlusionHorizon": occlusion_horizon}
 
 
 @router.get("/image-sets")

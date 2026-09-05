@@ -1346,6 +1346,7 @@
 .video-import-reduce-induction.is-llm { background: rgba(199,139,255,0.06); border-color: rgba(199,139,255,0.3); }
 .video-import-reduce-induction.is-llm .video-import-reduce-indlabel { color: #c78bff; }
 .video-import-reduce-indlabel { font-size: 11px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #7c9cff; }
+.video-import-reduce-indstat { font-weight: 600; letter-spacing: 0.02em; text-transform: none; color: #9aa0aa; cursor: help; }
 .video-import-reduce-indbody { min-width: 0; }
 .video-import-reduce-indflow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .video-import-reduce-indframe { margin: 0; display: flex; flex-direction: column; gap: 2px; align-items: center; }

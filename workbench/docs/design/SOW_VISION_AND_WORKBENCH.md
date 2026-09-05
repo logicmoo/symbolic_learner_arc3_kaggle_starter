@@ -1,0 +1,115 @@
+# Statement of Work: MeTTaSymbolicLearnerWorkbench and its Vision Subsystem
+
+[Back to repository README](../../../README.md)
+
+This document frames what the workbench is as a Statement of Work (SoW), at two
+levels: the overall program (the workbench as a neurosymbolic experiment desktop)
+and the vision subsystem (the ARC recognition / perception / sequence-induction
+pipeline). It is a descriptive SoW of work already delivered, suitable for reuse
+in proposals and RFP responses that require statistical reporting.
+
+---
+
+## 1. Program Level: MeTTaSymbolicLearnerWorkbench
+
+### Objective
+Deliver a filesystem-backed *neurosymbolic experiment desktop* where every
+artifact of a learning system is a first-class, versioned, inspectable resource
+that a human and an AI can co-edit and execute: goals, plans, workflows,
+operations, datatypes and representations, source (prompts / Prolog / MeTTa /
+Python), models and backends, atomspaces, runs / executions / events / states /
+logs, policies, and benchmarks.
+
+### Scope of Work
+- A React/Vite workbench over a FastAPI backend, organized as five navigation
+  groups: WORKSPACE, CAPABILITIES, KNOWLEDGE, RUNTIME, SYSTEM.
+- Hierarchical artifact editors: a specification parent, concrete alternatives
+  beneath it, a preferred/default selector, persistent tabs, dirty markers,
+  split comparison, rich per-artifact panels, raw MeTTa/JSON editing, tests,
+  history, benchmarks, diff, logs, and a playground/run surface.
+- Three independent bidirectional relationship graphs, never inferred from one
+  another: `implements`/`implementedBy` (classification), `inheritsFrom`/
+  `inheritedBy` (property inheritance with borrow/lend permissions), and
+  `dependsOn`/`dependedOnBy` (effective enabled state). Abstract vs concrete
+  status is *derived* from the current draft, resolved inheritance, and
+  family-specific requirements, and is reversible.
+- A lifecycle-first filesystem layout: `design/<kind>/` specs, `runtime/<kind>/`
+  runs/events/states, `knowledge/data|artifacts/`, and `policies/`.
+- All surfaces are backed by real filesystem/backend resources (no mocks).
+- An OpenAI-compatible model relay (EmuLLM) that routes chat/completion requests
+  to interchangeable model backends and to connected headless CLI worker agents
+  by model masks, capability aliases, and a resolution-order routing DSL.
+
+### Deliverables
+The running application, the resource schemas and filesystem conventions, the
+backend API contract, the family of rich editors, and the model-routing layer.
+
+---
+
+## 2. Vision Level: Neurosymbolic Perception and Sequence Induction
+
+### Objective
+Turn a stream of ARC game frames into a *symbolic, probabilistic world model*:
+objects, their identities over time, and the events and rules that explain change
+— produced by two independent, directly comparable perception lines so their
+agreement is itself a measurable signal.
+
+### Scope of Work
+
+1. **Dual perception, one schema.**
+   - An LLM multimodal extractor.
+   - A fully LLM-free symbolic recognizer: PNG decode to exact color grid,
+     connected-component color regions, pixel topology (adjacency / enclosure),
+     SWI-Prolog grouping, and emission of a MeTTa part-graph plus per-part turtle
+     geometry. Both lines emit the identical schema so they can be diffed; the
+     symbolic line runs roughly two orders of magnitude faster.
+
+2. **Identity over time.**
+   - Common-fate grouping under rigid D4 motion (translation plus flips and
+     rotations): parts sharing a rigid transform are one object even while
+     rotating.
+   - Carry-forward naming so a matched part keeps its id/label across steps.
+   - Gap re-identification: a returning region reclaims its identity across short
+     occlusions, so identity survives a vanish-then-return.
+
+3. **Event ontology with object permanence.** A single ontology, resolved across
+   the whole sequence because a disappearance is only knowable once later frames
+   provide evidence:
+   `moved`, `transformed(X -> Y)`, `interacted(M, X)`, `occluded` (returns
+   later, still there), `no-longer-occluded` (a seen-before part is visible
+   again), `consumed_or_taken` (under a mover, never returns; picked up or eaten,
+   unknown which), `gone` (no mover, never returns), `new`.
+
+4. **Provenance.** Every imported image records how and where it came from in a
+   provenance sidecar, surfaced per frame and baked into the symbolic text as
+   `(transition frame_i + LEFT = frame_{i+1})` using authoritative ARC action
+   labels (ACTION1..7 -> UP/DOWN/LEFT/RIGHT/SPACE/CLICK/UNDO).
+
+5. **Statistical reporting.**
+   - A tunable **occlusion horizon** (how many later frames of patience before a
+     vanish is committed), with a baked backend default and a live UI override.
+   - Per-event **confidence**: observed verdicts (`moved`, `occluded`,
+     `no-longer-occluded`, `interacted`) are certain; `gone`/`consumed_or_taken`
+     carry the forward evidence fraction (how much of the horizon window was
+     actually observed without a return); `new` carries the backward evidence
+     fraction; `transformed` carries a co-location pairing confidence. Confidence
+     starts uncertain and firms toward 100% as evidence accumulates.
+   - Confidence is written into the MeTTa facts (machine-readable, probabilistic
+     symbolic output) and summarized per row in the UI (event count, mean
+     confidence, count of still-provisional verdicts).
+
+6. **Rule induction.** Support-ranked candidate rules (for example, "X moved onto
+   Y then Y disappears") induced across the whole sequence, from either the
+   Prolog parts or the LLM parts using the same source-agnostic inducer.
+
+### Methodology
+Perception in Python, grouping and inference in Prolog, symbolic representation
+in MeTTa, and the LLM used only where it adds value and always cross-checked
+against the deterministic line.
+
+### Key Differentiators (statistical-reporting focus)
+- Probabilistic symbolic facts with explicit, evidence-based confidence.
+- A transparent, revisable belief model: verdicts are provisional and only
+  resolved once subsequent frames are processed.
+- Two independent estimators (symbolic vs LLM) whose concordance is a measurable
+  statistic in its own right.

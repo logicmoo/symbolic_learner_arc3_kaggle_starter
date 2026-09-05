@@ -451,39 +451,53 @@ function parseMettaParts(text: string): { parts: MettaPart[]; nrels: number; gro
 //   / consumed_or_taken / gone / new.
 type IndEvent = {
   moved: Array<{ name: string; dx: number; dy: number; tf?: string }>;
-  transformed: Array<{ from: string; to: string }>;
+  transformed: Array<{ from: string; to: string; conf: number }>;
   interacted: Array<{ mover: string; target: string }>;
-  occluded: string[];
-  noLongerOccluded: string[];
-  consumedOrTaken: string[];
-  gone: string[];
-  appeared: string[];
+  occluded: Array<{ name: string; conf: number }>;
+  noLongerOccluded: Array<{ name: string; conf: number }>;
+  consumedOrTaken: Array<{ name: string; conf: number }>;
+  gone: Array<{ name: string; conf: number }>;
+  appeared: Array<{ name: string; conf: number }>;
 };
 type Induction = IndEvent & { action?: string; induceMs?: number };
 function emptyIndEvent(): IndEvent {
   return { moved: [], transformed: [], interacted: [], occluded: [], noLongerOccluded: [], consumedOrTaken: [], gone: [], appeared: [] };
 }
+// Aggregate confidence stats over an induction row's resolved (permanence)
+// events, for the statistical report line: count, mean confidence, how many are
+// still provisional (confidence < 100%).
+function indStats(ev: IndEvent): { n: number; mean: number; provisional: number } {
+  const cs = [
+    ...ev.transformed.map((e) => e.conf), ...ev.occluded.map((e) => e.conf), ...ev.noLongerOccluded.map((e) => e.conf),
+    ...ev.consumedOrTaken.map((e) => e.conf), ...ev.gone.map((e) => e.conf), ...ev.appeared.map((e) => e.conf),
+  ];
+  const n = cs.length;
+  const mean = n ? cs.reduce((a, b) => a + b, 0) / n : 1;
+  const provisional = cs.filter((c) => c < 0.999).length;
+  return { n, mean, provisional };
+}
 // Parse the resolved induction facts the Prolog line emits into a frame's
-// *__prolog.metta. Falls back to the legacy disappeared/appeared vocabulary for
-// older data. The 2nd token (workspace slug) is skipped.
+// *__prolog.metta, including the baked confidence. Falls back to the legacy
+// vocabulary (confidence 1) for older data. The 2nd token (slug) is skipped.
 function parseInduction(text: string): Induction {
   const ind: Induction = emptyIndEvent();
   if (!text) return ind;
+  const cf = (v: string | undefined): number => { const n = v == null ? 1 : parseFloat(v); return Number.isFinite(n) ? n : 1; };
   for (const raw of text.split("\n")) {
     const s = raw.trim();
     let m: RegExpMatchArray | null;
     if ((m = s.match(/^;\s*induce-ms\s+(\d+)/))) ind.induceMs = +m[1];
     else if ((m = s.match(/^\(transition\s+\S+\s+\S+\s+(\S+)\s+\S+\)/))) ind.action = m[1];
     else if ((m = s.match(/^\(moved\s+\S+\s+(\S+)\s+(-?\d+)\s+(-?\d+)\s+(\S+)\)/))) ind.moved.push({ name: m[1], dx: +m[2], dy: +m[3], tf: m[4] });
-    else if ((m = s.match(/^\(transformed\s+\S+\s+(\S+)\s+(\S+)\)/))) ind.transformed.push({ from: m[1], to: m[2] });
+    else if ((m = s.match(/^\(transformed\s+\S+\s+(\S+)\s+(\S+)(?:\s+([\d.]+))?\)/))) ind.transformed.push({ from: m[1], to: m[2], conf: cf(m[3]) });
     else if ((m = s.match(/^\(interacted\s+\S+\s+(\S+)\s+(\S+)\)/))) ind.interacted.push({ mover: m[1], target: m[2] });
-    else if ((m = s.match(/^\(occluded\s+\S+\s+(\S+)\)/))) ind.occluded.push(m[1]);
-    else if ((m = s.match(/^\(no-longer-occluded\s+\S+\s+(\S+)\)/))) ind.noLongerOccluded.push(m[1]);
-    else if ((m = s.match(/^\(consumed_or_taken\s+\S+\s+(\S+)\)/))) ind.consumedOrTaken.push(m[1]);
-    else if ((m = s.match(/^\(gone\s+\S+\s+(\S+)\)/))) ind.gone.push(m[1]);
-    else if ((m = s.match(/^\(new\s+\S+\s+(\S+)\)/))) ind.appeared.push(m[1]);
-    else if ((m = s.match(/^\(disappeared\s+\S+\s+(\S+)\)/))) ind.gone.push(m[1]);
-    else if ((m = s.match(/^\(appeared\s+\S+\s+(\S+)\s+-?\d+\s+-?\d+\)/))) ind.appeared.push(m[1]);
+    else if ((m = s.match(/^\(occluded\s+\S+\s+(\S+)(?:\s+([\d.]+))?\)/))) ind.occluded.push({ name: m[1], conf: cf(m[2]) });
+    else if ((m = s.match(/^\(no-longer-occluded\s+\S+\s+(\S+)(?:\s+([\d.]+))?\)/))) ind.noLongerOccluded.push({ name: m[1], conf: cf(m[2]) });
+    else if ((m = s.match(/^\(consumed_or_taken\s+\S+\s+(\S+)(?:\s+([\d.]+))?\)/))) ind.consumedOrTaken.push({ name: m[1], conf: cf(m[2]) });
+    else if ((m = s.match(/^\(gone\s+\S+\s+(\S+)(?:\s+([\d.]+))?\)/))) ind.gone.push({ name: m[1], conf: cf(m[2]) });
+    else if ((m = s.match(/^\(new\s+\S+\s+(\S+)(?:\s+([\d.]+))?\)/))) ind.appeared.push({ name: m[1], conf: cf(m[2]) });
+    else if ((m = s.match(/^\(disappeared\s+\S+\s+(\S+)\)/))) ind.gone.push({ name: m[1], conf: 1 });
+    else if ((m = s.match(/^\(appeared\s+\S+\s+(\S+)\s+-?\d+\s+-?\d+\)/))) ind.appeared.push({ name: m[1], conf: 1 });
   }
   return ind;
 }
@@ -506,63 +520,58 @@ function turtleCentroid(t: any): [number, number] | null {
   if (!xs.length) return null;
   return [xs.reduce((a, b) => a + b, 0) / xs.length, ys.reduce((a, b) => a + b, 0) / ys.length];
 }
-// Sequence-aware induction over the LLM parts (identity = the LLM's own stable
-// label). Classifies the transition i -> i+1 with the SAME object-permanence
-// ontology as the Prolog line, resolved across the whole sequence: a label that
-// vanishes but is seen later is occluded (not gone); its return is
-// no-longer-occluded; a label under a mover that never returns is
-// consumed_or_taken; a co-located vanish+appear is a transform.
-function induceLlmSequence(framesParts: Array<any[] | undefined>, i: number, moveMin = 8, near = 90): IndEvent {
-  const ev = emptyIndEvent();
-  const n = framesParts.length;
-  const A = framesParts[i] || []; const B = framesParts[i + 1] || [];
-  const cent = (parts: any[]) => { const m = new Map<string, [number, number]>(); for (const p of parts || []) { const c = turtleCentroid(p.turtle); if (c) m.set(p.label || p.id, c); } return m; };
-  const ca = cent(A); const cb = cent(B);
-  const aIds = new Set(ca.keys()); const bIds = new Set(cb.keys());
-  const present = (id: string, from: number, to: number) => {
-    for (let j = Math.max(0, from); j <= Math.min(n - 1, to); j++) {
-      const fp = framesParts[j];
-      if (fp && fp.some((p: any) => (p.label || p.id) === id)) return true;
-    }
-    return false;
-  };
-  ca.forEach((cA, id) => {
-    if (!bIds.has(id)) return;
-    const cB = cb.get(id)!; const dx = Math.round(cB[0] - cA[0]); const dy = Math.round(cB[1] - cA[1]);
-    if (Math.abs(dx) >= moveMin || Math.abs(dy) >= moveMin) ev.moved.push({ name: id, dx, dy });
-  });
-  const disappeared = [...aIds].filter((id) => !bIds.has(id));
-  const appeared = [...bIds].filter((id) => !aIds.has(id));
-  const movers = ev.moved.map((mv) => ({ id: mv.name, d: cb.get(mv.name) })).filter((m) => m.d) as Array<{ id: string; d: [number, number] }>;
-  for (const x of disappeared) {
-    const dc = ca.get(x)!;
-    for (const mv of movers) { if (Math.abs(mv.d[0] - dc[0]) <= near && Math.abs(mv.d[1] - dc[1]) <= near) ev.interacted.push({ mover: mv.id, target: x }); }
-  }
-  const interTargets = new Set(ev.interacted.map((x) => x.target));
+// Shared object-permanence classifier over an ordered sequence of per-frame
+// identity->cell maps, parameterized by the occlusion HORIZON (how many frames
+// of patience before a vanish is committed; <=0 = the whole sequence). Used by
+// BOTH induction rows so the live horizon slider re-resolves them identically.
+type FrameMap = Map<string, [number, number]>;
+function classifyPerm(frames: FrameMap[], i: number, interactedTargets: Set<string>, horizon: number, near: number) {
+  const n = frames.length;
+  const A = frames[i] || new Map(); const B = frames[i + 1] || new Map();
+  const within = horizon > 0 ? horizon : n;
+  const after = (id: string) => { const hi = Math.min(n, i + 1 + within); for (let j = i + 1; j < hi; j++) { if (frames[j] && frames[j].has(id)) return true; } return false; };
+  const before = (id: string) => { const lo = Math.max(0, i + 1 - within); for (let j = lo; j <= i; j++) { if (frames[j] && frames[j].has(id)) return true; } return false; };
+  // confidence = fraction of the horizon window actually observed (forward for
+  // gone/consumed, backward for new); observed verdicts are certain (1).
+  const remFwd = (n - 1) - (i + 1); const reqFwd = horizon > 0 ? horizon : remFwd;
+  const confFwd = reqFwd > 0 ? Math.min(1, Math.min(reqFwd, remFwd) / reqFwd) : 0;
+  const remBwd = i + 1; const reqBwd = horizon > 0 ? horizon : remBwd;
+  const confBwd = reqBwd > 0 ? Math.min(1, Math.min(reqBwd, remBwd) / reqBwd) : 0;
+  const disappeared = [...A.keys()].filter((id) => !B.has(id));
+  const appeared = [...B.keys()].filter((id) => !A.has(id));
+  const out = { occluded: [] as Array<{ name: string; conf: number }>, noLongerOccluded: [] as Array<{ name: string; conf: number }>, consumedOrTaken: [] as Array<{ name: string; conf: number }>, gone: [] as Array<{ name: string; conf: number }>, appeared: [] as Array<{ name: string; conf: number }>, transformed: [] as Array<{ from: string; to: string; conf: number }> };
   const usedApp = new Set<string>();
   for (const x of disappeared) {
-    if (present(x, i + 1, n - 1)) continue;
-    const xc = ca.get(x)!; let best: string | null = null; let bd = Infinity;
-    for (const y of appeared) {
-      if (usedApp.has(y) || present(y, 0, i - 1)) continue;
-      const yc = cb.get(y)!; const d = (xc[0] - yc[0]) ** 2 + (xc[1] - yc[1]) ** 2;
-      if (d <= near * near && d < bd) { bd = d; best = y; }
-    }
-    if (best) { usedApp.add(best); ev.transformed.push({ from: x, to: best }); }
+    if (after(x)) continue;
+    const xc = A.get(x)!; let best: string | null = null; let bd = Infinity;
+    for (const y of appeared) { if (usedApp.has(y) || before(y)) continue; const yc = B.get(y)!; const d = (xc[0] - yc[0]) ** 2 + (xc[1] - yc[1]) ** 2; if (d <= near * near && d < bd) { bd = d; best = y; } }
+    if (best) { usedApp.add(best); out.transformed.push({ from: x, to: best, conf: Math.max(0.5, 1 - Math.sqrt(bd) / near) }); }
   }
-  const transFrom = new Set(ev.transformed.map((t) => t.from));
+  const transFrom = new Set(out.transformed.map((t) => t.from));
   for (const x of disappeared) {
     if (transFrom.has(x)) continue;
-    if (present(x, i + 1, n - 1)) ev.occluded.push(x);
-    else if (interTargets.has(x)) ev.consumedOrTaken.push(x);
-    else ev.gone.push(x);
+    if (after(x)) out.occluded.push({ name: x, conf: 1 });
+    else if (interactedTargets.has(x)) out.consumedOrTaken.push({ name: x, conf: confFwd });
+    else out.gone.push({ name: x, conf: confFwd });
   }
   for (const y of appeared) {
     if (usedApp.has(y)) continue;
-    if (present(y, 0, i - 1)) ev.noLongerOccluded.push(y);
-    else ev.appeared.push(y);
+    if (before(y)) out.noLongerOccluded.push({ name: y, conf: 1 });
+    else out.appeared.push({ name: y, conf: confBwd });
   }
-  return ev;
+  return out;
+}
+// moved + interacted for the LLM line (centroid based); permanence is then
+// resolved by the shared classifyPerm using the LLM's stable labels.
+function llmMovedInteracted(frames: FrameMap[], i: number, moveMin = 8, near = 90) {
+  const A = frames[i] || new Map(); const B = frames[i + 1] || new Map();
+  const moved: Array<{ name: string; dx: number; dy: number; tf?: string }> = [];
+  A.forEach((cA, id) => { const cB = B.get(id); if (cB) { const dx = Math.round(cB[0] - cA[0]); const dy = Math.round(cB[1] - cA[1]); if (Math.abs(dx) >= moveMin || Math.abs(dy) >= moveMin) moved.push({ name: id, dx, dy }); } });
+  const disappeared = [...A.keys()].filter((id) => !B.has(id));
+  const movers = moved.map((m) => ({ id: m.name, d: B.get(m.name) })).filter((m) => m.d) as Array<{ id: string; d: [number, number] }>;
+  const interacted: Array<{ mover: string; target: string }> = [];
+  for (const x of disappeared) { const dc = A.get(x)!; for (const mv of movers) { if (Math.abs(mv.d[0] - dc[0]) <= near && Math.abs(mv.d[1] - dc[1]) <= near) interacted.push({ mover: mv.id, target: x }); } }
+  return { moved, interacted };
 }
 // Render a normalized turtle program (from a part's parts.json) as SVG shapes in
 // the 0..1000 frame — the same look as the part map, for a single part.
@@ -3051,6 +3060,27 @@ export function VideoImportPage({
   const [reduceRowView, setReduceRowView] = useState<ReduceRowView>(() => {
     try { return (window.localStorage.getItem("videoImport.reduceRowView") as ReduceRowView) || "groups"; } catch { return "groups"; }
   });
+  // Object-permanence "occlusion horizon" (frames): how many later frames a
+  // vanished part may stay missing before it is committed (occluded within the
+  // horizon, else gone). 0 = wait for the whole sequence. Initialized from the
+  // backend default (manifest.occlusionHorizon) but overridable live for preview.
+  const [occlusionHorizon, setOcclusionHorizon] = useState<number>(() => {
+    try { const v = window.localStorage.getItem("videoImport.occlusionHorizon"); return v == null ? 4 : Math.max(0, parseInt(v, 10) || 0); } catch { return 4; }
+  });
+  useEffect(() => {
+    try { window.localStorage.setItem("videoImport.occlusionHorizon", String(occlusionHorizon)); } catch { /* ignore */ }
+  }, [occlusionHorizon]);
+  // Adopt the backend default horizon once, unless the user already chose one.
+  const horizonSyncedRef = useRef(false);
+  useEffect(() => {
+    if (horizonSyncedRef.current) return;
+    const def = recognitionReduce && typeof (recognitionReduce as any).occlusionHorizon === "number" ? (recognitionReduce as any).occlusionHorizon : null;
+    if (def == null) return;
+    let stored: string | null = null;
+    try { stored = window.localStorage.getItem("videoImport.occlusionHorizon"); } catch { stored = null; }
+    if (stored == null) setOcclusionHorizon(Math.max(0, def));
+    horizonSyncedRef.current = true;
+  }, [recognitionReduce]);
   // Collapse the Recognition setup block (description + stage rows) so the
   // Extractions table is the focus; defaults minimized.
   const [recogHeadCollapsed, setRecogHeadCollapsed] = useState<boolean>(() => {
@@ -6555,17 +6585,35 @@ export function VideoImportPage({
             const expandAll = () => setCollapsedReduceChars(new Set());
             const reducedCount = list.filter((it: any) => (it.rows || []).length > 0).length;
             const reduceRunning = pipelineRunStatus === "running" && pipelineCounts.stage === "reduce";
-            // Ordered LLM parts per frame, so the LLM induction row can resolve
-            // object permanence across the whole sequence (identity = LLM label).
-            // undefined = still loading; [] = no LLM line for that frame.
-            const llmFrames: Array<any[] | undefined> = list.map((it: any) => {
+            // Ordered per-frame identity->cell maps for BOTH lines, so the
+            // induction rows can resolve object permanence across the whole
+            // sequence at the chosen horizon (identity = LLM label / Prolog id).
+            // undefined element = that frame's parts not loaded yet.
+            const partsRelOf = (it: any, kind: "prolog" | "llm"): string | null => {
               const rows = it.rows || [];
-              const row = rows.find((r: any) => r.kind !== "prolog" && r.kind !== "oneshot") || rows.find((r: any) => r.kind !== "prolog");
-              if (!row) return [];
-              const rel = (row.mettaPath || `data/recognition_reduce/sym/${String(row.metta || "").split("/").pop()}`).replace(/\.metta$/, ".parts.json");
+              const row = kind === "prolog"
+                ? rows.find((r: any) => r.kind === "prolog")
+                : (rows.find((r: any) => r.kind !== "prolog" && r.kind !== "oneshot") || rows.find((r: any) => r.kind !== "prolog"));
+              if (!row) return null;
+              return (row.mettaPath || `data/recognition_reduce/sym/${String(row.metta || "").split("/").pop()}`).replace(/\.metta$/, ".parts.json");
+            };
+            const buildMaps = (kind: "prolog" | "llm"): Array<FrameMap | undefined> => list.map((it: any) => {
+              const rel = partsRelOf(it, kind);
+              if (!rel) return new Map();
               const pd = reduceParts[rel];
-              return Array.isArray(pd) ? pd : undefined;
+              if (!Array.isArray(pd)) return undefined;
+              const m: FrameMap = new Map();
+              for (const p of pd) {
+                const id = p.label || p.id; if (!id) continue;
+                if (kind === "prolog" && typeof p.cx === "number" && typeof p.cy === "number") m.set(id, [p.cx, p.cy]);
+                else { const c = turtleCentroid(p.turtle); if (c) m.set(id, c); }
+              }
+              return m;
             });
+            const prologMaps = buildMaps("prolog");
+            const llmMaps = buildMaps("llm");
+            const prologReady = prologMaps.every((f) => f instanceof Map);
+            const llmReadyAll = llmMaps.every((f) => f instanceof Map);
             return (
               <div className="video-import-reduce">
                 {!recogHeadCollapsed && <h3 className="video-import-recognition-subhead">All images · {reducedCount} of {recognitionReduce.items.length} reduced</h3>}
@@ -6600,6 +6648,12 @@ export function VideoImportPage({
                       <option value="groups">PartOf groups (tree)</option>
                       <option value="graph">Symbolic graph</option>
                     </select>
+                  </label>
+                  <label className="video-import-imageset-selector" title="How many later frames a vanished part may stay missing before it is committed to a verdict. Higher = more patient (fewer false 'gone'); 0 = wait for the whole sequence. Confidence of a 'gone/consumed' verdict = the fraction of this window actually observed.">
+                    <span>occlusion horizon</span>
+                    <input type="number" min={0} max={30} step={1} value={occlusionHorizon}
+                      onChange={(e) => setOcclusionHorizon(Math.max(0, Math.min(30, parseInt(e.target.value, 10) || 0)))}
+                      style={{ width: "3.4em" }} />
                   </label>
                   <button type="button" className="video-import-reduce-foldbtn" onClick={collapseAll}>Collapse all</button>
                   <button type="button" className="video-import-reduce-foldbtn" onClick={expandAll}>Expand all</button>
@@ -6775,9 +6829,13 @@ export function VideoImportPage({
                                   const actTitle = nextItem.action || "";
                                   const renderRow = (rowKey: string, label: string, cls: string, ev: IndEvent | null, loading: boolean, actLabel: string, fromText: boolean) => {
                                     const nfacts = ev ? (ev.moved.length + ev.transformed.length + ev.interacted.length + ev.occluded.length + ev.noLongerOccluded.length + ev.consumedOrTaken.length + ev.gone.length + ev.appeared.length) : 0;
+                                    const st = ev ? indStats(ev) : { n: 0, mean: 1, provisional: 0 };
+                                    const pct = (c: number) => `${Math.round(c * 100)}%`;
                                     return (
                                       <div className={`video-import-reduce-induction ${cls}`} key={rowKey}>
-                                        <div className="video-import-reduce-indlabel">{label}</div>
+                                        <div className="video-import-reduce-indlabel">{label}
+                                          {!loading && st.n > 0 ? <span className="video-import-reduce-indstat" title={`${st.n} resolved events · mean confidence ${pct(st.mean)}${st.provisional ? ` · ${st.provisional} still provisional (not enough look-ahead yet)` : ""}`}> · conf {pct(st.mean)}{st.provisional ? ` · ${st.provisional} provisional` : ""}</span> : null}
+                                        </div>
                                         <div className="video-import-reduce-indbody">
                                           <div className="video-import-reduce-indflow">
                                             <figure className="video-import-reduce-indframe">
@@ -6794,13 +6852,13 @@ export function VideoImportPage({
                                                 : nfacts === 0 ? <span className="video-import-reduce-indempty">no change induced</span> : (
                                                 <>
                                                   {ev!.moved.map((f, i) => <span key={"m" + i} className="video-import-reduce-indchip is-moved">{f.name} moved ({f.dx},{f.dy}){f.tf && f.tf !== "identity" ? " · " + f.tf : ""}</span>)}
-                                                  {ev!.transformed.map((f, i) => <span key={"t" + i} className="video-import-reduce-indchip is-transformed">{f.from} → {f.to} transformed</span>)}
+                                                  {ev!.transformed.map((f, i) => <span key={"t" + i} className="video-import-reduce-indchip is-transformed">{f.from} → {f.to} transformed ({pct(f.conf)})</span>)}
                                                   {ev!.interacted.map((f, i) => <span key={"x" + i} className="video-import-reduce-indchip is-interacted">{f.mover} → {f.target}</span>)}
-                                                  {ev!.occluded.map((f, i) => <span key={"o" + i} className="video-import-reduce-indchip is-occluded" title="vanished but returns later — still there, just hidden">{f} occluded</span>)}
-                                                  {ev!.noLongerOccluded.map((f, i) => <span key={"n" + i} className="video-import-reduce-indchip is-revealed" title="a previously-seen part is visible again">{f} back</span>)}
-                                                  {ev!.consumedOrTaken.map((f, i) => <span key={"c" + i} className="video-import-reduce-indchip is-consumed" title="was under a mover and never returns — picked up or eaten (unknown which)">{f} consumed/taken</span>)}
-                                                  {ev!.gone.map((f, i) => <span key={"g" + i} className="video-import-reduce-indchip is-gone" title="vanished with no mover and never returns">{f} gone</span>)}
-                                                  {ev!.appeared.map((f, i) => <span key={"a" + i} className="video-import-reduce-indchip is-new" title="appeared, never seen before">{f} new</span>)}
+                                                  {ev!.occluded.map((f, i) => <span key={"o" + i} className="video-import-reduce-indchip is-occluded" title="vanished but returns later — still there, just hidden">{f.name} occluded ({pct(f.conf)})</span>)}
+                                                  {ev!.noLongerOccluded.map((f, i) => <span key={"n" + i} className="video-import-reduce-indchip is-revealed" title="a previously-seen part is visible again">{f.name} back ({pct(f.conf)})</span>)}
+                                                  {ev!.consumedOrTaken.map((f, i) => <span key={"c" + i} className="video-import-reduce-indchip is-consumed" title="was under a mover and never returns — picked up or eaten (unknown which)">{f.name} consumed/taken ({pct(f.conf)})</span>)}
+                                                  {ev!.gone.map((f, i) => <span key={"g" + i} className="video-import-reduce-indchip is-gone" title="vanished with no mover and never returns">{f.name} gone ({pct(f.conf)})</span>)}
+                                                  {ev!.appeared.map((f, i) => <span key={"a" + i} className="video-import-reduce-indchip is-new" title="appeared, never seen before">{f.name} new ({pct(f.conf)})</span>)}
                                                 </>
                                               )}
                                             </div>
@@ -6809,18 +6867,31 @@ export function VideoImportPage({
                                       </div>
                                     );
                                   };
-                                  // Prolog Induction · Prolog Parts — resolved facts parsed from __prolog.metta.
+                                  // Prolog Induction · Prolog Parts — moved/interacted from the
+                                  // metta; permanence resolved live at the chosen horizon from the
+                                  // stable id timeline (prolog parts.json cells).
                                   const prologRow = tiers.find((r: any) => r.kind === "prolog");
                                   if (prologRow) {
                                     const pRel = prologRow.mettaPath || `data/recognition_reduce/sym/${String(prologRow.metta || "").split("/").pop()}`;
                                     const p = parseInduction(reduceMetta[pRel] || "");
-                                    inductionEls.push(renderRow("induction-prolog", `Prolog Induction · Prolog Parts${p.induceMs != null ? ` · ${p.induceMs} ms` : ""}`, "is-prolog", p, reduceMetta[pRel] === undefined, p.action || manifestActLabel, !!p.action));
+                                    const mapsReady = prologReady && (prologMaps[idx] instanceof Map) && (prologMaps[idx + 1] instanceof Map);
+                                    const perm = mapsReady ? classifyPerm(prologMaps as FrameMap[], idx, new Set(p.interacted.map((x) => x.target)), occlusionHorizon, 3) : null;
+                                    const pev: IndEvent = perm
+                                      ? { moved: p.moved, interacted: p.interacted, transformed: perm.transformed, occluded: perm.occluded, noLongerOccluded: perm.noLongerOccluded, consumedOrTaken: perm.consumedOrTaken, gone: perm.gone, appeared: perm.appeared }
+                                      : p;
+                                    const loadingP = reduceMetta[pRel] === undefined || !mapsReady;
+                                    inductionEls.push(renderRow("induction-prolog", `Prolog Induction · Prolog Parts${p.induceMs != null ? ` · ${p.induceMs} ms` : ""}`, "is-prolog", pev, loadingP, p.action || manifestActLabel, !!p.action));
                                   }
-                                  // Prolog Induction · LLM Parts — same object-permanence ontology, resolved
-                                  // across the whole sequence from the LLM's own stable labels.
+                                  // Prolog Induction · LLM Parts — same permanence ontology resolved from
+                                  // the LLM's own stable labels at the chosen horizon.
                                   const _tLlm = (typeof performance !== "undefined" ? performance.now() : 0);
-                                  const llmReady = llmFrames.every((f) => Array.isArray(f)) && Array.isArray(llmFrames[idx]) && Array.isArray(llmFrames[idx + 1]);
-                                  const lev = llmReady ? induceLlmSequence(llmFrames, idx) : null;
+                                  const llmReady = llmReadyAll && (llmMaps[idx] instanceof Map) && (llmMaps[idx + 1] instanceof Map);
+                                  let lev: IndEvent | null = null;
+                                  if (llmReady) {
+                                    const mi = llmMovedInteracted(llmMaps as FrameMap[], idx);
+                                    const perm = classifyPerm(llmMaps as FrameMap[], idx, new Set(mi.interacted.map((x) => x.target)), occlusionHorizon, 90);
+                                    lev = { moved: mi.moved, interacted: mi.interacted, transformed: perm.transformed, occluded: perm.occluded, noLongerOccluded: perm.noLongerOccluded, consumedOrTaken: perm.consumedOrTaken, gone: perm.gone, appeared: perm.appeared };
+                                  }
                                   const llmMs = lev ? ((typeof performance !== "undefined" ? performance.now() : 0) - _tLlm) : null;
                                   inductionEls.push(renderRow("induction-llm", `Prolog Induction · LLM Parts${llmMs != null ? ` · ${llmMs.toFixed(1)} ms` : ""}`, "is-llm", lev, !llmReady, manifestActLabel, false));
                                 }
