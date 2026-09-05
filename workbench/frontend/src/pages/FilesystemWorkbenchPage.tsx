@@ -519,6 +519,7 @@ const WORKBENCH_VIEWS: Set<View> = new Set([
   "prompts",
   "policies",
   "checks",
+  "recognitionDemos",
   "setup",
   "processes",
   "terminal",
@@ -561,6 +562,7 @@ const viewFromLocation = (): View | null => {
   if (value === "workflowv2" || value === "workflows-v2" || value === "workflow-v2") return "canvas";
   if (value === "editor") return "canvas";
   if (value === "backends") return "llms";
+  if (value === "recognitiondemos" || value === "recognition-demos" || value === "sanity" || value === "sanity-tests" || value === "sanitytests" || value === "demos") return "recognitionDemos";
   return [...WORKBENCH_VIEWS].find((candidate) => candidate.toLowerCase() === value) || null;
 };
 /** Remembers the last workspace that actually loaded, so a link that omits
