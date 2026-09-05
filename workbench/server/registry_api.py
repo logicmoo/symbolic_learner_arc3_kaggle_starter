@@ -77,3 +77,30 @@ def recognition_demos_clear(payload: dict | None = Body(default=None)) -> dict:
     if isinstance(payload, dict) and payload.get("only"):
         only = str(payload["only"]).strip()
     return rd.clear_demo_state(only)
+
+
+@router.get("/recognition/phase3")
+def recognition_phase3() -> dict:
+    """OBSERVE the latest Phase 3 live-learning run: a real transition rule induced
+    from the recogniser's frames, a prediction recorded before its outcome, and the
+    independent grade. Never starts a run on its own."""
+    import phase3_pipeline as p3
+
+    return p3.get_state()
+
+
+@router.post("/recognition/phase3/run")
+def recognition_phase3_run() -> dict:
+    """Run the Phase 3 pipeline on the SERVER over live ls20 frames: feed the real
+    recogniser encounters into GameObjectLearnerPayload -> learn -> predict -> grade."""
+    import phase3_pipeline as p3
+
+    return p3.start_run()
+
+
+@router.post("/recognition/phase3/clear")
+def recognition_phase3_clear() -> dict:
+    """Stop any in-flight Phase 3 run and clear its cached result."""
+    import phase3_pipeline as p3
+
+    return p3.clear_state()
