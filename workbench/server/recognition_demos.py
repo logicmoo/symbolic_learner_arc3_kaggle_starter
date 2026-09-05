@@ -348,7 +348,7 @@ def _demo_live_ls20_sequence():
         order = sorted(p.stem for p in setdir.glob("*.png"))
     sym = setdir / "sym"
     frames = []
-    geo_seen: set = set()          # GEOMETRY: colour-free shape vocabulary learned
+    geo_seen: dict = {}            # GEOMETRY shape -> set of identities using it (evidence/learners)
     ind_seen: set = set()          # INDIVIDUALS: (shape, colour) objects learned
     total_ind_recog = 0
     first_ind_recog = first_geo_recog = None
@@ -359,7 +359,7 @@ def _demo_live_ls20_sequence():
         idx, hexpal, _c, _r = sa.decode_grid(str(png))
         geo_new = geo_recog = ind_new = ind_recog = 0
         roled: list = []
-        frame_geo: set = set()
+        frame_geo: dict = {}       # shape -> identities using it in this frame (evidence)
         frame_ind: set = set()
         pj = sym / f"{idv}__prolog.parts.json"
         parts = []
@@ -378,7 +378,7 @@ def _demo_live_ls20_sequence():
             ind_known = ind in ind_seen
             geo_recog += geo_known; geo_new += (not geo_known)
             ind_recog += ind_known; ind_new += (not ind_known)
-            frame_geo.add(geo); frame_ind.add(ind)
+            frame_geo.setdefault(geo, set()).add(ind); frame_ind.add(ind)
             # overlay coloured by INDIVIDUAL recognition: green recognized, blue new
             cx, cy = p.get("cx", 0), p.get("cy", 0)
             oxs = [c[0] for c in off]; oys = [c[1] for c in off]
@@ -387,15 +387,19 @@ def _demo_live_ls20_sequence():
             role, col = ("regen", _GREEN) if ind_known else ("visible", _BLUE)
             for (dx, dy) in off:
                 roled.append((bx + dx, by + dy, role, col))
-        geo_seen |= frame_geo             # learn AFTER scoring the frame
+        for g, inds in frame_geo.items():     # learn AFTER scoring: accrue evidence per shape
+            geo_seen.setdefault(g, set()).update(inds)
         ind_seen |= frame_ind
         if first_ind_recog is None:
             first_ind_recog, first_geo_recog = ind_recog, geo_recog
         total_ind_recog += ind_recog
+        ev = [len(v) for v in geo_seen.values()]
+        max_ev = max(ev) if ev else 0
         base = [(x, y, "object", hexpal[int(idx[y, x])]) for y in range(idx.shape[0]) for x in range(idx.shape[1])]
         frames.append(_panel(
             f"{idv} · objects {ind_recog} rec / {ind_new} new · shapes {geo_recog} rec / {geo_new} new "
-            f"· learned {len(ind_seen)} obj, {len(geo_seen)} shapes", base + roled))
+            f"· learned {len(ind_seen)} obj, {len(geo_seen)} shapes (up to {max_ev} identities/shape)",
+            base + roled))
 
     # --- one frame of LEVEL 2 (same game): cross-level transfer. The geometry
     # (and many individuals) learned in level 1 are recognized immediately, so
@@ -440,6 +444,9 @@ def _demo_live_ls20_sequence():
     # demonstrates learning: the first frame recognizes nothing (empty memory),
     # geometry (fewer, shared) saturates faster than individuals (colour variety),
     # and the level-2 frame is mostly recognized on arrival (cross-level transfer).
+    # per-shape learner evidence: how many distinct identities instantiate each shape
+    ev = sorted(((len(v), g) for g, v in geo_seen.items()), reverse=True)
+    top_shape = (f"{ev[0][1]} ({ev[0][0]} identities)" if ev else "none")
     passed = bool(frames) and first_ind_recog == 0 and total_ind_recog > 0
     return {"id": "live-ls20", "group": "Live sequence (real data)",
             "title": "Live ls20 recording — recognition builds up, transfers to level 2", "panels": frames[:1],
@@ -447,14 +454,18 @@ def _demo_live_ls20_sequence():
             "result": {"frames": len(frames), "frame0_objects_recognized": first_ind_recog,
                        "frame0_shapes_recognized": first_geo_recog,
                        "objects_learned": len(ind_seen), "shapes_learned": len(geo_seen),
+                       "max_identities_per_shape": (ev[0][0] if ev else 0),
+                       "most_learned_shape": top_shape,
                        "level2_objects_recognized": f"{lvl2_ind}/{lvl2_total}",
                        "level2_shapes_recognized": f"{lvl2_geo}/{lvl2_total}"},
             "passed": passed,
             "description": "The real recorded ls20 frames played from an EMPTY memory. Two things are learned "
                            "separately: GEOMETRY (colour-free shape vocabulary, shared) and INDIVIDUALS "
-                           "(shape+colour, per game). Frame 0 recognizes nothing; geometry saturates faster "
-                           "than individuals; the final LEVEL 2 frame is mostly recognized on arrival "
-                           "(cross-level transfer). Overlay: green = recognized, blue = first sighting."}
+                           "(shape+colour, per game). Each shape accrues evidence = the identities that use it, "
+                           "so a well-learned shape has many identity learners. Frame 0 recognizes nothing; "
+                           "geometry saturates faster than individuals; the final LEVEL 2 frame is mostly "
+                           "recognized on arrival (cross-level transfer). Overlay: green = recognized, "
+                           "blue = first sighting."}
 
 
 _DEMOS = [
