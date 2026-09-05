@@ -68,8 +68,12 @@ def recognition_demos_stop() -> dict:
 
 
 @router.post("/recognition/demos/clear")
-def recognition_demos_clear() -> dict:
-    """Stop any in-flight run and clear cached results back to the empty state."""
+def recognition_demos_clear(payload: dict | None = Body(default=None)) -> dict:
+    """Stop any in-flight run and clear cached results. With {"only": id}, clear
+    just that one test back to its 'not run' state; otherwise clear everything."""
     import recognition_demos as rd
 
-    return rd.clear_demo_state()
+    only = None
+    if isinstance(payload, dict) and payload.get("only"):
+        only = str(payload["only"]).strip()
+    return rd.clear_demo_state(only)

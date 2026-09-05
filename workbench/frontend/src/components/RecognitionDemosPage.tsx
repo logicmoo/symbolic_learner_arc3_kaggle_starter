@@ -18,6 +18,7 @@ type Demo = {
 type CatalogEntry = { id: string; group: string; title: string; preview?: Panel | null; resultKeys?: string[] };
 type DemosResponse = {
   demos: Demo[]; total: number; passed: number; running?: boolean; catalog?: CatalogEntry[];
+  only?: string | null;
 };
 
 const CELL = 16;
@@ -83,14 +84,17 @@ function BlankMap({ n = 12 }: { n?: number }) {
   );
 }
 
-function InertControls() {
+function PreRunControls({ onRun, onStep, disabled }: { onRun: () => void; onStep: () => void; disabled: boolean }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, opacity: 0.4 }}>
-      <button type="button" disabled style={{ fontSize: 11, padding: "1px 8px", borderRadius: 4, cursor: "not-allowed" }}>◀</button>
-      <button type="button" disabled style={{ fontSize: 11, padding: "1px 8px", borderRadius: 4, cursor: "not-allowed" }}>▶</button>
-      <button type="button" disabled style={{ fontSize: 11, padding: "1px 8px", borderRadius: 4, cursor: "not-allowed" }}>▶❙</button>
-      <input type="range" min={0} max={0} value={0} disabled readOnly style={{ width: 110 }} />
-      <span style={{ minWidth: 42, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>0/0</span>
+    <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
+      <button type="button" disabled title="Previous step"
+        style={{ fontSize: 11, padding: "1px 8px", borderRadius: 4, cursor: "not-allowed", opacity: 0.4 }}>◀</button>
+      <button type="button" disabled={disabled} title="Run &amp; play" onClick={onRun}
+        style={{ fontSize: 11, padding: "1px 8px", borderRadius: 4, cursor: disabled ? "not-allowed" : "pointer" }}>▶</button>
+      <button type="button" disabled={disabled} title="Run step 1 (start paused, then step)" onClick={onStep}
+        style={{ fontSize: 11, padding: "1px 8px", borderRadius: 4, cursor: disabled ? "not-allowed" : "pointer" }}>▶❙</button>
+      <input type="range" min={0} max={0} value={0} disabled readOnly style={{ width: 110, opacity: 0.4 }} />
+      <span style={{ opacity: 0.5, minWidth: 42, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>step 1</span>
     </div>
   );
 }
@@ -111,9 +115,9 @@ function ResultChips({ result }: { result: Record<string, unknown> }) {
   );
 }
 
-function AnimatedGrid({ frames }: { frames: Panel[] }) {
+function AnimatedGrid({ frames, autoplay = true }: { frames: Panel[]; autoplay?: boolean }) {
   const [i, setI] = useState(0);
-  const [playing, setPlaying] = useState(true);
+  const [playing, setPlaying] = useState(autoplay);
   const multi = frames.length > 1;
   useEffect(() => { if (i > frames.length - 1) setI(0); }, [frames.length, i]);
   useEffect(() => {
@@ -148,9 +152,13 @@ function AnimatedGrid({ frames }: { frames: Panel[] }) {
   );
 }
 
-function DemoCard({ demo, onRun, running }: { demo: Demo; onRun: (id: string) => void; running: boolean }) {
+function DemoCard({ demo, onRun, onStep, onStop, onClear, running, stepMode }: {
+  demo: Demo; onRun: (id: string) => void; onStep: (id: string) => void;
+  onStop: (id: string) => void; onClear: (id: string) => void; running: boolean; stepMode: boolean;
+}) {
   const frames = (demo.frames && demo.frames.length ? demo.frames : demo.panels) || [];
   const notRun = !!demo.notRun;
+  const btn = { fontSize: 11, padding: "3px 10px", borderRadius: 5, cursor: "pointer" } as const;
   return (
     <div style={{
       border: "1px solid #1c2333", borderRadius: 8, padding: 12,
@@ -162,12 +170,21 @@ function DemoCard({ demo, onRun, running }: { demo: Demo; onRun: (id: string) =>
           fontSize: 10.5, fontWeight: 800, letterSpacing: "0.04em", padding: "2px 8px", borderRadius: 5,
           background: notRun ? "rgba(148,163,184,0.16)" : demo.passed ? "rgba(139,212,80,0.18)" : "rgba(224,72,63,0.2)",
           color: notRun ? "#94a3b8" : demo.passed ? "#8bd450" : "#ff8b81",
-        }}>{notRun ? "NOT RUN" : demo.passed ? "PASS" : "FAIL"}</span>
+        }}>{running ? "RUNNING" : notRun ? "NOT RUN" : demo.passed ? "PASS" : "FAIL"}</span>
         <b style={{ flex: 1 }}>{demo.title}</b>
-        <button type="button" disabled={running} onClick={() => onRun(demo.id)}
-          style={{ fontSize: 11, padding: "3px 10px", borderRadius: 5, cursor: "pointer" }}>
-          {running ? "…" : "▶ Run"}
-        </button>
+        {running ? (
+          <>
+            <button type="button" onClick={() => onStop(demo.id)} style={btn}>■ Stop</button>
+            <button type="button" onClick={() => onClear(demo.id)} style={btn}>Clear</button>
+          </>
+        ) : (
+          <>
+            <button type="button" onClick={() => onRun(demo.id)} style={btn}>▶ Run</button>
+            <button type="button" onClick={() => onStep(demo.id)} title="Run, then step frame by frame"
+              style={btn}>▶❙ Run step 1</button>
+            {!notRun ? <button type="button" onClick={() => onClear(demo.id)} style={btn}>Clear</button> : null}
+          </>
+        )}
       </div>
       {demo.description ? <div style={{ fontSize: 11.5, opacity: 0.72, lineHeight: 1.4 }}>{demo.description}</div> : null}
       {notRun ? (
@@ -175,7 +192,9 @@ function DemoCard({ demo, onRun, running }: { demo: Demo; onRun: (id: string) =>
           <div style={{ display: "flex", justifyContent: "center", padding: "4px 0" }}>
             {demo.preview ? <GridPanel panel={demo.preview} /> : <BlankMap />}
           </div>
-          <div style={{ display: "flex", justifyContent: "center" }}><InertControls /></div>
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <PreRunControls onRun={() => onRun(demo.id)} onStep={() => onStep(demo.id)} disabled={running} />
+          </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6, minHeight: 22 }}>
             {(demo.resultKeys && demo.resultKeys.length ? demo.resultKeys : ["result"]).map((k) => (
               <span key={k} style={{
@@ -190,7 +209,7 @@ function DemoCard({ demo, onRun, running }: { demo: Demo; onRun: (id: string) =>
       ) : (
         <>
           <div style={{ display: "flex", justifyContent: "center", padding: "4px 0" }}>
-            <AnimatedGrid frames={frames} />
+            <AnimatedGrid frames={frames} autoplay={!stepMode} />
           </div>
           <ResultChips result={demo.result} />
         </>
@@ -203,6 +222,7 @@ export function RecognitionDemosPage() {
   const [data, setData] = useState<DemosResponse | null>(null);
   const [err, setErr] = useState("");
   const [running, setRunning] = useState(false);
+  const [stepIds, setStepIds] = useState<Set<string>>(new Set());
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // The UI only OBSERVES: it polls the server's cached run and re-polls while a
@@ -231,8 +251,16 @@ export function RecognitionDemosPage() {
       .catch((e) => setErr(String(e)));
   }, [observe]);
 
+  // "Run" auto-plays; "Run step 1" runs then starts PAUSED so you step manually.
+  const runOne = useCallback((id: string) => {
+    setStepIds((s) => { const n = new Set(s); n.delete(id); return n; });
+    runOnServer(id);
+  }, [runOnServer]);
+  const stepOne = useCallback((id: string) => {
+    setStepIds((s) => new Set(s).add(id));
+    runOnServer(id);
+  }, [runOnServer]);
   const runAll = useCallback(() => runOnServer(), [runOnServer]);
-  const runOne = useCallback((id: string) => runOnServer(id), [runOnServer]);
 
   const stopOnServer = useCallback(() => {
     fetch("/workbench/recognition/demos/stop", { method: "POST" })
@@ -240,14 +268,21 @@ export function RecognitionDemosPage() {
       .then(() => { setRunning(false); observe(); })
       .catch((e) => setErr(String(e)));
   }, [observe]);
+  const stopOne = useCallback((_id: string) => stopOnServer(), [stopOnServer]);
 
-  const clearOnServer = useCallback(() => {
+  const clearOnServer = useCallback((only?: string) => {
     if (pollRef.current) clearTimeout(pollRef.current);
-    fetch("/workbench/recognition/demos/clear", { method: "POST" })
+    if (only) setStepIds((s) => { const n = new Set(s); n.delete(only); return n; });
+    fetch("/workbench/recognition/demos/clear", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(only ? { only } : {}),
+    })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then((d: DemosResponse) => { setRunning(false); setData(d); })
       .catch((e) => setErr(String(e)));
   }, []);
+  const clearOne = useCallback((id: string) => clearOnServer(id), [clearOnServer]);
+  const clearAll = useCallback(() => clearOnServer(), [clearOnServer]);
 
   useEffect(() => {
     observe();
@@ -285,15 +320,13 @@ export function RecognitionDemosPage() {
           style={{ marginLeft: "auto", fontSize: 12, padding: "4px 12px", borderRadius: 6, cursor: "pointer" }}>
           {running ? "Running…" : "▶ Run all on server"}
         </button>
-        {running ? (
-          <button type="button" onClick={stopOnServer}
-            style={{ fontSize: 12, padding: "4px 12px", borderRadius: 6, cursor: "pointer" }}>
-            ■ Stop
-          </button>
-        ) : null}
-        <button type="button" onClick={clearOnServer} disabled={running || !data?.total}
+        <button type="button" onClick={stopOnServer} disabled={!running}
+          style={{ fontSize: 12, padding: "4px 12px", borderRadius: 6, cursor: running ? "pointer" : "not-allowed" }}>
+          ■ Stop all
+        </button>
+        <button type="button" onClick={clearAll} disabled={!running && !data?.total}
           style={{ fontSize: 12, padding: "4px 12px", borderRadius: 6, cursor: "pointer" }}>
-          Clear
+          Clear all
         </button>
       </div>
       <p style={{ fontSize: 12, opacity: 0.7, marginTop: 0 }}>
@@ -313,7 +346,13 @@ export function RecognitionDemosPage() {
         <section key={group} style={{ marginBottom: 20 }}>
           <h3 style={{ margin: "8px 0", fontSize: 14, opacity: 0.85 }}>{group}</h3>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: 12 }}>
-            {demos.map((d) => <DemoCard key={d.id} demo={d} onRun={runOne} running={running} />)}
+            {demos.map((d) => {
+              const cardRunning = running && (data?.only == null || data?.only === d.id);
+              return (
+                <DemoCard key={d.id} demo={d} onRun={runOne} onStep={stepOne} onStop={stopOne}
+                  onClear={clearOne} running={cardRunning} stepMode={stepIds.has(d.id)} />
+              );
+            })}
           </div>
         </section>
       ))}

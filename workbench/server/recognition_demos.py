@@ -722,15 +722,24 @@ def stop_demo_run() -> dict:
     return get_demo_state()
 
 
-def clear_demo_state() -> dict:
-    """Stop any in-flight run AND clear the cached results, returning the page to
-    an empty 'not run yet' state until someone presses Run."""
+def clear_demo_state(only: str | None = None) -> dict:
+    """Stop any in-flight run AND clear cached results. With `only`, clear just that
+    one test (back to 'not run'); without it, clear everything."""
     global _demo_gen
     with _demo_lock:
         _demo_gen += 1                    # invalidate any in-flight job
         _demo_state["running"] = False
-        _demo_state["results"] = None
-        _demo_state["startedAt"] = None
-        _demo_state["finishedAt"] = None
-        _demo_state["only"] = None
+        _demo_state["finishedAt"] = _now()
+        if only:
+            res = _demo_state.get("results")
+            if res and res.get("demos"):
+                demos = [d for d in res["demos"] if d.get("id") != only]
+                _demo_state["results"] = ({"demos": demos, "total": len(demos),
+                                           "passed": sum(1 for d in demos if d.get("passed"))}
+                                          if demos else None)
+        else:
+            _demo_state["results"] = None
+            _demo_state["startedAt"] = None
+            _demo_state["finishedAt"] = None
+            _demo_state["only"] = None
     return get_demo_state()
