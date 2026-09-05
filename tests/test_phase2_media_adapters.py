@@ -2,7 +2,7 @@ from io import BytesIO
 
 from PIL import Image
 
-from object_memory import (
+from omega_vision import (
     ImageAdapter,
     LearnedPartRoleProvider,
     PythonProvider,

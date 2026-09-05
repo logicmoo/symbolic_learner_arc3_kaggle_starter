@@ -194,16 +194,16 @@ The other files under `workbench/frontend/src/pages/` and older shell-oriented c
 
 ## Shared Python object-memory and learner contracts
 
-- [`python/object_memory/__init__.py`](python/object_memory/__init__.py) — public exports for shared Phase 2 and connected Phase 3 contracts.
-- [`python/object_memory/replay.py`](python/object_memory/replay.py) — exact semantic codecs, durable Prolog facts, queryable MeTTa AtomSpace records, and action-tree replay.
-- [`python/object_memory/models.py`](python/object_memory/models.py) — backend-neutral execution mode, normalized result, object, residual, atom, rule, evidence, confidence, and prediction records.
-- [`python/object_memory/providers.py`](python/object_memory/providers.py) — one provider interface with PROLOG, GPT-artifact, and deterministic PYTHON implementations.
-- [`python/object_memory/forms.py`](python/object_memory/forms.py) — `GenerativeForm` and `CellLogoForm`; Phase 2 extends these into one regenerating Turtle program per object using movement, rotation, pen state, and pen width rather than box filling.
-- [`python/object_memory/adapters.py`](python/object_memory/adapters.py) — modality-neutral perception adapter and thin grid-extractor adapter, with later image and simple-video providers sharing the same contracts.
-- [`python/object_memory/memory.py`](python/object_memory/memory.py) — residual admission, reference storage, zero-confidence commitments, positive/negative evidence updates, confidence governance, and tombstones through `SingleWriter`.
-- [`python/object_memory/prediction.py`](python/object_memory/prediction.py) — exact-identity rule store and prediction-before-outcome ledger.
-- [`python/object_memory/learning.py`](python/object_memory/learning.py) — connected transition analysis, transformation learning, competing-rule induction/ranking/execution, prediction, and independent outcome grading pipeline.
-- [`python/object_memory/integration.py`](python/object_memory/integration.py) — validated Game Object Learner payload/result contracts and concrete pipeline plugin independent of debugger internals.
+- [`python/omega_vision/__init__.py`](python/omega_vision/__init__.py) — public exports for shared Phase 2 and connected Phase 3 contracts.
+- [`python/omega_vision/replay.py`](python/omega_vision/replay.py) — exact semantic codecs, durable Prolog facts, queryable MeTTa AtomSpace records, and action-tree replay.
+- [`python/omega_vision/models.py`](python/omega_vision/models.py) — backend-neutral execution mode, normalized result, object, residual, atom, rule, evidence, confidence, and prediction records.
+- [`python/omega_vision/providers.py`](python/omega_vision/providers.py) — one provider interface with PROLOG, GPT-artifact, and deterministic PYTHON implementations.
+- [`python/omega_vision/forms.py`](python/omega_vision/forms.py) — `GenerativeForm` and `CellLogoForm`; Phase 2 extends these into one regenerating Turtle program per object using movement, rotation, pen state, and pen width rather than box filling.
+- [`python/omega_vision/adapters.py`](python/omega_vision/adapters.py) — modality-neutral perception adapter and thin grid-extractor adapter, with later image and simple-video providers sharing the same contracts.
+- [`python/omega_vision/memory.py`](python/omega_vision/memory.py) — residual admission, reference storage, zero-confidence commitments, positive/negative evidence updates, confidence governance, and tombstones through `SingleWriter`.
+- [`python/omega_vision/prediction.py`](python/omega_vision/prediction.py) — exact-identity rule store and prediction-before-outcome ledger.
+- [`python/omega_vision/learning.py`](python/omega_vision/learning.py) — connected transition analysis, transformation learning, competing-rule induction/ranking/execution, prediction, and independent outcome grading pipeline.
+- [`python/omega_vision/integration.py`](python/omega_vision/integration.py) — validated Game Object Learner payload/result contracts and concrete pipeline plugin independent of debugger internals.
 
 ## Existing and connected Prolog contracts
 

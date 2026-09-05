@@ -11,7 +11,7 @@ except ModuleNotFoundError:
 
 configure_runtime_home(__file__)
 
-from object_memory import build_acceptance_report, write_acceptance_report
+from omega_vision import build_acceptance_report, write_acceptance_report
 
 
 def main() -> None:

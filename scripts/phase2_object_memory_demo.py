@@ -14,7 +14,7 @@ except ModuleNotFoundError:  # Imported as scripts.phase2_object_memory_demo in 
 configure_runtime_home(__file__)
 
 from action_tree import ActionTreeStore
-from object_memory import (
+from omega_vision import (
     ActionTreeSemanticReplay,
     EncounterRecord,
     GridAdapter,

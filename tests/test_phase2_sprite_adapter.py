@@ -1,6 +1,6 @@
 from PIL import Image
 
-from object_memory import AlphaContourProvider, PythonProvider, SpriteAdapter
+from omega_vision import AlphaContourProvider, PythonProvider, SpriteAdapter
 
 
 def _sprite_sheet() -> Image.Image:

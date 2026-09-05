@@ -1,4 +1,4 @@
-from object_memory import (
+from omega_vision import (
     CorrespondenceEvidenceBuilder,
     EncounterRecord,
     EvidencePolarity,

@@ -1,5 +1,5 @@
 """phase3_pipeline.py -- wire the LIVE symbolic recogniser's real encounters into
-the Phase 3 object-memory learning stack (python/object_memory), exposed to the
+the Phase 3 object-memory learning stack (python/omega_vision), exposed to the
 workbench via the registry API.
 
 This is the missing integration: until now the Phase 3 classes
@@ -23,7 +23,7 @@ _HERE = Path(__file__).resolve()
 _PROLOG_DIR = _HERE.parent / "generative_vision" / "prolog"
 if str(_PROLOG_DIR) not in sys.path:
     sys.path.insert(0, str(_PROLOG_DIR))
-# The Phase 3 package lives in <repo>/python/object_memory.
+# The Phase 3 package lives in <repo>/python/omega_vision.
 _REPO_ROOT = _HERE.parents[2]
 _PY_DIR = _REPO_ROOT / "python"
 if str(_PY_DIR) not in sys.path:
@@ -114,12 +114,12 @@ def run_live_phase3(n_probe: int = 12) -> dict:
     """Drive the real Phase 3 pipeline from live ls20 frames:
     learn a motion rule from frame A->B, predict the mover's position in frame C
     BEFORE looking, then grade against the actually-observed frame C."""
-    from object_memory import (
+    from omega_vision import (
         GameLearningPipeline, GameObjectLearnerPayload, PipelineGameObjectLearnerPlugin,
         InMemorySemanticBackend, SymbolicStore, RuleStore, PredictionLedger,
         OutcomeChannel, PredictionEvaluator, PredictionGrade,
     )
-    from object_memory.integration import (
+    from omega_vision.integration import (
         phase2_transition_analyzer, phase2_transformation_learner,
         phase2_rule_inducer, phase2_rule_ranker, phase2_rule_executor,
     )

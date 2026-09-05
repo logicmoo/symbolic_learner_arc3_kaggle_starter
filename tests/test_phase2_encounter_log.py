@@ -2,7 +2,7 @@ from dataclasses import replace
 
 import pytest
 
-from object_memory import EncounterLog, EncounterRecord, InstanceParameters
+from omega_vision import EncounterLog, EncounterRecord, InstanceParameters
 
 
 def _encounter(node: int, *, previous: str | None = None) -> EncounterRecord:

@@ -56,7 +56,7 @@ Deliverables: [Phase 2 checklist](SOW_DELIVERABLES.md#phase-2--object-perception
 
 ## Freeze the Phase 2 records
 
-Keep the shared records in `python/object_memory/models.py`; do not create another model package.
+Keep the shared records in `python/omega_vision/models.py`; do not create another model package.
 
 - [x] Add or finalize `Observation` as a semantic record layered over the rendered observation already stored by Phase 1.
 - [x] Add or finalize `EncounterRecord` with a reference to its Phase 1 action-tree node.

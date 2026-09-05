@@ -13,7 +13,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "python"))
 
 from arc3_runner import Arc3Runner, action_name, is_complex_action
-from object_memory import standard_semantic_grid_observer
+from omega_vision import standard_semantic_grid_observer
 from project_paths import exports_root, histories_root
 
 

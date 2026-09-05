@@ -1,6 +1,6 @@
 import pytest
 
-from object_memory import (
+from omega_vision import (
     CommittedAtom,
     EvidencePolarity,
     EvidenceRecord,

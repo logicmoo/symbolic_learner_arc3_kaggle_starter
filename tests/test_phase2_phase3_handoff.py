@@ -1,6 +1,6 @@
 import pytest
 
-from object_memory import (
+from omega_vision import (
     ArtifactRef,
     CommittedAtom,
     EncounterRecord,
@@ -283,7 +283,7 @@ def test_verified_prediction_history_outranks_bootstrap_without_rewriting_identi
             )
         )
     )
-    from object_memory import RuleStore
+    from omega_vision import RuleStore
 
     store = RuleStore()
     for rule in rules:

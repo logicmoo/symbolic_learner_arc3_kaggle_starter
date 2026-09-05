@@ -7,7 +7,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "python"))
 
-from object_memory import (  # noqa: E402
+from omega_vision import (  # noqa: E402
     CandidateObject,
     CommittedAtom,
     ExecutionMode,

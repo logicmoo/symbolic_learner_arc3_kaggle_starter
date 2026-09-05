@@ -203,7 +203,7 @@ def phase3_contract_validate(payload: dict = Body(...)) -> dict:
     """REST access to the object-memory data contract: accept a GameObjectLearnerPayload
     as JSON, validate it, and return the normalized payload (or a structured error).
     The SAME dataclasses are usable via local import; this proves REST parity."""
-    from object_memory import GameObjectLearnerPayload, IntegrationValidator, IntegrationError
+    from omega_vision import GameObjectLearnerPayload, IntegrationValidator, IntegrationError
 
     try:
         parsed = GameObjectLearnerPayload.from_dict(payload)
@@ -220,11 +220,11 @@ def phase3_learn(payload: dict | None = Body(default=None)) -> dict:
     """REST access to the Phase 3 learning pipeline: POST {before, action, after}
     GameObjectLearnerPayload dicts and get the induced rules back as JSON. Runs the
     same GameLearningPipeline used by local import."""
-    from object_memory import (
+    from omega_vision import (
         GameObjectLearnerPayload, PipelineGameObjectLearnerPlugin, GameLearningPipeline,
         RuleStore, PredictionLedger, InMemorySemanticBackend, SymbolicStore,
     )
-    from object_memory.integration import (
+    from omega_vision.integration import (
         phase2_transition_analyzer, phase2_transformation_learner,
         phase2_rule_inducer, phase2_rule_ranker,
     )

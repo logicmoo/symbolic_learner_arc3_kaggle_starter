@@ -623,7 +623,7 @@ def _demo_phase3_contract():
     """Phase 3 interface/data contract: build a real GameObjectLearnerPayload with
     objects, properties, relationships, correspondences, state differences and
     encounter history, validate it, and show a malformed payload is rejected."""
-    from object_memory import GameObjectLearnerPayload, IntegrationValidator, IntegrationError
+    from omega_vision import GameObjectLearnerPayload, IntegrationValidator, IntegrationError
     payload = GameObjectLearnerPayload(
         "state-2",
         ({"id": "player", "candidate_identity_id": "cand-player", "object_identity_id": "player",
@@ -672,7 +672,7 @@ def _demo_environments():
     import numpy as np
     from scipy import ndimage
     import symbolic_arc as sa
-    from object_memory import environment_progression_fixtures
+    from omega_vision import environment_progression_fixtures
     fx = environment_progression_fixtures()
     groups = {"rendered_arcade": fx.rendered_arcade,
               "fixed_camera_physics": fx.fixed_camera,
@@ -707,12 +707,12 @@ def _demo_suite():
     """Integration acceptance, run live: drive the real object-memory pipeline
     through induce -> predict (before outcome) -> grade (independent) -> deterministic
     replay, checking the acceptance invariants, plus real tests/docs/scripts evidence."""
-    from object_memory import (
+    from omega_vision import (
         GameLearningPipeline, GameObjectLearnerPayload, PipelineGameObjectLearnerPlugin,
         InMemorySemanticBackend, SymbolicStore, RuleStore, PredictionLedger,
         OutcomeChannel, PredictionEvaluator, PredictionGrade,
     )
-    from object_memory.integration import (
+    from omega_vision.integration import (
         phase2_transition_analyzer, phase2_transformation_learner,
         phase2_rule_inducer, phase2_rule_ranker, phase2_rule_executor,
     )

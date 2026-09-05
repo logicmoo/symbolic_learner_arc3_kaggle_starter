@@ -14,7 +14,7 @@ sys.path.insert(0, str(ROOT / "python"))
 
 import pytest  # noqa: E402
 
-from object_memory import (  # noqa: E402
+from omega_vision import (  # noqa: E402
     GameObjectLearnerPayload,
     IntegrationError,
     IntegrationValidator,

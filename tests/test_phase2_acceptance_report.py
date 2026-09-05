@@ -1,6 +1,6 @@
 import json
 
-from object_memory import build_acceptance_report, write_acceptance_report
+from omega_vision import build_acceptance_report, write_acceptance_report
 
 
 def _summaries():

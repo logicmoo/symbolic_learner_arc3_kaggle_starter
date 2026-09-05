@@ -1,4 +1,4 @@
-from python.object_memory import (
+from python.omega_vision import (
     EncounterRecord,
     InMemorySemanticBackend,
     InstanceParameters,

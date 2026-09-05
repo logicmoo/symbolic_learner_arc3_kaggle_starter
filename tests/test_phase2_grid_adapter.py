@@ -1,4 +1,4 @@
-from object_memory import (
+from omega_vision import (
     GridAdapter,
     PHASE2_SCHEMA_VERSION,
     PythonProvider,

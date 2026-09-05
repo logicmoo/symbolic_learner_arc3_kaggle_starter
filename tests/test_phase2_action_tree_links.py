@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from action_tree import ActionTreeStore
-from object_memory import (
+from omega_vision import (
     EvidencePolarity,
     EvidenceRecord,
     InMemorySemanticBackend,

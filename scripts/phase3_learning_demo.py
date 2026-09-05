@@ -12,7 +12,7 @@ except ModuleNotFoundError:
 
 configure_runtime_home(__file__)
 
-from object_memory import (
+from omega_vision import (
     GameLearningPipeline,
     GameObjectLearnerPayload,
     InMemorySemanticBackend,

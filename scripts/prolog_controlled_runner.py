@@ -7,7 +7,7 @@ from _runtime import configure_runtime_home
 PROJECT_ROOT = configure_runtime_home(__file__)
 
 from arc3_runner import Arc3Runner
-from object_memory import standard_semantic_grid_observer
+from omega_vision import standard_semantic_grid_observer
 from swipl_bridge import SWIPrologBridge
 
 

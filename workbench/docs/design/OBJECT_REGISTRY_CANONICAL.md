@@ -12,7 +12,7 @@ There are two independent memory lines in this repo:
 - **Symbolic recognizer line (this, canonical):** deterministic, LLM-free. Produces
   the colorless shape vocabulary and per-game object identities and stores them in
   `data/object_memory/`.
-- **Action-tree / LLM line (`python/object_memory/`):** a separate framework of
+- **Action-tree / LLM line (`python/omega_vision/`):** a separate framework of
   JSON semantic records, action-tree catalogs, correspondence authority, and the
   per-game-level `object_registry.pl` it generates. It serves the LLM/action-tree
   workflow and has its own large test suite.

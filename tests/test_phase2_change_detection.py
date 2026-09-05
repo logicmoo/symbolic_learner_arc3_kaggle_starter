@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from object_memory import (
+from omega_vision import (
     ChangeDetector,
     EncounterChangeSession,
     EncounterRecord,

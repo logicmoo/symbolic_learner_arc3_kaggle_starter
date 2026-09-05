@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from object_memory import CellLogoForm
+from omega_vision import CellLogoForm
 from swipl_bridge import SWIPrologBridge
 from workbench.server.runtime import DEFAULT_GRID, analyze_grid
 

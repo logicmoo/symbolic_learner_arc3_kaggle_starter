@@ -3,7 +3,7 @@ from types import SimpleNamespace
 
 from action_tree import StateNode
 from arc3_runner import Arc3Runner
-from object_memory import SemanticGridCaptureObserver, standard_semantic_grid_observer
+from omega_vision import SemanticGridCaptureObserver, standard_semantic_grid_observer
 
 
 class RecordingObserver:

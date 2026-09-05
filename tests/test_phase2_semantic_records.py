@@ -2,7 +2,7 @@ from dataclasses import FrozenInstanceError, asdict
 
 import pytest
 
-from object_memory import (
+from omega_vision import (
     ArtifactRef,
     EncounterRecord,
     EvidencePolarity,

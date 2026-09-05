@@ -1,6 +1,6 @@
 from PIL import Image
 
-from object_memory import (
+from omega_vision import (
     PerceptionBenchmarkRunner,
     PythonProvider,
     RasterPerturbationGenerator,
