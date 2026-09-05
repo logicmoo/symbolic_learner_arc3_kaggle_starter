@@ -6,14 +6,14 @@ This document divides the delivered work along the repository's canonical
 three-phase SoW (see [SOW_PHASE_ARCHITECTURE.md](../../../SOW_PHASE_ARCHITECTURE.md)
 and [SOW_DELIVERABLES.md](../../../SOW_DELIVERABLES.md)):
 
-- **Phase 1 — the Debugger**: the workbench itself, i.e. the ARC3 debugger and
-  extensible inspection foundation. It records, displays, compares, restores, and
-  replays observations, actions, provider calls, and generated artifacts, and
+- **Phase 1 — the Debugger**: the workbench itself, i.e. the grid-game debugger
+  and extensible inspection foundation. It records, displays, compares, restores,
+  and replays observations, actions, provider calls, and generated artifacts, and
   exposes pluggable command/provider hooks — without requiring the debugger to
   own the final perception, memory, or learning algorithms.
 - **Phase 2 — the Vision System**: object perception, recognition, sequence
   induction, and persistent memory built *behind* the debugger. This is where the
-  ARC recognition / perception / object-permanence / statistical-induction
+  grid-game recognition / perception / object-permanence / statistical-induction
   pipeline lives.
 
 So "the workbench" and "the debugger" and "Phase 1" name the same thing here; the
@@ -113,7 +113,7 @@ next is the worked example of this decomposition.
 ## 3. Phase 2 — Object Perception, Recognition, and Sequence Induction (the Vision System)
 
 ### Objective
-Turn a stream of ARC game frames into a *symbolic, probabilistic world model*:
+Turn a stream of grid-game frames into a *symbolic, probabilistic world model*:
 objects, their identities over time, and the events and rules that explain change
 — produced by two independent, directly comparable perception lines so their
 agreement is itself a measurable signal.
@@ -158,7 +158,7 @@ available two ways, but its deterministic implementation may deliberately take
 the LLM producer's output as its input.
 
 ![Dual-line induction with per-event confidence: the deterministic Prolog
-induction of one ARC transition (frame_000005 + UP = frame_000006), showing
+induction of one grid-game transition (frame_000005 + UP = frame_000006), showing
 moved / transformed / interacted / occluded events, each with a 0.0-1.0 score,
 plus the per-row report "conf 0.92 · 1 provisional".](assets/vision_induction_dual_line.png)
 
@@ -218,8 +218,8 @@ their scores are directly comparable.*
 
 4. **Provenance.** Every imported image records how and where it came from in a
    provenance sidecar, surfaced per frame and baked into the symbolic text as
-   `(transition frame_i + LEFT = frame_{i+1})` using authoritative ARC action
-   labels (ACTION1..7 -> UP/DOWN/LEFT/RIGHT/SPACE/CLICK/UNDO).
+   `(transition frame_i + LEFT = frame_{i+1})` using authoritative grid-game
+   action labels (ACTION1..7 -> UP/DOWN/LEFT/RIGHT/SPACE/CLICK/UNDO).
 
 5. **Statistical reporting.**
    - A tunable **occlusion horizon** (how many later frames of patience before a
