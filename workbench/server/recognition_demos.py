@@ -546,6 +546,7 @@ def run_demos(only: str | None = None) -> dict:
 _demo_state: dict = {"running": False, "results": None, "startedAt": None,
                      "finishedAt": None, "only": None}
 _demo_lock = threading.Lock()
+_demo_gen = 0  # bumped on every start/stop/clear; an in-flight job whose gen is stale is discarded
 
 
 def _now() -> str:
@@ -561,10 +562,12 @@ def get_demo_state() -> dict:
             "finishedAt": st["finishedAt"], "only": st["only"]}
 
 
-def _run_job(only: str | None) -> None:
+def _run_job(only: str | None, gen: int) -> None:
     try:
         res = run_demos(only=only)
         with _demo_lock:
+            if gen != _demo_gen:          # stopped or cleared while we were running: discard
+                return
             prev = (_demo_state.get("results") or {}).get("demos", [])
             if only and prev:
                 fresh = res["demos"][0] if res["demos"] else None
@@ -577,20 +580,49 @@ def _run_job(only: str | None) -> None:
                                       "passed": sum(1 for d in demos if d.get("passed"))}
     finally:
         with _demo_lock:
-            _demo_state["running"] = False
-            _demo_state["finishedAt"] = _now()
+            if gen == _demo_gen:          # only the current job may flip running off
+                _demo_state["running"] = False
+                _demo_state["finishedAt"] = _now()
 
 
 def start_demo_run(only: str | None = None) -> dict:
     """Kick off a background server run (no-op if one is already running) and
     return immediately. The page observes progress via get_demo_state()."""
+    global _demo_gen
     with _demo_lock:
         if _demo_state["running"]:
             return get_demo_state()
+        _demo_gen += 1
+        gen = _demo_gen
         _demo_state["running"] = True
         _demo_state["startedAt"] = _now()
         _demo_state["finishedAt"] = None
         _demo_state["only"] = only
-    threading.Thread(target=_run_job, args=(only,), name=f"sanity-tests-{only or 'all'}",
+    threading.Thread(target=_run_job, args=(only, gen), name=f"sanity-tests-{only or 'all'}",
                      daemon=True).start()
+    return get_demo_state()
+
+
+def stop_demo_run() -> dict:
+    """Stop any in-flight server run. The running job (if any) finishes its
+    computation but its result is discarded; the cached results are kept."""
+    global _demo_gen
+    with _demo_lock:
+        _demo_gen += 1                    # invalidate any in-flight job
+        _demo_state["running"] = False
+        _demo_state["finishedAt"] = _now()
+    return get_demo_state()
+
+
+def clear_demo_state() -> dict:
+    """Stop any in-flight run AND clear the cached results, returning the page to
+    an empty 'not run yet' state until someone presses Run."""
+    global _demo_gen
+    with _demo_lock:
+        _demo_gen += 1                    # invalidate any in-flight job
+        _demo_state["running"] = False
+        _demo_state["results"] = None
+        _demo_state["startedAt"] = None
+        _demo_state["finishedAt"] = None
+        _demo_state["only"] = None
     return get_demo_state()

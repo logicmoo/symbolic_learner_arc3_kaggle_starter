@@ -54,30 +54,6 @@ def reconcile_managed_services_after_api_restart() -> None:
     schedule_startup_reconciliation()
 
 
-@app.on_event("startup")
-def autostart_sanity_tests() -> None:
-    """Run the Sanity Tests on the SERVER automatically at startup, and refresh
-    them periodically, so the page always observes a live run without anyone
-    pressing Run all. The heavy import + runs happen on a background thread so
-    server startup is never blocked."""
-    import threading
-    import time
-
-    def _boot() -> None:
-        try:
-            import recognition_demos as rd  # heavy: numpy/scipy/PIL/swipl
-        except Exception:  # noqa: BLE001
-            return
-        while True:
-            try:
-                rd.start_demo_run()  # background; no-op if a run is already going
-            except Exception:  # noqa: BLE001
-                pass
-            time.sleep(900)  # keep results fresh (e.g. after a reduce)
-
-    threading.Thread(target=_boot, name="sanity-tests-autostart", daemon=True).start()
-
-
 @app.exception_handler(HTTPException)
 async def http_error(_request: Request, error: HTTPException) -> JSONResponse:
     detail = error.detail if isinstance(error.detail, (dict, list)) else str(error.detail)

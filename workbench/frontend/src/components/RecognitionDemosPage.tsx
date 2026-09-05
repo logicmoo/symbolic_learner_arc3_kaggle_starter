@@ -169,6 +169,21 @@ export function RecognitionDemosPage() {
   const runAll = useCallback(() => runOnServer(), [runOnServer]);
   const runOne = useCallback((id: string) => runOnServer(id), [runOnServer]);
 
+  const stopOnServer = useCallback(() => {
+    fetch("/workbench/recognition/demos/stop", { method: "POST" })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then(() => { setRunning(false); observe(); })
+      .catch((e) => setErr(String(e)));
+  }, [observe]);
+
+  const clearOnServer = useCallback(() => {
+    if (pollRef.current) clearTimeout(pollRef.current);
+    fetch("/workbench/recognition/demos/clear", { method: "POST" })
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((d: DemosResponse) => { setRunning(false); setData(d); })
+      .catch((e) => setErr(String(e)));
+  }, []);
+
   useEffect(() => {
     observe();
     return () => { if (pollRef.current) clearTimeout(pollRef.current); };
@@ -195,6 +210,16 @@ export function RecognitionDemosPage() {
           style={{ marginLeft: "auto", fontSize: 12, padding: "4px 12px", borderRadius: 6, cursor: "pointer" }}>
           {running ? "Running…" : "▶ Run all on server"}
         </button>
+        {running ? (
+          <button type="button" onClick={stopOnServer}
+            style={{ fontSize: 12, padding: "4px 12px", borderRadius: 6, cursor: "pointer" }}>
+            ■ Stop
+          </button>
+        ) : null}
+        <button type="button" onClick={clearOnServer} disabled={running || !data?.total}
+          style={{ fontSize: 12, padding: "4px 12px", borderRadius: 6, cursor: "pointer" }}>
+          Clear
+        </button>
       </div>
       <p style={{ fontSize: 12, opacity: 0.7, marginTop: 0 }}>
         The server runs each real symbolic_arc Phase-2 acceptance behaviour (SOW Exhibit A Phase 2); this page only
@@ -203,6 +228,12 @@ export function RecognitionDemosPage() {
       </p>
       {err ? <div style={{ color: "#ff8b81", fontSize: 12, marginBottom: 8 }}>Error: {err}</div> : null}
       {running && !data?.demos?.length ? <div style={{ opacity: 0.6 }}>Server is running the sanity tests…</div> : null}
+      {!running && !data?.demos?.length ? (
+        <div style={{ opacity: 0.6, padding: "24px 0", fontSize: 13 }}>
+          No sanity tests have run yet. Press <b>▶ Run all on server</b> (or a single test's Run button)
+          to start them — nothing runs on its own.
+        </div>
+      ) : null}
       {Object.entries(groups).map(([group, demos]) => (
         <section key={group} style={{ marginBottom: 20 }}>
           <h3 style={{ margin: "8px 0", fontSize: 14, opacity: 0.85 }}>{group}</h3>

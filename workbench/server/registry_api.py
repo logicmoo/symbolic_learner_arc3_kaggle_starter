@@ -38,16 +38,12 @@ def registry_snapshot(
 @router.get("/recognition/demos")
 def recognition_demos() -> dict:
     """OBSERVE the latest server-run sanity tests (visual grid panels + result +
-    pass/fail per demo, plus a `running` flag). Does not compute — if nothing has
-    run yet it kicks off one background server run and returns the empty/running
-    state for the page to poll."""
+    pass/fail per demo, plus a `running` flag). Never computes and never starts a
+    run on its own — the tests only run when the user presses a button (Run all or
+    a single test). Until then this returns the empty 'not run yet' state."""
     import recognition_demos as rd  # lazy: pulls numpy/scipy/PIL/swipl
 
-    st = rd.get_demo_state()
-    if st.get("results") is None and not st.get("running") and not st.get("demos"):
-        rd.start_demo_run(None)
-        st = rd.get_demo_state()
-    return st
+    return rd.get_demo_state()
 
 
 @router.post("/recognition/demos/run")
@@ -61,3 +57,19 @@ def recognition_demos_run(payload: dict | None = Body(default=None)) -> dict:
     if isinstance(payload, dict) and payload.get("only"):
         only = str(payload["only"]).strip()
     return rd.start_demo_run(only)
+
+
+@router.post("/recognition/demos/stop")
+def recognition_demos_stop() -> dict:
+    """Stop any in-flight sanity-test run (keeps the last cached results)."""
+    import recognition_demos as rd
+
+    return rd.stop_demo_run()
+
+
+@router.post("/recognition/demos/clear")
+def recognition_demos_clear() -> dict:
+    """Stop any in-flight run and clear cached results back to the empty state."""
+    import recognition_demos as rd
+
+    return rd.clear_demo_state()
