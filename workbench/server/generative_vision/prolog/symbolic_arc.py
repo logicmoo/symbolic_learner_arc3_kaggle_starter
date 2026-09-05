@@ -639,6 +639,10 @@ def extract_frame(png_path: str, char: str, partner_path: str | None = None,
 # larger than the default so the live slider can look further than the bake.
 DEFAULT_OCCLUSION_HORIZON = 4
 _ID_RETENTION = 30
+# Minimum confidence floor for evidence-based verdicts (gone / consumed_or_taken
+# / new): even with no look-ahead left at a clip boundary, a verdict keeps a weak
+# base-rate prior rather than reading a misleading exact 0.00.
+_CONF_FLOOR = 0.1
 
 
 def extract_sequence(frame_paths: list[str], char: str,
@@ -693,10 +697,10 @@ def _classify_permanence(results: list[dict], char: str,
         # without it existing (backward). Observed verdicts (occluded / back) = 1.
         rem_fwd = (n - 1) - (i + 1)
         req_fwd = horizon if horizon > 0 else rem_fwd
-        conf_fwd = round(min(req_fwd, rem_fwd) / req_fwd, 2) if req_fwd > 0 else 0.0
+        conf_fwd = round(max(_CONF_FLOOR, min(req_fwd, rem_fwd) / req_fwd), 2) if req_fwd > 0 else _CONF_FLOOR
         rem_bwd = i + 1
         req_bwd = horizon if horizon > 0 else rem_bwd
-        conf_bwd = round(min(req_bwd, rem_bwd) / req_bwd, 2) if req_bwd > 0 else 0.0
+        conf_bwd = round(max(_CONF_FLOOR, min(req_bwd, rem_bwd) / req_bwd), 2) if req_bwd > 0 else _CONF_FLOOR
         # transformed: pair a vanishing part (that never returns) with a co-located
         # appearing part (never seen before) -> same thing changed form.
         used_app: set = set()

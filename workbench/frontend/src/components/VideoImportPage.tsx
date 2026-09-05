@@ -525,6 +525,9 @@ function turtleCentroid(t: any): [number, number] | null {
 // of patience before a vanish is committed; <=0 = the whole sequence). Used by
 // BOTH induction rows so the live horizon slider re-resolves them identically.
 type FrameMap = Map<string, [number, number]>;
+// Minimum confidence floor for evidence-based verdicts (weak base-rate prior),
+// mirrored from symbolic_arc._CONF_FLOOR, so a boundary verdict never reads 0.00.
+const CONF_FLOOR = 0.1;
 function classifyPerm(frames: FrameMap[], i: number, interactedTargets: Set<string>, horizon: number, near: number) {
   const n = frames.length;
   const A = frames[i] || new Map(); const B = frames[i + 1] || new Map();
@@ -534,9 +537,9 @@ function classifyPerm(frames: FrameMap[], i: number, interactedTargets: Set<stri
   // confidence = fraction of the horizon window actually observed (forward for
   // gone/consumed, backward for new); observed verdicts are certain (1).
   const remFwd = (n - 1) - (i + 1); const reqFwd = horizon > 0 ? horizon : remFwd;
-  const confFwd = reqFwd > 0 ? Math.min(1, Math.min(reqFwd, remFwd) / reqFwd) : 0;
+  const confFwd = Math.max(CONF_FLOOR, reqFwd > 0 ? Math.min(1, Math.min(reqFwd, remFwd) / reqFwd) : 0);
   const remBwd = i + 1; const reqBwd = horizon > 0 ? horizon : remBwd;
-  const confBwd = reqBwd > 0 ? Math.min(1, Math.min(reqBwd, remBwd) / reqBwd) : 0;
+  const confBwd = Math.max(CONF_FLOOR, reqBwd > 0 ? Math.min(1, Math.min(reqBwd, remBwd) / reqBwd) : 0);
   const disappeared = [...A.keys()].filter((id) => !B.has(id));
   const appeared = [...B.keys()].filter((id) => !A.has(id));
   const out = { occluded: [] as Array<{ name: string; conf: number }>, noLongerOccluded: [] as Array<{ name: string; conf: number }>, consumedOrTaken: [] as Array<{ name: string; conf: number }>, gone: [] as Array<{ name: string; conf: number }>, appeared: [] as Array<{ name: string; conf: number }>, transformed: [] as Array<{ from: string; to: string; conf: number }> };
@@ -6830,7 +6833,7 @@ export function VideoImportPage({
                                   const renderRow = (rowKey: string, label: string, cls: string, ev: IndEvent | null, loading: boolean, actLabel: string, fromText: boolean) => {
                                     const nfacts = ev ? (ev.moved.length + ev.transformed.length + ev.interacted.length + ev.occluded.length + ev.noLongerOccluded.length + ev.consumedOrTaken.length + ev.gone.length + ev.appeared.length) : 0;
                                     const st = ev ? indStats(ev) : { n: 0, mean: 1, provisional: 0 };
-                                    const pct = (c: number) => `${Math.round(c * 100)}%`;
+                                    const pct = (c: number) => c.toFixed(2);
                                     return (
                                       <div className={`video-import-reduce-induction ${cls}`} key={rowKey}>
                                         <div className="video-import-reduce-indlabel">{label}

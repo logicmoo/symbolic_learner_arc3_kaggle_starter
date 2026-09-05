@@ -143,17 +143,36 @@ the LLM producer's output as its input.
 
 ![Dual-line induction with per-event confidence: the deterministic Prolog
 induction of one ARC transition (frame_000005 + UP = frame_000006), showing
-moved / transformed / interacted / occluded events, each with a confidence, plus
-the per-row report "conf 92% · 1 provisional".](assets/vision_induction_dual_line.png)
+moved / transformed / interacted / occluded events, each with a 0.0-1.0 score,
+plus the per-row report "conf 0.92 · 1 provisional".](assets/vision_induction_dual_line.png)
 
-*Figure: a live induction row from the workbench. The deterministic (Prolog)
+*Figure 1: a live induction row from the workbench. The deterministic (Prolog)
 induction of the transition `frame_000005 + UP = frame_000006` reports `moved`
-(including a `rot270` rotation), a `transformed` event at 67% confidence,
-spatial `interacted` links, and three `occluded` verdicts at 100% (the markers
-that vanish here provably return next frame). The row header states the imported
-provenance action (`UP`, tagged `prov`), the induction time (`28 ms`), and the
-aggregate statistical report (`conf 92% · 1 provisional`). A sibling row runs the
-same deterministic inducer over the LLM's objectification for direct comparison.*
+(including a `rot270` rotation — the "rotating ant"), a `transformed` event at
+score 0.67, spatial `interacted` links onto the actuator markers, and three
+`occluded` verdicts at 1.0 (the markers that vanish here provably return the next
+frame). The row header states the imported provenance action (`UP`, tagged
+`prov`), the induction time (`28 ms`), and the aggregate statistical report
+(`conf 0.92 · 1 provisional`). Scores are reported on a 0.0-1.0 scale. A sibling
+row runs the same deterministic inducer over the LLM's objectification for direct
+comparison.*
+
+![Inductive probability across a transition: both induction rows for a late clip
+transition, with scored events (back 1.00, gone 0.10, new 1.00) and per-row
+reports (Prolog conf 0.58 / 7 provisional, LLM conf 0.70 / 2
+provisional).](assets/vision_induction_probability.png)
+
+*Figure 2: inductive probability in action. Every verdict carries a 0.0-1.0
+score that reflects how much evidence supports it. Near the end of a clip the
+forward look-ahead runs out, so `gone` verdicts drop toward a small base-rate
+floor of 0.10 (honest uncertainty rather than a misleading 0.00), while a part
+that provably returns is `back` at 1.0 and a never-before-seen part is `new` at
+1.0. The per-row report (`conf 0.58 · 7 provisional`) summarizes how settled the
+whole transition is. As the same relationship recurs across frames — the rotating
+ant landing on the actuator plus sign, the plus then vanishing — the induced rule
+linking them accrues support and its probability of being a real relationship
+climbs toward 1.0. Both the Prolog line and the LLM line report the same way, so
+their scores are directly comparable.*
 
 ### Scope of Work
 
