@@ -279,6 +279,8 @@ function DemoCard({ demo, onRun, onStep, onClear, onToggle, onSeek, running, fla
         <button type="button" onClick={() => onRun(demo.id)} style={btn}>▶ Run</button>
         <button type="button" onClick={() => onStep(demo.id)} title="Restart, then step frame by frame"
           style={btn}>▶❙ Run Stepped</button>
+        <button type="button" onClick={() => onToggle(demo.id, false)} disabled={notRun}
+          title="Stop this demo's animation (freeze it where it is)" style={btn}>■ Stop</button>
         <button type="button" onClick={() => onClear(demo.id)} disabled={notRun && !running}
           title="Stop and clear back to the beginning" style={btn}>Clear</button>
       </div>
