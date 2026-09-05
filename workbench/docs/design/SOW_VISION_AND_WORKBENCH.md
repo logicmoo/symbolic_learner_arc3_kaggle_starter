@@ -128,6 +128,19 @@ the same deterministic inducer can be pointed at either the deterministic parts
 or the LLM parts, so every claim can be checked LLM-vs-deterministic on the same
 frames.
 
+Crucially, the hops are not two sealed lines but a composable pipeline: each hop
+can consume the best available upstream output, so sources are mixed per step.
+In particular, the deterministic (Prolog) inducer often *prefers to consume the
+LLM's objectification* from the previous hop — the LLM tends to produce richer,
+semantically named objects (for example `moving_block_cap`, `character_marker`)
+than the color-derived names of the pure symbolic pass — while the induction and
+statistics over those objects are still done deterministically. So a common best
+composition is **LLM perceive + deterministic induce/report**, with the
+all-deterministic and all-LLM variants both retained for comparison and
+fallback. The objectification pass is done by two producers; the next hop is also
+available two ways, but its deterministic implementation may deliberately take
+the LLM producer's output as its input.
+
 ### Scope of Work
 
 1. **Dual perception, one schema.**
