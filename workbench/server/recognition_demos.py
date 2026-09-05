@@ -562,42 +562,135 @@ def _demo_phase3_contract():
 
 
 def _demo_environments():
-    """Phase 3 representative environments: grid, rendered arcade, fixed-camera
-    physics, and top-down manipulation fixtures."""
+    """Phase 3 representative environments: actually decode the rendered-arcade,
+    fixed-camera-physics and top-down-manipulation fixture images with the LLM-free
+    recogniser and count the objects found in each."""
+    import os
+    import numpy as np
+    from scipy import ndimage
+    import symbolic_arc as sa
     from object_memory import environment_progression_fixtures
     fx = environment_progression_fixtures()
-    counts = {"rendered_arcade": len(fx.rendered_arcade),
-              "fixed_camera_physics": len(fx.fixed_camera),
-              "top_down_manipulation": len(fx.top_down_manipulation)}
-    total = sum(counts.values())
-    pal = [_RED, _BLUE, _GREEN, "#e0b450"]
-    panels = [_panel("environment fixtures (arcade / physics / top-down)",
-                     [(i, 0, "object", pal[i % 4]) for i in range(total)])]
-    passed = total >= 3 and all(v >= 1 for v in counts.values())
+    groups = {"rendered_arcade": fx.rendered_arcade,
+              "fixed_camera_physics": fx.fixed_camera,
+              "top_down_manipulation": fx.top_down_manipulation}
+    counts: dict = {}
+    panels: list = []
+    ok = True
+    for name, fixtures in groups.items():
+        f = fixtures[0]
+        safe = "".join(c if c.isalnum() else "_" for c in f.fixture_id)
+        tmp = os.path.join(tempfile.mkdtemp(), safe + ".png")
+        f.image.save(tmp)
+        idx, hexpal, _cols, _rows = sa.decode_grid(tmp)
+        vals, cnts = np.unique(idx, return_counts=True)
+        bg = vals[int(np.argmax(cnts))]
+        _lab, nobj = ndimage.label(idx != bg)
+        counts[name] = int(nobj)
+        ok = ok and int(nobj) >= 1
+        panels.append(_panel(f"{name}: {nobj} objects", _grid_to_cells(idx, hexpal)))
+    passed = ok and len(counts) == 3
     return {"id": "environments", "group": "Phase 3 — integration",
             "title": "Operation across representative environments", "panels": panels,
-            "result": {**counts, "total_fixtures": total,
+            "result": {**{k: f"{v} objects" for k, v in counts.items()},
                        "grid": "live-ls20", "raster": "input-gradient"},
             "passed": passed,
-            "description": "Beyond grid (live-ls20) and raster (input-gradient), the perception layer runs over "
-                           "rendered-arcade, fixed-camera-physics and top-down-manipulation fixtures."}
+            "description": "The LLM-free recogniser decodes and extracts objects from real rendered-arcade, "
+                           "fixed-camera-physics and top-down-manipulation fixtures (plus grid via live-ls20 "
+                           "and raster via input-gradient)."}
 
 
 def _demo_suite():
-    """Deliverable evidence: tests, documentation, example scripts, acceptance."""
+    """Integration acceptance, run live: drive the real object-memory pipeline
+    through induce -> predict (before outcome) -> grade (independent) -> deterministic
+    replay, checking the acceptance invariants, plus real tests/docs/scripts evidence."""
+    from object_memory import (
+        GameLearningPipeline, GameObjectLearnerPayload, PipelineGameObjectLearnerPlugin,
+        InMemorySemanticBackend, SymbolicStore, RuleStore, PredictionLedger,
+        OutcomeChannel, PredictionEvaluator, PredictionGrade,
+    )
+    from object_memory.integration import (
+        phase2_transition_analyzer, phase2_transformation_learner,
+        phase2_rule_inducer, phase2_rule_ranker, phase2_rule_executor,
+    )
+    store = RuleStore(); ledger = PredictionLedger(); sem = SymbolicStore(InMemorySemanticBackend())
+    pipe = GameLearningPipeline(phase2_transition_analyzer(), phase2_transformation_learner(),
+                                phase2_rule_inducer(), phase2_rule_ranker(), store, ledger, sem)
+    before = GameObjectLearnerPayload("s1", ({"id": "o", "position": [1, 1]},), identity_ids=("o",))
+    after = GameObjectLearnerPayload("s2", ({"id": "o", "position": [2, 1]},), identity_ids=("o",),
+                                     transitions=({"id": "o", "action": "step",
+                                                   "properties": {"position": {"from": [1, 1], "to": [2, 1]}}},))
+    step = PipelineGameObjectLearnerPlugin(pipe).consume_transition(before, "step", after).value.learning_step
+    rel = next((r for r in step.rules
+                if r.predicted_effects and isinstance(r.predicted_effects[0], dict)
+                and r.predicted_effects[0].get("interpretation") == "relative_delta"), step.rules[0])
+    ex = phase2_rule_executor(store, "step")
+    _ps, pred = pipe.predict(prediction_id="suite", rule_id=rel.rule_id, source_state_id="s2",
+                             state={"id": "o", "position": [5, 5], "action": "step"},
+                             created_sequence=1, executor=ex)
+    before_outcome = sem.get("predictions", pred.prediction_id).outcome_sequence is None
+    closed = pipe.grade_prediction(prediction_id=pred.prediction_id, outcome_sequence=2,
+                                   outcome_channel=OutcomeChannel(lambda: {"id": "o", "position": [6, 5], "action": "step"}),
+                                   evaluator=PredictionEvaluator(
+                                       lambda e, o: PredictionGrade(1.0 if e.get("position") == o.get("position") else 0.0,
+                                                                    evidence=("independent_outcome",))))
+    replay = SymbolicStore(InMemorySemanticBackend()).replay(sem.snapshot())
+    replay_ok = replay.get("predictions", pred.prediction_id) is not None
     tests = len(list((_REPO_ROOT / "tests").glob("test_*.py"))) if (_REPO_ROOT / "tests").is_dir() else 0
-    docs = len(list((_REPO_ROOT / "workbench" / "docs").rglob("*.md"))) if (_REPO_ROOT / "workbench" / "docs").is_dir() else 0
-    scripts = [p.name for p in (_REPO_ROOT / "scripts").glob("phase*_*.py")] if (_REPO_ROOT / "scripts").is_dir() else []
-    acc = any((_REPO_ROOT).rglob("PHASE2_ACCEPTANCE_REPORT.md"))
-    panels = [_panel("deliverable evidence", [(0, 0, "object", _GREEN)])]
-    passed = tests > 0 and docs > 0 and len(scripts) > 0
+    docs = len([p for p in (_REPO_ROOT / "workbench" / "docs").rglob("*.md") if p.stat().st_size > 0]) \
+        if (_REPO_ROOT / "workbench" / "docs").is_dir() else 0
+    scripts = len([p for p in (_REPO_ROOT / "scripts").glob("phase*_*.py")]) if (_REPO_ROOT / "scripts").is_dir() else 0
+    panels = [_panel("acceptance flow: induce → predict → grade → replay", [(0, 0, "regen", _GREEN)])]
+    passed = (before_outcome and closed.grade == 1.0 and replay_ok
+              and tests > 0 and docs > 0 and scripts > 0)
     return {"id": "suite", "group": "Phase 3 — integration",
-            "title": "Tests, docs, example scripts & acceptance", "panels": panels,
-            "result": {"test_files": tests, "doc_files": docs,
-                       "example_scripts": len(scripts), "acceptance_report": bool(acc)},
+            "title": "Integration acceptance flow + evidence", "panels": panels,
+            "result": {"prediction_before_outcome": before_outcome,
+                       "independent_grade": closed.grade, "deterministic_replay": replay_ok,
+                       "test_files": tests, "doc_files": docs, "example_scripts": scripts},
             "passed": passed,
-            "description": "Deliverable evidence: the test suite, design/TODO documentation, runnable phase2/3 "
-                           "example scripts, and the generated acceptance report."}
+            "description": "Runs the real Phase 2→3 acceptance flow live (induce a rule, predict before the "
+                           "outcome, grade against an independent outcome, replay deterministically) and reports "
+                           "the test/doc/script deliverable evidence."}
+
+
+def _demo_phase3():
+    """Phase 3 live over real ls20 frames: induce a motion rule from A→B, predict
+    the mover's position in C BEFORE observing, then grade against the real C."""
+    import symbolic_arc as sa
+    import phase3_pipeline as p3
+    res = p3.run_live_phase3()
+    if not res.get("ok"):
+        return {"id": "phase3-live", "group": "Phase 3 — live learning",
+                "title": "Learn a rule, predict next state, grade (live)", "panels": [],
+                "result": res, "passed": False,
+                "description": "Live Phase 3 over ls20 frames (no trackable mover found)."}
+    fr = res["frames"]
+    setdir = p3._LS20_DIR
+
+    def grid(idv, marks):
+        png = next(iter(setdir.glob(f"{idv}.png")), None)
+        idx, hexpal, _c, _r = sa.decode_grid(str(png))
+        return _grid_to_cells(idx, hexpal) + list(marks)
+    pa = res["observed_move_AB"]["from"]; pb = res["observed_move_AB"]["to"]
+    pred = res["prediction"]["predicted"]; act = res["actual_C"]
+    panels = [
+        _panel(f'A {fr["A"]} · mover @ {pa}', grid(fr["A"], [(pa[0], pa[1], "visible", _BLUE)])),
+        _panel(f'B {fr["B"]} · moved to {pb}', grid(fr["B"], [(pb[0], pb[1], "visible", _BLUE)])),
+        _panel(f'C {fr["C"]} · predicted {pred} (green) vs actual {act} (blue)',
+               grid(fr["C"], [(pred[0], pred[1], "regen", _GREEN), (act[0], act[1], "visible", _BLUE)])),
+    ]
+    return {"id": "phase3-live", "group": "Phase 3 — live learning",
+            "title": "Learn a rule, predict next state, grade (live)", "panels": panels[:1],
+            "frames": panels,
+            "result": {"mover": f'{res["mover"]["color"]} {res["mover"]["shape"]}',
+                       "move_AB": f'{pa}→{pb}', "predicted_C": pred, "actual_C": act,
+                       "grade": res["grade"], "calibrated": round(res["calibrated_probability"], 2),
+                       "rules": [r["interpretation"] for r in res["rules_induced"]]},
+            "passed": bool(res["passed"]),
+            "description": "Real learn→predict→grade over live ls20 frames: a motion rule induced from A→B "
+                           "predicts the mover's position in C before it is observed; graded against the real "
+                           "frame C and the rule's calibrated probability is updated."}
 
 
 def _demo_regeneration():
@@ -941,7 +1034,7 @@ _DEMOS = [
     _demo_properties, _demo_relationships,
     _demo_recolor_change, _demo_resize_change,
     _demo_dedup, _demo_encounter_history,
-    _demo_phase3_contract, _demo_environments, _demo_suite,
+    _demo_phase3_contract, _demo_environments, _demo_suite, _demo_phase3,
 ]
 
 
@@ -1010,8 +1103,11 @@ _DEMO_CATALOG = [
                     "state_differences", "encounter_history", "roundtrip_ok", "bad_payload_rejected"]},
     {"id": "environments", "group": "Phase 3 — integration", "title": "Operation across representative environments",
      "resultKeys": ["rendered_arcade", "fixed_camera_physics", "top_down_manipulation", "total_fixtures"]},
-    {"id": "suite", "group": "Phase 3 — integration", "title": "Tests, docs, example scripts & acceptance",
-     "resultKeys": ["test_files", "doc_files", "example_scripts", "acceptance_report"]},
+    {"id": "suite", "group": "Phase 3 — integration", "title": "Integration acceptance flow + evidence",
+     "resultKeys": ["prediction_before_outcome", "independent_grade", "deterministic_replay",
+                    "test_files", "doc_files", "example_scripts"]},
+    {"id": "phase3-live", "group": "Phase 3 — live learning", "title": "Learn a rule, predict next state, grade (live)",
+     "resultKeys": ["mover", "move_AB", "predicted_C", "actual_C", "grade", "calibrated", "rules"]},
 ]
 
 
@@ -1137,19 +1233,19 @@ _SOW_COVERAGE = [
     ("P3", "4b", "Structured errors", "full", "full", "phase3-contract"),
     ("P3", "4c", "Integration tests", "full", "full", "suite"),
     ("P3", "4d", "Example workflows", "full", "full", "suite"),
-    ("P3", "5", "Infer candidate transformations / transition rules", "full", "full", "phase3"),
-    ("P3", "6a", "Support multiple candidate interpretations", "full", "full", "phase3"),
-    ("P3", "6b", "Retain evidence for successful & unsuccessful rules", "full", "full", "phase3"),
-    ("P3", "7", "Apply learned transformations to new cases", "full", "full", "phase3"),
-    ("P3", "8", "Predict later states before outcomes", "full", "full", "phase3"),
-    ("P3", "9", "Compare predictions with independent outcomes", "full", "full", "phase3"),
-    ("P3", "10", "Update rule evidence on success/failure", "full", "full", "phase3"),
-    ("P3", "11", "Prevent post-hoc explanations counting as predictions", "full", "full", "phase3"),
+    ("P3", "5", "Infer candidate transformations / transition rules", "full", "full", "phase3-live"),
+    ("P3", "6a", "Support multiple candidate interpretations", "full", "full", "phase3-live"),
+    ("P3", "6b", "Retain evidence for successful & unsuccessful rules", "full", "full", "phase3-live"),
+    ("P3", "7", "Apply learned transformations to new cases", "full", "full", "phase3-live"),
+    ("P3", "8", "Predict later states before outcomes", "full", "full", "phase3-live"),
+    ("P3", "9", "Compare predictions with independent outcomes", "full", "full", "phase3-live"),
+    ("P3", "10", "Update rule evidence on success/failure", "full", "full", "phase3-live"),
+    ("P3", "11", "Prevent post-hoc explanations counting as predictions", "full", "full", "phase3-live"),
     ("P3", "12a", "Recognition of partly occluded objects", "full", "full", "occlusion-t"),
     ("P3", "12b", "Completion of partly occluded objects", "full", "full", "occlusion-t"),
     ("P3", "13a", "Operation in grid environments", "full", "full", "live-ls20"),
     ("P3", "13b", "Operation in raster environments", "full", "full", "input-gradient"),
-    ("P3", "13c", "Rendered arcade / fixed-camera physics / top-down manipulation", "partial", "full", "environments"),
+    ("P3", "13c", "Rendered arcade / fixed-camera physics / top-down manipulation", "full", "full", "environments"),
     ("P3", "14a", "Integration documentation", "full", "full", "suite"),
     ("P3", "14b", "Example scripts", "full", "full", "suite"),
     ("P3", "14c", "Acceptance-test results", "full", "full", "suite"),
@@ -1159,7 +1255,8 @@ _SOW_COVERAGE = [
 
 def sow_coverage() -> list:
     """Every Phase 2 & 3 SoW deliverable with implemented/LLM-free/demo status, so
-    the page can list an entry for each -- including the ones not done yet."""
+    the page can list an entry for each. Every row maps to a real, runnable demo
+    card (no stubs); rows still short of full implementation are marked partial."""
     out = []
     for phase, did, title, impl, llm, demo in _SOW_COVERAGE:
         if demo:
