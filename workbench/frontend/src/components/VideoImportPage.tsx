@@ -454,6 +454,7 @@ type Induction = {
   appeared: Array<{ color: string; x: number; y: number }>;
   interacted: Array<{ mover: string; target: string }>;
   revealed: Array<{ mover: string; color: string; x: number; y: number }>;
+  action?: string;
 };
 function parseInduction(text: string): Induction {
   const ind: Induction = { moved: [], disappeared: [], appeared: [], interacted: [], revealed: [] };
@@ -461,7 +462,8 @@ function parseInduction(text: string): Induction {
   for (const raw of text.split("\n")) {
     const s = raw.trim();
     let m: RegExpMatchArray | null;
-    if ((m = s.match(/^\(moved\s+\S+\s+(\S+)\s+(-?\d+)\s+(-?\d+)\s+(\S+)\)/))) ind.moved.push({ part: m[1], dx: +m[2], dy: +m[3], tf: m[4] });
+    if ((m = s.match(/^\(transition\s+\S+\s+\S+\s+(\S+)\s+\S+\)/))) ind.action = m[1];
+    else if ((m = s.match(/^\(moved\s+\S+\s+(\S+)\s+(-?\d+)\s+(-?\d+)\s+(\S+)\)/))) ind.moved.push({ part: m[1], dx: +m[2], dy: +m[3], tf: m[4] });
     else if ((m = s.match(/^\(disappeared\s+\S+\s+(\S+)\)/))) ind.disappeared.push(m[1]);
     else if ((m = s.match(/^\(appeared\s+\S+\s+(\S+)\s+(-?\d+)\s+(-?\d+)\)/))) ind.appeared.push({ color: m[1], x: +m[2], y: +m[3] });
     else if ((m = s.match(/^\(interacted\s+\S+\s+(\S+)\s+(\S+)\)/))) ind.interacted.push({ mover: m[1], target: m[2] });
@@ -6588,6 +6590,22 @@ export function VideoImportPage({
                             <span className="video-import-reduce-desccond">{COND_LABELS[it.cond] || it.cond}</span>
                             <code className="video-import-reduce-descid">{it.id}</code>
                             {it.startedAt ? <span className="video-import-reduce-desctime">⏱ started {it.startedAt}</span> : null}
+                            {it.provenance ? (() => {
+                              const pv = it.provenance;
+                              const rec = String(pv.arcRecording || "").split("/").slice(-2).join("/");
+                              const inAct = actionLabel(pv.incomingAction || "");
+                              const origin = rec
+                                ? `from ${rec}${pv.frameIndex != null ? ` · frame ${pv.frameIndex}` : ""}${inAct ? ` · ${inAct}` : ""}`
+                                : (pv.operation || "imported");
+                              const tip = [
+                                pv.operation ? `how: ${pv.operation}` : "",
+                                inAct ? `via: ${pv.incomingAction} (${inAct})` : "",
+                                pv.parentImage ? `parent: ${pv.parentImage}` : "",
+                                pv.rootImage ? `root: ${pv.rootImage}` : "",
+                                pv.createdAt ? `at: ${pv.createdAt}` : "",
+                              ].filter(Boolean).join("\n");
+                              return <span className="video-import-reduce-descorigin" title={tip}>⛓ {origin}</span>;
+                            })() : null}
                             {tiers.map((row: any, ri: number) => {
                               const ms = typeof row.elapsedMs === "number" ? row.elapsedMs : (row.kind !== "prolog" && typeof it.elapsedMs === "number" ? it.elapsedMs : null);
                               if (ms == null) return null;
@@ -6708,9 +6726,9 @@ export function VideoImportPage({
                                 const inductionEls: any[] = [];
                                 if (nextItem) {
                                   const nextRel = nextItem.inputPath || `data/recognition_reduce/pool/${String(nextItem.input || "").split("/").pop()}`;
-                                  const actLabel = actionLabel(nextItem.action || "");
+                                  const manifestActLabel = actionLabel(nextItem.action || "");
                                   const actTitle = nextItem.action || "";
-                                  const renderRow = (rowKey: string, label: string, cls: string, ev: IndEvent | null, loading: boolean) => {
+                                  const renderRow = (rowKey: string, label: string, cls: string, ev: IndEvent | null, loading: boolean, actLabel: string, fromText: boolean) => {
                                     const nfacts = ev ? (ev.moved.length + ev.interacted.length + ev.revealed.length + ev.disappeared.length + ev.appeared.length) : 0;
                                     return (
                                       <div className={`video-import-reduce-induction ${cls}`} key={rowKey}>
@@ -6721,7 +6739,7 @@ export function VideoImportPage({
                                               <img src={asset(inputRel)} alt={it.id} loading="lazy" />
                                               <figcaption>{it.id}</figcaption>
                                             </figure>
-                                            <div className="video-import-reduce-indop">+ <b title={actTitle}>{actLabel || "?"}</b> =</div>
+                                            <div className="video-import-reduce-indop">+ <b title={actTitle}>{actLabel || "?"}</b> ={fromText ? <span className="video-import-reduce-indprov" title="action imported from the frame provenance link, baked into the MeTTa as a (transition …) fact">prov</span> : null}</div>
                                             <figure className="video-import-reduce-indframe">
                                               <img src={asset(nextRel)} alt={nextItem.id} loading="lazy" />
                                               <figcaption>{nextItem.id}</figcaption>
@@ -6755,7 +6773,7 @@ export function VideoImportPage({
                                       disappeared: p.disappeared,
                                       appeared: p.appeared.map((f) => ({ color: f.color })),
                                     };
-                                    inductionEls.push(renderRow("induction-prolog", "Induction · Prolog", "is-prolog", pev, reduceMetta[pRel] === undefined));
+                                    inductionEls.push(renderRow("induction-prolog", "Induction · Prolog", "is-prolog", pev, reduceMetta[pRel] === undefined, p.action || manifestActLabel, !!p.action));
                                   }
                                   // Induction · LLM — computed client-side from the LLM parts of both frames.
                                   const llmRow = tiers.find((r: any) => r.kind !== "prolog" && r.kind !== "oneshot") || tiers.find((r: any) => r.kind !== "prolog");
@@ -6767,7 +6785,7 @@ export function VideoImportPage({
                                     const pa = reduceParts[aRel]; const pb = reduceParts[bRel];
                                     const loading = pa === undefined || pb === undefined;
                                     const lev = (Array.isArray(pa) && Array.isArray(pb)) ? induceLlmPair(pa, pb) : null;
-                                    inductionEls.push(renderRow("induction-llm", "Induction · LLM", "is-llm", lev, loading));
+                                    inductionEls.push(renderRow("induction-llm", "Induction · LLM", "is-llm", lev, loading, manifestActLabel, false));
                                   }
                                 }
                                 return (

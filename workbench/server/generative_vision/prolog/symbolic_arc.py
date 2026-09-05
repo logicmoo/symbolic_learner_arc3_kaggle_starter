@@ -375,6 +375,29 @@ def _motion(info_a: dict, info_b: dict):
     return out, used
 
 
+# ARC-AGI-3 action ids -> friendly labels (authoritative map mirrored from
+# arc3_play_api.py) so the imported provenance edge reads "frame_0 + LEFT = frame_1".
+ARC_ACTION_LABELS = {
+    "ACTION1": "UP", "ACTION2": "DOWN", "ACTION3": "LEFT", "ACTION4": "RIGHT",
+    "ACTION5": "SPACE", "ACTION6": "CLICK", "ACTION7": "UNDO",
+}
+
+
+def _read_incoming_action(png_path: str) -> str:
+    """The ARC action that produced this frame, from the provenance sidecar that
+    is imported alongside the image (``<frame>.provenance.json`` -> source
+    .incomingAction). Returns "" when there is no sidecar/field."""
+    try:
+        p = Path(png_path)
+        sidecar = p.with_name(p.stem + ".provenance.json")
+        if not sidecar.is_file():
+            return ""
+        pj = json.loads(sidecar.read_text(encoding="utf-8"))
+        return str((pj.get("source") or {}).get("incomingAction") or "")
+    except (OSError, json.JSONDecodeError, ValueError):
+        return ""
+
+
 def extract_frame(png_path: str, char: str, partner_path: str | None = None) -> dict:
     idx, hexpal, cols, rows = decode_grid(png_path)
     labels, info = label_regions(idx)
@@ -393,7 +416,9 @@ def extract_frame(png_path: str, char: str, partner_path: str | None = None) -> 
     motion: dict = {}
     disappeared: list = []   # A gids gone in B
     appeared: list = []      # (hex, cx, cy) new in B
+    edge_action: str = ""    # ARC action on the outgoing edge (from partner's provenance)
     if partner_path:
+        edge_action = _read_incoming_action(partner_path)
         try:
             idx_b, pal_b, _cb, _rb = decode_grid(partner_path)
             _lb, info_b = label_regions(idx_b)
@@ -425,6 +450,13 @@ def extract_frame(png_path: str, char: str, partner_path: str | None = None) -> 
     order = sorted(info.items(), key=lambda kv: -kv[1]["area"])
     mlines = [f"; symbolic (prolog) part-graph for {char}  ({len(info)} parts)",
               f"(character {char})"]
+    # provenance edge imported with the image: this frame + ACTION = next frame.
+    if partner_path and edge_action:
+        this_stem = Path(png_path).stem
+        partner_stem = Path(partner_path).stem
+        edge_label = ARC_ACTION_LABELS.get(edge_action.upper(), edge_action)
+        mlines.append(f"; provenance: {this_stem} + {edge_label} = {partner_stem}  ({edge_action})")
+        mlines.append(f"(transition {char} {this_stem} {edge_label} {partner_stem})")
     geom = []
     partof_all: dict[str, str] = {}
     pid_of: dict[str, str] = {}

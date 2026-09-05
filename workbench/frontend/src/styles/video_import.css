@@ -1353,6 +1353,8 @@
 .video-import-reduce-indframe figcaption { font-size: 9px; letter-spacing: 0.03em; text-transform: uppercase; opacity: 0.6; }
 .video-import-reduce-indop { font-size: 13px; color: #cfd3da; white-space: nowrap; }
 .video-import-reduce-indop b { color: #f2c14e; font-weight: 800; }
+.video-import-reduce-indprov { margin-left: 6px; font-size: 9px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #27dcc2; border: 1px solid rgba(39,220,194,0.4); border-radius: 4px; padding: 0 4px; cursor: help; }
+.video-import-reduce-descorigin { display: block; font-size: 10.5px; color: #9aa0aa; margin-top: 2px; white-space: pre-line; cursor: help; }
 .video-import-reduce-indfacts { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; flex: 1 1 240px; min-width: 0; }
 .video-import-reduce-indempty { font-size: 11px; opacity: 0.5; font-style: italic; }
 .video-import-reduce-indchip { font-size: 10.5px; font-weight: 600; padding: 2px 7px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.14); background: rgba(255,255,255,0.05); white-space: nowrap; }

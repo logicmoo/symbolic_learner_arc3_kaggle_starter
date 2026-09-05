@@ -2339,19 +2339,40 @@ def _flat_set_manifest(root: Path, set_id: str) -> dict[str, Any]:
             m = manifest.get(idv) or {}
             # action that produced this frame (ARC incomingAction), from the
             # per-frame import provenance -> lets induction show "prev + ACTION = this".
+            # Every imported image carries a provenance sidecar recording HOW it was
+            # made (operation) and WHERE it came from (source recording/frame, parent,
+            # root) -> surfaced as item.provenance so the UI can show each image's origin.
             action = ""
+            prov: dict[str, Any] | None = None
             pp = img.parent / (img.stem + ".provenance.json")
             if pp.is_file():
                 try:
                     pj = json.loads(pp.read_text(encoding="utf-8"))
-                    action = (pj.get("source") or {}).get("incomingAction") or ""
+                    src = pj.get("source") or {}
+                    action = src.get("incomingAction") or ""
+                    parent = pj.get("parent") or {}
+                    root_ = pj.get("root") or {}
+                    prov = {
+                        "operation": pj.get("operation") or "",
+                        "createdAt": pj.get("createdAt") or "",
+                        "arcRecording": src.get("arcRecording") or "",
+                        "arcFrame": src.get("arcFrame") or "",
+                        "frameIndex": src.get("frameIndex"),
+                        "incomingAction": action,
+                        "gameState": src.get("gameState") or "",
+                        "level": src.get("level") or "",
+                        "parentImage": parent.get("image") or "",
+                        "rootImage": root_.get("firstSeenImage") or "",
+                        "provenancePath": img.parent.joinpath(img.stem + ".provenance.json").relative_to(root).as_posix(),
+                    }
                 except (OSError, json.JSONDecodeError):
                     action = ""
+                    prov = None
             items.append({
                 "id": idv, "slug": set_leaf, "cond": stem,
                 "label": set_leaf.replace("_", " ").replace("-", " "),
                 "input": img.name, "inputPath": img.relative_to(root).as_posix(),
-                "source": "recording", "source_url": "", "action": action,
+                "source": "recording", "source_url": "", "action": action, "provenance": prov,
                 "scene": True, "startedAt": m.get("startedAt"), "elapsedMs": m.get("elapsedMs"),
                 "rows": normalize_rows(m.get("rows")),
             })
