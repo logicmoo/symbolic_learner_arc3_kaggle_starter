@@ -13,7 +13,8 @@ type Shape = {
   key: string; name: string; box: string; size: number;
   cells: number[][]; composedOf: string[] | null; turtle?: Turtle;
 };
-type Identity = { key: string; color: string; first: string; last: string; seen: number };
+type Identity = { key: string; name: string; first: string; last: string; seen: number;
+  variations?: { color: string; size: number; seen: number }[] };
 type Placement = { game: string; iid: string; gid: string; moves: number; points: (string | number)[][] };
 type Scope = { identities: Identity[]; placements: Placement[] };
 type Snapshot = {
@@ -137,14 +138,14 @@ export function SpriteViewerPage() {
               Identities ({identities.length}){game ? ` · ${game}` : ""}
             </h3>
             <div style={{ border: "1px solid #1c2333", borderRadius: 6, overflow: "hidden" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto", background: "#0d1320", fontWeight: 600 }}>
-                <div style={cell}>color</div><div style={cell}>shape key</div><div style={cell}>seen</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.5fr 2fr", background: "#0d1320", fontWeight: 600 }}>
+                <div style={cell}>object (shape identity)</div><div style={cell}>seen</div><div style={cell}>occurrences (color · size)</div>
               </div>
               {identities.slice(0, 400).map((o, i) => (
-                <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 1fr auto" }}>
-                  <div style={cell}>{o.color}</div>
-                  <div style={{ ...cell, fontFamily: "monospace" }}>{o.key.slice(0, 10)}</div>
+                <div key={i} style={{ display: "grid", gridTemplateColumns: "1.2fr 0.5fr 2fr" }}>
+                  <div style={{ ...cell, fontFamily: "monospace", wordBreak: "break-word" }}>{o.name || o.key}</div>
                   <div style={cell}>{o.seen}</div>
+                  <div style={cell}>{(o.variations || []).map((v) => `${v.color}·${v.size}${v.seen > 1 ? ` ×${v.seen}` : ""}`).join(", ")}</div>
                 </div>
               ))}
             </div>

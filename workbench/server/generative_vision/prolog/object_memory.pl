@@ -27,50 +27,60 @@
 
 :- use_module(library(persistency)).
 
-:- dynamic sig/2.
+:- dynamic sig/1.
+:- dynamic occ/3.
 :- dynamic db/1.
 :- dynamic when_stamp/1.
 :- dynamic shape/3.
 :- dynamic place/5.
 :- dynamic variant/4.
 
+% Option A object model: an OBJECT is a scale + colour normalized shape identity
+% (Key = its shape name). Colour and full size are OCCURRENCE attributes bound to
+% the object via known_variation, so recolour / resize / move all keep the same
+% object identity. known_object counts how many encounters recognized the object;
+% known_variation records each distinct (colour, size) it has appeared as.
 :- persistent
-     known_object(key:atom, color:atom, first:atom, last:atom, seen:integer).
+     known_object(key:atom, first:atom, last:atom, seen:integer).
+:- persistent
+     known_variation(key:atom, color:atom, size:integer, seen:integer).
 :- persistent
      known_placement(game:atom, iid:atom, gid:atom, points:atom, moves:integer).
 
-% recognize-or-add: reuse an existing identity and bump its encounter count, or
-% mint a new persistent identity the first time this (shape,color) is seen.
-remember(Key, Color, When, Id, Seen, New) :-
-    ( known_object(Key, Color, First, _Last0, Seen0)
-    -> retract_known_object(Key, Color, First, _, Seen0),
+% recognize-or-add by SHAPE identity only: reuse an existing object and bump its
+% encounter count, or mint a new persistent object the first time this shape is
+% seen (regardless of colour or size).
+remember(Key, When, Id, Seen, New) :-
+    ( known_object(Key, First, _Last0, Seen0)
+    -> retract_known_object(Key, First, _, Seen0),
        Seen is Seen0 + 1,
-       assert_known_object(Key, Color, First, When, Seen),
+       assert_known_object(Key, First, When, Seen),
        New = f
     ;  Seen = 1,
-       assert_known_object(Key, Color, When, When, Seen),
+       assert_known_object(Key, When, When, Seen),
        New = t
     ),
-    format(atom(Id), 'gobj_~w_~w', [Color, Key]).
+    format(atom(Id), 'gobj_~w', [Key]).
 
-% recognize-only: report the identity + accumulated count for an observed
-% (shape,color) WITHOUT minting a new identity or bumping any count. Seen is the
-% stored encounter count (0 when the object is unknown), and New = t means the
-% object is not yet in memory (it would be minted if committed), f means it was
-% recognized from a prior encounter. This is the non-mutating counterpart of
-% remember/6, used by the Recognition page's default recognize-only pass.
-recognize(Key, Color, Id, Seen, New) :-
-    ( known_object(Key, Color, _First, _Last, Seen0)
+% record (or bump) one (colour, size) occurrence variation bound to an object.
+remember_variation(Key, Color, Size) :-
+    ( known_variation(Key, Color, Size, VS0)
+    -> retract_known_variation(Key, Color, Size, VS0),
+       VS is VS0 + 1,
+       assert_known_variation(Key, Color, Size, VS)
+    ;  assert_known_variation(Key, Color, Size, 1)
+    ).
+
+% recognize-only: report the object identity + accumulated count for an observed
+% shape identity WITHOUT minting a new object or bumping any count. Seen is the
+% stored encounter count (0 when unknown); New = t means the object is not yet in
+% memory (it would be minted if committed), f means it was recognized from a prior
+% encounter. Non-mutating counterpart of remember/5.
+recognize(Key, Id, Seen, New) :-
+    ( known_object(Key, _First, _Last, Seen0)
     -> Seen = Seen0, New = f
     ;  Seen = 0, New = t ),
-    format(atom(Id), 'gobj_~w_~w', [Color, Key]).
-
-% name of an observed shape key: the full shape, else any variant (a shrunk /
-% rotated / diagonal form) it matches, else '-'. shape/3 + variant/4 are the
-% colorless vocabulary consulted from shape_dir/shapes.pl (no identity).
-shape_name(Key, Name) :- shape(Key, Name, _), !.
-shape_name(Key, Name) :- variant(Key, Name, _, _), !.
-shape_name(_, '-').
+    format(atom(Id), 'gobj_~w', [Key]).
 
 % record (or refresh) a tracked instance's move-to-move (x,y,shape) trajectory for
 % a game. Keyed by (game, instance-id); replaces the prior trajectory for that pair.
@@ -87,39 +97,42 @@ run_seed :-
     halt.
 run_seed :- halt(1).
 
+% commit batch: for each object identity sig(Key) recognize-or-mint and print
+%   mem <GlobalId> <Key> <Seen> <t|f>
+% then bind every occurrence variation occ(Key,Color,Size) and record placements.
 run_memory :-
     ( db(DB) -> db_attach(DB, []) ; true ),
     ( when_stamp(When) -> true ; When = unknown ),
-    forall(sig(Key, Color),
-           ( remember(Key, Color, When, Id, Seen, New),
-             shape_name(Key, SName),
-             format("mem ~w ~w ~w ~w ~w ~w~n", [Id, Key, Color, Seen, New, SName]) )),
+    forall(sig(Key),
+           ( remember(Key, When, Id, Seen, New),
+             format("mem ~w ~w ~w ~w~n", [Id, Key, Seen, New]) )),
+    forall(occ(Key, Color, Size), remember_variation(Key, Color, Size)),
     forall(place(Game, Iid, Gid, Points, Moves),
            ( remember_placement(Game, Iid, Gid, Points, Moves),
              format("place ~w ~w ~w~n", [Iid, Moves, Gid]) )),
     halt.
 run_memory :- halt(1).
 
-% recognize-only batch: like run_memory, but consults the store read-only. For
-% each sig/2 it prints  mem <GlobalId> <Key> <Color> <Seen> <t|f> <ShapeName>
-% exactly as run_memory does, but never asserts, bumps, or records placement, so
-% the attached identity DB is left byte-for-byte unchanged. If no db/1 is given
-% (the scope has no store yet) every object is reported unknown (Seen 0, New t).
+% recognize-only batch: like run_memory but read-only. For each sig(Key) it prints
+%   mem <GlobalId> <Key> <Seen> <t|f>
+% and never asserts, bumps, records variations, or placements, so the attached DB
+% is left byte-for-byte unchanged. With no db/1 every object is unknown (Seen 0).
 run_recognize :-
     ( db(DB) -> db_attach(DB, []) ; true ),
-    forall(sig(Key, Color),
-           ( recognize(Key, Color, Id, Seen, New),
-             shape_name(Key, SName),
-             format("mem ~w ~w ~w ~w ~w ~w~n", [Id, Key, Color, Seen, New, SName]) )),
+    forall(sig(Key),
+           ( recognize(Key, Id, Seen, New),
+             format("mem ~w ~w ~w ~w~n", [Id, Key, Seen, New]) )),
     halt.
 run_recognize :- halt(1).
 
-% dump the attached identity store (known_object + known_placement) as
+% dump the attached identity store (objects + variations + placements) as
 % tab-delimited lines for the registry viewer. db(DB) selects which scope.
 run_dump :-
     ( db(DB) -> db_attach(DB, []) ; true ),
-    forall(known_object(K, C, F, L, S),
-           format("obj\t~w\t~w\t~w\t~w\t~w~n", [K, C, F, L, S])),
+    forall(known_object(K, F, L, S),
+           format("obj\t~w\t~w\t~w\t~w~n", [K, F, L, S])),
+    forall(known_variation(K, C, Z, S),
+           format("var\t~w\t~w\t~w\t~w~n", [K, C, Z, S])),
     forall(known_placement(G, I, Gd, P, M),
            format("plc\t~w\t~w\t~w\t~w\t~w~n", [G, I, Gd, P, M])),
     halt.

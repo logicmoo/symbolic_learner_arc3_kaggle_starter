@@ -407,7 +407,7 @@ const API = "/workbench/video-import";
 // count, so the Recognition reduce rows can render each stage panel NATIVELY
 // (turtle shapes) instead of a pre-baked composite image. bbox is intentionally
 // NOT parsed or required — the turtle is the shape; the box was a throwaway.
-type MettaRecognition = { shapeName?: string; boxName?: string; seen?: number; isNew?: boolean; gid?: string; sigHash?: string; overlaps?: Array<[string, string]> };
+type MettaRecognition = { shapeName?: string; boxName?: string; seen?: number; isNew?: boolean; gid?: string; sigHash?: string; occSize?: number; overlaps?: Array<[string, string]> };
 type MettaPart = { id: string; label: string; color: string; recog?: MettaRecognition };
 type MettaGroup = { id: string; parts: MettaPart[] };
 // Distinct outline colors for partOf groups (cycled by group index).
@@ -443,6 +443,8 @@ function parseMettaParts(text: string): { parts: MettaPart[]; nrels: number; gro
     if (shp) { rec(shp[1]).shapeName = shp[2]; continue; }
     const box = line.match(/^\(box\s+\S+\s+(\S+)\s+(\S+)\)/);
     if (box) { rec(box[1]).boxName = box[2]; continue; }
+    const oc = line.match(/^\(occurrence\s+\S+\s+(\S+)\s+\(size\s+(\d+)\)/);
+    if (oc) { rec(oc[1]).occSize = parseInt(oc[2], 10); continue; }
     const ov = line.match(/^\(overlaps\s+\S+\s+(\S+)\s+(\S+)\s+(\S+)\)/);
     if (ov) { const r = rec(ov[1]); (r.overlaps = r.overlaps || []).push([ov[2], ov[3]]); continue; }
     if (/^\((?:above|left-of|right-of|below)\s/.test(line)) nrels += 1;
@@ -6826,20 +6828,20 @@ export function VideoImportPage({
                                                 {parts.filter((p) => p.recog).map((p) => {
                                                   const r = p.recog as MettaRecognition;
                                                   const via = r.overlaps && r.overlaps.length ? r.overlaps[0][1] : "";
-                                                  // Unambiguous name: prefer a real vocab shape name, else the
-                                                  // box-cut name, else an overlap match; the color+index label
-                                                  // (gold_1) is ambiguous per-frame so it is never the identity.
-                                                  const vocab = (r.shapeName && r.shapeName !== "-") ? r.shapeName
+                                                  // Object identity (Option A): the scale + colour normalized shape
+                                                  // NAME. Colour and full size are occurrence attributes of THIS
+                                                  // appearance, shown alongside the identity.
+                                                  const ident = (r.shapeName && r.shapeName !== "-") ? r.shapeName
                                                     : r.boxName ? r.boxName
                                                     : (via && r.overlaps && r.overlaps.length) ? `≈${r.overlaps[0][0]}`
                                                     : "unnamed";
-                                                  const title = `${p.label || p.id} · ${vocab}${r.gid ? ` · ${r.gid}` : ""}${r.overlaps && r.overlaps.length ? ` · via ${r.overlaps.map((o) => `${o[0]}(${o[1]})`).join(", ")}` : ""}`;
+                                                  const title = `object ${ident}${r.gid ? ` (${r.gid})` : ""} · occurrence: color ${p.color}${r.occSize ? `, size ${r.occSize}` : ""}${r.overlaps && r.overlaps.length ? ` · via ${r.overlaps.map((o) => `${o[0]}(${o[1]})`).join(", ")}` : ""}`;
                                                   return (
                                                     <span key={p.id} className={`video-import-reduce-recogchip${r.isNew ? " is-new" : " is-seen"}`} title={title}
                                                       onClick={() => selectPart(p.id, false)} role="button" tabIndex={0}>
                                                       <span className="video-import-reduce-recogdot" style={{ background: mettaColor(p.color) }} />
-                                                      <span className="video-import-reduce-recogname">{vocab}</span>
-                                                      {r.sigHash ? <span className="video-import-reduce-recogid" title={r.gid}>{p.color}·{r.sigHash}</span> : null}
+                                                      <span className="video-import-reduce-recogname">{ident}</span>
+                                                      {r.occSize ? <span className="video-import-reduce-recogid" title={`full size ${r.occSize} cells`}>{r.occSize}</span> : null}
                                                       {r.isNew
                                                         ? <span className="video-import-reduce-recogbadge new">NEW</span>
                                                         : <span className="video-import-reduce-recogbadge seen">seen {r.seen ?? 1}</span>}
@@ -6873,9 +6875,15 @@ export function VideoImportPage({
                                                       <ul>
                                                         {g.parts.map((p, pi) => {
                                                           const partSel = !!hi && hi.has(p.id);
+                                                          const pr = p.recog;
+                                                          const ident = (pr && pr.shapeName && pr.shapeName !== "-") ? pr.shapeName
+                                                            : (pr && pr.boxName) ? pr.boxName : p.label;
+                                                          const ptitle = `${ident}${pr && pr.gid ? ` (${pr.gid})` : ""} · ${p.label} · ${p.color}${pr && pr.occSize ? ` · size ${pr.occSize}` : ""}${pr && pr.seen ? ` · seen ${pr.seen}` : ""}`;
                                                           return (
                                                             <li key={pi}>
-                                                              <button type="button" className={partSel ? "is-sel" : ""} onClick={(e) => selectPart(p.id, e.shiftKey)} title={`${p.label} · ${p.color}`}>{p.label}</button>
+                                                              <button type="button" className={partSel ? "is-sel" : ""} onClick={(e) => selectPart(p.id, e.shiftKey)} title={ptitle}>
+                                                                <span className="video-import-reduce-treedot" style={{ background: mettaColor(p.color) }} />{ident}{pr && pr.occSize ? <span className="video-import-reduce-treesize"> · {pr.occSize}</span> : null}
+                                                              </button>
                                                             </li>
                                                           );
                                                         })}

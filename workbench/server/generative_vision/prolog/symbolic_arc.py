@@ -1198,6 +1198,37 @@ def _name_of_cells(cells) -> str:
     return _named_lookup().get(ck) or _box_cut_name(ck)
 
 
+_MAX_IDENTITY_CELLS = 4096
+
+
+def _identity_name(off) -> str:
+    """Option-A OBJECT identity: the shape's NAME after un-pixelating to its
+    smallest integer scale. Color, full size, and position are occurrence
+    attributes -- so two occurrences that are the same shape up to color, integer
+    scale, rotation, and reflection share this identity (recolor / resize / move
+    all keep the same object). Uses the proportional (un-pixelated) form, so a
+    2x-scaled sprite and its base collapse to one identity; names via the classic
+    polyomino vocabulary, else a box-cut descriptor. Very large or very complex
+    regions (whose box-cut descriptor would be unwieldy) fall back to a compact
+    rotation-normalized colour-free hash -- still recolour-invariant."""
+    cells = [tuple(c) for c in off]
+    if not cells:
+        return ""
+    if len(cells) > _MAX_IDENTITY_CELLS:
+        return "shape_" + hashlib.sha1(repr(_canon_br(cells)).encode("utf-8")).hexdigest()[:12]
+    prop = _proportional_cells(cells)
+    name = _name_of_cells(prop)
+    # a big cut-list box name is unreadable and bloats the store: keep only the
+    # bounding-box size and a stable hash of the exact prop shape.
+    if len(name) > 48:
+        h, w = 0, 0
+        if prop:
+            w = max(x for x, _ in prop) + 1
+            h = max(y for _, y in prop) + 1
+        return f"shape_{h}x{w}_" + hashlib.sha1(repr(sorted(prop)).encode("utf-8")).hexdigest()[:10]
+    return name
+
+
 def _shape_recurred(sigs) -> bool:
     """True if a shape returns after changing away from it (A .. B .. A): a
     meaningful shape recurrence along a tracked instance's trajectory."""
@@ -1358,8 +1389,11 @@ def write_shape_library(path: str | None = None) -> str:
 
 
 def _dump_identity_db(db_file: str) -> tuple[list, list]:
-    """Read one scoped identity DB via swipl -> (identities, placements)."""
-    objs: list = []
+    """Read one scoped identity DB via swipl -> (identities, placements). Each
+    identity is a colour-free, scale-normalized object (key/name + seen count) with
+    its bound occurrence `variations` (colour + full size + how often seen)."""
+    objs: dict = {}
+    order: list = []
     plcs: list = []
     try:
         out = subprocess.run(
@@ -1368,18 +1402,27 @@ def _dump_identity_db(db_file: str) -> tuple[list, list]:
              "-t", "halt"],
             capture_output=True, text=True, timeout=60).stdout
     except Exception:  # noqa: BLE001
-        return objs, plcs
+        return [], plcs
     for ln in out.splitlines():
         p = ln.split("\t")
-        if p[0] == "obj" and len(p) == 6:
-            objs.append({"key": p[1], "color": p[2], "first": p[3],
-                         "last": p[4], "seen": int(p[5]) if p[5].isdigit() else p[5]})
+        if p[0] == "obj" and len(p) == 5:
+            objs[p[1]] = {"key": p[1], "name": p[1], "first": p[2], "last": p[3],
+                          "seen": int(p[4]) if p[4].lstrip('-').isdigit() else p[4],
+                          "variations": []}
+            order.append(p[1])
+        elif p[0] == "var" and len(p) == 5:
+            o = objs.get(p[1])
+            if o is not None:
+                o["variations"].append({
+                    "color": p[2],
+                    "size": int(p[3]) if p[3].lstrip('-').isdigit() else p[3],
+                    "seen": int(p[4]) if p[4].lstrip('-').isdigit() else p[4]})
         elif p[0] == "plc" and len(p) == 6:
             pts = [tuple(s.split(",")) for s in p[4].split(";") if s]
             plcs.append({"game": p[1], "iid": p[2], "gid": p[3],
                          "points": [[int(a), int(b), c] for a, b, c in pts if a.lstrip('-').isdigit()],
                          "moves": int(p[5]) if p[5].isdigit() else p[5]})
-    return objs, plcs
+    return [objs[k] for k in order], plcs
 
 
 def registry_snapshot(mem_dir: str | None = None, include_turtles: bool = True) -> dict:
@@ -1431,11 +1474,12 @@ def remember_objects(results: list[dict], char: str, mem_dir: str,
     not yet in memory), and the identity DB is left unchanged. This is the default
     the Recognition page uses to match a frame against the registry without
     modifying it; the explicit commit action re-runs with write=True."""
-    # distinct (sig, color) across the whole sequence = the objects of this
-    # encounter; plus each tracked instance's move-to-move (x, y, shape) trajectory
-    # (glyph-scale objects only), so placement is remembered and a later similar
-    # shape can be recognized as a meaningful recurrence.
-    distinct: dict[tuple[str, str], str] = {}
+    # distinct OBJECT identities across the whole sequence (Option A: identity is
+    # the scale + colour normalized shape name; colour and full size are occurrence
+    # attributes bound to the object, not identity), plus each tracked instance's
+    # move-to-move (x, y, shape) trajectory so placement is remembered.
+    distinct: dict[str, str] = {}
+    occ: dict[str, set] = {}          # identity -> {(color, size)} occurrence variations
     traj: dict[str, list] = {}
     traj_gid: dict[str, str] = {}
     traj_last: dict[str, int] = {}
@@ -1446,14 +1490,20 @@ def remember_objects(results: list[dict], char: str, mem_dir: str,
             col = _cname(p.get("color", ""))
             if not sg:
                 continue
-            distinct[(sg, col)] = ""
-            off = p.get("off")
+            off = p.get("off") or []
+            # OBJECT identity: colour-free, scale-normalized shape name. Falls back
+            # to the colour-free rotation hash for oversize/unnamed regions.
+            ik = _identity_name(off) or ("shape_" + str(sg))
+            p["_ik"] = ik
+            size = len(off)
+            distinct[ik] = ""
+            occ.setdefault(ik, set()).add((col, size))
             if sg not in sig_off and off and len(off) <= _MAX_REP_CELLS:
                 sig_off[sg] = off
             iid = p.get("id")
-            if iid and 0 < len(p.get("off") or []) <= _MAX_REP_CELLS:
+            if iid and 0 < len(off) <= _MAX_REP_CELLS:
                 traj.setdefault(iid, []).append((p.get("cx", 0), p.get("cy", 0), sg))
-                traj_gid.setdefault(iid, f"gobj_{col}_{sg}")
+                traj_gid.setdefault(iid, f"gobj_{ik}")
                 traj_last[iid] = fi
     if not distinct:
         return
@@ -1471,14 +1521,17 @@ def remember_objects(results: list[dict], char: str, mem_dir: str,
     if write or identity_db.is_file():
         facts.append(f"db('{identity_db.as_posix()}').")
     facts.append(f"when_stamp('{char}').")
-    for (sg, col) in distinct:
-        facts.append(f"sig('{sg}', '{col}').")
+    for ik in distinct:
+        facts.append(f"sig('{ik}').")
+    for ik, variations in occ.items():
+        for (col, size) in variations:
+            facts.append(f"occ('{ik}', '{col}', {size}).")
     if write:
         for iid, pts in traj.items():
             points = ";".join(f"{x},{y},{s}" for (x, y, s) in pts)
             facts.append(f"place('{char}', '{iid}', '{traj_gid[iid]}', '{points}', {len(pts)}).")
     goal = "run_memory" if write else "run_recognize"
-    info: dict[tuple[str, str], tuple[str, int, bool, str]] = {}
+    info: dict[str, tuple[str, int, bool]] = {}
     with tempfile.NamedTemporaryFile("w", suffix=".pl", delete=False, encoding="utf-8") as f:
         f.write("\n".join(facts) + "\n")
         fpath = f.name
@@ -1495,10 +1548,10 @@ def remember_objects(results: list[dict], char: str, mem_dir: str,
         Path(fpath).unlink(missing_ok=True)
     for ln in out.splitlines():
         p = ln.split()
-        if len(p) == 7 and p[0] == "mem":
-            _mem, gid, key, col, seen, new, sname = p
+        if len(p) == 5 and p[0] == "mem":
+            _mem, gid, key, seen, new = p
             try:
-                info[(key, col)] = (gid, int(seen), new == "t", sname)
+                info[key] = (gid, int(seen), new == "t")
             except ValueError:
                 continue
     # per-instance placement summary, emitted into the frame where the instance is
@@ -1520,23 +1573,25 @@ def remember_objects(results: list[dict], char: str, mem_dir: str,
     for fi, r in enumerate(results):
         lines: list[str] = []
         for p in r.get("geom", []):
-            k = (p.get("sig"), _cname(p.get("color", "")))
-            if k in info:
-                gid, seen, new, sname = info[k]
+            ik = p.get("_ik")
+            if ik in info:
+                gid, seen, new = info[ik]
+                off = p.get("off") or []
                 p["globalId"] = gid
                 p["memSeen"] = seen
                 p["memNew"] = new
+                # occurrence attributes bound to the object (Option A): the object
+                # is the scale+colour-normalized identity; this appearance carries
+                # its own colour and full size.
+                p["occSize"] = len(off)
+                p["shapeName"] = ik
                 lines.append(f"(memory {char} {p['id']} {gid} (seen {seen}) (new {'t' if new else 'f'}))")
+                lines.append(f"(shape {char} {p['id']} {ik})")
+                lines.append(f"(occurrence {char} {p['id']} (size {len(off)}) (color {_cname(p.get('color', ''))}))")
+                # occurrence-level shape descriptors of the OBSERVED (pre-normalized)
+                # shape: how it overlaps -iminos, its box-cut / composition, and its
+                # orientation. These describe the appearance, not the identity.
                 ovl = sig_overlaps.get(p.get("sig")) or []
-                if sname and sname != "-":
-                    p["shapeName"] = sname
-                    lines.append(f"(shape {char} {p['id']} {sname})")
-                elif ovl:
-                    # no direct match: recognize via the best (most-specific) overlap
-                    sname = ovl[0][0]
-                    p["shapeName"] = sname
-                    p["shapeVia"] = ovl[0][1]
-                    lines.append(f"(shape {char} {p['id']} {sname})")
                 if ovl:
                     p["overlaps"] = [[nm, wy] for nm, wy in ovl]
                     for nm, wy in ovl:
@@ -1550,8 +1605,7 @@ def remember_objects(results: list[dict], char: str, mem_dir: str,
                     if box:
                         p["boxName"] = box
                         lines.append(f"(box {char} {p['id']} {box})")
-                    off = p.get("off")
-                    if canon and off and sname and sname != "-":
+                    if canon and off:
                         ori = _transform_between(list(canon), [tuple(o) for o in off])
                         if ori and ori != "deformed":
                             n_vis, _ = _distinct_orientations(canon)  # visually distinct
@@ -1560,9 +1614,9 @@ def remember_objects(results: list[dict], char: str, mem_dir: str,
                             p["orientCount"] = n_dir
                             p["orientVisual"] = n_vis
                             lines.append(
-                                f"(oriented {char} {p['id']} {sname} {ori} {n_dir} {n_vis})")
+                                f"(oriented {char} {p['id']} {ik} {ori} {n_dir} {n_vis})")
                     sp = p.get("startPoint")
-                    if sp and sname and sname != "-":
+                    if sp:
                         nsp = len(p.get("startPoints") or [])
                         lines.append(
                             f"(start-point {char} {p['id']} {sp[0]} {sp[1]} "

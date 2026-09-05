@@ -92,3 +92,37 @@ def test_commit_accumulates_across_encounters(tmp_path):
     assert _seen(tmp_path, "ls20-saved_001") == 1
     assert _seen(tmp_path, "ls20-saved_002") == 2
     assert _seen(tmp_path, "ls20-saved_003") == 3
+
+
+def _frame_col(color, off):
+    sig = sa._shape_key((None, sa._canon_br([tuple(c) for c in off])))
+    return {"metta": "", "geom": [{"id": "p", "sig": sig, "color": color,
+                                   "off": [list(c) for c in off], "cx": 5, "cy": 5}]}
+
+
+def test_recolor_is_the_same_object(tmp_path):
+    # Option A: colour is an occurrence attribute, so a recoloured shape is the
+    # SAME object (identity = shapename), not a new identity.
+    sa.remember_objects([_frame_col("#c80000", _OFF)], "ls20-saved_001", str(tmp_path), write=True)
+    sa.remember_objects([_frame_col("#0000ff", _OFF)], "ls20-saved_002", str(tmp_path), write=True)
+    ids = sa.registry_snapshot(str(tmp_path))["scopes"]["ls20"]["identities"]
+    assert len(ids) == 1                       # recolour did NOT mint a new object
+    assert ids[0]["seen"] == 2
+    assert len({v["color"] for v in ids[0]["variations"]}) == 2  # both colours bound
+
+
+def test_resize_is_the_same_object(tmp_path):
+    base = [(0, 0), (1, 0)]                                     # domino
+    big = [(0, 0), (1, 0), (2, 0), (3, 0), (0, 1), (1, 1), (2, 1), (3, 1)]  # 2x-scaled domino
+    sa.remember_objects([_frame_col("#c80000", base)], "g-1", str(tmp_path), write=True)
+    sa.remember_objects([_frame_col("#c80000", big)], "g-2", str(tmp_path), write=True)
+    ids = sa.registry_snapshot(str(tmp_path))["scopes"]["g"]["identities"]
+    assert len(ids) == 1                       # resize did NOT mint a new object
+    assert ids[0]["seen"] == 2
+    assert {v["size"] for v in ids[0]["variations"]} == {2, 8}  # size is an occurrence attribute
+
+
+def test_identity_is_scale_and_colour_normalized_name():
+    assert sa._identity_name([(0, 0), (1, 0)]) == "domino"
+    assert sa._identity_name([(0, 0), (1, 0), (2, 0), (3, 0), (0, 1), (1, 1), (2, 1), (3, 1)]) == "domino"
+    assert sa._identity_name([(0, 0), (1, 0), (0, 1), (1, 1)]) == "monomino"  # 2x2 solid = scaled monomino
