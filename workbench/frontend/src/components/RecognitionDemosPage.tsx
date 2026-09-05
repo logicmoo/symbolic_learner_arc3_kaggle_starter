@@ -231,18 +231,20 @@ function CoverageSection({ rows, onRun }: { rows: CoverageRow[]; onRun: (id: str
   );
 }
 
-function DemoCard({ demo, onRun, onStep, onClear, running, stepMode, resetToken }: {
+function DemoCard({ demo, onRun, onStep, onClear, running, stepMode, resetToken, flash }: {
   demo: Demo; onRun: (id: string) => void; onStep: (id: string) => void;
-  onClear: (id: string) => void; running: boolean; stepMode: boolean; resetToken: number;
+  onClear: (id: string) => void; running: boolean; stepMode: boolean; resetToken: number; flash?: boolean;
 }) {
   const frames = (demo.frames && demo.frames.length ? demo.frames : demo.panels) || [];
   const notRun = !!demo.notRun;
   const btn = { fontSize: 11, padding: "3px 10px", borderRadius: 5, cursor: "pointer" } as const;
   return (
-    <div style={{
-      border: "1px solid #1c2333", borderRadius: 8, padding: 12,
+    <div id={`demo-${demo.id}`} style={{
+      border: flash ? "1px solid #8bd450" : "1px solid #1c2333", borderRadius: 8, padding: 12,
       background: notRun ? "#0b0f18" : "#0d1320",
       display: "flex", flexDirection: "column", gap: 8, opacity: notRun ? 0.82 : 1,
+      boxShadow: flash ? "0 0 0 2px rgba(139,212,80,0.55)" : undefined,
+      transition: "box-shadow 0.25s, border-color 0.25s",
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <span style={{
@@ -296,6 +298,7 @@ export function RecognitionDemosPage() {
   const [stepIds, setStepIds] = useState<Set<string>>(new Set());
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [runNonce, setRunNonce] = useState<Record<string, number>>({});
+  const [flashId, setFlashId] = useState<string | null>(null);
   const bump = useCallback((id: string) => setRunNonce((m) => ({ ...m, [id]: (m[id] || 0) + 1 })), []);
 
   // The UI only OBSERVES: it polls the server's cached run. While a run is in
@@ -338,6 +341,22 @@ export function RecognitionDemosPage() {
     runOnServer(id);
   }, [runOnServer, bump]);
   const runAll = useCallback(() => runOnServer(), [runOnServer]);
+
+  // Coverage-table ▶ buttons live far above the demo cards, so besides starting the
+  // run we scroll the matching card into view and briefly highlight it — otherwise
+  // clicking a coverage row appears to do nothing.
+  const runFromCoverage = useCallback((id: string) => {
+    runOne(id);
+    setFlashId(id);
+    const scrollTo = () => {
+      const el = document.getElementById(`demo-${id}`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+    // Re-scroll a few times: the card grows from a stub to a full running card as
+    // results arrive, so a single scroll would leave it off-screen.
+    [60, 500, 1200].forEach((t) => setTimeout(scrollTo, t));
+    setTimeout(() => setFlashId((cur) => (cur === id ? null : cur)), 2200);
+  }, [runOne]);
 
   const stopOnServer = useCallback(() => {
     fetch("/workbench/recognition/demos/stop", { method: "POST" })
@@ -411,7 +430,7 @@ export function RecognitionDemosPage() {
         <span style={{ color: "#8bd450" }}>green outline / +</span> = generatively filled or regenerated, dashed <b>?</b> = behind the occluder.
       </p>
       {err ? <div style={{ color: "#ff8b81", fontSize: 12, marginBottom: 8 }}>Error: {err}</div> : null}
-      <CoverageSection rows={data?.coverage || []} onRun={runOne} />
+      <CoverageSection rows={data?.coverage || []} onRun={runFromCoverage} />
       {running && !hasResults ? <div style={{ opacity: 0.6 }}>Server is running the sanity tests…</div> : null}
       {!running && !hasResults ? (
         <div style={{ opacity: 0.6, padding: "8px 0 14px", fontSize: 12.5 }}>
@@ -428,7 +447,7 @@ export function RecognitionDemosPage() {
               return (
                 <DemoCard key={d.id} demo={d} onRun={runOne} onStep={stepOne}
                   onClear={clearOne} running={cardRunning} stepMode={stepIds.has(d.id)}
-                  resetToken={runNonce[d.id] || 0} />
+                  resetToken={runNonce[d.id] || 0} flash={flashId === d.id} />
               );
             })}
           </div>
