@@ -708,13 +708,13 @@ def _run_job(only: str | None, gen: int) -> None:
 
 
 def start_demo_run(only: str | None = None) -> dict:
-    """Kick off a background server run (no-op if one is already running) and
-    return immediately. The page observes progress via get_demo_state()."""
+    """Kick off a background server run and return immediately. PREEMPTS any run
+    already in progress (its stale generation makes it discard its result) so Run
+    and Run step 1 always restart cleanly from the beginning. The page observes
+    progress via get_demo_state()."""
     global _demo_gen
     with _demo_lock:
-        if _demo_state["running"]:
-            return get_demo_state()
-        _demo_gen += 1
+        _demo_gen += 1                    # preempt/cancel any in-flight run
         gen = _demo_gen
         _demo_state["running"] = True
         _demo_state["startedAt"] = _now()

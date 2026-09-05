@@ -121,10 +121,12 @@ function ResultChips({ result }: { result: Record<string, unknown> }) {
   );
 }
 
-function AnimatedGrid({ frames, autoplay = true }: { frames: Panel[]; autoplay?: boolean }) {
+function AnimatedGrid({ frames, autoplay = true, resetToken = 0 }: { frames: Panel[]; autoplay?: boolean; resetToken?: number }) {
   const [i, setI] = useState(0);
   const [playing, setPlaying] = useState(autoplay);
   const multi = frames.length > 1;
+  // Restart the animation to the beginning when a new run is triggered for this card.
+  useEffect(() => { setI(0); setPlaying(autoplay); }, [resetToken, autoplay]);
   useEffect(() => { if (i > frames.length - 1) setI(0); }, [frames.length, i]);
   useEffect(() => {
     if (!multi || !playing) return;
@@ -161,9 +163,9 @@ function AnimatedGrid({ frames, autoplay = true }: { frames: Panel[]; autoplay?:
   );
 }
 
-function DemoCard({ demo, onRun, onStep, onStop, onClear, running, stepMode }: {
+function DemoCard({ demo, onRun, onStep, onClear, running, stepMode, resetToken }: {
   demo: Demo; onRun: (id: string) => void; onStep: (id: string) => void;
-  onStop: (id: string) => void; onClear: (id: string) => void; running: boolean; stepMode: boolean;
+  onClear: (id: string) => void; running: boolean; stepMode: boolean; resetToken: number;
 }) {
   const frames = (demo.frames && demo.frames.length ? demo.frames : demo.panels) || [];
   const notRun = !!demo.notRun;
@@ -181,25 +183,18 @@ function DemoCard({ demo, onRun, onStep, onStop, onClear, running, stepMode }: {
           color: notRun ? "#94a3b8" : demo.passed ? "#8bd450" : "#ff8b81",
         }}>{running ? "RUNNING" : notRun ? "NOT RUN" : demo.passed ? "PASS" : "FAIL"}</span>
         <b style={{ flex: 1 }}>{demo.title}</b>
-        {running ? (
-          <>
-            <button type="button" onClick={() => onStop(demo.id)} style={btn}>■ Stop</button>
-            <button type="button" onClick={() => onClear(demo.id)} style={btn}>Clear</button>
-          </>
-        ) : (
-          <>
-            <button type="button" onClick={() => onRun(demo.id)} style={btn}>▶ Run</button>
-            <button type="button" onClick={() => onStep(demo.id)} title="Run, then step frame by frame"
-              style={btn}>▶❙ Run step 1</button>
-            {!notRun ? <button type="button" onClick={() => onClear(demo.id)} style={btn}>Clear</button> : null}
-          </>
-        )}
+        {running ? <span style={{ fontSize: 11, opacity: 0.6, marginRight: 2 }}>running…</span> : null}
+        <button type="button" onClick={() => onRun(demo.id)} style={btn}>▶ Run</button>
+        <button type="button" onClick={() => onStep(demo.id)} title="Restart, then step frame by frame"
+          style={btn}>▶❙ Run Stepped</button>
+        <button type="button" onClick={() => onClear(demo.id)} disabled={notRun && !running}
+          title="Stop and clear back to the beginning" style={btn}>Clear</button>
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "center", flex: "0 0 auto" }}>
           {notRun
             ? (demo.preview ? <GridPanel panel={demo.preview} /> : <BlankMap />)
-            : <AnimatedGrid frames={frames} autoplay={!stepMode} />}
+            : <AnimatedGrid frames={frames} autoplay={!stepMode} resetToken={resetToken} />}
           {notRun ? (
             <PreRunControls onRun={() => onRun(demo.id)} onStep={() => onStep(demo.id)} disabled={running} />
           ) : null}
@@ -232,6 +227,8 @@ export function RecognitionDemosPage() {
   const [running, setRunning] = useState(false);
   const [stepIds, setStepIds] = useState<Set<string>>(new Set());
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [runNonce, setRunNonce] = useState<Record<string, number>>({});
+  const bump = useCallback((id: string) => setRunNonce((m) => ({ ...m, [id]: (m[id] || 0) + 1 })), []);
 
   // The UI only OBSERVES: it polls the server's cached run. While a run is in
   // progress it polls fast to animate; when idle it keeps polling slowly so a run
@@ -260,15 +257,18 @@ export function RecognitionDemosPage() {
       .catch((e) => setErr(String(e)));
   }, [observe]);
 
-  // "Run" auto-plays; "Run step 1" runs then starts PAUSED so you step manually.
+  // "Run" auto-plays; "Run Stepped" runs then starts PAUSED so you step manually.
+  // Both restart the animation to the beginning via the per-card run nonce.
   const runOne = useCallback((id: string) => {
     setStepIds((s) => { const n = new Set(s); n.delete(id); return n; });
+    bump(id);
     runOnServer(id);
-  }, [runOnServer]);
+  }, [runOnServer, bump]);
   const stepOne = useCallback((id: string) => {
     setStepIds((s) => new Set(s).add(id));
+    bump(id);
     runOnServer(id);
-  }, [runOnServer]);
+  }, [runOnServer, bump]);
   const runAll = useCallback(() => runOnServer(), [runOnServer]);
 
   const stopOnServer = useCallback(() => {
@@ -277,7 +277,6 @@ export function RecognitionDemosPage() {
       .then(() => { setRunning(false); observe(); })
       .catch((e) => setErr(String(e)));
   }, [observe]);
-  const stopOne = useCallback((_id: string) => stopOnServer(), [stopOnServer]);
 
   const clearOnServer = useCallback((only?: string) => {
     if (pollRef.current) clearTimeout(pollRef.current);
@@ -358,8 +357,9 @@ export function RecognitionDemosPage() {
             {demos.map((d) => {
               const cardRunning = running && (data?.only == null || data?.only === d.id);
               return (
-                <DemoCard key={d.id} demo={d} onRun={runOne} onStep={stepOne} onStop={stopOne}
-                  onClear={clearOne} running={cardRunning} stepMode={stepIds.has(d.id)} />
+                <DemoCard key={d.id} demo={d} onRun={runOne} onStep={stepOne}
+                  onClear={clearOne} running={cardRunning} stepMode={stepIds.has(d.id)}
+                  resetToken={runNonce[d.id] || 0} />
               );
             })}
           </div>
