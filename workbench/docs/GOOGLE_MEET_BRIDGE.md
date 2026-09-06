@@ -1,3 +1,5 @@
+[← Back to top-level README](../../README.md)
+
 # Google Meet bridge — Help
 
 The **Google Meet page** (RUNTIME → Google Meet) is the workbench surface for

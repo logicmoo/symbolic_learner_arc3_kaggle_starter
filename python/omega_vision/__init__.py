@@ -33,7 +33,14 @@ from .evaluation.benchmark import (
     ProviderAblationRunner,
     RasterPerturbationGenerator,
 )
-from .forms.forms import AbstractGenerativeForm, FitResult, GenerativeForm
+from .forms.forms import AbstractGenerativeForm, CellLogoForm, FitResult, GenerativeForm
+from .forms.contour_fill import ContourFillForm
+from .forms.layered_stroke import LayeredStrokeForm
+from .forms.part_graph_3d import PartGraph3DForm
+from ._future import FutureComponentError
+from .accelerators.sketchformer import SketchformerEmbedding
+from .adapters.anime_sketch import AnimeRegionProposer
+from .adapters.robot3d import RGBDObjectProposer, Robot3DAdapter
 from .environments.environment_fixtures import (
     EnvironmentProgressionFixtures,
     environment_progression_fixtures,
@@ -157,6 +164,9 @@ __all__ = [
     "CalibrationPoint",
     "ChangeDetector",
     "AbstractGenerativeForm",
+    "AnimeRegionProposer",
+    "CellLogoForm",
+    "ContourFillForm",
     "CommittedAtom",
     "ConfidenceHistoryRecord",
     "CorrespondenceEvidenceBuilder",
@@ -168,6 +178,7 @@ __all__ = [
     "EvidenceRecord",
     "ExecutionMode",
     "FitResult",
+    "FutureComponentError",
     "GameLearningPipeline",
     "GAME_OBJECT_LEARNER_SCHEMA_VERSION",
     "GameObjectLearnerPayload",
@@ -190,6 +201,7 @@ __all__ = [
     "InstanceMatcher",
     "InMemorySemanticBackend",
     "LearningStepResult",
+    "LayeredStrokeForm",
     "MatchProposal",
     "MettaFileAtomSpaceTransport",
     "MergeDecision",
@@ -213,6 +225,7 @@ __all__ = [
     "phase2_rule_executor",
     "phase2_rule_ranker",
     "PipelineGameObjectLearnerPlugin",
+    "PartGraph3DForm",
     "PredictionEvaluator",
     "PredictionGrade",
     "PredictionGradeStatus",
@@ -246,6 +259,9 @@ __all__ = [
     "RuleRanker",
     "RuleRivalSet",
     "RuleStore",
+    "RGBDObjectProposer",
+    "Robot3DAdapter",
+    "SketchformerEmbedding",
     "SingleWriter",
     "SpriteAdapter",
     "SemanticStoreBackend",

@@ -107,6 +107,7 @@ packages = [
   "omega_vision",
   "omega_vision.core",
   "omega_vision.forms",
+  "omega_vision.accelerators",
   "omega_vision.adapters",
   "omega_vision.evaluation",
   "omega_vision.environments",

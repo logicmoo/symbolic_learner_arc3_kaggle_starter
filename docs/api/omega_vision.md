@@ -2,6 +2,8 @@
 
 # Table of Contents
 
+* [omega\_vision.accelerators.sketchformer](#omega_vision.accelerators.sketchformer)
+  * [SketchformerEmbedding](#omega_vision.accelerators.sketchformer.SketchformerEmbedding)
 * [omega\_vision.adapters.adapters](#omega_vision.adapters.adapters)
   * [LearnedPartRoleProvider](#omega_vision.adapters.adapters.LearnedPartRoleProvider)
     * [\_\_init\_\_](#omega_vision.adapters.adapters.LearnedPartRoleProvider.__init__)
@@ -32,6 +34,8 @@
     * [\_\_init\_\_](#omega_vision.adapters.adapters.SimpleVideoAdapter.__init__)
     * [normalize](#omega_vision.adapters.adapters.SimpleVideoAdapter.normalize)
     * [propose\_candidates](#omega_vision.adapters.adapters.SimpleVideoAdapter.propose_candidates)
+* [omega\_vision.adapters.anime\_sketch](#omega_vision.adapters.anime_sketch)
+  * [AnimeRegionProposer](#omega_vision.adapters.anime_sketch.AnimeRegionProposer)
 * [omega\_vision.adapters.providers](#omega_vision.adapters.providers)
   * [ProviderCapabilities](#omega_vision.adapters.providers.ProviderCapabilities)
     * [mode](#omega_vision.adapters.providers.ProviderCapabilities.mode)
@@ -64,6 +68,9 @@
     * [capabilities](#omega_vision.adapters.providers.PrologProvider.capabilities)
     * [get\_candidate\_part](#omega_vision.adapters.providers.PrologProvider.get_candidate_part)
     * [get\_semantic\_records](#omega_vision.adapters.providers.PrologProvider.get_semantic_records)
+* [omega\_vision.adapters.robot3d](#omega_vision.adapters.robot3d)
+  * [Robot3DAdapter](#omega_vision.adapters.robot3d.Robot3DAdapter)
+  * [RGBDObjectProposer](#omega_vision.adapters.robot3d.RGBDObjectProposer)
 * [omega\_vision.adapters.sprite](#omega_vision.adapters.sprite)
   * [AlphaContourProvider](#omega_vision.adapters.sprite.AlphaContourProvider)
     * [\_\_call\_\_](#omega_vision.adapters.sprite.AlphaContourProvider.__call__)
@@ -633,6 +640,20 @@
     * [\_\_init\_\_](#omega_vision.evaluation.recognition_benchmark.RecognitionBenchmarkRunner.__init__)
     * [run](#omega_vision.evaluation.recognition_benchmark.RecognitionBenchmarkRunner.run)
     * [accounts](#omega_vision.evaluation.recognition_benchmark.RecognitionBenchmarkRunner.accounts)
+* [omega\_vision.forms.contour\_fill](#omega_vision.forms.contour_fill)
+  * [Cell](#omega_vision.forms.contour_fill.Cell)
+  * [Layer](#omega_vision.forms.contour_fill.Layer)
+  * [ContourFillForm](#omega_vision.forms.contour_fill.ContourFillForm)
+    * [domain](#omega_vision.forms.contour_fill.ContourFillForm.domain)
+    * [\_\_init\_\_](#omega_vision.forms.contour_fill.ContourFillForm.__init__)
+    * [canonicalize](#omega_vision.forms.contour_fill.ContourFillForm.canonicalize)
+    * [render](#omega_vision.forms.contour_fill.ContourFillForm.render)
+    * [fit\_instance](#omega_vision.forms.contour_fill.ContourFillForm.fit_instance)
+    * [distance](#omega_vision.forms.contour_fill.ContourFillForm.distance)
+    * [code\_length](#omega_vision.forms.contour_fill.ContourFillForm.code_length)
+    * [residual](#omega_vision.forms.contour_fill.ContourFillForm.residual)
+    * [complete](#omega_vision.forms.contour_fill.ContourFillForm.complete)
+    * [layers](#omega_vision.forms.contour_fill.ContourFillForm.layers)
 * [omega\_vision.forms.forms](#omega_vision.forms.forms)
   * [FitResult](#omega_vision.forms.forms.FitResult)
     * [parameters](#omega_vision.forms.forms.FitResult.parameters)
@@ -651,6 +672,11 @@
     * [fit\_instance](#omega_vision.forms.forms.GenerativeForm.fit_instance)
     * [distance](#omega_vision.forms.forms.GenerativeForm.distance)
     * [description\_length](#omega_vision.forms.forms.GenerativeForm.description_length)
+  * [CellLogoForm](#omega_vision.forms.forms.CellLogoForm)
+* [omega\_vision.forms.layered\_stroke](#omega_vision.forms.layered_stroke)
+  * [LayeredStrokeForm](#omega_vision.forms.layered_stroke.LayeredStrokeForm)
+* [omega\_vision.forms.part\_graph\_3d](#omega_vision.forms.part_graph_3d)
+  * [PartGraph3DForm](#omega_vision.forms.part_graph_3d.PartGraph3DForm)
 * [omega\_vision.runtime.capture](#omega_vision.runtime.capture)
   * [standard\_semantic\_grid\_observer](#omega_vision.runtime.capture.standard_semantic_grid_observer)
   * [SemanticGridCaptureObserver](#omega_vision.runtime.capture.SemanticGridCaptureObserver)
@@ -757,6 +783,19 @@
     * [exact](#omega_vision.runtime.transcript.TranscriptComparison.exact)
   * [TranscriptScorer](#omega_vision.runtime.transcript.TranscriptScorer)
     * [compare](#omega_vision.runtime.transcript.TranscriptScorer.compare)
+* [omega\_vision.\_future](#omega_vision._future)
+  * [FutureComponentError](#omega_vision._future.FutureComponentError)
+  * [future\_component](#omega_vision._future.future_component)
+
+<a id="omega_vision.accelerators.sketchformer"></a>
+
+# omega\_vision.accelerators.sketchformer
+
+SoW Appendix A.2 ``accelerators/sketchformer`` — future accelerator (stub, §16).
+
+<a id="omega_vision.accelerators.sketchformer.SketchformerEmbedding"></a>
+
+#### SketchformerEmbedding
 
 <a id="omega_vision.adapters.adapters"></a>
 
@@ -1012,6 +1051,16 @@ def normalize(*, observation_id: str, frames: Iterable[Any],
 def propose_candidates(observation: Any) -> Iterable[CandidateObject]
 ```
 
+<a id="omega_vision.adapters.anime_sketch"></a>
+
+# omega\_vision.adapters.anime\_sketch
+
+SoW Appendix A.2 ``adapters/anime_sketch`` — future adapter (stub only, §16).
+
+<a id="omega_vision.adapters.anime_sketch.AnimeRegionProposer"></a>
+
+#### AnimeRegionProposer
+
 <a id="omega_vision.adapters.providers"></a>
 
 # omega\_vision.adapters.providers
@@ -1244,6 +1293,23 @@ def get_semantic_records(
 ```
 
 Query one normalized semantic namespace through the Prolog adapter.
+
+<a id="omega_vision.adapters.robot3d"></a>
+
+# omega\_vision.adapters.robot3d
+
+SoW Appendix A.2 ``adapters/robot3d`` — future adapter (stub only, §16).
+
+A.8 task 9 names ``Robot3DAdapter``; A.6 names ``RGBDObjectProposer``. Both are
+tabletop 3D robotics future work (SoW §16) — importable stubs only.
+
+<a id="omega_vision.adapters.robot3d.Robot3DAdapter"></a>
+
+#### Robot3DAdapter
+
+<a id="omega_vision.adapters.robot3d.RGBDObjectProposer"></a>
+
+#### RGBDObjectProposer
 
 <a id="omega_vision.adapters.sprite"></a>
 
@@ -4860,6 +4926,132 @@ def accounts(results: tuple[RecognitionBenchmarkResult, ...],
              scope: str | None = None) -> tuple[RecognitionAccount, ...]
 ```
 
+<a id="omega_vision.forms.contour_fill"></a>
+
+# omega\_vision.forms.contour\_fill
+
+SoW Appendix A.2 ``forms/contour_fill.py`` / A.8 task 8 — the raster form.
+
+Raster -> a contour/fill program (SoW §5). This is one of the SoW-laid-out
+classes that had no prior home, so a compact, deterministic implementation lives
+here. It is intentionally small: it fulfils the :class:`AbstractGenerativeForm`
+contract (A.3) over a normalized set of filled cells per colour, so the same
+kernel serves raster sprites by swapping the form language, not the core.
+
+A ``ContourFillForm`` holds a *fill program*: one layer per colour, each layer a
+set of integer ``(x, y)`` cells. Canonicalization translates to the origin and
+orders layers and cells deterministically, so identical shapes hash identically
+across machines (SoW §13 Determinism).
+
+<a id="omega_vision.forms.contour_fill.Cell"></a>
+
+#### Cell
+
+<a id="omega_vision.forms.contour_fill.Layer"></a>
+
+#### Layer
+
+<a id="omega_vision.forms.contour_fill.ContourFillForm"></a>
+
+## ContourFillForm Objects
+
+```python
+class ContourFillForm(AbstractGenerativeForm)
+```
+
+A raster contour/fill generative form over normalized filled cells.
+
+<a id="omega_vision.forms.contour_fill.ContourFillForm.domain"></a>
+
+#### domain
+
+<a id="omega_vision.forms.contour_fill.ContourFillForm.__init__"></a>
+
+#### \_\_init\_\_
+
+```python
+def __init__(program: Any) -> None
+```
+
+<a id="omega_vision.forms.contour_fill.ContourFillForm.canonicalize"></a>
+
+#### canonicalize
+
+```python
+def canonicalize() -> str
+```
+
+Translate to the origin and order layers/cells deterministically.
+
+<a id="omega_vision.forms.contour_fill.ContourFillForm.render"></a>
+
+#### render
+
+```python
+def render(params: dict[str, Any] | None = None) -> dict[Cell, str]
+```
+
+Rasterize to ``{(x, y): colour}`` after an optional integer offset.
+
+<a id="omega_vision.forms.contour_fill.ContourFillForm.fit_instance"></a>
+
+#### fit\_instance
+
+```python
+def fit_instance(candidate: Any) -> FitResult
+```
+
+Fit the integer translation that best overlaps ``candidate``.
+
+<a id="omega_vision.forms.contour_fill.ContourFillForm.distance"></a>
+
+#### distance
+
+```python
+def distance(other: AbstractGenerativeForm) -> float
+```
+
+1 - IoU over occupied cells of the two canonical forms (colour-free).
+
+<a id="omega_vision.forms.contour_fill.ContourFillForm.code_length"></a>
+
+#### code\_length
+
+```python
+def code_length() -> float
+```
+
+Description length = cells + per-layer parameter bits (SoW §5).
+
+<a id="omega_vision.forms.contour_fill.ContourFillForm.residual"></a>
+
+#### residual
+
+```python
+def residual(candidate: Any, params: dict[str, Any] | None = None) -> float
+```
+
+Explicit, measurable residual: cells the fitted account leaves uncovered.
+
+<a id="omega_vision.forms.contour_fill.ContourFillForm.complete"></a>
+
+#### complete
+
+```python
+def complete(partial_evidence: Any = None) -> tuple["ContourFillForm", ...]
+```
+
+Generative completion (SoW §8): mirror across the bbox vertical axis.
+
+<a id="omega_vision.forms.contour_fill.ContourFillForm.layers"></a>
+
+#### layers
+
+```python
+@property
+def layers() -> tuple[Layer, ...]
+```
+
 <a id="omega_vision.forms.forms"></a>
 
 # omega\_vision.forms.forms
@@ -4941,6 +5133,13 @@ class GenerativeForm(AbstractGenerativeForm)
 
 Canonical Turtle/LOGO generative form over the existing DSL program.
 
+``GenerativeForm`` can also act as a delegating holder: pass ``delegate``
+(an instance of any :class:`AbstractGenerativeForm` subclass, e.g.
+:class:`~omega_vision.forms.contour_fill.ContourFillForm`) and every
+contract method forwards to that instance instead of the built-in
+grid/Turtle implementation. The wrapper then reports the delegate's
+``domain``.
+
 <a id="omega_vision.forms.forms.GenerativeForm.domain"></a>
 
 #### domain
@@ -4950,9 +5149,10 @@ Canonical Turtle/LOGO generative form over the existing DSL program.
 #### \_\_init\_\_
 
 ```python
-def __init__(program: str,
+def __init__(program: str = "",
              renderer: Any | None = None,
-             swi_bridge: Any | None = None) -> None
+             swi_bridge: Any | None = None,
+             delegate: "AbstractGenerativeForm | None" = None) -> None
 ```
 
 <a id="omega_vision.forms.forms.GenerativeForm.canonicalize"></a>
@@ -4994,6 +5194,34 @@ def distance(other: AbstractGenerativeForm) -> float
 ```python
 def description_length() -> int
 ```
+
+<a id="omega_vision.forms.forms.CellLogoForm"></a>
+
+#### CellLogoForm
+
+<a id="omega_vision.forms.layered_stroke"></a>
+
+# omega\_vision.forms.layered\_stroke
+
+SoW Appendix A.2 ``forms/layered_stroke.py`` — future form (stub only).
+
+Layered-stroke generative form for anime-style 2D games (SoW §16). Stub only.
+
+<a id="omega_vision.forms.layered_stroke.LayeredStrokeForm"></a>
+
+#### LayeredStrokeForm
+
+<a id="omega_vision.forms.part_graph_3d"></a>
+
+# omega\_vision.forms.part\_graph\_3d
+
+SoW Appendix A.2 ``forms/part_graph_3d.py`` — future form (stub only).
+
+Part-graph 3D generative form for tabletop 3D robotics (SoW §16). Stub only.
+
+<a id="omega_vision.forms.part_graph_3d.PartGraph3DForm"></a>
+
+#### PartGraph3DForm
 
 <a id="omega_vision.runtime.capture"></a>
 
@@ -5796,3 +6024,34 @@ Compare structured transcripts without confusing order with membership.
 def compare(expected: Iterable[Any],
             actual: Iterable[Any]) -> TranscriptComparison
 ```
+
+<a id="omega_vision._future"></a>
+
+# omega\_vision.\_future
+
+Shared scaffolding for SoW §16 "future" components.
+
+The SoW lays these names out as *stubs only* (Appendix A.2 comments, A.8 task 9):
+they must be importable so later models plug into an existing typed name, but they
+carry no acceptance bar and are not implemented in this contract. Instantiating or
+calling one raises :class:`FutureComponentError` with the SoW pointer.
+
+<a id="omega_vision._future.FutureComponentError"></a>
+
+## FutureComponentError Objects
+
+```python
+class FutureComponentError(NotImplementedError)
+```
+
+Raised when a SoW §16 future component is used before it is built.
+
+<a id="omega_vision._future.future_component"></a>
+
+#### future\_component
+
+```python
+def future_component(name: str, section: str, note: str)
+```
+
+Build an importable stub class for a not-yet-in-scope SoW component.

@@ -195,15 +195,17 @@ The other files under `workbench/frontend/src/pages/` and older shell-oriented c
 ## Shared Python object-memory and learner contracts
 
 - [`python/omega_vision/__init__.py`](python/omega_vision/__init__.py) — public exports for shared Phase 2 and connected Phase 3 contracts.
-- [`python/omega_vision/replay.py`](python/omega_vision/replay.py) — exact semantic codecs, durable Prolog facts, queryable MeTTa AtomSpace records, and action-tree replay.
-- [`python/omega_vision/models.py`](python/omega_vision/models.py) — backend-neutral execution mode, normalized result, object, residual, atom, rule, evidence, confidence, and prediction records.
-- [`python/omega_vision/providers.py`](python/omega_vision/providers.py) — one provider interface with PROLOG, GPT-artifact, and deterministic PYTHON implementations.
-- [`python/omega_vision/forms.py`](python/omega_vision/forms.py) — `AbstractGenerativeForm` and `GenerativeForm`; Phase 2 extends these into one regenerating Turtle program per object using movement, rotation, pen state, and pen width rather than box filling.
-- [`python/omega_vision/adapters.py`](python/omega_vision/adapters.py) — modality-neutral perception adapter and thin grid-extractor adapter, with later image and simple-video providers sharing the same contracts.
-- [`python/omega_vision/memory.py`](python/omega_vision/memory.py) — residual admission, reference storage, zero-confidence commitments, positive/negative evidence updates, confidence governance, and tombstones through `SingleWriter`.
-- [`python/omega_vision/prediction.py`](python/omega_vision/prediction.py) — exact-identity rule store and prediction-before-outcome ledger.
-- [`python/omega_vision/learning.py`](python/omega_vision/learning.py) — connected transition analysis, transformation learning, competing-rule induction/ranking/execution, prediction, and independent outcome grading pipeline.
-- [`python/omega_vision/integration.py`](python/omega_vision/integration.py) — validated Game Object Learner payload/result contracts and concrete pipeline plugin independent of debugger internals.
+- [`python/omega_vision/runtime/replay.py`](python/omega_vision/runtime/replay.py) — exact semantic codecs, durable Prolog facts, queryable MeTTa AtomSpace records, and action-tree replay.
+- [`python/omega_vision/core/models.py`](python/omega_vision/core/models.py) — backend-neutral execution mode, normalized result, object, residual, atom, rule, evidence, confidence, and prediction records.
+- [`python/omega_vision/adapters/providers.py`](python/omega_vision/adapters/providers.py) — one provider interface with PROLOG, GPT-artifact, and deterministic PYTHON implementations.
+- [`python/omega_vision/forms/forms.py`](python/omega_vision/forms/forms.py) — `AbstractGenerativeForm` and the grid/Turtle `GenerativeForm` (SoW alias `CellLogoForm`); the holder can also delegate every contract method to a held subclass instance.
+- [`python/omega_vision/forms/contour_fill.py`](python/omega_vision/forms/contour_fill.py) — raster `ContourFillForm`: translation-invariant canonical fill programs with fit, residual, code length, and mirror completion (SoW A.8 task 8).
+- [`python/omega_vision/_future.py`](python/omega_vision/_future.py) — SoW §16 future-component scaffolding backing the `LayeredStrokeForm`, `PartGraph3DForm`, `Robot3DAdapter`, `RGBDObjectProposer`, `AnimeRegionProposer`, and `SketchformerEmbedding` importable stubs.
+- [`python/omega_vision/adapters/adapters.py`](python/omega_vision/adapters/adapters.py) — modality-neutral perception adapter and thin grid-extractor adapter, with later image and simple-video providers sharing the same contracts.
+- [`python/omega_vision/core/memory.py`](python/omega_vision/core/memory.py) — residual admission, reference storage, zero-confidence commitments, positive/negative evidence updates, confidence governance, and tombstones through `SingleWriter`.
+- [`python/omega_vision/core/prediction.py`](python/omega_vision/core/prediction.py) — exact-identity rule store and prediction-before-outcome ledger.
+- [`python/omega_vision/core/learning.py`](python/omega_vision/core/learning.py) — connected transition analysis, transformation learning, competing-rule induction/ranking/execution, prediction, and independent outcome grading pipeline.
+- [`python/omega_vision/runtime/integration.py`](python/omega_vision/runtime/integration.py) — validated Game Object Learner payload/result contracts and concrete pipeline plugin independent of debugger internals.
 
 ## Existing and connected Prolog contracts
 

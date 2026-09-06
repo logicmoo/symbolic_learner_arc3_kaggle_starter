@@ -14,6 +14,7 @@ Requires: ``pip install -e ".[docs]"``            (installs pydoc-markdown)
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -96,14 +97,24 @@ def _render(tool: str, flag: str, name: str) -> str | None:
         cmd = [tool, tmp.name]
         try:
             result = subprocess.run(
-                cmd, cwd=REPO, capture_output=True, text=True, encoding="utf-8"
+                cmd,
+                cwd=REPO,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                # pydoc-markdown otherwise writes stdout in the console code page
+                # (cp1252), which corrupts non-ASCII docstrings (e.g. § and —).
+                env={**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"},
             )
         except OSError as exc:
             print(f"  ! {name}: {exc}")
             return None
     finally:
-        Path(tmp.name).unlink(missing_ok=True)
-    if result.returncode != 0 or not result.stdout.strip():
+        try:
+            Path(tmp.name).unlink(missing_ok=True)
+        except OSError:
+            pass  # Windows: transient lock by AV/child; temp dir cleanup will get it
+    if result.returncode != 0 or not (result.stdout or "").strip():
         print(f"  ! {name}: {(result.stderr or 'empty output').strip()[:140]}")
         return None
     return result.stdout
